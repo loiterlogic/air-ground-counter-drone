@@ -150,6 +150,15 @@ def _compose(context, *args, **kwargs):
         own_uav_x, own_uav_y = 0.0, 0.0
     agent0_port = LaunchConfiguration('agent0_port').perform(context)
     agent1_port = LaunchConfiguration('agent1_port').perform(context)
+    # ADR-0094（uXRCE 预热，可选）：own agent 的**首个** DDS participant 在发现图繁忙时可达
+    #   1.5–4.9 s（> PX4 1 s 预算）。sacrificial SIH warmup 可让 agent 先付掉首次创建成本；
+    #   但 A/B（A4 no-warmup 5/5 vs warmup 5/5）显示：**own 25 s 错峰后 warmup 不再必要**，
+    #   故默认关闭；保留开关供极端负载 / 回退使用。warmup 自身允许 create entities failed。
+    warmup_enable = LaunchConfiguration('px4_warmup').perform(context) == 'true'
+    warmup_delay_s = float(LaunchConfiguration('px4_warmup_delay_s').perform(context))
+    warmup_timeout_s = float(LaunchConfiguration('px4_warmup_timeout_s').perform(context))
+    own_px4_delay_s = float(LaunchConfiguration('own_px4_delay_s').perform(context))
+    intruder_px4_delay_s = float(LaunchConfiguration('intruder_px4_delay_s').perform(context))
 
     merged = compose_params(info['base'], info['sc'], backend, seed, (own_uav_x, own_uav_y),
                             geometry=info['geometry'], spawn_randomize=spawn_randomize, goal_follow_target=goal_follow_target)
@@ -222,6 +231,20 @@ def _compose(context, *args, **kwargs):
             'PX4_UXRCE_DDS_PORT': agent1_port,
         }, output='screen')
 
+    # ADR-0094：sacrificial SIH warmup——只创建 participant，不参与任务。
+    #   `timeout` 保证它在 own PX4 启动前后被收回；warmup 自身失败不影响 own PX4。
+    warmup_action = None
+    if warmup_enable:
+        warmup_action = TimerAction(period=warmup_delay_s, actions=[ExecuteProcess(
+            cmd=['timeout', ('%.1f' % warmup_timeout_s), px4_bin,
+                 '-i', '3', '-d', '-s', 'etc/init.d-posix/rcS'],
+            cwd=px4_build,
+            additional_env={
+                'GZ_SIM_RESOURCE_PATH': gz_models + ':' + gz_worlds,
+                'PX4_SIMULATOR': 'sihsim', 'PX4_SIM_MODEL': 'none',
+                'PX4_UXRCE_DDS_PORT': agent0_port,
+            }, output='screen')])
+
     actions = [
         # R-019（ADR-0034）：运行时 PX4 failsafe 参数锁定——须在 PX4（12 s / 25 s 定时器）**之前**执行，
         # 写入 SITL 启动参数文件 `px4-rc.params`（由 rcS source），使每次 SITL 启动确定化。
@@ -262,10 +285,13 @@ def _compose(context, *args, **kwargs):
         # 两个 uXRCE-DDS Agent（实例各一，端口独立）
         ExecuteProcess(cmd=[agent_bin, 'udp4', '-p', agent0_port], output='screen'),
         ExecuteProcess(cmd=[agent_bin, 'udp4', '-p', agent1_port], output='screen'),
+        *([warmup_action] if warmup_action is not None else []),
         # 己方 PX4（实例 0）：standalone，自 spawn gz_x500 自机。
-        # 12 s 计时**保留**理由：属 gz 引擎 spawn 时序（世界/桥先起，PX4 才具 gz 资源与时钟）；
-        # 本层**无可达就绪信号**（该 PX4 进程本身即被 spawn），故保留最小计时。
-        TimerAction(period=12.0, actions=[ExecuteProcess(
+        # 计时**保留**理由：属 gz 引擎 spawn 时序（世界/桥先起，PX4 才具 gz 资源与时钟）；
+        # ADR-0094：默认 25 s——等 5 s warmup 完成首次 participant 创建，且让 DDS 发现图
+        #   从启动风暴中稳定；12 s 实测会让 own participant 创建落入 1.5–13 s 长尾。
+        #   本层仍无可达就绪信号（该 PX4 进程本身即被 spawn），故用计时 + 后续 air odom 门。
+        TimerAction(period=own_px4_delay_s, actions=[ExecuteProcess(
             cmd=[px4_bin, '-d', '-s', 'etc/init.d-posix/rcS'], cwd=px4_build,
             additional_env={
                 'GZ_SIM_RESOURCE_PATH': gz_models + ':' + gz_worlds,
@@ -275,9 +301,9 @@ def _compose(context, *args, **kwargs):
                 'PX4_UXRCE_DDS_PORT': agent0_port,
             }, output='screen')]),
         # 入侵者 PX4（实例 1）：attach 已生 `intruder_uav`（world_bringup 于 gz+3 s spawn）。
-        # 25 s 计时**保留**理由：同属 gz 引擎 spawn 时序（须待世界 spawn 出入侵者模型），
-        # 本层无可达就绪信号，故保留最小计时。
-        TimerAction(period=25.0, actions=[intruder_px4]),
+        # ADR-0094：默认 35 s——与 own（25 s）错峰 10 s，避免两个 agent 同时创建 participant
+        #   造成 1.5–3 s 级并发热点（25/25 实测 own+intruder 双双 `create entities failed`）。
+        TimerAction(period=intruder_px4_delay_s, actions=[intruder_px4]),
     ]
 
     # 空中链路节点 + lifecycle（复用 Nav2 lifecycle_manager）
@@ -311,6 +337,12 @@ def _compose(context, *args, **kwargs):
         # W7-b（T1/E1）：安全层开关（字符串承载→节点内解析）
         if exe == 'run_logger':
             extra = extra + [{'shield_layer_enabled': LaunchConfiguration('shield')}]
+            # ADR-0077：W7-c 并行时 run_logger 的默认 run_id 只到秒 + 随机后缀，
+            #   同秒启动的两个 worker 会撞同一 run 目录（实测 20261025...-091552-6372）。
+            #   episode_runner 在 worker 模式下注入含 worker id 的唯一 override。
+            _rid = LaunchConfiguration('run_id_override').perform(context)
+            if _rid:
+                extra = extra + [{'run_id_override': _rid}]
         params = common + extra
         actions.append(Node(package='agc_task', executable=exe, name=exe,
                             parameters=params, output='screen'))
@@ -338,6 +370,9 @@ def generate_launch_description():
         description='场景 id（见 config/scenarios.yaml）'))
     ld.add_action(DeclareLaunchArgument('seed', default_value='0',
                                         description='episode 种子（run_logger 记录 + spawn 生成）'))
+    ld.add_action(DeclareLaunchArgument(
+        'run_id_override', default_value='',
+        description='ADR-0077：run_logger run_id 覆盖（W7-c worker 唯一性；空=默认生成）'))
     # W7-a（R5/R6）：命令源单一选择（透传 ground_bringup）——
     #   rl | baseline（Navfn + 自研 LQR 离线对照基线）| train（W7 外部适配层作命令源，仅 lightweight）。
     ld.add_action(DeclareLaunchArgument(
@@ -378,6 +413,21 @@ def generate_launch_description():
         'agent0_port', default_value='8888', description='uXRCE-DDS Agent 端口（仅 backend:=full）'))
     ld.add_action(DeclareLaunchArgument(
         'agent1_port', default_value='8889', description='uXRCE-DDS Agent 端口（仅 backend:=full）'))
+    ld.add_action(DeclareLaunchArgument(
+        'px4_warmup', default_value='false',
+        description='ADR-0094：可选 sacrificial SIH warmup（true/false；默认 false——25/35 错峰已足够）'))
+    ld.add_action(DeclareLaunchArgument(
+        'px4_warmup_delay_s', default_value='5.0',
+        description='ADR-0094：warmup PX4 启动延时（s；默认在 own PX4 之前完成首次 participant 创建）'))
+    ld.add_action(DeclareLaunchArgument(
+        'px4_warmup_timeout_s', default_value='6.5',
+        description='ADR-0094：warmup PX4 运行上限（s；timeout 收回，不参与任务）'))
+    ld.add_action(DeclareLaunchArgument(
+        'own_px4_delay_s', default_value='25.0',
+        description='ADR-0094：own PX4 启动延时（s；默认 25 s，等 warmup 完成 + 发现图稳定）'))
+    ld.add_action(DeclareLaunchArgument(
+        'intruder_px4_delay_s', default_value='35.0',
+        description='ADR-0094：intruder PX4 启动延时（s；默认 35 s，与 own 错峰 10 s）'))
     ld.add_action(DeclareLaunchArgument(
         'agc_root', default_value='/home/chen/AGC',
         description='固定项目根（AGENTS.md；colcon 根即项目根）；工具链在其下 toolchain/'))

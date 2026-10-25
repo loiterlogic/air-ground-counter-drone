@@ -34,6 +34,7 @@ import rclpy
 from rclpy.node import Node
 from rosgraph_msgs.msg import Clock
 from geometry_msgs.msg import PoseStamped, TwistStamped
+from nav_msgs.msg import Odometry
 
 from agc_msgs.msg import AgcTaskState
 from std_srvs.srv import Trigger
@@ -56,6 +57,11 @@ ROOT = '/home/chen/AGC'
 GT_CAR_TOPIC = '/agc/gt/agc_car'
 GT_TARGET_TOPIC = '/agc/gt/intruder_uav'
 GT_FRESH_S = 1.0
+# ADR-0094：整链就绪门——own PX4 的 `/agc/air/odom` 必须在 start 前流动。
+#   own PX4 错峰到 25 s 后，若仍按地面门 start，task_manager 的 `air/reset_phase`
+#   会在空中 lifecycle 就绪前被调用 → `service unavailable` → 状态保持 IDLE（cold-02 实测）。
+AIR_ODOM_TOPIC = '/agc/air/odom'
+AIR_FRESH_S = 1.0
 
 # R-013 / W7-b 取证：地面里程计有效位——task_manager 的 start 门**要求** `odom_valid==true`；
 # full 链下它由 ground_odom_adapter 晚到（实测曾被 task_manager 以 `odom_invalid` 拒 start）。
@@ -224,6 +230,7 @@ class Monitor(Node):
         self.cmd_rx = None          # W7-a：/agc/ground/cmd_vel 回环最近接收墙钟
         self.odom_valid = None      # W7-b：/agc/ground/odom_valid 最近值（None=未收到）
         self.odom_valid_rx = None
+        self.air_rx = None          # ADR-0094：/agc/air/odom 最近接收墙钟（整链就绪门）
         self.sim_at_start = None    # W7-b（ADR-0074）：start 调用时刻的仿真钟（固定观测时长基准）
         self.create_subscription(AgcTaskState, '/agc/task/state', self._on, 20)
         self.create_subscription(Clock, '/clock', self._on_clock, 1)
@@ -231,6 +238,7 @@ class Monitor(Node):
         self.create_subscription(PoseStamped, GT_TARGET_TOPIC, self._on_gt_target, 10)
         self.create_subscription(TwistStamped, CMD_TOPIC, self._on_cmd, 20)
         self.create_subscription(Bool, ODOM_VALID_TOPIC, self._on_odom_valid, 10)
+        self.create_subscription(Odometry, AIR_ODOM_TOPIC, self._on_air, 10)
         self.cli = self.create_client(Trigger, '/agc/task/start')
 
     def _on(self, m):
@@ -257,6 +265,13 @@ class Monitor(Node):
     def _on_odom_valid(self, m):
         self.odom_valid = bool(m.data)
         self.odom_valid_rx = time.monotonic()
+
+    def _on_air(self, _m):
+        self.air_rx = time.monotonic()
+
+    def air_fresh(self):
+        """ADR-0094：own PX4 的 `/agc/air/odom` 是否在新鲜窗口内（整链 start 前置）。"""
+        return self.air_rx is not None and (time.monotonic() - self.air_rx) < AIR_FRESH_S
 
     def odom_valid_ok(self):
         """W7-b：`/agc/ground/odom_valid` 已收到且为 true（task_manager 的 start 门要求项）。"""
@@ -294,18 +309,26 @@ class Monitor(Node):
         return False
 
 
-def wait_ready(mon, timeout_s):
+def wait_ready(mon, timeout_s, require_air=False):
     """R-029/R-031：就绪门槛 = `/agc/task/start` 服务就绪 **且** 车/目标真值旁路**新鲜**。
 
     仅看服务存在不足以复位成功（scenario_reset 复位前置要求 gt 新鲜，年龄 ≤ 0.5 s）；故就绪须等
     **真值数据在流动**，**不**以固定 `sleep` 代就绪（避免 start 早于 gt/桥就绪 → gt_stale → 假 infra）。
+
+    ADR-0094：整链（`backend=full`）另要求 `/agc/air/odom` 在新鲜窗口内——own PX4 错峰后
+    若仍按地面门 start，task_manager 会在空中 lifecycle 就绪前调 `air/reset_phase`。
     """
+    def _ok():
+        base = (mon.cli.service_is_ready() and mon.gt_fresh()
+                and mon.cmd_fresh() and mon.odom_valid_ok())
+        return base and (mon.air_fresh() if require_air else True)
+
     t0 = time.monotonic()
     while time.monotonic() - t0 < timeout_s:
         rclpy.spin_once(mon, timeout_sec=0.1)
-        if mon.cli.service_is_ready() and mon.gt_fresh() and mon.cmd_fresh() and mon.odom_valid_ok():
+        if _ok():
             return True
-    return mon.cli.service_is_ready() and mon.gt_fresh() and mon.cmd_fresh() and mon.odom_valid_ok()
+    return _ok()
 
 
 def _group_alive(pgid):
@@ -351,8 +374,26 @@ STALE_PROCESS_RULES = (
 )
 
 
-def sweep_stale_processes(log_path=None):
-    """ADR-0075：运行前清场。返回被 SIGKILL 的 `[(pid, cmdline), ...]`（并追加到 run 日志作审计）。"""
+def _proc_env_has(pid, key, value):
+    """ADR-0077：读取 /proc/<pid>/environ，判断是否带指定环境变量。
+
+    仅用于 W7-c 的**清场归属**；读不到（权限 / 已退出）→ False，绝不误杀。
+    """
+    try:
+        with open('/proc/%s/environ' % pid, 'rb') as f:
+            data = f.read().decode('utf-8', 'replace').split('\x00')
+    except (OSError, IOError):
+        return False
+    return ('%s=%s' % (key, value)) in data
+
+
+def sweep_stale_processes(log_path=None, worker_id=None):
+    """ADR-0075/0077：运行前清场。返回被 SIGKILL 的 `[(pid, cmdline), ...]`（并追加到 run 日志作审计）。
+
+    `worker_id=None` = 单 worker 既有行为（清理全部本项目特征进程）；
+    `worker_id=<id>` = W7-c 归属清场：只清 `AGC_WORKER_ID` 等于本 worker 的进程，
+    没有该标记的进程一律不杀（属于其它 worker / 机器上其它系统）。
+    """
     me = os.getpid()
     killed = []
     for entry in os.listdir('/proc'):
@@ -362,6 +403,8 @@ def sweep_stale_processes(log_path=None):
             with open('/proc/%s/cmdline' % entry, 'rb') as f:
                 raw = f.read().decode('utf-8', 'replace').split('\x00')
         except (OSError, IOError):
+            continue
+        if worker_id is not None and not _proc_env_has(entry, 'AGC_WORKER_ID', str(worker_id)):
             continue
         argv0 = raw[0].strip() if raw else ''
         cmd = ' '.join(x for x in raw if x).strip()
@@ -432,7 +475,8 @@ def _reap_process_group(proc, pgid):
 def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers, ready_timeout_s,
                 command_source='rl', shield='true', backend='lightweight', target_source='',
                 observe_yaw_mode='', air_tracking_ref='', log_tag='', obs_horizon_s=0.0, goal_follow_target='',
-                start_timeout_s=20.0):
+                own_px4_delay_s=None, px4_warmup=None, intruder_px4_delay_s=None,
+                worker_id=None, start_timeout_s=20.0):
     scenario = registry[scene]['params'].get('run_logger', {}).get('scenario', scene)
     world = os.path.join(ROOT, 'install/agc_sim/share/agc_sim/worlds/agc_world.sdf')
     gz = ('-r -v 3 ' if mode == 'gui' else '-s -r -v 3 ') + world
@@ -443,7 +487,7 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
     os.makedirs(os.path.dirname(log), exist_ok=True)
     # ADR-0075：**运行前清场**（本 run 尚未创建任何进程 → 命中者必为上次 run 的残留 / 逃逸孤儿；
     # 实测污染会使 agent 侧 participant 创建 > PX4 的 1 s 预算 → 全链 infra）。
-    stale_swept = sweep_stale_processes(log)
+    stale_swept = sweep_stale_processes(log, worker_id=worker_id)
     # 先建 Monitor、再记墙钟起点、再 Popen：从 episode 一开始就记录 /clock
     mon = Monitor()
     wall_start_s = time.monotonic()
@@ -466,10 +510,33 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
     # W7-b P2 v3（ADR-0083）：任务目标是否跟随**感知目标**——两臂同源，避免 A 拿真值固定目标。
     if goal_follow_target:
         launch_args.append('goal_follow_target:=%s' % goal_follow_target)
+    # ADR-0094（uXRCE 预热 / 错峰）：仅显式给出时透传；缺省沿用 w6.launch.py 的默认
+    #   （px4_warmup=true / own_px4_delay_s=12.0），既有调用行为不变。
+    if own_px4_delay_s is not None:
+        launch_args.append('own_px4_delay_s:=%s' % own_px4_delay_s)
+    if px4_warmup is not None:
+        launch_args.append('px4_warmup:=%s' % px4_warmup)
+    if intruder_px4_delay_s is not None:
+        launch_args.append('intruder_px4_delay_s:=%s' % intruder_px4_delay_s)
+    # ADR-0077：W7-c worker 模式下给 run_logger 一个含 worker id 的唯一 run_id，
+    #   避免同秒启动的两个 worker 写同一 experiments/w6-task-eval/<run_id>/（实测碰撞）。
+    if worker_id is not None:
+        _rid = '%s-%s-%d-%s-w%d-%04d' % (
+            datetime.now().strftime('%Y%m%d'), scene, seed,
+            datetime.now().strftime('%H%M%S'), worker_id, random.randint(0, 9999))
+        launch_args.append('run_id_override:=%s' % _rid)
     # 整链 / 轻量栈都经 world_bringup 追加 `GZ_SIM_SYSTEM_PLUGIN_PATH`（该 launch 以
     # `EnvironmentVariable` 读取，**未导出即抛异常**）；此处按 archive 脚本先例显式导出，
     # 使 run 不依赖调用方 shell 环境（本机 gz 插件路径前提）。
     launch_env = dict(os.environ)
+    # ADR-0077：W7-c worker 归属 / 隔离环境（单 worker 不设，保持既有行为不变）。
+    if worker_id is not None:
+        launch_env['AGC_WORKER_ID'] = str(worker_id)
+        launch_env['GZ_PARTITION'] = 'agc_w_%s' % worker_id
+        # /dev/shm 不随 netns 隔离：必须关 SHM，防跨 worker 通过共享段互发现。
+        launch_env['FASTDDS_BUILTIN_TRANSPORTS'] = 'UDPv4'
+        launch_env['ROS_DOMAIN_ID'] = '0'
+        launch_env['ROS_AUTOMATIC_DISCOVERY_RANGE'] = 'LOCALHOST'
     plugin_dir = os.path.join(ROOT, 'install', 'agc_sim', 'lib')
     launch_env['GZ_SIM_SYSTEM_PLUGIN_PATH'] = plugin_dir + (
         ':' + launch_env['GZ_SIM_SYSTEM_PLUGIN_PATH']
@@ -493,7 +560,7 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
               'stale_swept_pids': [p for p, _ in stale_swept],
               'stale_swept_cmds': [c for _, c in stale_swept]}
     try:
-        ready = wait_ready(mon, ready_timeout_s)
+        ready = wait_ready(mon, ready_timeout_s, require_air=(backend == 'full'))
         result['ready'] = ready
         # 有界稳定窗口（收集 /clock 起点），非固定 18 s 就绪依赖
         t_settle = time.monotonic() + 2.0

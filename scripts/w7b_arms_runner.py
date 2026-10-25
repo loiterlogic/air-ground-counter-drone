@@ -269,7 +269,9 @@ def perception_health(results, out_dir):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--mode', default='headless', choices=['headless', 'gui'])
-    ap.add_argument('--timeout', type=float, default=120.0)
+    # ADR-0094：own 25 s / intruder 35 s 启动后，单 episode 墙钟约 110–130 s；
+    #   原 120 s 默认会把正常回合截成 ACTIVE（infra 类），故提高到 240 s。
+    ap.add_argument('--timeout', type=float, default=240.0)
     ap.add_argument('--ready-timeout-s', type=float, default=180.0)
     ap.add_argument('--campaign', default='w7-rl-b')
     ap.add_argument('--run-id', default=None)
@@ -286,15 +288,31 @@ def main():
     #   `air_hover_timeout` / `odom_invalid` 等 `classification=='infra'` 结果按本上限**重跑**；
     #   mission 结果（含 TIMEOUT）**一律不重试**。0 = 关闭。逐次产物（日志 .rN / run_id）全留。
     ap.add_argument('--infra-retries', type=int, default=3)
+    # ADR-0094（uXRCE 预热 / 错峰）：仅显式给出时透传 w6.launch.py；缺省沿用 launch 默认
+    #   （px4_warmup=true / own_px4_delay_s=12.0）。
+    ap.add_argument('--own-px4-delay-s', type=float, default=None)
+    ap.add_argument('--intruder-px4-delay-s', type=float, default=None)
+    ap.add_argument('--px4-warmup', default='', choices=['', 'true', 'false'])
+    # ADR-0077：W7-c worker 归属；产物落 experiments/<campaign>/<run_id>/worker_<id>/。
+    ap.add_argument('--worker-id', type=int, default=None)
     args = ap.parse_args()
 
     run_id = args.run_id or ('%s-%s-%s-%04d' % (
         datetime.now().strftime('%Y%m%d'), args.campaign,
         datetime.now().strftime('%H%M%S'), random.randint(0, 9999)))
-    out_dir = os.path.join(ROOT, 'experiments', args.campaign, run_id)
-    if os.path.exists(out_dir):
-        print('拒绝写入已有 run 目录：%s' % out_dir)
-        return 2
+    base_dir = os.path.join(ROOT, 'experiments', args.campaign, run_id)
+    if args.worker_id is not None:
+        out_dir = os.path.join(base_dir, 'worker_%d' % args.worker_id)
+        # 包装器会预建 worker 目录（放 console / probe）；只拒绝覆盖已有 arms.json。
+        if os.path.exists(os.path.join(out_dir, 'metrics', 'arms.json')):
+            print('拒绝覆盖已有 worker 产物：%s' % out_dir)
+            return 2
+        os.makedirs(out_dir, exist_ok=True)
+    else:
+        out_dir = base_dir
+        if os.path.exists(out_dir):
+            print('拒绝写入已有 run 目录：%s' % out_dir)
+            return 2
     for sub in ('metrics', 'log'):
         os.makedirs(os.path.join(out_dir, sub), exist_ok=True)
 
@@ -324,6 +342,10 @@ def main():
                             backend=backend, target_source=ts, observe_yaw_mode=oym,
                             air_tracking_ref=atr, log_tag=a['arm'],
                             goal_follow_target=a.get('goal_follow_target', ''),
+                            own_px4_delay_s=args.own_px4_delay_s,
+                            intruder_px4_delay_s=args.intruder_px4_delay_s,
+                            px4_warmup=(args.px4_warmup or None),
+                            worker_id=args.worker_id,
                             obs_horizon_s=args.obs_horizon_s,
                             start_timeout_s=args.start_timeout_s,
                             infra_retries=args.infra_retries)

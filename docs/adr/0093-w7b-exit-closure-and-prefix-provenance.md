@@ -80,6 +80,12 @@ W7-b 的出口定义见 [ADR-0070](0070-w7b-research-propositions-and-rl-role-ad
 - **v7 未注册**；**在线 RL 未进入**；**W7-c 未开始**；**W8 未开始**。
 - 火控模型身份 `net_ballistic_frame_v2`；修复前证据保留为 pre-fix。
 
+### (g) 整链 infra 恢复（2026-10-24 追加，不改变 (f) 闭合状态）
+
+- [ADR-0094](0094-uxrce-participant-warmup-and-px4-stagger.md) 修复 uXRCE participant 创建长尾：own 25 s / intruder 35 s 错峰 + `backend=full` 的 `/agc/air/odom` 就绪门；warmup 可选、默认关闭。A4 no-warmup 5/5 + A7 最终默认 2/2：own 694–704 / 701 ms、intruder 742–750 / 737–751 ms，均无 `create entities failed`。
+- 修复后小批补跑（B）：`20261024-w7-rl-b-b-p1-s15-s5-headless`、`...-b-p2-s08-s012-headless`（seeds 0–2）、`...-b-p1-s15-s5-gui-r2`、`...-b-p2-s08-s0-gui`；全部 infra 0、6/6 shot 命中、`flight` 0.496–1.000 s、事件 `ep=2` / `shot=2-1`、地图触发 0、P2 周期规划 24/12 次。P1 GUI 首跑 `...-b-p1-s15-s5-gui` 为 `MISSION_FAILED(TIMEOUT)`（mission 终态，不是 infra），同参数重跑 `-r2` 达 `INTERCEPT_CONFIRMED`。
+- 报告：[`fix_verification.md`](../../experiments/w7-rl-b/20261024-w7-rl-b-b-p2-s08-s012-headless/metrics/fix_verification.md)。**历史 verdict 不变**；infra 单列；未改 ABI / 阈值 / 种子。
+
 ## 备选
 
 1. **用修复后小批重判 P1 / P2** —— 否决：样本量不足、非确证，且违反「不得用诊断 run 重判」与预注册纪律。

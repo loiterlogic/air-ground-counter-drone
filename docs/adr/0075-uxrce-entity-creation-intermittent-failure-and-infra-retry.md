@@ -108,9 +108,40 @@ W7-b 步 2（`backend:=full` 整链、P1 两臂配对）被同一类 infra 挡�
 - 批跑前：确认**无 ROS 进程**后清 `/dev/shm/fastrtps_*`（本机已知段累积效应：单 run 约余 100 段，累积数百段曾致 SHM 端口初始化失败）。
   **不**由 runner 自动清：清场只保证本项目的进程已退出，**无法**保证机器上不存在其它 DDS 系统 → 自动删段有误伤风险。
 
+## 更新（2026-10-24）——发现图负载下的 participant 创建长尾；warmup + 错峰
+
+> **追加，不推翻历史**：2026-10-20 的“残留孤儿 → 时延恶化 → infra / 清场恢复”结论仍成立；本节记录**另一条可复现原因**与 current fix。
+
+### (j) 新证据：慢阶段与可复现条件
+
+- 失败整链日志：`create_client → establish_session` 恒 < 0.05 s；`establish_session → participant created` 为 **1.28–3.09 s**（own），intruder 0.72–0.76 s。慢的是 **agent 侧 DDS participant 创建**，不是 XRCE 会话。
+- 最小链（1 agent + 1 PX4 SIH）10 次冷启动：`participant_create_ms` 中位数 **80.6 ms**（max 85.7）；4×CPU busy loop 仅 87.6 ms；10 个 ROS 节点 75 ms；**20 个 ROS 节点复现 4.86 s 与 PX4 1 s 超时**。
+- agent 仅 `FASTDDS_BUILTIN_TRANSPORTS=UDPv4`：长尾 4.86 s → ~0.55 s，但图刚起时首跑仍失败；因此**不单独作为修复**。
+- 同一 agent 的**首个 participant**最慢；own 是首个客户端，intruder 晚 12–13 s 接入 → 恒快。
+
+### (k) 处置：sacrificial warmup + own/intruder 错峰 + 空中就绪门
+
+- **主修复**：own PX4 默认 **12 s → 25 s**；intruder **25 s → 35 s**（错峰 10 s，避开启动发现风暴、避免两个 agent 同时创建 participant）。
+- **可选 warmup（默认关闭）**：`w6.launch.py` 保留一个 SIH warmup（`-i 3`、`PX4_SIMULATOR=sihsim`、`PX4_SIM_MODEL=none`、绑 own agent 端口；t=5 s / `timeout 6.5`）。A/B 显示 25/35 错峰后 warmup 无额外收益；保留给极端负载 / 回退。
+- `episode_runner.wait_ready` 对 `backend=full` 增加 **`/agc/air/odom` 新鲜门**（`AIR_FRESH_S=1.0`）。否则 own 延后时 `task_manager` 会在空中 lifecycle 就绪前调 `air/reset_phase` → `service unavailable` → IDLE（`20261024-w7-rl-b-a5-cold-02` 实测）。
+
+### (l) 验收（2026-10-24）
+
+- **A4 no-warmup 5 连**（默认修复候选）：own = **694.0 / 697.3 / 699.6 / 703.5 / 701.0** ms；intruder = **750.4 / 749.5 / 742.1 / 743.3 / 749.1** ms；均 < 1000 ms、无 `create entities failed`；终态 4×`INTERCEPT_CONFIRMED` + 1×`MISSION_FAILED(TIMEOUT)`（mission 终态）。
+- **A5b warmup 5 连**（A/B 对照）：own = 640.7 / 642.0 / 650.6 / 752.1 / 643.0 ms；intruder = 757.4 / 764.2 / 759.3 / 762.6 / 772.5 ms；均 < 1000 ms（仅 warmup 自身各 1 次失败，预期）；终态 4×`INTERCEPT_CONFIRMED` + 1×`MISSION_FAILED(TIMEOUT)`。
+- **A7 最终默认配置回归**（`px4_warmup=false` / own 25 s / intruder 35 s）：own 701.3 / 701.2 ms；intruder 737.2 / 751.0 ms；均 `INTERCEPT_CONFIRMED`、`create entities failed` 0、infra 0；`toolchain_pin_check.py` 25 PASS / 0 FAIL。
+- `/dev/shm` fastrtps 段数 221 → 363（7 个 run，未手工清理；增长大致线性，无 SHM 初始化失败）。
+- 决策与完整证据：[ADR-0094](0094-uxrce-participant-warmup-and-px4-stagger.md)、诊断报告 `experiments/w7-rl-b/20261024-w7-rl-b-uxrce-diagnosis/metrics/uxrce_diagnosis.md`。
+
+### (m) 边界
+
+- 未改 PX4 源码 / 子模块 SHA / agent 版本；未把 `FASTDDS_BUILTIN_TRANSPORTS=UDPv4` 设为默认。
+- 重试协议（(c)）保留为二级保险，但**不再作为主要手段**；本轮验收全部 `--infra-retries 0`。
+- W7-c 多 worker 的清场归属仍未解决（(i) 第 2 条）；warmup / 错峰是单 worker 内的修复，不替代 W7-c 隔离。
+
 ## 参考
 
 - 契约：[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)（C4 超时属任务终态 / 必报指标）、[#execution-port](../ROS2迁移交接文档.md#execution-port)、[#params](../ROS2迁移交接文档.md#params)
-- 前序 ADR：[ADR-0005](0005-px4-link-uxrce-dds.md)、[ADR-0007](0007-experiment-artifact-layout.md)、[ADR-0046](0046-runner-three-layer-acceptance-and-integrity-gate.md)、[ADR-0069](0069-w7-entry-and-exit-definition.md)、[ADR-0070](0070-w7b-research-propositions-and-rl-role-adjudication.md)、[ADR-0071](0071-w7b-adjudication-record-and-pending-arms.md)、[ADR-0074](0074-visibility-metric-fixed-observation-window.md)
+- 前序 ADR：[ADR-0005](0005-px4-link-uxrce-dds.md)、[ADR-0007](0007-experiment-artifacts-convention.md)、[ADR-0046](0046-runner-three-layer-acceptance-and-integrity-gate.md)、[ADR-0069](0069-w7-entry-and-exit-definition.md)、[ADR-0070](0070-w7b-research-propositions-and-rl-role-adjudication.md)、[ADR-0071](0071-w7b-adjudication-record-and-pending-arms.md)、[ADR-0074](0074-visibility-metric-fixed-observation-window.md)
 - 预注册：[`src/agc_rl/config/w7b_prereg.yaml`](../../src/agc_rl/config/w7b_prereg.yaml)
 - 规格：[`.trae/specs/w7-rl-b/`](../../.trae/specs/w7-rl-b/spec.md)
