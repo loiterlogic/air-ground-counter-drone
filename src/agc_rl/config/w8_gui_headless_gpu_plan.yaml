@@ -1,0 +1,181 @@
+# W8 GUI/headless 模式等价 pilot 与正式等价预声明（ADR-0096）—— 单一来源。
+# 在任何 pilot run 之前冻结；首个 run 之后不得修改 v1；偏离单独登记。
+w8_gui_headless_plan:
+  version: 1.1
+  date: 2026-10-25
+  status: frozen_before_runs
+  scope: "W8-E1 前置 GUI/headless 模式等价：GPU-GUI 修正后的 pilot（默认软件 GUI 作为受限条件单列）"
+  campaign: w8-parity
+  reference:
+    base_plan: "src/agc_rl/config/w8_gui_headless_plan.yaml（v1，sha256 3afa82c4…a292；未修改）"
+    renderer_diagnosis: "experiments/w8-parity/20261025-w8-gui-headless-pilot/metrics/gpu_renderer_diagnosis.md"
+    w7c_plan: "src/agc_rl/config/w7c_admission_plan.yaml"
+    adr_0095: "docs/adr/0095-w7c-admission-metric-and-worker-run-dir-isolation.md"
+    adr_0057: "docs/adr/0057-c3-gui-acceptance-scope-authorization.md"
+
+  pilot:
+    id: 20261025-w8-gui-gpu-pilot
+    n_per_mode_per_scene: 5
+    conditions:
+      p1:
+        description: "P1 s15 协同臂"
+        scene: s15_static_none_fov_capture
+        arm: p1_coop
+        seed: 5
+      p2:
+        description: "P2 s08 规则高层臂"
+        scene: s08_static_none_nominal_capture
+        arm: p2_rl_high
+        seed: 0
+    alternation:
+      p1: [headless, gui, headless, gui, headless, gui, headless, gui, headless, gui]
+      p2: [gui, headless, gui, headless, gui, headless, gui, headless, gui, headless]
+    alternation_note: "P1 从 headless 开始、P2 从 GUI 开始；起始模式跨场景相反，降低全局时间趋势与模式的混淆。"
+    attempt_id_pattern: "{pilot_id}-{scene_tag}-{mode_tag}-{index:02d}"
+
+  fixed_conditions:
+    backend: full
+    worker: ordinary_single_worker
+    worker_note: "普通单 worker：无 --worker-id、无 --px4-run-root；W7-c 保持 deferred。"
+    infra_retries: 0
+    obs_horizon_s: 60.0
+    timeout_s: 240.0
+    ready_timeout_s: 180.0
+    start_timeout_s: 60.0
+    px4_startup:
+      own_px4_delay_s: 25.0
+      intruder_px4_delay_s: 35.0
+      px4_warmup: false
+      air_odom_gate: true
+    mode_difference: "--mode gui|headless（gz -r vs -s -r；ROS 节点图相同）；GUI 额外设置 Mesa D3D12 + X11 渲染后端"
+    gui_render_backend: mesa_d3d12_x11
+    gui_render_env:
+      MESA_LOADER_DRIVER_OVERRIDE: d3d12
+      GALLIUM_DRIVER: d3d12
+    no_parallel: true
+    no_parallel_note: "P1 与 P2 不得并行；同一机器普通单 worker，顺序 P1 -> P2。"
+
+  render_backend_amendment:
+    reason: "默认 GUI 被确认走 llvmpipe 软件渲染（Ogre2 Device Name=llvmpipe；GUI CPU 267–281% vs headless 22%），mode 变量混入渲染后端 + CPU 负载。"
+    base_gui_condition: "plan v1 的软件 GUI 保留为受限条件（restricted_gui），不进入修正后等价分母"
+    corrected_gui_condition: "GPU-GUI：Mesa D3D12 + X11（MESA_LOADER_DRIVER_OVERRIDE=d3d12，GALLIUM_DRIVER=d3d12）"
+    evidence: "experiments/w8-parity/20261025-w8-gui-headless-pilot/metrics/gpu_renderer_diagnosis.{json,md}"
+    note: "本 amendment 在任何 GPU-GUI pilot run 前冻结；base plan v1 不修改；GPU-GUI 仍不构成等价判定，只用于修正后的散布 / 成本估计。"
+
+  metrics:
+    co_primary:
+      - active_fco
+      - active_visibility
+      - timeout_rate
+      - capture_success_rate
+    secondary:
+      - first_fco_occurrence_rate
+      - first_fco_rel_s
+      - capture_t_s
+      - min_clearance_m
+      - intervention_ticks_ratio
+      - intervention_segments
+      - rtf
+      - wall_elapsed_s
+    definitions:
+      active_fco: "episode_window_metrics.ticks_fire_control_opportunity / episode_window_metrics.vis_ticks_total"
+      active_visibility: "episode_window_metrics.vis_ticks_visible / episode_window_metrics.vis_ticks_total"
+      env_occ_given_visible: "episode_window_metrics.ticks_fire_control_opportunity / episode_window_metrics.vis_ticks_visible"
+      active_window: "episode_windows[0].enter_s / leave_s / leave_s - enter_s"
+      first_fco_rel_s: "episode_window_metrics.first_fire_control_opportunity_s（相对窗口 enter_s）"
+      first_envelope_rel_s: "episode_window_metrics.first_envelope_in_s"
+      capture_t_s: "日志 CAPTURE 事件的绝对仿真时刻；未发生为 null"
+      timeout_rate: "MISSION_FAILED + reason TIMEOUT / mission attempts（契约 C4：超时算失败）"
+      capture_success_rate: "INTERCEPT_CONFIRMED / mission attempts"
+      min_clearance_m: "arms.json.command_attribution.clearance_min_m（即 summary command_attribution.clearance_min_m）"
+      intervention_ticks_ratio: "episode_window_metrics.intervention_ticks_ratio（active 窗口）"
+      intervention_segments: "summary.command_attribution.intervention_segments"
+      rtf: "summary.rtf"
+      wall_elapsed_s: "arms.json.wall_elapsed_s"
+    legacy_descriptive:
+      - "arms.json.visibility_rate（window_fixed_v1，含终态后停泊）"
+      - "arms.json.fire_control_opportunity_rate（window_fixed_v1）"
+
+  non_occurrence:
+    first_fco:
+      rule: "未发生 -> first_fco_rel_s=null、first_fco_occurred=false；另报 first_fco_occurrence_rate；不插补。"
+      itt_sensitivity: "把未发生 attempt 赋为 active 窗口时长（上界）；仅作敏感性，不作主判定。"
+    capture:
+      rule: "未发生 -> capture_t_s=null、capture_occurred=false；另报 capture_success_rate；不插补。"
+      itt_sensitivity: "把未发生 attempt 赋为观测上限（episode 终态时刻或 obs horizon，取可用者）；仅作敏感性。"
+    shot:
+      rule: "未发射 -> n_shots=0、first_shot_t_s=null；不插补。"
+    clearance:
+      rule: "无有效观测 -> min_clearance_m=null；报告缺失计数；不插补。"
+
+  denominators:
+    mission_attempts: "terminal_state 为任务终态（成功或 mission failure）且 outcome_class != infra"
+    infra: "INFRA_FAILURE / outcome_class=infra 单列，不计入 mission 分母"
+    timeout: "MISSION_FAILED(TIMEOUT) 计入 mission_attempts，按失败计（契约 C4）"
+
+  hard_invariants:
+    - "每发 SHOT_FIRED 恰有一个 SHOT_HIT / SHOT_MISS / SHOT_ABORTED；unresolved / duplicated 为空"
+    - "事件身份：capture_event ep = task episode id；shot_id epoch 前缀一致；0 条 ep != episode_epoch_ 拒收"
+    - "infra 与 mission 分列；infra 不得伪造成任务终态"
+    - "跑后无本项目 / ROS / PX4 / gz 残留"
+
+  retention:
+    all_attempts: true
+    infra_and_mission_separated: true
+    no_retry_substitution: true
+    no_auto_retry: true
+    new_run_id_per_attempt: true
+    artifacts: [metrics/arms.json, metrics/summary.json, log/, config/]
+    archive: "按 ADR-0064 归档到 experiments/_archive/w8-parity/"
+
+  cost:
+    record_per_attempt: [wall_elapsed_s, rtf, started_at, ended_at]
+    record_pilot_total_wall: true
+    record_gui_overhead: true
+
+  formal_equivalence:
+    status: to_be_frozen_after_pilot
+    note: "pilot 后按 ADR-0096 冻结 v2；不得在正式结果后回填 delta / n。"
+    rule: "等价 iff Δ=GUI-headless 的 95% 双侧 CI 完全落入 [-delta, +delta]；报告两个单侧 p；禁止以不显著代替等价。"
+    co_primary_all_required: true
+    secondary_material_difference: "按 v2 预声明；不得静默忽略。"
+    delta_anchors:
+      active_fco: 0.02
+      active_visibility: 0.02
+      timeout_rate: 0.05
+      capture_success_rate: 0.05
+      first_fco_rel_s: 2.0
+      capture_t_s: 2.0
+      min_clearance_m: 0.20
+      intervention_ticks_ratio: 0.05
+    delta_note: "以上为候选锚点，不是最终值；最终 delta 由 ADR-0096 按决策相关性、within-mode 底噪与安全非劣论证。"
+    n_formula: "n_per_mode = ceil( (z_0.975 + z_0.80)^2 * (sigma_gui^2 + sigma_headless^2) / (delta - |delta_pilot|)^2 )"
+    n_take: "多个 co-primary 取最大 n；|delta_pilot| >= delta 判为在该 delta 下不可行；率类接近 0/1 时预声明精确/角变换方法。"
+    cost_cap:
+      max_attempts_per_mode_per_scene: 40
+      max_formal_wall_per_scene_h: 6.0
+      note: "可更低；若所需 n 超过上限，不执行正式 run，转回退。"
+    analysis:
+      primary: "两样本 Welch（独立组）；配对差仅作描述"
+      robustness: "bootstrap / 非参数敏感性（在 v2 预声明）"
+
+  gates:
+    formal_go:
+      - "每个场景 / 模式至少 3 个有效 mission attempts"
+      - "|delta_pilot| < delta"
+      - "所需 n <= cost_cap"
+    equivalence_pass:
+      - "全部 co-primary 的 95% CI 落入 +/- delta"
+      - "secondary 无未解释的 material difference"
+      - "infra 率不高于预声明上限"
+      - "硬不变量无缺陷"
+    equivalence_fail_action: "不授权 headless 规模统计；定位模式差异（RTF / 渲染 / 调度 / 启动时序）或改用 GUI 并记录成本。"
+
+  fallback:
+    - "pilot 每场景 / 模式有效 mission attempts < 3 -> 先修 infra，不进入正式等价。"
+    - "|delta_pilot| >= delta -> 在该 delta 下不可行；不得扩大 n 硬跑。"
+    - "所需 n > 成本上限 -> 不执行正式 run；改用 GUI 完成相应验证并记录成本。"
+    - "等价闸门未通过 -> 不授权 headless 规模统计；不静默切换。"
+    - "B3 cmd_vel_loopback_missing 复发 -> 独立 infra 项；普通单 worker 反复出现时专项排障，不扩容。"
+
+  deviations: []

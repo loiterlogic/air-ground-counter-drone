@@ -11,7 +11,12 @@
 """
 
 import os
+import sys
 import tempfile
+
+# 与 launch 同目录安装（CMake 安装整个 launch/），供 world_bringup 与单测复用。
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from gui_render_backend import describe, select_gui_render_env  # noqa: E402
 
 import yaml
 
@@ -109,9 +114,14 @@ def _make_gz_sim(world_file, ros_gz_sim_launch, geometry):
         if not any(os.path.basename(t) == base for t in tokens):
             replaced.append(world)
         gz_args = ' '.join(replaced)
-        return [IncludeLaunchDescription(
+        backend = LaunchConfiguration('gui_render_backend').perform(context)
+        render_env = select_gui_render_env(backend)
+        print('[world_bringup] %s' % describe(backend, render_env))
+        actions = [SetEnvironmentVariable(k, v) for k, v in sorted(render_env.items())]
+        actions.append(IncludeLaunchDescription(
             PythonLaunchDescriptionSource(ros_gz_sim_launch),
-            launch_arguments={'gz_args': gz_args}.items())]
+            launch_arguments={'gz_args': gz_args}.items()))
+        return actions
     return OpaqueFunction(function=_opaque)
 
 
@@ -177,6 +187,10 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'world_obstacles', default_value='static',
             description='障碍轴世界生成：static（由真源注入 pole_*）| none（base world，不含 pole_*）'),
+        DeclareLaunchArgument(
+            'gui_render_backend', default_value='auto',
+            description='GUI 渲染后端：auto（WSL2 + /dev/dxg + X11 自动 D3D12）| d3d12 | software；'
+                        'headless（gz -s）忽略'),
     ]
 
     # gz sim（世界）：按 `world_obstacles` 由**单一几何真源**注入 / 不注入生成

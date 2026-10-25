@@ -472,11 +472,30 @@ def _reap_process_group(proc, pgid):
         time.sleep(0.2)
     return (not _group_alive(pgid)), proc.returncode
 
+def _read_gui_renderer():
+    """读取最近一次 GUI 运行的 Ogre2 设备名（实际 renderer，用于证据标注）。"""
+    path = os.path.expanduser('~/.gz/rendering/ogre2.log')
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, errors='ignore') as f:
+            lines = f.read().splitlines()
+    except OSError:
+        return None
+    for line in reversed(lines):
+        if 'Device Name:' in line:
+            return line.split('Device Name:', 1)[1].strip()
+        if 'GL_RENDERER' in line:
+            return line.split('=', 1)[-1].strip()
+    return None
+
+
 def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers, ready_timeout_s,
                 command_source='rl', shield='true', backend='lightweight', target_source='',
                 observe_yaw_mode='', air_tracking_ref='', log_tag='', obs_horizon_s=0.0, goal_follow_target='',
                 own_px4_delay_s=None, px4_warmup=None, intruder_px4_delay_s=None,
-                worker_id=None, start_timeout_s=20.0, px4_run_root=None):
+                worker_id=None, start_timeout_s=20.0, px4_run_root=None,
+                gui_render_backend='auto'):
     scenario = registry[scene]['params'].get('run_logger', {}).get('scenario', scene)
     world = os.path.join(ROOT, 'install/agc_sim/share/agc_sim/worlds/agc_world.sdf')
     gz = ('-r -v 3 ' if mode == 'gui' else '-s -r -v 3 ') + world
@@ -497,7 +516,8 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
     launch_args = ['ros2', 'launch', 'agc_task', 'w6.launch.py',
                    'backend:=%s' % backend, 'scene:=%s' % scene, 'seed:=%d' % seed,
                    'gz_args:=%s' % gz, 'command_source:=%s' % command_source,
-                   'shield:=%s' % shield]
+                   'shield:=%s' % shield,
+                   'gui_render_backend:=%s' % gui_render_backend]
     # W7-b（P1）：观测来源覆盖（仅显式给出时透传，保持既有 W6 调用不变）
     if target_source:
         launch_args.append('target_source:=%s' % target_source)
@@ -644,6 +664,8 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
     result['backend'] = backend
     result['launch'] = LAUNCH
     result['gui'] = mode
+    result['gui_render_backend'] = gui_render_backend
+    result['gui_renderer'] = _read_gui_renderer() if mode == 'gui' else None
     result['target_motion'] = (registry[scene].get('axes') or {}).get('target_motion')
     # R-026：逐轴覆盖账本（如实标注 not_carried / unsupported / covered）
     result['support_status'], result['axis_coverage'] = axis_coverage(
@@ -693,6 +715,9 @@ def main():
     ap.add_argument('--all', action='store_true', help='跑登记表全部 12 场景')
     ap.add_argument('--seeds', default='0', help='逗号分隔 seed')
     ap.add_argument('--mode', default='headless', choices=['headless', 'gui'])
+    ap.add_argument('--gui-render-backend', default='auto',
+                    choices=['auto', 'd3d12', 'software'],
+                    help='W8/ADR-0096：GUI 渲染后端；auto=WSL2+D3D12+X11 自动，否则系统默认')
     ap.add_argument('--timeout', type=float, default=150.0, help='单回合等待终态上限（秒）')
     ap.add_argument('--wall-watchdog-s', type=float, default=None,
                     help='episode 墙钟看门狗预算（秒）；缺省回落到 --timeout')
@@ -757,7 +782,8 @@ def main():
                             backend=args.backend, target_source=args.target_source,
                             observe_yaw_mode=args.observe_yaw_mode,
                             obs_horizon_s=args.obs_horizon_s,
-                            start_timeout_s=args.start_timeout_s)
+                            start_timeout_s=args.start_timeout_s,
+                            gui_render_backend=args.gui_render_backend)
             print('  terminal=%s reason=%s expected_match=%s pass=%s integrity=%s outcome_class=%s shield=%s reset=%s'
                   % (r.get('terminal_state'), r.get('reason_code'), r.get('expected_match'),
                      r.get('pass'), r.get('layer_integrity'), r.get('outcome_class'),

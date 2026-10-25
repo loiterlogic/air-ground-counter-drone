@@ -269,6 +269,9 @@ def perception_health(results, out_dir):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--mode', default='headless', choices=['headless', 'gui'])
+    ap.add_argument('--gui-render-backend', default='auto',
+                    choices=['auto', 'd3d12', 'software'],
+                    help='W8/ADR-0096：GUI 渲染后端；auto=WSL2+D3D12+X11 自动')
     # ADR-0094：own 25 s / intruder 35 s 启动后，单 episode 墙钟约 110–130 s；
     #   原 120 s 默认会把正常回合截成 ACTIVE（infra 类），故提高到 240 s。
     ap.add_argument('--timeout', type=float, default=240.0)
@@ -351,6 +354,7 @@ def main():
                             px4_run_root=args.px4_run_root,
                             obs_horizon_s=args.obs_horizon_s,
                             start_timeout_s=args.start_timeout_s,
+                            gui_render_backend=args.gui_render_backend,
                             infra_retries=args.infra_retries)
             sm = {}
             if r.get('summary_path') and os.path.exists(r['summary_path']):
@@ -376,6 +380,9 @@ def main():
                 'layer_integrity': r.get('layer_integrity'), 'outcome_class': r.get('outcome_class'),
                 'rtf': r.get('rtf'), 'wall_elapsed_s': r.get('wall_elapsed_s'),
                 'run_id': r.get('run_id'), 'summary_path': r.get('summary_path'),
+                # W8 / ADR-0096：GUI 渲染后端与实际 renderer（headless 为 None）
+                'gui_render_backend': r.get('gui_render_backend'),
+                'gui_renderer': r.get('gui_renderer'),
                 # DV（分层多指标，ADR-0070(b)）+ P1 判据（有效火控机会率 / 最小净空）
                 'shield_infeasible_rate': r.get('shield_infeasible_rate'),
                 'intervened_ticks': attr.get('intervened_ticks'),

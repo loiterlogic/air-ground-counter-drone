@@ -39,8 +39,8 @@
 | **W4** | 感知与融合 | W2 | — | ✅ |
 | **W5** | 地面导航与安全层 | W2·W4 | C6 | ✅ |
 | **W6** | 任务与评估 | W5 | C4·C5·C7·C8·C9 | ✅ |
-| **W7** | RL 平台 | W2-full·W4·W5·W6（已验收证据，[ADR-0069](./adr/0069-w7-entry-and-exit-definition.md)） | — | ✅ W7-b 已闭合（2026-10-24；W7-a ✅；W7-b **P1 v5 = `inconclusive`**（CI [+0.0281, +0.1328] 覆盖 MME 0.10；[ADR-0086](./adr/0086-decision-rule-three-state-ci-versus-mme.md) / [ADR-0071](./adr/0071-w7b-adjudication-record-and-pending-arms.md)(l)）；**P1 机制消融（2×2）已完成：收益主要来自"指向"，跟踪参考在静止目标下无收益且为负**（[ADR-0087](./adr/0087-p1-mechanism-ablation-and-p2-arm-b-diagnosis-scope.md)(f)）；P2 v3 = `falsified` → 保留 c2，且 B 负向已归因（重规划/窗口/干预/预测重尾，(d)）；P2 侧剩余消融显式范围裁定；W7-c / W8 未开始；见 [ADR-0093](./adr/0093-w7b-exit-closure-and-prefix-provenance.md)） |
-| **W8** | 对照与冻结 | W6·W7 | C1–C10（容差） | ☐（后续） |
+| **W7** | RL 平台 | W2-full·W4·W5·W6（已验收证据，[ADR-0069](./adr/0069-w7-entry-and-exit-definition.md)） | — | ✅ W7-b 已闭合（2026-10-24；W7-a ✅；W7-b **P1 v5 = `inconclusive`**（CI [+0.0281, +0.1328] 覆盖 MME 0.10；[ADR-0086](./adr/0086-decision-rule-three-state-ci-versus-mme.md) / [ADR-0071](./adr/0071-w7b-adjudication-record-and-pending-arms.md)(l)）；**P1 机制消融（2×2）已完成：收益主要来自"指向"，跟踪参考在静止目标下无收益且为负**（[ADR-0087](./adr/0087-p1-mechanism-ablation-and-p2-arm-b-diagnosis-scope.md)(f)）；P2 v3 = `falsified` → 保留 c2，且 B 负向已归因（重规划/窗口/干预/预测重尾，(d)）；P2 侧剩余消融显式范围裁定；W7-c `deferred`；W8 进行中（[spec](../.trae/specs/w8-parity-freeze/spec.md)）；见 [ADR-0093](./adr/0093-w7b-exit-closure-and-prefix-provenance.md)） |
+| **W8** | 对照与冻结 | W6·W7 | C1–C10（容差） | 进行中（W8-E1a 模式等价：pilot + GPU-GUI 修正 pilot 完成，项目默认 GPU-GUI `auto` 已落地，但 δ≤0.05 / n≤40 下等价不可行，gate `not_evaluated`，headless 未授权；W8-E1b 历史证据对照完成，平台冻结 `conditional`，`live_ros1_parity = not_established`；W8-E2 未预注册）· [spec](../.trae/specs/w8-parity-freeze/spec.md) |
 
 ### 依赖图
 
@@ -50,11 +50,10 @@ W0 ─┬─> W1 ─────────┐
     └─> W2 ─┬───────┘
             ├─> W3 空中链路
             └─> W4 感知融合 ─┐
-                             └─> W5 地面导航 ──> W6 任务评估 ──> 〔本次出口：ADR-0016〕
-（后续）W7 RL 平台（前置：W2-full·W4·W5·W6 已验收证据）· W8 对照冻结
+                             └─> W5 地面导航 ──> W6 任务评估 ──> W7 RL 平台（W7-a/W7-b 已闭合；W7-c deferred）──> W8 对照与冻结（进行中：E1a gate not_evaluated；E1b conditional freeze）
 ```
 
-> **本次范围**：以 **W6 为出口**；W7 / W8 归"项目结束后后续"（[ADR-0014](./adr/0014-research-mainline-mobile-interception-system.md)、[ADR-0016](./adr/0016-execution-scope-exit-w6.md)）。W5 的地面主控**维持 [ADR-0004](./adr/0004-rl-primary-controller-nav2-safety-layer.md)**，本次以 **RL 最小版**落地。
+> **当前范围**：W6 出口（[ADR-0016](./adr/0016-execution-scope-exit-w6.md)）已完成；W7 已闭合（W7-c `deferred`，单 worker）；W8 进行中（E1a gate `not_evaluated`、E1b 平台冻结 `conditional`、E2 未预注册）。W5 的地面主控**维持 [ADR-0004](./adr/0004-rl-primary-controller-nav2-safety-layer.md)**，本次以 **RL 最小版**落地；研究主线见 [ADR-0014](./adr/0014-research-mainline-mobile-interception-system.md)。
 
 ---
 
@@ -153,11 +152,12 @@ W0 ─┬─> W1 ─────────┐
   - **补充（2026-10-25 W7-c 准入）**：C1 串行重放 3/3 终态 `INTERCEPT_CONFIRMED`（射击数 1–2，属物理边界）；[ADR-0077](./adr/0077-w7c-multi-worker-isolation.md) 定稿 rootless netns + private `/tmp` + UDPv4 + `AGC_WORKER_ID` + `run_id_override`。C4 两 worker 试验（`20261025-w7-rl-b-c4-trial3`）：双方 `INTERCEPT_CONFIRMED`、infra 0、事件 `ep=2`、隔离 / PX4 lock / run_id 均正常；但 worker 0 `vis_rate=0.2292` 低于 C1 串行包络下界 `0.5208` → **DV 未通过**。按 ADR-0077 **deferred，保留单 worker**；W7-c 批跑未启动，W8 未开始。
   - **补充（2026-10-25 单 worker 重复性诊断与隔离）**：新增 [ADR-0095](./adr/0095-w7c-admission-metric-and-worker-run-dir-isolation.md)，准入 primary 改用 **active-window FCO**（`episode_window_metrics`），legacy 固定窗仅作描述；C4 的“不准入 / 保留单 worker”记录保留，不回溯改判（legacy `vis_rate=0.2292` 与 active 口径不可比）。预声明分析计划 `src/agc_rl/config/w7c_admission_plan.yaml`（sha256 `9d7000…d710`）在任何对照 run 前冻结。PX4 可写运行目录隔离已落地：`px4_run_root` + 每实例 `-w` + 私有 `etc`（锁脚本 `AGC_PX4_ETC_DIR`）；smoke `20261025-w7-rl-b-smoke-isolation` → `INTERCEPT_CONFIRMED`、infra 0、共享 build 零写入、私有 `instance_0/1` 各有 `dataman` / `parameters*.bson` / `.ulg`。A/B 交替系列 `20261025-w7-rl-b-repeat-ab`：A 3/3 `INTERCEPT_CONFIRMED`；B1/B2 `INTERCEPT_CONFIRMED`、B3 **`INFRA_FAILURE`（`cmd_vel_loopback_missing`，ground lifecycle 未 activate）**；B 的 3 次共享 build 均零写入；B1/B2 active 窗口 / active 可见率在 A 范围内，A/B 门因 B3 infra（1 > A 0）与终态类别不一致 **未通过**。按预声明计划**不启动 P 两 worker 重试，显式保留单 worker**；W7-c 仍 `deferred`，W8 未开始。诊断报告 `experiments/w7-rl-b/20261025-w7-rl-b-repeat-ab-diagnosis/metrics/worker_repeatability.md`；GUI/headless 复核 `20261025-w7-rl-b-gui-headless-recheck/metrics/gui_headless.md` 结论为**等价未建立 / 证据不足**；**P1/P2 verdict 不变**。
 
-### W8 · 对照与冻结（**后续**，不在本次出口）
+### W8 · 对照与冻结（进行中：W8-E1 模式等价阶段）
 - **目标**：新旧实现同场景、同种子各跑 N 次；出对比报告；ROS1 归档只读。
 - **验收**：频率 / 数值差异在容差内；终态语义一致。
 - **挂载**：C1–C10 全量容差复核。
 - **spec**：`.trae/specs/w8-parity-freeze/`
+- **进度（2026-10-25）**：W8 拆为 **W8-E1a**（GUI/headless 模式等价）、**W8-E1b**（ROS1 历史证据对照与条件平台冻结）、**W8-E2**（修复后 P1/P2 科研确证；另行预注册）。本阶段先做 E1a 的 **GUI/headless 等价 pilot**（[spec](../.trae/specs/w8-parity-freeze/spec.md)、[ADR-0096](./adr/0096-w8-gui-headless-equivalence-design-bounds-and-gate.md)）：pilot 20 attempts 完成；**默认 GUI 被确认走 llvmpipe 软件渲染**（Ogre2 log；CPU 267–281% vs headless 22%），是已确认的性能混杂。随后按用户裁定执行 **GPU-GUI 修正 pilot**（plan v1.1，`MESA_LOADER_DRIVER_OVERRIDE=d3d12` + `GALLIUM_DRIVER=d3d12`，X11；20 attempts，GUI renderer 均为 `D3D12 (NVIDIA GeForce GTX 1050 Ti)`）：**RTF 与 headless 对齐**（P1 Δ≈−0.007、P2 Δ≈−0.008），但 active FCO / 率类散布大，**δ≤0.05、n≤40/模式下正式等价不可行**。gate = `not_evaluated`，headless 规模统计**未授权**，plan v2 **未冻结**。**项目默认 GUI 渲染后端已落地**：`gui_render_backend=auto`（WSL2 + `/dev/dxg` + X11 自动 D3D12；`d3d12` / `software` 可显式固定），经 auto / d3d12 / software 全链冒烟验证（auto 与 d3d12 → `gui_renderer=D3D12 (NVIDIA GeForce GTX 1050 Ti)`；software → `llvmpipe`）。**W8-E1b 历史证据对照已完成**：本机无 ROS1 Noetic 运行时、旧树无 bag / 日志 / metrics → 按评审 F-12 缩为历史证据对照；A 类 8 项可比事实冻结、B 类 8 项变更设计不可数值对照、C 类 4 项无证据；平台冻结 `conditional`，`live_ros1_parity = not_established`。报告：[`historical_parity.md`](../experiments/w8-parity/20261025-w8-historical-parity/report/historical_parity.md)、[ADR-0097](./adr/0097-w8-historical-parity-and-conditional-platform-freeze.md)。下一步为范围裁定（配对臂差 / 模式作协变量、GUI 完成关键验证、扩大预算或换平台）。报告：[`gpu_renderer_diagnosis.md`](../experiments/w8-parity/20261025-w8-gui-headless-pilot/metrics/gpu_renderer_diagnosis.md)、[`GPU-GUI status_summary.md`](../experiments/w8-parity/20261025-w8-gui-gpu-pilot/metrics/status_summary.md)。P1/P2 pre-fix 结论不变（P1 v5 `inconclusive`、P2 v3 `falsified` / 保留 c2）；v7 未注册；在线 RL 未进入；W7-c 仍 `deferred`。
 
 ---
 

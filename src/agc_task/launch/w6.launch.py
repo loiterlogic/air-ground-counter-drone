@@ -67,6 +67,7 @@ def _compose(context, *args, **kwargs):
     sim_share = get_package_share_directory('agc_sim')
     use_sim_time = LaunchConfiguration('use_sim_time')
     gz_args = LaunchConfiguration('gz_args')
+    gui_render_backend = LaunchConfiguration('gui_render_backend')
 
     backend = LaunchConfiguration('backend').perform(context)
     # W7-a（R5/R6）：命令源单一选择由本入口透传至 ground_bringup——
@@ -289,6 +290,8 @@ def _compose(context, *args, **kwargs):
             launch_arguments={
                 'gz_args': gz_args, 'use_sim_time': use_sim_time,
                 'target_controlled': 'true',
+                # W8 / ADR-0096：GUI 渲染后端由单一 launch 参数下发（auto | d3d12 | software）。
+                'gui_render_backend': gui_render_backend,
                 # R-026：按障碍轴选择世界（none 生成不含 pole_* 的世界）
                 'world_obstacles': info['world_obstacles'],
             }.items()),
@@ -436,6 +439,10 @@ def generate_launch_description():
     ld.add_action(DeclareLaunchArgument(
         'gz_args', default_value=['-r -v 3 ', world_file],
         description='gz sim 参数（加 -s 可无头）'))
+    ld.add_action(DeclareLaunchArgument(
+        'gui_render_backend', default_value='auto',
+        description='GUI 渲染后端：auto（WSL2 + /dev/dxg + X11 自动 D3D12）| d3d12 | software；'
+                    'headless（gz -s）忽略'))
     ld.add_action(DeclareLaunchArgument(
         'px4_own_pose', default_value='0,0,0.2,0,0,0',
         description='己方机 spawn 位（world ENU；仅 backend:=full 生效）'))
