@@ -20,6 +20,7 @@
 """
 
 import os
+import shutil
 import sys
 import tempfile
 from pathlib import Path
@@ -199,6 +200,33 @@ def _compose(context, *args, **kwargs):
     px4_dir = str(agc_root / 'toolchain' / 'PX4-Autopilot')
     px4_build = os.path.join(px4_dir, 'build', 'px4_sitl_default')
     px4_bin = os.path.join(px4_build, 'bin', 'px4')
+    # W7-c（ADR-0095）：opt-in 每实例 PX4 可写运行根。空 = 既有共享 build（默认行为逐字不变）。
+    #   非空时每实例独立 `-w` 目录 + worker 私有 `etc`（rcS 末段 source 本实例的 px4-rc.params）。
+    px4_run_root = LaunchConfiguration('px4_run_root').perform(context).strip()
+    px4_root = Path(px4_run_root).resolve() if px4_run_root else None
+    if px4_root is not None:
+        # PX4 v1.15.4 显式 `-w` 时不自动追加实例号 → 每个实例目录显式给出。
+        if not (px4_root / 'etc').exists():
+            shutil.copytree(Path(px4_build) / 'etc', px4_root / 'etc')
+        for _inst in (0, 1, 3):
+            (px4_root / ('instance_%d' % _inst)).mkdir(parents=True, exist_ok=True)
+
+    def _px4_cmd(instance=None):
+        """PX4 启动命令；空 root 时与原命令逐字一致（默认路径不变）。"""
+        if px4_root is None:
+            if instance is None:
+                return [px4_bin, '-d', '-s', 'etc/init.d-posix/rcS']
+            return [px4_bin, '-i', str(instance), '-d', '-s', 'etc/init.d-posix/rcS']
+        cmd = [px4_bin]
+        if instance is not None:
+            cmd += ['-i', str(instance)]
+        # `-w` = 可写运行目录（dataman / parameters*.bson / log / eeprom 均落此）；
+        # 末尾 positional data_path = 私有 etc 绝对路径（PX4 在 cwd 建 `etc -> data_path` 符号链接，
+        # 使相对的 `-s etc/init.d-posix/rcS` 解析到本实例私有 etc）。
+        cmd += ['-w', str(px4_root / ('instance_%d' % (instance or 0)))]
+        cmd += ['-d', '-s', 'etc/init.d-posix/rcS', str(px4_root / 'etc')]
+        return cmd
+
     agent_bin = str(agc_root / 'toolchain' / 'bin' / 'MicroXRCEAgent')
     # S-11：启动前校验工具链二进制存在（缺失即拒启动，清晰报错）。
     _required = [agc_root / 'toolchain' / 'bin' / 'MicroXRCEAgent', Path(px4_bin)]
@@ -219,7 +247,7 @@ def _compose(context, *args, **kwargs):
     # 入侵者 PX4（实例 1）：attach 已生 `intruder_uav`。其进程 start 事件驱动 `intruder_driver`
     # （见下方 RegisterEventHandler）——不再用绝对时间盲计时。
     intruder_px4 = ExecuteProcess(
-        cmd=[px4_bin, '-i', '1', '-d', '-s', 'etc/init.d-posix/rcS'], cwd=px4_build,
+        cmd=_px4_cmd(1), cwd=px4_build,
         additional_env={
             'GZ_SIM_RESOURCE_PATH': gz_models + ':' + gz_worlds,
             'PX4_GZ_STANDALONE': '1', 'PX4_GZ_WORLD': 'agc_world',
@@ -236,8 +264,7 @@ def _compose(context, *args, **kwargs):
     warmup_action = None
     if warmup_enable:
         warmup_action = TimerAction(period=warmup_delay_s, actions=[ExecuteProcess(
-            cmd=['timeout', ('%.1f' % warmup_timeout_s), px4_bin,
-                 '-i', '3', '-d', '-s', 'etc/init.d-posix/rcS'],
+            cmd=['timeout', ('%.1f' % warmup_timeout_s)] + _px4_cmd(3),
             cwd=px4_build,
             additional_env={
                 'GZ_SIM_RESOURCE_PATH': gz_models + ':' + gz_worlds,
@@ -250,6 +277,9 @@ def _compose(context, *args, **kwargs):
         # 写入 SITL 启动参数文件 `px4-rc.params`（由 rcS source），使每次 SITL 启动确定化。
         ExecuteProcess(
             cmd=['bash', str(agc_root / 'scripts' / 'lock_px4_failsafe_params.sh')],
+            # W7-c：隔离模式下把锁定写入 worker 私有 etc（空 root 时保持既有共享 build 行为）。
+            additional_env=({'AGC_PX4_ETC_DIR': str(px4_root / 'etc')}
+                            if px4_root is not None else None),
             output='screen'),
         # PX4 模型库须先入资源路径：world_bringup 生成 `intruder_uav` 时 merge `model://x500`
         SetEnvironmentVariable('GZ_SIM_RESOURCE_PATH', gz_models + ':' + gz_worlds),
@@ -292,7 +322,7 @@ def _compose(context, *args, **kwargs):
         #   从启动风暴中稳定；12 s 实测会让 own participant 创建落入 1.5–13 s 长尾。
         #   本层仍无可达就绪信号（该 PX4 进程本身即被 spawn），故用计时 + 后续 air odom 门。
         TimerAction(period=own_px4_delay_s, actions=[ExecuteProcess(
-            cmd=[px4_bin, '-d', '-s', 'etc/init.d-posix/rcS'], cwd=px4_build,
+            cmd=_px4_cmd(), cwd=px4_build,
             additional_env={
                 'GZ_SIM_RESOURCE_PATH': gz_models + ':' + gz_worlds,
                 'PX4_GZ_STANDALONE': '1', 'PX4_GZ_WORLD': 'agc_world',
@@ -428,6 +458,9 @@ def generate_launch_description():
     ld.add_action(DeclareLaunchArgument(
         'intruder_px4_delay_s', default_value='35.0',
         description='ADR-0094：intruder PX4 启动延时（s；默认 35 s，与 own 错峰 10 s）'))
+    ld.add_action(DeclareLaunchArgument(
+        'px4_run_root', default_value='',
+        description='W7-c：PX4 每实例可写运行根（空=既有共享 build 行为）'))
     ld.add_action(DeclareLaunchArgument(
         'agc_root', default_value='/home/chen/AGC',
         description='固定项目根（AGENTS.md；colcon 根即项目根）；工具链在其下 toolchain/'))

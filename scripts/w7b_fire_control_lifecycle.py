@@ -127,8 +127,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--campaign', default='w7-rl-b')
     ap.add_argument('--run-id', required=True)
+    # W7-c（ADR-0077）：worker 产物位于 <run_id>/worker_<id>/；缺省路径不变。
+    ap.add_argument('--worker-id', type=int, default=None)
     args = ap.parse_args()
     run_dir = ROOT / 'experiments' / args.campaign / args.run_id
+    if args.worker_id is not None:
+        run_dir = run_dir / ('worker_%d' % args.worker_id)
     if not (run_dir / 'log').is_dir():
         print('未找到 log 目录：%s' % (run_dir / 'log'))
         return 2

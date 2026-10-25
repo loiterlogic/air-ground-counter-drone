@@ -295,6 +295,8 @@ def main():
     ap.add_argument('--px4-warmup', default='', choices=['', 'true', 'false'])
     # ADR-0077：W7-c worker 归属；产物落 experiments/<campaign>/<run_id>/worker_<id>/。
     ap.add_argument('--worker-id', type=int, default=None)
+    # W7-c（ADR-0095）：PX4 每实例可写运行根（仅显式给出时透传；空 = 既有共享 build 行为不变）。
+    ap.add_argument('--px4-run-root', default=None)
     args = ap.parse_args()
 
     run_id = args.run_id or ('%s-%s-%s-%04d' % (
@@ -346,6 +348,7 @@ def main():
                             intruder_px4_delay_s=args.intruder_px4_delay_s,
                             px4_warmup=(args.px4_warmup or None),
                             worker_id=args.worker_id,
+                            px4_run_root=args.px4_run_root,
                             obs_horizon_s=args.obs_horizon_s,
                             start_timeout_s=args.start_timeout_s,
                             infra_retries=args.infra_retries)
@@ -405,6 +408,7 @@ def main():
         'run_id': run_id, 'campaign': args.campaign, 'mode': args.mode,
         'backend': backends[0] if len(backends) == 1 else 'mixed', 'backends': backends,
         'launch': 'w6.launch.py', 'seeds': seeds,
+        'px4_run_root': args.px4_run_root,
         'n_runs': len(results), 'wall_elapsed_s': time.monotonic() - t0,
         'arms': results,
         # ADR-0075：infra 重试协议（机器噪声处理，**不**改自变量 / 阈值 / 样本量）

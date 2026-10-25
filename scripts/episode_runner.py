@@ -476,7 +476,7 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
                 command_source='rl', shield='true', backend='lightweight', target_source='',
                 observe_yaw_mode='', air_tracking_ref='', log_tag='', obs_horizon_s=0.0, goal_follow_target='',
                 own_px4_delay_s=None, px4_warmup=None, intruder_px4_delay_s=None,
-                worker_id=None, start_timeout_s=20.0):
+                worker_id=None, start_timeout_s=20.0, px4_run_root=None):
     scenario = registry[scene]['params'].get('run_logger', {}).get('scenario', scene)
     world = os.path.join(ROOT, 'install/agc_sim/share/agc_sim/worlds/agc_world.sdf')
     gz = ('-r -v 3 ' if mode == 'gui' else '-s -r -v 3 ') + world
@@ -518,6 +518,9 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
         launch_args.append('px4_warmup:=%s' % px4_warmup)
     if intruder_px4_delay_s is not None:
         launch_args.append('intruder_px4_delay_s:=%s' % intruder_px4_delay_s)
+    # W7-c（ADR-0095）：PX4 每实例可写运行根（仅显式给出时透传；空 = 既有共享 build 行为不变）
+    if px4_run_root:
+        launch_args.append('px4_run_root:=%s' % px4_run_root)
     # ADR-0077：W7-c worker 模式下给 run_logger 一个含 worker id 的唯一 run_id，
     #   避免同秒启动的两个 worker 写同一 experiments/w6-task-eval/<run_id>/（实测碰撞）。
     if worker_id is not None:
@@ -554,6 +557,7 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
               'backend': backend, 'target_source': target_source or None,
               'observe_yaw_mode': observe_yaw_mode or None,
               'goal_follow_target': goal_follow_target or None,
+              'px4_run_root': px4_run_root,
               'expected_terminal': registry[scene].get('expected_terminal'),
               'expected_reason': registry[scene].get('expected_reason'),
               # ADR-0075：运行前清场证据（本次清掉了哪些残留 / 孤儿；空 = 环境本就干净）

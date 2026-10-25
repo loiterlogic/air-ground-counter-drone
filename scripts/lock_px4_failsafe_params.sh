@@ -7,6 +7,9 @@
 #   机制：w6.launch.py backend:=full 以 cwd=<build>/px4_sitl_default 起 PX4；rcS 末段 `. px4-rc.params`
 #         （PATH 含 `${R}etc/init.d-posix`，R=<pwd>/）→ source 本脚本写出的
 #         `<build>/etc/init.d-posix/px4-rc.params`。
+#   隔离（W7-c）：若设置 `AGC_PX4_ETC_DIR`，写入该 worker 私有 etc
+#         （`${AGC_PX4_ETC_DIR}/init.d-posix/px4-rc.params`），不触碰共享 build；
+#         未设置时路径与既有共享 build 行为逐字一致。
 #   本脚本只**运行时写入 build 产物**，**不**改 PX4 源码（只读）。
 #
 #   行为：写前若 `.agc-orig` 不存在则备份一次原文件；SITL 目录不存在则告警并 exit 0
@@ -16,7 +19,8 @@ set -o pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 YAML="${ROOT}/src/agc_task/config/px4_failsafe_lock.yaml"
-PARAMS_DIR="${ROOT}/toolchain/PX4-Autopilot/build/px4_sitl_default/etc/init.d-posix"
+ETC_DIR="${AGC_PX4_ETC_DIR:-${ROOT}/toolchain/PX4-Autopilot/build/px4_sitl_default/etc}"
+PARAMS_DIR="${ETC_DIR}/init.d-posix"
 OUT="${PARAMS_DIR}/px4-rc.params"
 
 if [ ! -f "${YAML}" ]; then

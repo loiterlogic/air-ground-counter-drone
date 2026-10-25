@@ -2,7 +2,7 @@
 
 ## Status
 
-deferred（2026-10-25 两 worker 试验 DV 未通过；本机保留单 worker，不启动 W7-c 批跑）
+deferred（2026-10-25：C4 legacy DV 记录保留；[ADR-0095](0095-w7c-admission-metric-and-worker-run-dir-isolation.md) 的 A/B 门因 B3 `INFRA_FAILURE` 未通过，继续保留单 worker；W7-c 批跑未启动）
 
 ## Date
 
@@ -147,6 +147,30 @@ run：`20261025-w7-rl-b-c4-trial3`（`worker_0` / `worker_1`，同 `s08` / `p2_r
 - **DV 未通过**：worker 0 `vis_rate=0.2292` < C1 串行包络下界 `0.5208`；worker 1 在包络内。
 - **结论**：按 (j) 回退——**保留单 worker**；不启动 W7-c 批跑。失败不能归因于跨 worker 污染（隔离项均通过），更可能是 4 核主机并行下的 RTF / 任务时序差异；若未来在独占主机或单 worker DV 稳定后重试，须新 ADR + 重新预声明容差。
 - **未决**：两 worker 仍共用 PX4 `build/px4_sitl_default` 工作目录（`dataman` / `parameters` / `log`）。本轮未观察到 lock 冲突（`/tmp` 已私有化），但这是 W7-c 批跑前必须处理的共享资源；候选 = 每 worker 独立 rootfs 副本 / 唯一实例 id + `PX4_HOME`。worker 0 的低 vis 不能唯一归因（4 核 RTF 0.786、共享 PX4 cwd、任务时序均为候选）。
+
+
+### (m) 指标勘误（2026-10-25，追加）
+
+- C4 比较使用的 `arms.json.visibility_rate` / `fire_control_opportunity_rate` 是 `window_fixed_v1`（含终态后停泊），与 active 窗口的 primary DV 不可比。
+- 原始产物的 active 指标：串行 active FCO 0.2158 / 0.0053 / 0.0779；C4 worker 0 / 1 = 0.0516 / 0.0052。串行自身散布约 40 倍，active 可见率 0.981–0.992（C4 0.9919 / 0.9843），差异几乎全部来自 `env_occ|visible`。
+- ⇒ C4 的 legacy `vis_rate=0.2292` 低于 `0.5208` 不能归因于并行负载；**保留 (l) 的“不准入 / 保留单 worker”过程记录，不回溯改判**。下一轮准入改用 active 指标，并先写定分析计划（[ADR-0095](0095-w7c-admission-metric-and-worker-run-dir-isolation.md)）。
+
+### (n) PX4 可写运行目录隔离（2026-10-25，追加）
+
+- 实现（[ADR-0095](0095-w7c-admission-metric-and-worker-run-dir-isolation.md)(d)）：`w6.launch.py` opt-in `px4_run_root`；own / intruder / warmup 各用 `-w <root>/instance_N`，各自独占 `dataman` / `parameters*.bson` / `log/` / `eeprom/`；worker 私有 `etc` 副本由 `lock_px4_failsafe_params.sh` 写入 `px4-rc.params`；共享 build 只读。
+- 隔离 smoke：`20261025-w7-rl-b-smoke-isolation`（worker 0）→ `INTERCEPT_CONFIRMED`、infra 0、`writes_detected=false`；私有 `instance_0` / `instance_1` 各有 `dataman`、`parameters*.bson`、1 个 `.ulg`。
+- (l) 的“未决：两 worker 仍共用 PX4 工作目录”由本节处理；是否保留单 worker由 A/B 门与 P 试验决定。
+
+
+### (o) A/B 隔离对照结果与决策（2026-10-25，追加）
+
+- run：`20261025-w7-rl-b-repeat-ab`（A1/A2/A3 + B1/B2/B3，同 `s08` / `p2_rl_high` / seed0 / headless / `--infra-retries 0`；A/B 交替；参数初态 canonical `b9addc2b…`）。
+- A：3/3 `INTERCEPT_CONFIRMED`；active FCO 0.1606 / 0.0435 / 0.0318，active 可见率 0.9869 / 0.9896 / 0.9825，窗口 enter 30.37 / 32.16 / 29.41 s；共享 build 的 PX4 日志按预期增加（A 走共享 cwd）。
+- B：B1/B2 `INTERCEPT_CONFIRMED`（active FCO 0.0137 / 0.0370，active 可见率 0.9863 / 0.9792，窗口 enter 29.56 / 31.36 s）；**B3 `INFRA_FAILURE`（`cmd_vel_loopback_missing`，ground lifecycle 未 activate，wall 240 s，无 shot）**。
+- 隔离：B 3/3 `writes_detected.any=false`（共享 build 的 `dataman` / `parameters*.bson` / `px4-rc.params` 与 `log/` 前后不变）；私有 `instance_0/1` 均有 `dataman` / `parameters*.bson` / `.ulg`；A/B 参数初态 sha256 一致。
+- 门：`shared_px4_writable` pass；`hard_invariants` fail（B3 terminal 类别 `INFRA_FAILURE`）；`infra` fail（B 1 > A 0）；B1/B2 的窗口 / 可见率在 A 范围内；active FCO 粗移提示 false。**A/B 门不通过**。
+- 决策：按预声明计划**不启动 P 两 worker 重试**，**显式保留单 worker**；W7-c 继续 `deferred`。B3 是 infra 事件（不是 mission 失败），按协议保留、不用后续成功替代、不据此改写 C4 记录。隔离本身（PX4 可写文件）通过；B3 是隔离单 worker 条件下观测到的 ground lifecycle 激活失败 infra，n=3 不足以区分隔离栈与主机噪声，但按预声明门不通过。
+- 证据：`experiments/w7-rl-b/20261025-w7-rl-b-repeat-ab-diagnosis/metrics/worker_repeatability.{json,md}`；隔离 JSON 在各 B run 的 `worker_0/metrics/px4_writable_isolation.json`；A/B 环境与参数初态在 `experiments/w7-rl-b/20261025-w7-rl-b-repeat-ab/ab_series.json` 与各 run `config/`。
 
 
 ## 备选
