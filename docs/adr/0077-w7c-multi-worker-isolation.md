@@ -2,7 +2,7 @@
 
 ## Status
 
-proposed（草稿；**未**实施、**未**准入执行）
+deferred（2026-10-25 两 worker 试验 DV 未通过；本机保留单 worker，不启动 W7-c 批跑）
 
 ## Date
 
@@ -64,6 +64,90 @@ W7-c 的目标是把 W7-a/b 的**单 worker 串行**评估扩为**同机多 work
 - **不**改实验语义：每 worker 仍跑完整的 `w6.launch.py backend:=full`（不做"共享一个仿真、多策略"的省资源变体）；
 - **不**用"多线程跑多个 episode 共享一个 gz"——违反"同世界同时钟 + episode 独立复位"的前提；
 - **不**在 W7-c 内改判定阈值 / 样本量（预注册纪律不变）。
+
+## 更新（2026-10-24）——准入实测与定稿
+
+> 本节把草案的未决项（隔离选型 / 清场归属 / 容差）按本机实测写定；状态在两 worker 试验后决定。
+
+### (f) 本机隔离能力（实测）
+
+- `unshare -Urn`（rootless user+net namespace）**可用**；`ip link set lo up` 在 namespace 内成功。
+- **没有** docker / podman；`unshare -n` 单独使用被拒绝（Operation not permitted）。
+- ⇒ 隔离单元 = **每 worker 一个 rootless user+net namespace**；**不**用 `ROS_DOMAIN_ID` 隔离（保持 0，规避非 0 域 lifecycle 服务数据面缺陷）。
+
+### (g) 每 worker 资源（定稿）
+
+| 资源 | 方案 |
+|---|---|
+| ROS 域 | `ROS_DOMAIN_ID=0`（netns 内 loopback 隔离） |
+| DDS transport | 所有 worker 进程 `FASTDDS_BUILTIN_TRANSPORTS=UDPv4`——`/dev/shm` 不随 netns 隔离，必须关 SHM 防跨 worker 互发现 |
+| gz 分区 | `GZ_PARTITION=agc_w_<worker_id>`（每 worker 唯一） |
+| `/tmp` | `unshare -Urnm` + private tmpfs `/tmp`（PX4 `/tmp/px4_lock-<instance>` 不跨 worker；实测 25/25 同时启动时两 worker 争同一 lock） |
+| uXRCE agent 端口 | `8890 + 10*worker_id` / `+1`（netns 内本可复用，显式分配便于审计） |
+| PX4 实例 | worker 内仍为 0 / 1（netns + 无 SHM 后不跨 worker 冲突） |
+| 产物目录 | `experiments/<campaign>/<run_id>/worker_<worker_id>/` |
+| run_logger 身份 | worker 模式注入 `run_id_override=<date>-<scene>-<seed>-<HHMMSS>-w<id>-<rand>`；避免同秒启动的两个 worker 撞 `experiments/w6-task-eval/<run_id>/`（实测 `091552-6372` 碰撞） |
+| 进程归属 | 所有 worker 进程继承 `AGC_WORKER_ID=<worker_id>` |
+| 挂载命名空间 | 每 worker 独立 mount ns（`-Urnm`）；worker 退出后 private `/tmp` 自动消失，不在宿主留 PX4 lock |
+
+### (h) 清场归属（定稿）
+
+- `sweep_stale_processes(worker_id)` 读取 `/proc/<pid>/environ`，**只**清理 `AGC_WORKER_ID` 等于本 worker 的进程；
+  没有该标记的进程**一律不杀**（属于其它 worker / 机器上其它系统）。
+- `/dev/shm/fastrtps_*` 仍为**人工 / 编排层**动作；worker **不得**自动删除段（会误伤同机其它 worker）。
+- 单 worker 模式（`worker_id=None`）保持既有全局清场行为，不改变历史 W7-b 路径。
+
+### (i) 串行重放与数值容差（C1 实测）
+
+C1：同一 `(s08_static_none_nominal_capture, seed=0, p2_rl_high)` 串行 3 次：
+
+| run | 终态 | 射击数 | vis_rate | fco_rate |
+|---|---|---:|---:|---:|
+| `c1-serial-01` | `INTERCEPT_CONFIRMED` | 2 | 0.5208 | 0.3148 |
+| `c1-serial-02` | `INTERCEPT_CONFIRMED` | 1 | 0.9950 | 0.3113 |
+| `c1-serial-03` | `INTERCEPT_CONFIRMED` | 2 | 0.9967 | 0.6139 |
+
+- **硬不变量**：终态**类别**一致（3/3 `INTERCEPT_CONFIRMED`）；每发 `SHOT_FIRED` 恰有一个终局、无未闭合 / 重复；事件身份一致（`ep=2`、`shot=2-*`）；0 条身份拒收。
+- **非硬不变量**：射击数（1–2）与逐发序列。它是物理 / 时序边界，不是 seed 级不变量；报告须如实列出，**不**把它当并行准入的硬门。
+- **连续 DV 容差**：以 C1 串行包络为准，并设下限——`vis_rate` / `fco_rate` 取 `[串行 min, 串行 max]` 且至少 ±0.01；计数类 ±1 tick；`flight_s` ±0.05 s；重规划计数 ±1。C1 包络：vis [0.5208, 0.9967]、fco [0.3113, 0.6139]。
+- `infra` 基线 = 0/3；并行试验的 infra 不得高于该基线。
+
+### (j) 两 worker 试验判据（定稿）
+
+- 两个 worker 各跑同一 `(scene, seed, arm)`；`worker_id=0/1`，共享 `run_id`，产物落 `worker_<id>/`。
+- **硬不变量**：终态类别一致；每发唯一终局；事件身份一致；0 拒收。
+- **DV**：在 (i) 的串行包络 + 下限内；射击数在 [1, 2] 内（若超出记缺陷）。
+- **隔离**：在每个 netns 内 `ros2 node list` 只有一个 `task_manager`（无重复）；`gz topic -l` 只看到本 worker 的 `agc_w` 分区；两 worker 的日志无对方 node / topic。
+- **收尾**：无跨 worker 残留；`/dev/shm` 增长与 episode 数大致线性；`episode_window_metrics.ticks_total` ≥ 单 worker 中位数的 90%（RTF 未劣化到采不满窗口）。
+- **回退**：netns 下 gz / GUI / RTF 不可用，或试验失败 → 保留单 worker；ADR-0077 记 `deferred`，不启动 W7-c 批跑。
+
+### (k) 状态
+
+- `deferred`（2026-10-25）：C4 两 worker 试验的 **DV 容差未通过**（见 (l)）；本机保留单 worker，不启动 W7-c 批跑。
+
+### (l) C4 两 worker 试验结果（2026-10-25）
+
+run：`20261025-w7-rl-b-c4-trial3`（`worker_0` / `worker_1`，同 `s08` / `p2_rl_high` / seed0 / headless）。
+
+| 项 | worker 0 | worker 1 |
+|---|---|---|
+| 终态 | `INTERCEPT_CONFIRMED` | `INTERCEPT_CONFIRMED` |
+| 射击 | 1 发 `2-1`、命中 | 1 发 `2-1`、命中 |
+| flight_s | 0.832 | 0.792 |
+| vis_rate | **0.2292** | 0.9953 |
+| fco_rate | 0.0329 | 0.0593 |
+| infra | 0 | 0 |
+| RTF | 0.786 | 0.756 |
+| `episode_window_ticks` | 368 | 573 |
+| `visibility_metrics.ticks_total` | 1885 | 1907 |
+| run_id | `...-092502-w0-4916` | `...-092502-w1-9051` |
+
+- **隔离通过**：两 worker 的 run_id 各自唯一（修复前同秒碰撞为 `091552-6372`）；私有 `/tmp` 使 `/tmp/px4_lock-0` 不再冲突；无跨 worker 残留、宿主无 `/tmp/px4_lock*`；`GZ_PARTITION` 独立；两 worker 的 node list 无对方节点重复。
+- **硬不变量通过**：终态类别一致、每发唯一终局、事件 `ep=2` / `shot=2-1`、0 拒收。
+- **DV 未通过**：worker 0 `vis_rate=0.2292` < C1 串行包络下界 `0.5208`；worker 1 在包络内。
+- **结论**：按 (j) 回退——**保留单 worker**；不启动 W7-c 批跑。失败不能归因于跨 worker 污染（隔离项均通过），更可能是 4 核主机并行下的 RTF / 任务时序差异；若未来在独占主机或单 worker DV 稳定后重试，须新 ADR + 重新预声明容差。
+- **未决**：两 worker 仍共用 PX4 `build/px4_sitl_default` 工作目录（`dataman` / `parameters` / `log`）。本轮未观察到 lock 冲突（`/tmp` 已私有化），但这是 W7-c 批跑前必须处理的共享资源；候选 = 每 worker 独立 rootfs 副本 / 唯一实例 id + `PX4_HOME`。worker 0 的低 vis 不能唯一归因（4 核 RTF 0.786、共享 PX4 cwd、任务时序均为候选）。
+
 
 ## 备选
 
