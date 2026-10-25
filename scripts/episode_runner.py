@@ -40,6 +40,9 @@ from agc_msgs.msg import AgcTaskState
 from std_srvs.srv import Trigger
 from std_msgs.msg import Bool
 
+# W8 P0（T3）：GUI renderer 证据按 run 有界（snapshot + probe），不再读共享日志“最近一次”。
+import gui_renderer_evidence  # noqa: E402
+
 # W7-a（R1）：episode 结束判定 / 预算口径的**单一来源** = `agc_rl.termination`
 # （训练 adapter 与评估 adapter 共用同一判定，spec R1 判据：摘要与 adapter end/reason 一致）。
 from agc_rl.termination import (  # noqa: E402
@@ -472,24 +475,6 @@ def _reap_process_group(proc, pgid):
         time.sleep(0.2)
     return (not _group_alive(pgid)), proc.returncode
 
-def _read_gui_renderer():
-    """读取最近一次 GUI 运行的 Ogre2 设备名（实际 renderer，用于证据标注）。"""
-    path = os.path.expanduser('~/.gz/rendering/ogre2.log')
-    if not os.path.exists(path):
-        return None
-    try:
-        with open(path, errors='ignore') as f:
-            lines = f.read().splitlines()
-    except OSError:
-        return None
-    for line in reversed(lines):
-        if 'Device Name:' in line:
-            return line.split('Device Name:', 1)[1].strip()
-        if 'GL_RENDERER' in line:
-            return line.split('=', 1)[-1].strip()
-    return None
-
-
 def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers, ready_timeout_s,
                 command_source='rl', shield='true', backend='lightweight', target_source='',
                 observe_yaw_mode='', air_tracking_ref='', log_tag='', obs_horizon_s=0.0, goal_follow_target='',
@@ -564,6 +549,11 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
     launch_env['GZ_SIM_SYSTEM_PLUGIN_PATH'] = plugin_dir + (
         ':' + launch_env['GZ_SIM_SYSTEM_PLUGIN_PATH']
         if launch_env.get('GZ_SIM_SYSTEM_PLUGIN_PATH') else '')
+    # W8 P0（T3）：GUI 证据边界——在起进程**之前**记下共享日志的当前版本，
+    #   之后只读本 run 新增 / 变化的段（并行 GUI 或日志轮转不再互相串证据）。
+    gui_log_snapshot = gui_renderer_evidence.snapshot() if mode == 'gui' else None
+    gui_startup_probe = None
+    gui_final_probe = None
     proc = subprocess.Popen(
         launch_args, env=launch_env,
         stdout=open(log, 'w'), stderr=subprocess.STDOUT, start_new_session=True)
@@ -586,6 +576,9 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
     try:
         ready = wait_ready(mon, ready_timeout_s, require_air=(backend == 'full'))
         result['ready'] = ready
+        # W8 P0（T3）：启动探测——见本 run 在就绪前写进共享日志的 renderer（有界段）。
+        if gui_log_snapshot is not None:
+            gui_startup_probe = gui_renderer_evidence.probe(gui_log_snapshot)
         # 有界稳定窗口（收集 /clock 起点），非固定 18 s 就绪依赖
         t_settle = time.monotonic() + 2.0
         while time.monotonic() < t_settle:
@@ -619,6 +612,9 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
         # R-031：受限进程组回收（SIGINT 优雅 → wait → SIGKILL → wait），各步确认退出。
         # 仅回收**本 run 的进程组**（start_new_session），不匹配裸名 / 不杀其它会话 / 不用 rm -rf。
         result['proc_exit_confirmed'], result['proc_returncode'] = _reap_process_group(proc, pgid)
+        # W8 P0（T3）：结束探测——须在进程组确认退出之后（避免读到仍在写的日志）。
+        if gui_log_snapshot is not None:
+            gui_final_probe = gui_renderer_evidence.probe(gui_log_snapshot)
 
     # R-029/R-031：以唯一 run_id / 创建时间校验同一 run 关联（suffix 容忍，非固定路径猜测）
     pat = os.path.join(ROOT, 'experiments', 'w6-task-eval',
@@ -665,7 +661,17 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
     result['launch'] = LAUNCH
     result['gui'] = mode
     result['gui_render_backend'] = gui_render_backend
-    result['gui_renderer'] = _read_gui_renderer() if mode == 'gui' else None
+    # W8 P0（T3）：GUI renderer 证据来自本 run 的 startup / final 两次有界探测；
+    #   headless 不适用（不读共享日志，也不以 render_backend 回填）。
+    if mode == 'gui':
+        combined = gui_renderer_evidence.combine(gui_startup_probe, gui_final_probe)
+        result['gui_renderer'] = combined.get('renderer')
+        result['gui_renderer_status'] = combined.get('status')
+        result['gui_renderer_evidence'] = combined
+    else:
+        result['gui_renderer'] = None
+        result['gui_renderer_status'] = 'not_applicable'
+        result['gui_renderer_evidence'] = None
     result['target_motion'] = (registry[scene].get('axes') or {}).get('target_motion')
     # R-026：逐轴覆盖账本（如实标注 not_carried / unsupported / covered）
     result['support_status'], result['axis_coverage'] = axis_coverage(

@@ -85,11 +85,11 @@ B3 的 `cmd_vel_loopback_missing`（ground lifecycle 未 activate、240 s、0 sh
 - **`d3d12`**：显式强制 Mesa D3D12 + X11（不支持时 GUI 可能起不来，属于显式选择）。
 - **`software`**：显式强制 llvmpipe（`LIBGL_ALWAYS_SOFTWARE=1` + `MESA_LOADER_DRIVER_OVERRIDE=swrast` + `GALLIUM_DRIVER=llvmpipe`），用于复现软件 GUI 基线。
 - **注入点**：`w6.launch.py` → `world_bringup.launch.py` 的 gz 启动前 `SetEnvironmentVariable`；选择逻辑单一来源 [`gui_render_backend.py`](../../src/agc_sim/launch/gui_render_backend.py)。
-- **实际 renderer 记录**：`episode_runner` / `w7b_arms_runner` 在 `arms.json` 写 `gui_render_backend` 与 `gui_renderer`（后者来自 `~/.gz/rendering/ogre2.log` 的 `Device Name`）。
+- **实际 renderer 记录**：`episode_runner` 在 GUI 启动前记录 OGRE 日志游标，启动后 / 结束后只解析**本 run 窗口内**新增的 `Device Name` / `GL_RENDERER`；`gui_renderer` + `gui_renderer_status` + 有界证据写入 `arms.json` 与 W8 `attempts.json`。读取失败 / 轮转 / 多值 → `null` + 状态，不以批次 `render_backend` 回填。
 - **预注册固定**：plan v1（软件 GUI）在编排层固定 `software`；plan v1.1（GPU-GUI）固定 `d3d12`（`mesa_d3d12_x11` → `d3d12`）。这样项目默认 `auto` 不会让历史 pilot 条件漂移。
 - **冒烟证据**：`d3d12` 全链 → `gui_renderer=D3D12 (NVIDIA GeForce GTX 1050 Ti)`；`software` 全链 → `gui_renderer=llvmpipe (LLVM 20.1.2, 256 bits)`；`auto`（项目默认）全链 → `gui_renderer=D3D12`；三次均 `INTERCEPT_CONFIRMED`。`auto` 的 launch 日志为 `gui_render_backend=auto -> d3d12`。
 
-**边界**：项目默认 GPU-GUI **不改变** W8 等价闸门；headless 规模统计仍未授权，正式等价仍 `feasible=false`，ADR 状态仍 `deferred`。换到无 `/dev/dxg` 的机器时 `auto` 自动回退，不保证 GPU；需要 GPU 的证据须显式 `d3d12` 并记录实际 renderer。`gui_renderer` 读取共享的 `~/.gz/rendering/ogre2.log`，假设 GUI 不并行；W8 单 worker 满足，W7-c 仍 `deferred`。
+**边界**：项目默认 GPU-GUI **不改变** W8 等价闸门；headless 规模统计仍未授权，正式等价仍 `feasible=false`，ADR 状态仍 `deferred`。换到无 `/dev/dxg` 的机器时 `auto` 自动回退，不保证 GPU；需要 GPU 的证据须显式 `d3d12` 并以逐 run 有界证据记录实际 renderer。`gui_renderer` 不再读取共享日志的“最近一次”；证据限定在本 run 窗口内，日志轮转 / 并行写入时标 `ambiguous` 或 `missing`。W8 仍单 worker；W7-c 仍 `deferred`。
 
 ## 结果
 

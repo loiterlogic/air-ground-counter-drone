@@ -69,6 +69,8 @@
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/int32.hpp>
 
+#include "agc_task/epoch_seconds.hpp"
+
 namespace fs = std::filesystem;
 
 class RunLogger : public rclcpp::Node
@@ -357,8 +359,8 @@ public:
         << "  \"ticks_infeasible\": " << infeasible_ticks_ << ",\n"
         // R-024 时间口径标注 + 起止事件 + RTF（新增键；duration_s 语义不变）
         << "  \"duration_kind\": \"process_wall_incl_warmup_shutdown\",\n"
-        << "  \"wall_start_unix_s\": " << wall_start_unix_s_ << ",\n"
-        << "  \"wall_end_unix_s\": " << wall_end_unix_s_ << ",\n"
+        << "  \"wall_start_unix_s\": " << agc_task::formatEpochSeconds(wall_start_unix_s_) << ",\n"
+        << "  \"wall_end_unix_s\": " << agc_task::formatEpochSeconds(wall_end_unix_s_) << ",\n"
         << "  \"sim_start_s\": " << (have_sim_ ? std::to_string(sim_start_s_) : std::string("null")) << ",\n"
         << "  \"sim_end_s\": " << (have_sim_ ? std::to_string(sim_end_s_) : std::string("null")) << ",\n"
         << "  \"rtf\": " << (have_sim_ && dur > 0.0 ? std::to_string(sim_delta / dur) : std::string("null")) << ",\n"

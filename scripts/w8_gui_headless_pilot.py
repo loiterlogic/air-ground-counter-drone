@@ -403,24 +403,6 @@ def collect_environment():
     return {k: os.environ.get(k) for k in keys}
 
 
-def read_ogre2_renderer():
-    """读取最近一次 GUI 运行的 Ogre2 渲染器设备名（验证 D3D12 是否生效）。"""
-    path = os.path.expanduser('~/.gz/rendering/ogre2.log')
-    if not os.path.exists(path):
-        return None
-    try:
-        with open(path, errors='ignore') as f:
-            lines = f.read().splitlines()
-    except OSError:
-        return None
-    for line in reversed(lines):
-        if 'Device Name:' in line:
-            return line.split('Device Name:', 1)[1].strip()
-        if 'GL_RENDERER' in line:
-            return line.split('=', 1)[-1].strip()
-    return None
-
-
 def print_dry_run(meta, pilot_id, phase, scene_tags, campaign, items):
     print('[dry-run] phase=%s pilot_id=%s campaign=%s' % (phase, pilot_id, campaign))
     print('[dry-run] plan=%s sha256=%s' % (meta['path'], meta['sha256']))
@@ -530,6 +512,7 @@ def cmd_run(args):
             'scene_name': it['scene_name'], 'arm': it['arm'], 'seed': it['seed'],
             'mode': it['mode'], 'order': it['order'],
             'render_backend': 'default', 'render_env': {}, 'renderer': None,
+            'renderer_status': None, 'renderer_evidence': None,
             'started_at': now_iso(), 'ended_at': None,
             'wall_elapsed_s': None, 'subprocess_elapsed_s': None,
             'exit_code': None, 'command': list(it['command']),
@@ -561,8 +544,6 @@ def cmd_run(args):
         record['subprocess_elapsed_s'] = round(time.monotonic() - t0, 3)
         record['wall_elapsed_s'] = record['subprocess_elapsed_s']
         record['ended_at'] = now_iso()
-        if it['mode'] == 'gui':
-            record['renderer'] = read_ogre2_renderer()
 
         row = read_arms_row(os.path.join(repo_root, it['attempt_dir']), it['seed'])
         if row:
@@ -573,10 +554,21 @@ def cmd_run(args):
             record['rtf'] = row.get('rtf')
             if row.get('wall_elapsed_s') is not None:
                 record['wall_elapsed_s'] = row.get('wall_elapsed_s')
+            # W8 P0（T3）：renderer 证据来自本 attempt 的 arms 行（逐 run 有界），不再读共享日志。
+            record['renderer'] = row.get('gui_renderer')
+            record['renderer_status'] = row.get('gui_renderer_status')
+            record['renderer_evidence'] = row.get('gui_renderer_evidence')
         else:
             note = 'arms.json 缺失，终态 / 指标记 null'
             record['note'] = ('%s；%s' % (record['note'], note)
                               if record['note'] else note)
+
+        # GUI attempt：把本 attempt 的有界证据落进其不可变产物目录（不写共享日志全文）。
+        if it['mode'] == 'gui' and record['renderer_evidence']:
+            config_dir = os.path.join(repo_root, it['attempt_dir'], 'config')
+            os.makedirs(config_dir, exist_ok=True)
+            write_json_atomic(os.path.join(config_dir, 'gui_renderer.json'),
+                              record['renderer_evidence'])
 
         attempts.append(record)
         write_json_atomic(attempts_path, {
@@ -669,6 +661,8 @@ def build_attempt_record(repo_root, campaign, attempt):
         'mode': attempt.get('mode'), 'order': attempt.get('order'),
         'render_backend': attempt.get('render_backend'),
         'renderer': attempt.get('renderer'),
+        'renderer_status': attempt.get('renderer_status'),
+        'renderer_evidence': attempt.get('renderer_evidence'),
         'terminal_state': terminal, 'reason_code': reason, 'outcome_class': outcome,
         'active_fco': case.get('active_fco'),
         'active_visibility': case.get('active_visibility'),
@@ -1056,10 +1050,11 @@ def render_pilot_md(data):
                       fmt(r.get('rtf')), fmt(r.get('wall_elapsed_s'), '%.1f')))
     md += ['', '## 渲染后端（GUI attempts）', '']
     render_rows = [[r.get('run_id'), r.get('render_backend') or '-',
-                    r.get('renderer') or '-']
+                    r.get('renderer') or '-', r.get('renderer_status') or '-']
                    for r in data['attempts'] if r.get('mode') == 'gui']
     if render_rows:
-        md += md_table(['run_id', 'render_backend', 'renderer'], render_rows)
+        md += md_table(['run_id', 'render_backend', 'renderer', 'renderer_status'],
+                       render_rows)
     else:
         md += ['- 本次报告无 GUI attempt。']
     md += ['']

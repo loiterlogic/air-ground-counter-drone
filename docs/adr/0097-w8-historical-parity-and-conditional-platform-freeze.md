@@ -57,7 +57,8 @@ W8-E1 原要求“ROS1 / ROS2 同场景、同 seed 行为对照，随后平台�
 
 ### (c) 平台冻结
 
-- **冻结范围**：当前 ROS2 契约（9 消息 / 服务、命名空间、坐标系、终态语义、唯一执行口、安全层、C1–C10、`gui_render_backend=auto`）。
+- **冻结范围**：当前 ROS2 契约（9 消息 / 服务、命名空间、坐标系、终态语义、唯一执行口、安全层、C1–C10）。
+- **GUI 渲染后端（部署默认，非冻结条件）**：`gui_render_backend=auto` 是部署默认，会随机器（WSL2 / `/dev/dxg` / X11）自动选择或回退。冻结的是**选择逻辑**（单一来源 [`gui_render_backend.py`](../../src/agc_sim/launch/gui_render_backend.py)：`auto | d3d12 | software`）与**实际 renderer 必须逐 run 记录**这一证据要求；`auto` 本身不代表 GPU 生效。
 - **冻结状态**：`conditional`。可比行为事实冻结；**live ROS1 parity = not_established**。
 - **不做的事**：不冒充“ROS1/ROS2 等价通过”；不把历史固定样例当总体成功率；不复活 MAVROS；不复制旧树代码 / 目录 / 命名。
 - **重新开启条件**：若获得可运行的 ROS1 Noetic 环境或可信的旧 run 产物（bag / 日志 / metrics），另立对照任务，按同场景 / 同 seed / 同口径重做，不在本 ADR 内补写。

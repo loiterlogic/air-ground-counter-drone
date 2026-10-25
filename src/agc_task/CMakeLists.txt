@@ -27,6 +27,7 @@ ament_target_dependencies(scenario_reset
 add_executable(run_logger src/run_logger.cpp)
 ament_target_dependencies(run_logger
   rclcpp geometry_msgs nav_msgs sensor_msgs nav2_msgs std_msgs agc_msgs ros_gz_interfaces)
+target_include_directories(run_logger PRIVATE include)
 
 add_executable(capture_adjudicator src/capture_adjudicator.cpp)
 ament_target_dependencies(capture_adjudicator
@@ -54,6 +55,9 @@ if(BUILD_TESTING)
   # ADR-0091：火控在飞生命周期（在飞推进 / 落地 / 超时 / 中止）确定性单测
   ament_add_gtest(test_dynamic_fire_control test/test_dynamic_fire_control.cpp)
   target_include_directories(test_dynamic_fire_control PRIVATE include)
+  # W8 P0 / T2：summary.json epoch 秒精度回归（17 位有效数字，防退化为科学计数法）
+  ament_add_gtest(test_epoch_seconds test/test_epoch_seconds.cpp)
+  target_include_directories(test_epoch_seconds PRIVATE include)
 endif()
 
 ament_package()

@@ -383,6 +383,9 @@ def main():
                 # W8 / ADR-0096：GUI 渲染后端与实际 renderer（headless 为 None）
                 'gui_render_backend': r.get('gui_render_backend'),
                 'gui_renderer': r.get('gui_renderer'),
+                # W8 P0（T3）：renderer 证据按 run 有界（状态 + 有界证据，不含整份共享日志）
+                'gui_renderer_status': r.get('gui_renderer_status'),
+                'gui_renderer_evidence': r.get('gui_renderer_evidence'),
                 # DV（分层多指标，ADR-0070(b)）+ P1 判据（有效火控机会率 / 最小净空）
                 'shield_infeasible_rate': r.get('shield_infeasible_rate'),
                 'intervened_ticks': attr.get('intervened_ticks'),
