@@ -11,13 +11,17 @@
 |---|---|---|---|
 | 迁移 Runbook（原 `docs/ROS2迁移步骤.md`，347 行） | [ROS2迁移步骤.md](./ROS2迁移步骤.md#top) | 迁移动员令已暂停，它是 W0–W8 的编排史，不是"现在做什么" | ✅ 入库 |
 | ROS1 基线盘点（原契约附录 A，47 行） | [ros1-baseline.md](./ros1-baseline.md#appendix-a-archived) | 纯历史，混在契约真源里会让每次开工都读到历史 | ✅ 入库 |
-| 历史 workstream 规格（原 `.trae/specs/`，32 目录 / 97 文件） | [specs/README.md](./specs/README.md#specs-index) | Trae 已退役（用户 2026-10-29 裁定）；规格仍是历史证据 | ❌ **不发布**（`.gitignore` 精确忽略，保持原边界） |
+| 历史 workstream 规格（原 `.trae/specs/`，32 目录 / 97 文件） | 仅**本地完整工程**存在：`docs/archive/specs/README.md`（索引）、`docs/archive/specs/MIGRATION.md`（迁移清单） | Trae 已退役（用户 2026-10-29 裁定）；规格仍是历史证据 | ❌ **不发布**（`.gitignore` 精确忽略，保持原边界） |
 
-> 规格归档留在本地、不入库，是**沿用原边界**而不是新增限制：`.trae/` 本来就整体在 `.gitignore` 里（[ADR-0081](../adr/0081-public-repo-publishing-boundary.md)）。
+> **规格路径只在本地完整工程里可解析**。`docs/archive/specs/` 被 `.gitignore` 精确排除，
+> 因此**公开 clone 中没有该目录，也没有它的索引**；上面两个路径是**本地相对路径说明**，不是公开链接。
+> 这是**沿用原边界**而不是新增限制：`.trae/` 本来就整体在 `.gitignore` 里（[ADR-0081](../adr/0081-public-repo-publishing-boundary.md)）。
+> 校验口径：`tests/docs_link_check.py` 把指向该目录的链接单列统计（"本地可解析 N 条 / 本地也缺失 0 条"），
+> **不计入断链，也不宣称公开 clone 可导航**。
 
 ## 怎么查
 
-- **想知道某历史 workstream 当时承诺了什么** → 先读 [规格归档索引](./specs/README.md#specs-index) 的目录表，只打开命中的那一两个文件。
+- **想知道某历史 workstream 当时承诺了什么** → 在**本地完整工程**里读 `docs/archive/specs/README.md` 的目录表（公开 clone 无此文件），只打开命中的那一两个文件。
 - **想知道某轮为什么这么改** → 决策看 [ADR 索引](../adr/README.md#adr-index)，交接过程看 `.coordination/archive/`。
 - **想对照旧系统行为** → [ROS1 基线盘点](./ros1-baseline.md#appendix-a-archived)；代码侧的旧树在 `reference/`（只读）。
 

@@ -30,7 +30,9 @@
 
 - YAML frontmatter 必填 `name` 与 `description`；可选 `whenToUse`、`metadata`、`user-invocable`、`disable-model-invocation`。
 - 其他资源（如 `ADR-FORMAT.md`）与 `SKILL.md` 同目录，技能正文用相对链接引用。
-- 改前 frontmatter 会让该技能被**静默丢弃**（目录里看不到，也不报错），改完请确认技能仍出现在会话技能目录中。
+- frontmatter 写坏时，该技能会**随警告被跳过**（Harness 日志里有 warning），因此**技能目录里看不到它**；
+  但模型侧**不会**收到逐技能诊断，无法区分"技能不存在"与"技能无效"。改完请确认技能仍出现在会话技能目录中，
+  看不到就先查 frontmatter（`name` 须 kebab-case、`description` 必填），不要当成没生效。
 
 ## 维护原则
 

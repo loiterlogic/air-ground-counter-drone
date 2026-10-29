@@ -150,6 +150,25 @@ def case_history(tmp: Path) -> None:
     check("--strict-history 退出码 1", strict.returncode == 1, strict.stdout)
 
 
+def case_local_only(tmp: Path) -> None:
+    print("\n[12] 本机保留路径：本地存在则单列，不计断链也不算通过")
+    root = make_project(tmp / "localonly")
+    # 造一个"本机保留"目录并在里面放文件
+    write(root / "docs" / "archive" / "specs" / "w1" / "spec.md", "# S\n")
+    write(root / "docs" / "page.md", "# P\n\n[规格](archive/specs/w1/spec.md)\n")
+    result = run(LINK_CHECK, "--root", str(root))
+    check("退出码 0（本地可解析）", result.returncode == 0, result.stdout)
+    check("单列为本机保留", "指向本机保留路径" in result.stdout, result.stdout)
+    check("未谎称公开可导航", "公开 clone" in result.stdout, result.stdout)
+    check("标为本地可解析 1 条", "本地可解析 1 条" in result.stdout, result.stdout)
+
+    # 同类路径但本地也缺 -> 报为需复核，而不是静默通过
+    write(root / "docs" / "page2.md", "# P2\n\n[缺](archive/specs/w9/spec.md)\n")
+    missing = run(LINK_CHECK, "--root", str(root))
+    check("本地也缺失时退出码 0 但单列", missing.returncode == 0, missing.stdout)
+    check("提示本地也缺失", "本地也缺失 1 条" in missing.stdout, missing.stdout)
+
+
 def case_missing_root(tmp: Path) -> None:
     print("\n[9] 根目录不对 -> 用法错误退出码 2")
     empty = tmp / "empty"
@@ -237,6 +256,7 @@ def main() -> int:
         case_evidence_paths(tmp)
         case_template_placeholder(tmp)
         case_history(tmp)
+        case_local_only(tmp)
         case_missing_root(tmp)
         case_adr_index(tmp)
         case_adr_ignores_readme(tmp)

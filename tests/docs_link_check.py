@@ -72,6 +72,27 @@ ACTIVE_GLOBS = (
     ".coordination/archive/**/*.md",
     # 迁移后的规格归档：链接必须与迁移前同等有效（见 P0-3 出口判据）
     "docs/archive/**/*.md",
+    # 项目级技能：技能资源本身也是文档，其相对链接必须可解析
+    # （P0-3 round-2 修正：只检查"别人指向技能"会漏掉技能内部的断链）
+    ".agents/**/*.md",
+    # 递归索引 README（docs 各子目录 + scripts/archive），
+    # 供 P0-4 的 scripts/README 与目录自动核对复用。
+    # 注意：toolchain/ 是外部仓库（不入库、内容不受本仓约束），已由 EXCLUDED_PARTS 排除，
+    # 不会因这组 glob 被误扫。
+    "scripts/archive/**/README.md",
+    "docs/**/README.md",
+)
+
+# 本机保留、**不纳入 git** 的目标前缀（`.gitignore` 精确忽略）。
+# 指向这些路径的链接在**本地完整检出**里有效，但在公开 clone 里必然缺失：
+# 单独归类，既不判断链，也不声称公开 clone 可导航。
+LOCAL_ONLY_PREFIXES = (
+    "docs/archive/specs/",   # 历史规格：保持不发布（ADR-0081 / ADR-0105）
+    "experiments/",          # 实验产物与证据（ADR-0081 / ADR-0064）
+    "reference/",            # 旧树归档（只读）
+    "toolchain/",            # 外部工具链（仅 README 入库）
+    ".trae/",                # 已退役；残留即异常，但语义仍是"本机"
+    ".coordination/wake/",   # 已退役叫醒产物
 )
 
 # 历史范围：断链只列名，不计入失败。
@@ -123,6 +144,8 @@ class Stats:
     skipped_templates: int = 0
     broken_active: list[Broken] = field(default_factory=list)
     broken_historical: list[Broken] = field(default_factory=list)
+    local_only_present: list[Broken] = field(default_factory=list)  # 指向本机保留路径，本地可解析
+    local_only_missing: list[Broken] = field(default_factory=list)  # 指向本机保留路径，但本地也缺
 
 
 def _is_excluded(path: Path, root: Path) -> bool:
@@ -318,7 +341,35 @@ def run(root: Path, strict_history: bool, extra_globs: list[str] | None = None) 
                 # 目录链接：允许指向目录（README 惯例）
                 if resolved.is_dir():
                     continue
+                if resolved.exists():
+                    # 目标存在：若属"本机保留、不入库"，单独计数——本地可解析，
+                    # 但公开 clone 会缺，不能笼统计入"已通过"。
+                    try:
+                        rel_ok = resolved.relative_to(root).as_posix()
+                    except ValueError:
+                        rel_ok = ""
+                    if rel_ok and any(
+                        rel_ok == p or rel_ok.startswith(p) for p in LOCAL_ONLY_PREFIXES
+                    ):
+                        stats.local_only_present.append(
+                            Broken(rel, lineno, raw_target,
+                                   "仅本地保留（不被 git 跟踪），公开 clone 中缺失", historical)
+                        )
                 if not resolved.exists():
+                    # 本机保留、不入库的目标（如 docs/archive/specs/）：在**本地完整检出**里
+                    # 可解析，但在公开 clone 里必然缺失。单独计数，判为"仅本地存在"，
+                    # 既不算断链（本地是对的），也不谎称公开 clone 可导航。
+                    try:
+                        rel_resolved = resolved.relative_to(root).as_posix()
+                    except ValueError:
+                        rel_resolved = ""
+                    if rel_resolved and any(
+                        rel_resolved == p or rel_resolved.startswith(p)
+                        for p in LOCAL_ONLY_PREFIXES
+                    ):
+                        broken.reason = "仅本地保留（不被 git 跟踪），公开 clone 中缺失"
+                        stats.local_only_missing.append(broken)
+                        continue
                     broken.reason = "目标文件不存在"
                     (stats.broken_historical if historical else stats.broken_active).append(broken)
                     continue
@@ -384,10 +435,23 @@ def main(argv: list[str] | None = None) -> int:
         for item in sorted(stats.broken_historical, key=lambda b: (b.source, b.line, b.target)):
             print(f"  [history] {item.source}:{item.line}  ->  {item.target}  [{item.reason}]")
 
+    total_local = len(stats.local_only_present) + len(stats.local_only_missing)
+    if total_local:
+        print(
+            f"\n指向本机保留路径的链接（不计入断链，也**不**代表公开 clone 可导航）：{total_local}"
+        )
+        print("  口径：这些目标被 `.gitignore` 精确排除（规格/实验/旧树/工具链），")
+        print("        本地完整检出里存在，公开 clone 中必然缺失——属既有发布边界（ADR-0081/0105）。")
+        print(f"  本地可解析 {len(stats.local_only_present)} 条；本地也缺失 {len(stats.local_only_missing)} 条")
+        if stats.local_only_missing:
+            print("  ⚠ 本地也缺失（本机路径不存在，需复核，属真断链）：")
+            for item in sorted(stats.local_only_missing, key=lambda b: (b.source, b.line)):
+                print(f"    {item.source}:{item.line}  ->  {item.target}")
+
     if stats.broken_active:
         print("\nFAIL：活跃范围存在断链")
         return 1
-    print("\nPASS：活跃范围无断链")
+    print("\nPASS：活跃文档范围内无断链（本地完整检出口径；本机保留路径单列）")
     return 0
 
 

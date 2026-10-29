@@ -1,6 +1,6 @@
 # ADR 写法（本仓库）
 
-ADR 放在 `docs/adr/`，编号连续：`0001-slug.md`、`0002-slug.md`…… 现状索引见 [ADR 索引](../adr/README.md#adr-index)，由 `scripts/adr_index.py` 从每篇的标题与状态生成。
+ADR 放在 `docs/adr/`，编号连续：`0001-slug.md`、`0002-slug.md`…… 现状索引见 [ADR 索引](../../../docs/adr/README.md#adr-index)，由 `scripts/adr_index.py` 从每篇的标题与状态生成。
 
 ## 本仓库的实际格式
 
@@ -52,7 +52,7 @@ accepted（{日期}，来源：用户裁定——"{原话}"）   <!-- 需要时�
 - 状态写在 `## Status` **节里**，不是 YAML frontmatter（`--` 分隔的头部）——本仓库 105 篇 ADR 都是节形式。
 - **不要替别人猜状态**：不确定就写 `deferred` 并写明未决点，不要默认写成 `accepted`。
 - **暂停 ≠ 废止**：被暂停的路线其 ADR 仍是 `accepted`（决策曾经有效），暂停事实记在 plan 的开关文件里。
-- 修订历史：不改旧 ADR 的结论，新增"适用关系"节或直接新开一篇并标明 `superseded by`（[ADR-0066](../adr/0066-decision-applicability-and-reference-discipline.md#decision)）。
+- 修订历史：不改旧 ADR 的结论，新增"适用关系"节或直接新开一篇并标明 `superseded by`（[ADR-0066](../../../docs/adr/0066-decision-applicability-and-reference-discipline.md)）。
 
 ## 编号
 
@@ -89,4 +89,4 @@ python3 scripts/adr_index.py --check  # 校验索引与 ADR 一致（非 0 = 漂
 
 - 不要给一次性实现细节升 ADR（留在对应任务的规格/记录里）。
 - 不要把 ADR 写成规格：要求、验收判据归 plan 与规格，ADR 只记"决定了什么、为什么"。
-- 不要在 ADR 里复述契约约束：引用 [契约真源](../ROS2迁移交接文档.md#hard-constraints) 的稳定锚点即可。
+- 不要在 ADR 里复述契约约束：引用 [契约真源](../../../docs/ROS2迁移交接文档.md#hard-constraints) 的稳定锚点即可。

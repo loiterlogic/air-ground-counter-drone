@@ -8,15 +8,16 @@
 AGC（空地协同反无人机仿真）：同一世界、同一时钟下，无人机 + 地面车围绕统一任务定义的协同系统。
 本仓是 **ROS1(Noetic) → ROS2 Jazzy 的全新重写**（不是逐包等价迁移）。
 
-## 开工顺序（必读两条）
+## 开工顺序（必读只有一条）
 
 1. `docs/plan/README.md` — **当前方向**：项目收尾路线（P0→P2 优先级、出口判据）
-2. `GLOSSARY.md` — 术语
 
 > **2026-10-29 方向裁定**：迁移推进与论文优先**暂停**（[开关](docs/plan/PAUSED.md#paused)），先确保项目"完成"。当前执行入口是 `docs/plan/`，**不是** Runbook。
+> **术语不是每轮必读**：`GLOSSARY.md` 按任务查——设计/命名/写文档时读，纯执行既定步骤不读。**L1 口径 = 本文件 + `docs/plan/README.md`**（[P0-3 出口判据](docs/plan/p0-3-文档瘦身与入口重构.md#p0-3-exit)）。
 
-## 按需查（不预读）
+## 按需查（不预读，按任务取用）
 
+- [术语表](GLOSSARY.md) — 项目特有概念与边界；**设计、命名、写文档时读**，纯执行既定步骤不读
 - [契约真源](docs/ROS2迁移交接文档.md#hard-constraints) — 不可变约束、坐标系、终态语义、接口语义（**唯一约束来源**）
 - [ADR 索引](docs/adr/README.md#adr-index) — 105 篇决策的编号 / 标题 / Status / 结论，先扫表再点开 1–2 篇
 - [归档导航](docs/archive/README.md#archive) — 历史 Runbook、ROS1 基线盘点、历史 workstream 规格索引

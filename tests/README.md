@@ -28,6 +28,11 @@ python3 tests/run_all.py --all --timeout 600   # 全跑（带超时）
 - 围栏代码块与行内代码里的"链接"是示例/模板，不解析；
 - 绝对路径（`/home/...`、`/opt/ros/...`）与 `experiments/` 内路径是**取证记录**，指向本机源码树或本地保留的证据，计入"证据引用"而不判断链；
 - `docs/archive/`、`.coordination/archive/` 属**历史范围**：断链逐条列名、不计入退出码（历史路径是当时事实，改写即伪造记录，见 [ADR-0066](../docs/adr/0066-decision-applicability-and-reference-discipline.md)）。
+- **指向本机保留路径的链接**（`docs/archive/specs/`、`experiments/`、`reference/`、`toolchain/` 等被 `.gitignore` 排除的目标）：
+  本地完整检出里可解析，公开 clone 中必然缺失。单独统计为"本地可解析 N 条 / 本地也缺失 M 条"，
+  **既不计入通过、也不计入断链**；`M > 0` 时逐条列出（那才是真断链）。
+- 扫描范围含 `.agents/**/*.md`（技能资源自身）与 `scripts/archive`、`docs/**` 下的 README 索引，
+  因此"别人指向技能"和"技能内部链接"都会被检查。
 
 退出码：`0` = 活跃范围无断链；`1` = 有断链；`2` = 用法/环境错误。
 
