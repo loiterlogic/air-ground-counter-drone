@@ -58,6 +58,11 @@ if(BUILD_TESTING)
   # W8 P0 / T2：summary.json epoch 秒精度回归（17 位有效数字，防退化为科学计数法）
   ament_add_gtest(test_epoch_seconds test/test_epoch_seconds.cpp)
   target_include_directories(test_epoch_seconds PRIVATE include)
+  # W8 P3 / ADR-0099：固定预算任务 FCO 积分器（手算确定性案例）
+  ament_add_gtest(test_mission_fco_fixed_budget test/test_mission_fco_fixed_budget.cpp)
+  target_include_directories(test_mission_fco_fixed_budget PRIVATE include)
+  # W8 P3 / ADR-0099：真实 run_logger 节点级合成 /clock + 消息链
+  ament_add_pytest_test(test_run_logger_mission_fco "test/test_run_logger_mission_fco.py")
 endif()
 
 ament_package()

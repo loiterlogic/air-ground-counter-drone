@@ -1,0 +1,232 @@
+# W8 测量 P3：新等价设计草案
+#
+# 状态：draft_pending_codex_review；execution_authorized=false。
+# 本文件只供 Codex 审查，不冻结执行计划，不授权任何新 run/pilot/headless 规模统计。
+# 指标语义唯一真源：docs/adr/0099-w8-fixed-budget-mission-fco-measurement.md#metric
+# 版本/派工边界：docs/adr/0101-w8-seed-evidence-and-p3-execution-boundary.md#p3
+w8_mission_fco_equivalence_draft:
+  status: draft_pending_codex_review
+  version: 0.1
+  created: 2026-10-26
+  execution_authorized: false
+  gate_context: not_evaluable_as_specified
+  scope_note: >-
+    本草案是 GUI/headless 模式等价的新设计，不是 W8-E2 科研预注册；
+    旧 P1/P2 verdict、MME、N、种子与历史门均未改写。
+
+  historical_seed_evidence:
+    runs:
+      - path: experiments/w7-rl-b/20261023-w7-rl-b-p1v5-n20
+        seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+        role: P1 v5 科研确证
+      - path: experiments/w7-rl-b/20261022-w7-rl-b-v3-n20r
+        seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+        role: P2 v3 科研确证
+      - path: experiments/w7-rl-b/20261023-w7-rl-b-p1abl-n20
+        seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+        role: P1 机制消融（同集合）
+      - path: experiments/w8-parity/20261025-w8-gui-headless-pilot
+        seeds: [5, 0]
+        role: W8 模式 pilot（工程 seeds）
+      - path: experiments/w8-parity/20261025-w8-gui-gpu-pilot
+        seeds: [5, 0]
+        role: W8 GPU-GUI 修正 pilot（工程 seeds）
+    independence_status: >-
+      历史确证/消融集合为 0–19；本轮工程验证使用 5/0。候选网格显式避开这些值。
+      该独立性结论基于上列 run 清单的 seed 字段；未对 experiments/ 全量历史做穷举证明，
+      正式冻结前须由 Codex 复核。
+
+  candidate_seed_grid:
+    seeds: [100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
+            110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
+            120, 121, 122, 123, 124, 125, 126, 127, 128, 129,
+            130, 131, 132, 133, 134, 135]
+    seed_count: 36
+    rationale: >-
+      36 个候选 seed 对应 δ=0.10、σ_upper=0.15 时按等价检验公式的保守 n；
+      若采用 δ=0.05 或率类 co-primary，所需 n 更大，本网格不足。
+    independence_status: candidate_pending_codex_review
+
+  design:
+    scenes:
+      - s15_static_none_fov_capture
+      - s08_static_none_nominal_capture
+    arms:
+      - p1_coop
+      - p2_rl_high
+    modes: [gui, headless]
+    mode_definition: >-
+      唯一差异为 --mode；其余 backend/full、scene、arm、seed、timeout、obs horizon、
+      PX4 启动协议、shield=true 一致。headless 仅在等价门通过后授权规模统计。
+    repeats_per_seed_per_mode: 2
+    repeats_note: >-
+      重复用于估计 seed 内执行散布，不作为独立 seed；分析单位为 seed。
+      2 次重复只能给出很弱的执行散布估计；若正式门需要 seed 内 SD，须增加重复或另批 pilot。
+    order:
+      scheme: alternating_with_opposite_start_across_scenes
+      example: >-
+        s15: H,G,H,G...；s08: G,H,G,H...；同 seed 的两模式相邻，但允许分块以降低长时漂移；
+        具体顺序须在正式 plan v2 中预声明并记录 attempt_index/started_at/mode。
+    fixed_conditions:
+      backend: full
+      worker: single
+      infra_retries: 0
+      obs_horizon_s: 60
+      timeout_s: 240
+      ready_timeout_s: 180
+      start_timeout_s: 60
+      pyd_start_protocol: ADR-0094 defaults
+      shield: true
+      gui_render_backend: d3d12
+    analysis_unit: seed
+    pairing: same_seed_cross_mode
+    pairing_caveat: >-
+      同 seed 不假定轨迹相同或完全 CRN；主分析为 seed 层配对均值差，
+      用 seed 聚类 bootstrap 给 95% CI；seed 内重复只用于散布/敏感性，不并入独立样本。
+      不得直接套用旧 Welch 公式作为主分析。
+
+  endpoints:
+    co_primary:
+      - mission_fco_fraction
+      - capture_success_rate
+      - timeout_rate
+    secondary:
+      - active_fco
+      - active_visibility_rate
+      - env_occ_given_visible
+      - first_fco_time
+      - capture_time
+      - min_clearance
+      - intervention_ticks_ratio
+      - rtf
+      - wall_elapsed_s
+    denominators:
+      mission_fco_fraction: per_mission_fixed_budget
+      capture_success_rate: all_mission_attempts
+      timeout_rate: all_mission_attempts
+      infra: separate_not_in_mission_denominator
+    rate_redundancy: >-
+      只有捕获/超时两类 mission 结果时两率互补；不得当作两份独立证据。
+      联合等价规则须识别冗余，不能重复计算证据量。
+
+  missing_integrity:
+    conservative_gate: >-
+      任何 mission 的新 FCO 存在未知区间或拒算，正式门不得宣布等价；
+      保留该任务及识别界，不做 available-case 删除。
+    point_estimate: null_when_any_unknown
+    identification_bounds: "[known_fco/T, (known_fco+missing_preterminal)/T]"
+    unknown_required_fields:
+      - t0_source_s
+      - t0_receipt_s
+      - terminal_source_s
+      - terminal_receipt_s
+      - target_source_stamp_s
+      - target_receipt_s
+      - envelope_source_stamp_s (null; Bool has no header)
+      - envelope_receipt_s
+    missing_triggers:
+      - missing_t0
+      - missing_terminal_within_incomplete_run
+      - logger_heartbeat_gap
+      - clock_regression
+      - episode_mismatch_or_unavailable
+      - source_stream_never_received
+    known_unavailable: >-
+      监听链存活且源曾收到、随后过期 → 已知不可用，按谓词计 0；
+      未收到源、logger 心跳长间隙、时钟回退、episode 混淆、终态无法核验 → 测量缺失。
+    ablation_or_infra: >-
+      ABORTED/infra 单列原因与可计算性；不得静默当作正常早终态。
+
+  equivalence_rule:
+    effect: delta_gui_minus_headless
+    criterion: >-
+      95% 双侧 CI 完全落入 [-delta, +delta] 才记 equivalent；
+      同时报告两个单侧 p 值（TOST 等价）；不得用“不显著”或 CI 覆盖 0 代替等价。
+    joint_rule: >-
+      全部 co-primary 通过（交集-并集）才记 equivalent；任一失败/不可判定 →
+      not_equivalent / not_evaluable。
+    rate_method: >-
+      边界率使用 Clopper-Pearson 或 Wilson 区间，或预先声明的角变换；
+      须说明正态近似不适用；两率互补时按冗余处理。
+    delta_candidates: [0.05, 0.10]
+    delta_engineering_basis: >-
+      δ 相对当前 MME=0.10 论证，不由观察散布反推；δ 不得大到使模式效应
+      单独把结论推过 MME 边界；δ 不低于可测底噪。最终值须在 plan v2 冻结前由
+      Codex 独立裁定。
+
+  planning:
+    alpha: 0.05
+    power: 0.80
+    z_two_sided_975: 1.959963984540054
+    z_power_80: 0.8416212335729143
+    formula: >-
+      n_per_mode = ceil((z_{0.975}+z_{0.80})^2 * (sigma_gui^2 + sigma_headless^2)
+      / (delta - |delta_pilot|)^2)；|delta_pilot| 不得作为事后效应量；
+      多个 co-primary 取最大 n。
+    sigma_status: >-
+      新指标 mission_fco_fraction 的方差尚无观测。不得把旧 active FCO 的
+      σ≈0.11–0.12 当作新指标方差；也不得把本轮 12 个 gtest / 0 个 GUI 当样本。
+      下列 n 采用保守 σ_upper=0.15 的规划值，属于待批准假设，不是已校准值。
+    scenarios:
+      - delta: 0.05
+        sigma_upper: 0.15
+        n_per_mode: 142
+        attempts_per_scene: 284
+        wall_hours_per_scene_at_250s: 19.72
+        cap_attempts_per_mode: 40
+        cap_wall_hours_per_scene: 6
+        feasible_under_cap: false
+      - delta: 0.10
+        sigma_upper: 0.15
+        n_per_mode: 36
+        attempts_per_scene: 72
+        wall_hours_per_scene_at_250s: 5.0
+        cap_attempts_per_mode: 40
+        cap_wall_hours_per_scene: 6
+        feasible_under_cap: true_for_fco_only
+    rate_planning:
+      worst_case_p: 0.5
+      sigma_upper: 0.5
+      delta: 0.10
+      n_per_mode: 393
+      feasible_under_cap: false
+      note: >-
+        即使按 p≈0.86 的参考，σ≈0.347、n≈190/模式，仍超过 40 上限。
+        率类 co-primary 在现行 cap 下不可行；须提高 cap、另立非劣设计或降为 secondary。
+    cost_model:
+      wall_seconds_per_attempt: 250
+      basis: >-
+        W8 pilot 的工程参考（约 240–260 s/attempt），不是本轮新样本；
+        实际成本须在 plan v2 用新 pilot 或保守上界重算。
+      total_attempts_delta_0_10: 144
+      total_wall_hours_delta_0_10: 10.0
+    pilot_option: >-
+      若 Codex 不接受 σ_upper 假设，另批一个小 pilot 估计 mission_fco_fraction 的
+      within-mode SD 与 seed 内执行散布；本草案不授权该 pilot。
+    feasibility_result: >-
+      infeasible_as_specified：率类 co-primary 在 40 attempts/模式、6 h/场景 cap 下
+      不可行；FCO 单指标在 δ=0.10 下可落入 cap（36/模式、5 h/场景），
+      但 δ=0.10 的工程依据与 seed 内重复结构仍待裁定。
+
+  stopping_and_deviation:
+    stop_rules:
+      - 任一 co-primary 的 95% CI 不能完全落入 ±δ → 停止并记录 not_equivalent/not_evaluable
+      - 任一 mission 有未知 FCO 区间或拒算 → 正式门不得宣布等价
+      - infra 率超过预声明上限 → 停止
+      - 实际成本超过 cap → 停止，不硬跑
+    deviation_logging:
+      - 缺次 / 顺序变化 / 环境变化 / 显示后端变化 / seed 重排
+      - GUI renderer 非 D3D12 或缺失
+      - 任何 attempt 重跑或中断
+    no_post_hoc:
+      - 结果出来后不得回填/放宽 δ 或 n
+      - 不得删除缺测回合后宣称等价
+      - 不得把本轮 2 个工程 GUI 当正式样本
+
+  unresolved:
+    - 率类 co-primary 与 40/6h cap 的冲突：需 Codex 裁定提高 cap / 非劣设计 / 降为 secondary。
+    - δ=0.10 等于当前 MME，是否足以支撑“模式效应不会把结论推过 MME”的论证，待独立工程依据。
+    - 新指标方差未知；σ_upper=0.15 只是保守规划假设，未经观测。
+    - 每 seed 2 次重复对 seed 内散布估计很弱；是否增加重复或另批 pilot 待裁定。
+    - seed 网格 100–135 的独立性与历史使用集合需 Codex 复核。
+    - 本草案不授权 headless、正式等价、新 pilot、W8-E2、在线 RL、W7-c 扩容。
