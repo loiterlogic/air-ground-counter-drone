@@ -103,5 +103,5 @@ W8 的对照与冻结 **SHALL NOT** 在 P1 v4 结果落盘前冻结 P1 结论。
 - 固定观测窗来源：[ADR-0074](0074-visibility-metric-fixed-observation-window.md)
 - 命题与判定框架：[ADR-0070](0070-w7b-research-propositions-and-rl-role-adjudication.md)
 - 预注册：[`w7b_prereg.yaml`](../../src/agc_rl/config/w7b_prereg.yaml)
-- 规格：[`.trae/specs/w7-rl-b/`](../../.trae/specs/w7-rl-b/spec.md)
+- 规格：[`docs/archive/specs/w7-rl-b/`](../archive/specs/w7-rl-b/spec.md)
 - 契约：[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)、[#execution-port](../ROS2迁移交接文档.md#execution-port)、[#terminal-semantics](../ROS2迁移交接文档.md#terminal-semantics)

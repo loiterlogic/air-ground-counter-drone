@@ -4,7 +4,7 @@
 
 accepted
 
-> 注（S-05 / [ADR-0061](./0061-w6-runtime-topology-backend-identity-and-single-parameterized-entry.md)）：W6 顶层入口已统一为 [`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)（`backend` 参数 ∈ lightweight | full），原 `w6_task_eval.launch.py` / `w6_full.launch.py` 退役；本 ADR 历史结论正文不改，下文的旧入口名按现入口读作同一拓扑。
+> 注（S-05 / [ADR-0061](0061-w6-runtime-topology-backend-identity-and-single-parameterized-entry.md)）：W6 顶层入口已统一为 [`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)（`backend` 参数 ∈ lightweight | full），原 `w6_task_eval.launch.py` / `w6_full.launch.py` 退役；本 ADR 历史结论正文不改，下文的旧入口名按现入口读作同一拓扑。
 
 ## 背景
 
@@ -14,7 +14,7 @@ accepted
 区分是**强制模式**、**native offboard-loss** 还是**data-link-loss**——多机制 / 参数 / 重入差异令
 「等价」叙述不可复核，干扰因果结论失真。
 
-同版本取证（[ADR-0012](./0012-px4-body-as-toolchain-dependency.md) pin PX4 v1.15.4，本机源码
+同版本取证（[ADR-0012](0012-px4-body-as-toolchain-dependency.md) pin PX4 v1.15.4，本机源码
 `toolchain/PX4-Autopilot`）：
 
 - **Offboard 丢失 ≠ 数据链丢失**：offboard-loss 由 `COM_OF_LOSS_T`（默认 `1.0 s`，
@@ -161,6 +161,6 @@ time point in rclcpp::Time`（exit -6，连续两次复现）。**一手依据**
 （`standoff_follower` 记 `目标过期/置信度不足 → 冻结跟踪`）。几何上己方机悬停于 `(≈0, ≈0, 3.3 m)`、
 目标 `(4.6, 3.0, 2.1–4.7 m)`、斜距 ≈5.4 m 在量程 `[0.30, 12.0]` 内，故**非量程问题**；疑似
 **机体固连前视**（`boresight_body = +X`、`hfov ±50°` / `vfov ±35°`）在己方机偏航变化时**丢目标**
-——正是 [F-10](../../docs/reviews/agc-review-2026-10-14/30-未来.md#f-10)「可见性协同」与 ADR-0070 P1
+——正是 [F-10](../reviews/agc-review-2026-10-14/30-未来.md#f-10)「可见性协同」与 ADR-0070 P1
 命题所指现象。**该现象本轮不修**，留作后续（属研究问题，不是"修复"）。
 

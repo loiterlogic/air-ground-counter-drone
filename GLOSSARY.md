@@ -4,6 +4,9 @@
 
 ## 语言
 
+> **阅读提示**：带「研究期术语」标注的条目属于 W7/W8 研究阶段的度量口径，**当前收尾阶段非必读**，只在追溯研究结论时查；未标注的条目仍是现行项目的共同语言。
+> 术语只定义"是什么"；约束类信息（坐标系、唯一执行口、硬约束、终态语义）**只在** [契约真源](./docs/ROS2迁移交接文档.md#hard-constraints)，本表不复述。
+
 **AGC**:
 空地协同（Air-Ground Collaboration）——在同一世界、同一时钟下，无人机与地面车围绕统一任务定义构成的协同系统。
 _Avoid_: 空地系统、飞机地面
@@ -29,15 +32,18 @@ _Avoid_: 执行入口（与"Runbook"混淆）
 _Avoid_: 保护层、shield（指标口径另见契约真源）
 
 **职责分层（Role Stratification）**:
-P2 的架构自变量：高层只出**决策目标**（拦截点 / 火控窗口 / 局部偏移），由成熟低层控制器执行；与"训练 RL"不同——P2 v1 的对照臂以**规则高层**承载（[ADR-0082](./docs/adr/0082-w7b-p2-arm-b-rule-high-level-first.md)）。
+P2 的架构自变量：高层只出**决策目标**（拦截点 / 火控窗口 / 局部偏移），由成熟低层控制器执行；与"训练 RL"不同——P2 v1 的对照臂以**规则高层**承载（[ADR-0082](docs/adr/0082-w7b-p2-arm-b-rule-high-level-first.md)）。
+_研究期术语，当前阶段非必读。_
 _Avoid_: 高层 RL（未经训练时）、端到端（含义相反）
 
 **有效火控机会（Fire-Control Opportunity, FCO）**:
-目标**同时**满足「可见（感知新鲜）+ 在网发射可及集内」的拍；其占比是 P1/P2 的主 DV。P1 v1 用 `window_fixed_v1`（自首个 active 拍起 60 s，**含终态后停泊**）；P2 v3 用 **active-window FCO**（仅 `GROUND_APPROACH → 终态`，[ADR-0083](./docs/adr/0083-w7b-p2-arm-information-equivalence-and-active-window-fco.md)）。
+目标**同时**满足「可见（感知新鲜）+ 在网发射可及集内」的拍；其占比是 P1/P2 的主 DV。P1 v1 用 `window_fixed_v1`（自首个 active 拍起 60 s，**含终态后停泊**）；P2 v3 用 **active-window FCO**（仅 `GROUND_APPROACH → 终态`，[ADR-0083](docs/adr/0083-w7b-p2-arm-information-equivalence-and-active-window-fco.md)）。
+_研究期术语，当前阶段非必读。_
 _Avoid_: 开火率、命中率（不同量）
 
 **oracle 目标臂（Oracle-Goal Arm）**:
-任务目标直接取**目标真值坐标**（而非感知输出）的对照臂；须显式标注，不能与感知驱动臂混读为同一自变量（[ADR-0083](./docs/adr/0083-w7b-p2-arm-information-equivalence-and-active-window-fco.md)）。
+任务目标直接取**目标真值坐标**（而非感知输出）的对照臂；须显式标注，不能与感知驱动臂混读为同一自变量（[ADR-0083](docs/adr/0083-w7b-p2-arm-information-equivalence-and-active-window-fco.md)）。
+_研究期术语，当前阶段非必读。_
 _Avoid_: 真值臂（未标注时）、感知臂（含义相反）
 
 **无人机跟踪（UAV Standoff Tracking）**:
@@ -57,15 +63,15 @@ _Avoid_: 主动目标、自主目标
 _Avoid_: 武器、装备
 
 **捕获网面（Capture Net）**:
-车载**网发射器 / 发射的网**的几何载体（原为固定直径 2 m 圆面；[ADR-0022](./docs/adr/0022-launched-net-capture-mechanism.md) 起改为**发射式网**）；车体模型层只提供几何与位姿，捕获裁决属 W6。
+车载**网发射器 / 发射的网**的几何载体（原为固定直径 2 m 圆面；[ADR-0022](docs/adr/0022-launched-net-capture-mechanism.md) 起改为**发射式网**）；车体模型层只提供几何与位姿，捕获裁决属 W6。
 _Avoid_: 网兜、拦截网
 
 **发射式网捕获（Launched-Net Capture）**:
-物理捕获机制：**网由车载发射器射出并展开**、作用于目标（非"目标穿越固定网框"）；**交战包络由网发射物理模型的"可及集"推导**。真实弹道属后续，现阶段以**可插拔裁决器**做闭式判定（[ADR-0022](./docs/adr/0022-launched-net-capture-mechanism.md)）。
+物理捕获机制：**网由车载发射器射出并展开**、作用于目标（非"目标穿越固定网框"）；**交战包络由网发射物理模型的"可及集"推导**。真实弹道属后续，现阶段以**可插拔裁决器**做闭式判定（[ADR-0022](docs/adr/0022-launched-net-capture-mechanism.md)）。
 _Avoid_: 固定网面、穿越判据
 
 **出生净空（Spawn Clearance）**:
-场景生成中"任意两实体出生后互不侵入各自初始安全包络"的约束；其下限为**可标定量**（按新 C2 安全档 + 实体外伸推导，[ADR-0023](./docs/adr/0023-spawn-clearance-recalibration.md)），与"复位重试预算"为两条独立语义。
+场景生成中"任意两实体出生后互不侵入各自初始安全包络"的约束；其下限为**可标定量**（按新 C2 安全档 + 实体外伸推导，[ADR-0023](docs/adr/0023-spawn-clearance-recalibration.md)），与"复位重试预算"为两条独立语义。
 _Avoid_: 出生间距（旧 `2.4 m` 口径）
 
 **干扰载荷（Jammer Payload）**:
@@ -73,12 +79,12 @@ _Avoid_: 出生间距（旧 `2.4 m` 口径）
 _Avoid_: 电磁武器、EMI 设备
 
 **Runbook（步骤文档）**:
-唯一指导 agent 与人工执行重构流程的入口文档，即 `docs/ROS2迁移步骤.md`；只编排"现在做什么、如何验收"，不承载约束。
-_Avoid_: 执行入口、执行口
+**历史**：迁移期唯一指导执行重构流程的入口文档，已归档为 [`docs/archive/ROS2迁移步骤.md`](./docs/archive/ROS2迁移步骤.md#top)；只编排"当时做什么、如何验收"，不承载约束。当前执行入口是 [项目完成路线](./docs/plan/README.md#plan-index)。
+_Avoid_: 执行入口、执行口（迁移已暂停，Runbook 不再是任一任务的入口）
 
 **workstream**:
-本项目的独立可验收工作单元，每个 workstream 对应 `.trae/specs/<ws>/` 下的 spec/tasks/checklist 三件套。
-_Avoid_: 阶段、phase、P0–P6
+本项目的独立可验收工作单元，每个 workstream 对应一份 spec/tasks/checklist 三件套；迁移期规格已随 Trae 退役归档到 [`docs/archive/specs/`](./docs/archive/specs/README.md#specs-index)，现由 [项目完成路线](./docs/plan/README.md#plan-index) 的 P0–P2 阶段组织收尾。
+_Avoid_: 阶段、phase、P0–P6（P0–P2 是**收尾阶段**，不是 workstream）
 
 **只读旧树边界（Read-Only Archive Boundary）**:
 对归档旧树的读取纪律：只可读以对齐**行为 / 契约事实**，禁止作为格式、命名、目录、任务粒度的来源，禁止复制其代码。

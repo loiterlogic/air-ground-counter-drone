@@ -5,12 +5,12 @@ accepted
 
 ## 背景与决策
 
-原物理捕获口径（[ADR-0015](./0015-interception-scope-physical-capture-and-behavioral-jamming.md) 及 W2-interception 模型）为**车载固定**直径 2 m 圆面 + "目标**穿越 2 m 圆网面** / 近距 ≤2 m"判据。核查现实 C-UAS 后，该形态**不成立**：
+原物理捕获口径（[ADR-0015](0015-interception-scope-physical-capture-and-behavioral-jamming.md) 及 W2-interception 模型）为**车载固定**直径 2 m 圆面 + "目标**穿越 2 m 圆网面** / 近距 ≤2 m"判据。核查现实 C-UAS 后，该形态**不成立**：
 
 - 现实物理网捕**均为"发射出去的网"**——地面 / 车载**捕网发射器**（CO₂ / 压缩气，捕获距离约 100–300 m）、**拦截无人机**挂网（约 200–1000 m）、**车载网枪**（射出后网在空中展开、缠绕旋翼）。**机制是"朝目标发射并展开"，不是"目标飞入固定圆框"**。
 - 物理 / 网捕的有效约束：网直径 ≥ 2× 目标旋翼尺寸、目标速度 ≤ ~12 m/s、**高度上限 ~60 m**（更高风偏使精度崩掉）。→ **高度不是物理捕获的门槛**；固定圆框要求目标恰在某一高度带才是失真点，且现实中不存在"车顶着固定框去套无人机"。
 
-本项目纯仿真（[ADR-0009](./0009-sim-first-with-hardware-hooks.md)），故定：
+本项目纯仿真（[ADR-0009](0009-sim-first-with-hardware-hooks.md)），故定：
 
 **(a) 捕获机制改为发射式网**。`car/capture_net` 由"固定网面"重新定位为**车载网发射器 / 发射的网**；网**由车射出并展开**，可作用于**非固定高度**的目标（消解"目标须低飞"的失真）。
 
@@ -25,14 +25,14 @@ accepted
 ## Considered Options
 
 - **维持固定 2 m 圆面 + 穿越判据** —— 被否：机制不真实（现实无此形态），且强绑目标低飞。
-- **移除物理捕获、仅保留行为级干扰** —— 被否：砍掉 [ADR-0014](./0014-research-mainline-mobile-interception-system.md)"移动式主动拦截"主线的一半，且废弃已建载荷模型。
+- **移除物理捕获、仅保留行为级干扰** —— 被否：砍掉 [ADR-0014](0014-research-mainline-mobile-interception-system.md)"移动式主动拦截"主线的一半，且废弃已建载荷模型。
 - **照抄现实松包络（高度 ≤60 m / 距离 100–300 m）** —— 被否：会让车无需逼近即可捕获，任务平凡化，削弱"移动式主动拦截"研究点。
 - **发射式网 + 物理模型推导包络 + 可插拔裁决器** —— **采纳**。
 
 ## Consequences
 
 - 契约 [终态语义](../ROS2迁移交接文档.md#terminal-semantics) 的物理捕获路径据此改口径；`INTERCEPT_CONFIRMED` 的 `reason_code` 用 `CAPTURE_NET`（**"穿越固定网面"旧义作废**）。
-- [W6 spec](../../.trae/specs/w6-task-eval/spec.md) 的 R9 落地：网发射物理模型 + 可插拔 `capture adjudicator`；包络与模型参数为可标定暂定值，W6-c 实跑回填。
+- [W6 spec](../archive/specs/w6-task-eval/spec.md) 的 R9 落地：网发射物理模型 + 可插拔 `capture adjudicator`；包络与模型参数为可标定暂定值，W6-c 实跑回填。
 - GLOSSARY「**捕获网面**」重定义 / 新增「**发射式网捕获**」术语；W2-interception 的 `car/capture_net` 语义随之更新（模型层只提供发射器 / 网几何）。
 - **表述纪律**：文档 / 报告**不得**再把捕获表述为"目标穿越固定 2 m 圆网面"；**不得**把 `TRACKING_SUCCESS` 表述为"拦截完成"。
-- 本机制现阶段的**裁决口径**（「入包络即命中」为 W6 闭式**占位**、后续以「火控窗口 + 瞄准提前量」替换）另见 [ADR-0024](./0024-capture-adjudication-fire-control-window.md)。
+- 本机制现阶段的**裁决口径**（「入包络即命中」为 W6 闭式**占位**、后续以「火控窗口 + 瞄准提前量」替换）另见 [ADR-0024](0024-capture-adjudication-fire-control-window.md)。

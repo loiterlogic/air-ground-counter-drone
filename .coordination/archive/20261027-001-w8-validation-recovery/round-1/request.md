@@ -3,8 +3,8 @@
 
 - 任务 ID：20261027-001-w8-validation-recovery；轮次：1；日期：2026-10-27。
 - 来源：用户要求按四点开始新一轮任务流；Codex 派工与技术裁定，DSH 实施/回报，Codex 独立验收。
-- 前任务已结档，见 [R17](../../../archive/20261026-002-w8-measurement-p3/review.md#round17-evidence)。仅其离线入口通过；原 P3 工程/设计仍阻塞。
-- 先按共同开工顺序读取 [Runbook](../../../../docs/ROS2迁移步骤.md#status)、[spec](../../../../.trae/specs/w8-validation-recovery/spec.md#scope)、[tasks](../../../../.trae/specs/w8-validation-recovery/tasks.md#round1)、[checklist](../../../../.trae/specs/w8-validation-recovery/checklist.md#round1)，遵循 [自主权限](../../../README.md#executor-autonomy)。
+- 前任务已结档，见 [R17](../../20261026-002-w8-measurement-p3/review.md#round17-evidence)。仅其离线入口通过；原 P3 工程/设计仍阻塞。
+- 先按共同开工顺序读取 [Runbook](../../../../docs/archive/ROS2迁移步骤.md#status)、[spec](../../../../docs/archive/specs/w8-validation-recovery/spec.md#scope)、[tasks](../../../../docs/archive/specs/w8-validation-recovery/tasks.md#round1)、[checklist](../../../../docs/archive/specs/w8-validation-recovery/checklist.md#round1)，遵循 [自主权限](../../../README.md#executor-autonomy)。
 
 <a id="chain"></a>
 ## 四步任务链与本轮边界

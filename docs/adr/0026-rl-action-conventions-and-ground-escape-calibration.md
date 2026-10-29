@@ -6,7 +6,7 @@ accepted
 ## 背景与决策
 
 评审风险 **R-011（动作与能力）**：`agc_rl` 的动作映射 `interface.action_to_twist` 存在**符号反转**与**量纲混用**，
-且偏移参数（`min_offset` / `max_offset`）**未形成对差速车真实横向逃逸的实测**——C6（契约 [#hard-constraints](../../docs/ROS2迁移交接文档.md#hard-constraints)「安全滤波器参数须用真实逃逸能力」）不能由参数名或理想横移推出。
+且偏移参数（`min_offset` / `max_offset`）**未形成对差速车真实横向逃逸的实测**——C6（契约 [#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)「安全滤波器参数须用真实逃逸能力」）不能由参数名或理想横移推出。
 本 ADR 记录三项决策：**(a) 转向符号约定**、**(b) 净空量纲一致化**、**(c) C6 逃逸能力标定**。
 
 ### (a) 转向符号：对齐 ROS 2 约定，left → 正 `angular.z`
@@ -40,11 +40,11 @@ magnitude = min_offset + ratio*(max_offset - min_offset)
 forward_clearance_m = forward_clearance(sectors, ..., half) * lidar_max_range   # 归一值乘量程还原为米
 ```
 
-参数经 config 单一注入（契约 [#params](../../docs/ROS2迁移交接文档.md#params)）；`action_to_twist` **不再**接触任何量程参数。
+参数经 config 单一注入（契约 [#params](../ROS2迁移交接文档.md#params)）；`action_to_twist` **不再**接触任何量程参数。
 
 ### (c) C6 逃逸能力标定：实测差速车在反应窗口内的横向可达
 
-**口径**：反应窗口 `T = 2.0 s` 取 Nav2 `time_before_collision` 上界（[ADR-0021](./0021-ground-safety-thresholds-and-platform-recalibration.md)
+**口径**：反应窗口 `T = 2.0 s` 取 Nav2 `time_before_collision` 上界（[ADR-0021](0021-ground-safety-thresholds-and-platform-recalibration.md)
 的 `t_before ∈ [1.2, 2.0] s`）。理论界（常 yaw 率圆弧）：`lateral(T) ≈ (v/ω)*(1 - cos(ω*T))`。
 
 **实测（GUI，`agc_world`，硬约束 C3）**：车（Husky 级 4 轮滑移差速，`v_max = 1.5`、`ω_max = 2.0`）沿 +x 达稳态速后，
@@ -96,4 +96,4 @@ forward_clearance_m = forward_clearance(sectors, ..., half) * lidar_max_range   
 ## 表述纪律
 
 此后 RL 动作的左右方向与净空参考一律引用本节（ADR-0026）；`max_offset` 一律引用本 ADR 的标定值（1.0 m），
-**不得**再以「名称 / 理想横移」推定横向逃逸，亦**不得**在文档中复述契约硬约束（只引用 [#hard-constraints](../../docs/ROS2迁移交接文档.md#hard-constraints)）。
+**不得**再以「名称 / 理想横移」推定横向逃逸，亦**不得**在文档中复述契约硬约束（只引用 [#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)）。

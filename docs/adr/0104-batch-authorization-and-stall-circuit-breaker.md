@@ -7,7 +7,7 @@ accepted（2026-10-29，来源：用户裁定——"leader 的 tokens 消耗负�
 
 ## 背景
 
-原交接机制（[ADR-0102](./0102-leader-worker-dual-model-handoff.md)）定"Worker 回报 → Leader 审查 → Leader 派下一轮"，**审查单元是单轮**，唤醒次数与轮数 1:1。
+原交接机制（[ADR-0102](0102-leader-worker-dual-model-handoff.md)）定"Worker 回报 → Leader 审查 → Leader 派下一轮"，**审查单元是单轮**，唤醒次数与轮数 1:1。
 
 实测成本（[.coordination/README.md#auto-wake](../../.coordination/README.md#auto-wake) 记录）：Leader 每次唤醒重付整个会话上下文，**每次约 22 万 `cacheRead`**。
 
@@ -92,5 +92,5 @@ W8 验证任务 `20261027-001-w8-validation-recovery` 的实测数据：
 ## 相关
 
 - 修改的规则：[.coordination/README.md#batch](../../.coordination/README.md#batch)、[leader.md#review](../../.coordination/roles/leader.md#review)、[worker.md#batch-autonomy](../../.coordination/roles/worker.md#batch-autonomy)
-- 前序：[ADR-0102](./0102-leader-worker-dual-model-handoff.md)（Leader/Worker 双模型机制）
+- 前序：[ADR-0102](0102-leader-worker-dual-model-handoff.md)（Leader/Worker 双模型机制）
 - 方向：[项目完成路线](../plan/README.md#plan-index)

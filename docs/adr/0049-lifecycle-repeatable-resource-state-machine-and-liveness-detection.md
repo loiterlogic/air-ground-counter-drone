@@ -8,11 +8,11 @@ accepted
 
 2026-10-17
 
-> 注（S-05 / [ADR-0061](./0061-w6-runtime-topology-backend-identity-and-single-parameterized-entry.md)）：W6 顶层入口已统一为 [`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)（`backend` 参数 ∈ lightweight | full），原 `w6_task_eval.launch.py` / `w6_full.launch.py` 退役；本 ADR 历史结论正文不改，下文的旧入口名按现入口读作同一拓扑。
+> 注（S-05 / [ADR-0061](0061-w6-runtime-topology-backend-identity-and-single-parameterized-entry.md)）：W6 顶层入口已统一为 [`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)（`backend` 参数 ∈ lightweight | full），原 `w6_task_eval.launch.py` / `w6_full.launch.py` 退役；本 ADR 历史结论正文不改，下文的旧入口名按现入口读作同一拓扑。
 
 ## 背景
 
-评审风险 **R-034（生命周期恢复）**（[10-风险](../../docs/reviews/agc-review-2026-10-14/10-风险.md#r-034)）指出，
+评审风险 **R-034（生命周期恢复）**（[10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-034)）指出，
 W3 空中链路的生命周期只验证了**首次 autostart**，跨 episode 复用 / 故障恢复的可靠性不足：
 
 - [`agc_lifecycle_node.hpp`](../../src/agc_air/include/agc_air/agc_lifecycle_node.hpp) 的 `AgcLifecycleNode`
@@ -151,8 +151,8 @@ bond 失联检测；manager 检测被管节点死亡 → 硬复位）。**不**�
 
 ## 参考
 
-- 评审：[10-风险](../../docs/reviews/agc-review-2026-10-14/10-风险.md#r-034)
-- 规格：[fix-lifecycle-control-height-numeric-r34-r38 spec](../../.trae/specs/fix-lifecycle-control-height-numeric-r34-r38/spec.md)（R-034）
+- 评审：[10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-034)
+- 规格：[fix-lifecycle-control-height-numeric-r34-r38 spec](../archive/specs/fix-lifecycle-control-height-numeric-r34-r38/spec.md)（R-034）
 - Nav2 参照：`nav2_util::LifecycleNode`（`createBond` / `destroyBond` / `on_rcl_preshutdown`）/
   `nav2_lifecycle_manager`（`createBondConnection` / `checkBondConnections` / `bond_timeout`）/ `bondcpp`（`Bond` /
   `isBroken` / 心跳超时）

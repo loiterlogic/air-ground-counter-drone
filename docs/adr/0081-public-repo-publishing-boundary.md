@@ -51,8 +51,9 @@ accepted
 ## 后果
 
 - **正面**：公开仓库只含源码 / 文档，克隆体积从 ~150 MB 降到源码量级；本机路径与内部规格不外泄。
-- **代价 / 限制**：公开 clone **不含** `.trae/specs/`，因此 `AGENTS.md` / 部分文档中指向
-  `.trae/specs/...` 的引用在公开仓库中不可用；规格随本地工程分发。
+- **代价 / 限制**：公开 clone **不含** workstream 规格，因此 `AGENTS.md` / 部分文档中指向
+  规格目录的引用在公开仓库中不可用；规格随本地工程分发。
+  > **位置更新（2026-10-29）**：规格已随 Trae 退役迁到 `docs/archive/specs/`，仍按本 ADR 不发布（[ADR-0105](0105-retire-trae-and-relocate-specs-skills.md)）。本条决策不变，只更新路径。
 - **证据**：实验 run 的 `config/`、`metrics/`、`log/` 仍全部保留在**本机** `experiments/`；
   需要公开时以 Release 附件 / 归档包提供。
 - **可复现性**：源码 + 参数（`src/*/config`）+ ADR + Runbook 足以重建实验；逐 run 的机器指纹不再公开。

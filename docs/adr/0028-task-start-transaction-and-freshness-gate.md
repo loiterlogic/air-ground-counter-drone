@@ -8,7 +8,7 @@ accepted
 评审风险 **R-013（起始门禁竞态）**：`/agc/task/start` 在**主单线程回调内阻塞**（`spin_until_future_complete`
 于另建客户端节点），`scenario/reset` + `air/reset_phase` 等待期间任务自身的 `odom_valid` / 地面 odom /
 `cmd_vel` 订阅**停止更新**；故「reset 后再校验」实际仍读**阻塞前缓存**。且 `odom_valid` **无年龄**、
-`world` 仅比较**参数字符串**、时钟仅 `now>0`。[契约 #lessons](../../docs/ROS2迁移交接文档.md#lessons)
+`world` 仅比较**参数字符串**、时钟仅 `now>0`。[契约 #lessons](../ROS2迁移交接文档.md#lessons)
 要求「先 reset 后校验」，本次将其落为**可判定**语义。
 
 本 ADR 记录三项决策：**(a) 起始事务不阻塞节点（多线程执行器 + 服务独立回调组）**、

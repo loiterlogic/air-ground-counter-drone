@@ -5,9 +5,9 @@ accepted
 
 ## 背景与决策
 
-结构评审 [S-05](../../docs/reviews/agc-review-2026-10-14/20-结构.md#s-05)（**用户裁定 · 正式修订**）指出：`m0_skeleton` / `w6_task_eval` / `w6_full` **重复组装**——后两者各自内联一份**完全相同**的场景配置解析（base/registry/carriers 加载、carrier 校验、参数合并、轴断言、manifest 生成），且参数路径分叉（`full` 另用 `air.yaml`）；`backend` 未贯穿 summary；`launch` 身份字段与**入口名**分离；关键段启动依赖由**绝对时间 `TimerAction`**（12 / 25 / 35 s）承载。后果：配置漂移不易发现、拓扑未成为可审查实体。契约真源：[#params](../ROS2迁移交接文档.md#params)（launch 单一设置 / 节点不得覆写）、[#execution-port](../ROS2迁移交接文档.md#execution-port)、[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)（C1–C10）、[#terminal-semantics](../ROS2迁移交接文档.md#terminal-semantics)。
+结构评审 [S-05](../reviews/agc-review-2026-10-14/20-结构.md#s-05)（**用户裁定 · 正式修订**）指出：`m0_skeleton` / `w6_task_eval` / `w6_full` **重复组装**——后两者各自内联一份**完全相同**的场景配置解析（base/registry/carriers 加载、carrier 校验、参数合并、轴断言、manifest 生成），且参数路径分叉（`full` 另用 `air.yaml`）；`backend` 未贯穿 summary；`launch` 身份字段与**入口名**分离；关键段启动依赖由**绝对时间 `TimerAction`**（12 / 25 / 35 s）承载。后果：配置漂移不易发现、拓扑未成为可审查实体。契约真源：[#params](../ROS2迁移交接文档.md#params)（launch 单一设置 / 节点不得覆写）、[#execution-port](../ROS2迁移交接文档.md#execution-port)、[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)（C1–C10）、[#terminal-semantics](../ROS2迁移交接文档.md#terminal-semantics)。
 
-**裁定**（**不**改冻结 ABI / 唯一执行口语义 / [Runbook #status](../ROS2迁移步骤.md#status)）：
+**裁定**（**不**改冻结 ABI / 唯一执行口语义 / [Runbook #status](../archive/ROS2迁移步骤.md#status)）：
 
 1. **单一参数化入口**：`agc_task` 顶层 W6 入口 **统一为** [`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)（`backend` ∈ `lightweight` | `full`，默认 `lightweight`）。原 `w6_task_eval.launch.py` / `w6_full.launch.py` **退役**；[`m0_skeleton.launch.py`](../../src/agc_task/launch/m0_skeleton.launch.py) **保留**为骨架基座（被 `backend:=lightweight` include）。
 2. **共享配置解析模块为单一真源**：抽取 [`w6_composition.py`](../../src/agc_task/launch/w6_composition.py)（`load_scene` / `carrier_entry` / `coverage_status` / `compose_params` / `assertions` / `build_manifest` / `write_temp_params` / `write_manifest`）；入口**不复述**解析逻辑。约束类信息**只引用不复述**（真源见契约）。
@@ -26,6 +26,6 @@ accepted
 
 - **代码**：[`w6_composition.py`](../../src/agc_task/launch/w6_composition.py) 为共享解析单一真源；[`w6.launch.py`](../../src/agc_task/launch/w6.launch.py) 按 `backend` 分派组装（`lightweight` = include `m0_skeleton` + `capture_adjudicator` + `jammer`；`full` = 双 PX4 整链）；`w6_task_eval.launch.py` / `w6_full.launch.py` 删除。临时参数 / manifest 文件名含 backend 与唯一性（`w6_<backend>_<scene>_<seed>.yaml` / `w6_<backend>_manifest_<scene>_<seed>.json`）。
 - **行为**：`lightweight` / `full` 除入口名 / 身份 / 就绪改动外**等价**；`intruder_driver` 改事件驱动后其启动不早于入侵者 PX4（`≈25 s`），与旧 35 s 相比**不晚**、且随实际就绪，行为等价或更稳。
-- **同步更新**：引用旧入口名的脚本 / 核查器（`scripts/run_w6_*.sh` / `episode_runner.py` / `w6_r0*_check.py` / `w6_r025_full_probe.py` / `w6_full_check.py`）、config 注释、ADR（[0029](./0029-spawn-clearance-entity-pairs-and-boundary.md) / [0031](./0031-intruder-episode-start-protocol.md) / [0034](./0034-failsafe-factor-separation-and-runtime-param-lock.md) / [0040](./0040-full-chain-coverage-matrix-and-same-run-causal-record.md) / [0041](./0041-scenario-axis-carriers-and-coverage.md) / [0049](./0049-lifecycle-repeatable-resource-state-machine-and-liveness-detection.md)）**就近加中性注**（历史结论正文不改）。
-- **冻结不变**：9 消息 / 服务 ABI、唯一执行口语义（**无**第二 ROS 命令者）、硬约束 C1–C10、[Runbook #status](../ROS2迁移步骤.md#status) 均**不改**。
+- **同步更新**：引用旧入口名的脚本 / 核查器（`scripts/run_w6_*.sh` / `episode_runner.py` / `w6_r0*_check.py` / `w6_r025_full_probe.py` / `w6_full_check.py`）、config 注释、ADR（[0029](0029-spawn-clearance-entity-pairs-and-boundary.md) / [0031](0031-intruder-episode-start-protocol.md) / [0034](0034-failsafe-factor-separation-and-runtime-param-lock.md) / [0040](0040-full-chain-coverage-matrix-and-same-run-causal-record.md) / [0041](0041-scenario-axis-carriers-and-coverage.md) / [0049](0049-lifecycle-repeatable-resource-state-machine-and-liveness-detection.md)）**就近加中性注**（历史结论正文不改）。
+- **冻结不变**：9 消息 / 服务 ABI、唯一执行口语义（**无**第二 ROS 命令者）、硬约束 C1–C10、[Runbook #status](../archive/ROS2迁移步骤.md#status) 均**不改**。
 - **未决 / 后续**：gz 引擎 spawn 段落（12 / 25 s）的就绪信号若将来由引擎侧提供可达事件，须回归就绪依赖；`intruder_driver` 事件驱动的实跑时序以整链实跑证据复核。

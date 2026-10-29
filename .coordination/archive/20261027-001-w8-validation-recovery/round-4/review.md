@@ -11,7 +11,7 @@
 
 ### 核查依据
 
-- 读取本轮 [派工](request.md#round4)、[回报](report.md#round4)、`CURRENT.md`、交接协议、[第 3 轮审查](../round-3/review.md#round3-review) 及 round-4 规格；本审查未构建、未启动 ROS/GZ/PX4、未启动仿真或 GUI。
+- 读取本轮 [派工](request.md#round4)、[回报](report.md#round4-report)、`CURRENT.md`、交接协议、[第 3 轮审查](../round-3/review.md#round3-review) 及 round-4 规格；本审查未构建、未启动 ROS/GZ/PX4、未启动仿真或 GUI。
 - 独立执行只读证据核对：读取四份 `report/attempt-*-result.json`，逐行解析四份 `log/attempt-*-events.jsonl`，按进程启动 monotonic 时钟重算 matched/graph/heard 峰值和 matched 事件；结果为 C1 pub matched 峰值 1、sub matched 恒 0，D1 sub matched 峰值 1、pub matched 恒 0，四端 `heard_n=0`。
 - 独立核对 `log/10-attempt-c1.log` 与 `log/11-attempt-d1.log`：C1/D1 墙钟分别 8.657 s/8.457 s，四个进程退出码均为 0，PID/PGID 均回收，`RESIDUE=0`；两次总计 17.114 s，满足单次 30 s、总计 90 s 和最多 2 进程的 T1 边界。
 - 独立核对固定条件与命令参数：两次均使用 domain 39、LOCALHOST、RELIABLE depth10、`/agc_probe_order/chatter`，只读复用 round-3 探针；未见配置、源码或探针复制改动。

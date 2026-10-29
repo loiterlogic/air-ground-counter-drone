@@ -8,19 +8,19 @@ accepted
 
 ## 背景
 
-评审挑战 **X-02**（[10-风险](../../docs/reviews/agc-review-2026-10-14/10-风险.md#x-02)）针对契约
+评审挑战 **X-02**（[10-风险](../reviews/agc-review-2026-10-14/10-风险.md#x-02)）针对契约
 [#hard-constraints](../ROS2迁移交接文档.md#hard-constraints) **C3** 的原文字「实证/验收**使用非无头（GUI）**；
 默认仍无头以向后兼容」提出：
 
 1. 现 [campaign 产物](../../experiments/w6-task-eval/20261014-campaign/report.json) 明确标注为 **headless**；
 2. W7 规模训练与多 seed 统计若**逐次 GUI**，成本高且可能拖累 RTF；
 3. 但**不能静默**把 headless PASS 当作 C3 验收（现已由
-   [ADR-0040](./0040-full-chain-coverage-matrix-and-same-run-causal-record.md) (d) 如实标注 backend/mode 缓解，
+   [ADR-0040](0040-full-chain-coverage-matrix-and-same-run-causal-record.md) (d) 如实标注 backend/mode 缓解，
    **但其明确声明 X-02 的裁定未在彼处消解**）。
 
 即：C3 的文字范围（"每份实证都要 GUI"）与"规模统计用 headless 批跑"的现实需求之间存在**未裁定的冲突**。
 
-**先学后做**：本项目同域既有做法为**观察方式分离**——[ADR-0040](./0040-full-chain-coverage-matrix-and-same-run-causal-record.md)
+**先学后做**：本项目同域既有做法为**观察方式分离**——[ADR-0040](0040-full-chain-coverage-matrix-and-same-run-causal-record.md)
 以 **backend / mode 标签 + pass 命题化**把「轻量 headless PASS」与「整链 / C3 GUI 验收」显式区分；同版本 Nav2 生态亦以
 `gui` / `headless` 两种启动模式并存（`nav2_bringup` 的 `slam_launch`/`bringup` 皆可 headless 运行）。故合理方向是
 **按观察目的分层**，而非取消 GUI 验收或放弃规模统计。
@@ -33,7 +33,7 @@ accepted
 裁定采纳 **(b) 分层授权**：
 
 - **(a) 现状基线（不采纳为终态）**：C3 字面 = 每份实证 / 验收都须 GUI；headless 产物只作辅助证据
-  （即 [ADR-0040](./0040-full-chain-coverage-matrix-and-same-run-causal-record.md) 当前的边界记录）。
+  （即 [ADR-0040](0040-full-chain-coverage-matrix-and-same-run-causal-record.md) 当前的边界记录）。
   **问题**：W7 规模统计与 C3 持续冲突，且每次裁定都要"绕过"。
 - **(b) 分层授权（已采纳）**：
   1. **定性 / 关键验收**（每种拓扑、每个关键场景）**仍须 GUI** 审阅并留记录 → **C3 的价值保留**；
@@ -54,10 +54,10 @@ accepted
 ## Consequences
 
 - **不删除 GUI 验收价值**：定性 / 关键场景仍须 GUI 记录；headless 只服务规模统计。
-- **产物纪律**：campaign / episode 产物必带 `backend` / `mode` 标签（承接 [ADR-0040](./0040-full-chain-coverage-matrix-and-same-run-causal-record.md) (a)）。
+- **产物纪律**：campaign / episode 产物必带 `backend` / `mode` 标签（承接 [ADR-0040](0040-full-chain-coverage-matrix-and-same-run-causal-record.md) (a)）。
 - **裁定前**：现 headless 产物**仅作辅助证据**，C3 仍以 GUI 材料为准（不静默改变现状结论）。
 - **迁移成本：低至中**：契约文字裁定 + 报告 backend/mode 标签 + 两模式**配对验收**；不需改 PX4 链路、包边界或冻结 ABI。
-- **只读边界**：本 ADR 只读 [10-风险](../../docs/reviews/agc-review-2026-10-14/10-风险.md#x-02) 与契约；未读 `reference/`；未改任何源码 / 契约。
+- **只读边界**：本 ADR 只读 [10-风险](../reviews/agc-review-2026-10-14/10-风险.md#x-02) 与契约；未读 `reference/`；未改任何源码 / 契约。
 
 ## 验收方法（裁定后）
 

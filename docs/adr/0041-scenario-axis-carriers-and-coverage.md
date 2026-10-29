@@ -4,13 +4,13 @@
 
 accepted
 
-> 注（S-05 / [ADR-0061](./0061-w6-runtime-topology-backend-identity-and-single-parameterized-entry.md)）：W6 顶层入口已统一为 [`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)（`backend` 参数 ∈ lightweight | full），原 `w6_task_eval.launch.py` / `w6_full.launch.py` 退役；本 ADR 历史结论正文不改，下文的旧入口名按现入口读作同一拓扑。
+> 注（S-05 / [ADR-0061](0061-w6-runtime-topology-backend-identity-and-single-parameterized-entry.md)）：W6 顶层入口已统一为 [`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)（`backend` 参数 ∈ lightweight | full），原 `w6_task_eval.launch.py` / `w6_full.launch.py` 退役；本 ADR 历史结论正文不改，下文的旧入口名按现入口读作同一拓扑。
 >
-> 注（S-06 / [ADR-0062](./0062-scene-geometry-single-source-and-derivation.md)）：静态障碍几何真源已**上移**为 [`agc_sim/config/world_geometry.yaml`](../../src/agc_sim/config/world_geometry.yaml)；[`agc_world.sdf`](../../src/agc_sim/worlds/agc_world.sdf) 改为**不含 `pole_*` 的 base world**，`world_bringup.launch.py` 按 `world_obstacles` 由真源**注入 / 不注入**障碍模型生成运行期世界（本 ADR 历史正文「`none` 由单一真源去除 `pole` 块生成」按此读作**真源上移后的按域派生**）。历史正文不改。
+> 注（S-06 / [ADR-0062](0062-scene-geometry-single-source-and-derivation.md)）：静态障碍几何真源已**上移**为 [`agc_sim/config/world_geometry.yaml`](../../src/agc_sim/config/world_geometry.yaml)；[`agc_world.sdf`](../../src/agc_sim/worlds/agc_world.sdf) 改为**不含 `pole_*` 的 base world**，`world_bringup.launch.py` 按 `world_obstacles` 由真源**注入 / 不注入**障碍模型生成运行期世界（本 ADR 历史正文「`none` 由单一真源去除 `pole` 块生成」按此读作**真源上移后的按域派生**）。历史正文不改。
 
 ## 背景
 
-评审风险 **R-026（场景轴未执行）**（[10-风险](../../docs/reviews/agc-review-2026-10-14/10-风险.md#r-026)）指出：
+评审风险 **R-026（场景轴未执行）**（[10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-026)）指出：
 [`scenarios.yaml`](../../src/agc_task/config/scenarios.yaml) 登记 `target_motion × obstacle × perception × outcome`，
 但运行参数**未实现对应实验因子**——`dynamic` 无障碍驱动覆盖；`s06/s07` 无 drop / fov 参数；
 `none/static` 使用**同一世界**（[`agc_world.sdf`](../../src/agc_sim/worlds/agc_world.sdf) 恒含 `pole_1/pole_2`）；

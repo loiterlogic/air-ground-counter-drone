@@ -3,7 +3,7 @@
 
 任务ID 20261027-001-w8-validation-recovery；轮次16；来源Leader，2026-10-28。复用Worker `55d8793e-4916-4045-ac19-5800e167ebfa`。
 
-入口：[Runbook](../../../../docs/ROS2迁移步骤.md#usage)、[规格](../../../../.trae/specs/w8-validation-recovery/spec.md#round16)、[第15轮审查](../round-15/review.md#round15-review)、[自主权限](../../../README.md#executor-autonomy)、[观测分级](../../../README.md#run-tiers)、[硬约束](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。先读第2/5/6/7/8/14轮原始事件与审查，不只取支持片段。
+入口：[Runbook](../../../../docs/archive/ROS2迁移步骤.md#usage)、[规格](../../../../docs/archive/specs/w8-validation-recovery/spec.md#round16)、[第15轮审查](../round-15/review.md#round15-review)、[自主权限](../../../README.md#executor-autonomy)、[观测分级](../../../README.md#run-tiers)、[硬约束](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。先读第2/5/6/7/8/14轮原始事件与审查，不只取支持片段。
 
 ## 0. 本轮的判读前提（Leader 已核实，Worker 须自行复核）
 

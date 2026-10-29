@@ -8,7 +8,7 @@ accepted（2026-10-26：指标语义裁定完成；记录器实现与新执行�
 <a id="context"></a>
 ## 依据与适用范围
 
-用户授权在前置满足后执行测量 P2。[P1 独立重做](0098-w8-determinism-probe-and-measurement-spec-change.md#redo) 已完成；规格见 [P2 spec](../../.trae/specs/w8-measurement-p2/spec.md#scope)。契约仅引用 [硬约束](../ROS2迁移交接文档.md#hard-constraints) 与 [终态](../ROS2迁移交接文档.md#terminal-semantics)。
+用户授权在前置满足后执行测量 P2。[P1 独立重做](0098-w8-determinism-probe-and-measurement-spec-change.md#redo) 已完成；规格见 [P2 spec](../archive/specs/w8-measurement-p2/spec.md#scope)。契约仅引用 [硬约束](../ROS2迁移交接文档.md#hard-constraints) 与 [终态](../ROS2迁移交接文档.md#terminal-semantics)。
 
 本裁定只取代 [ADR-0096](0096-w8-gui-headless-equivalence-design-bounds-and-gate.md#measurement-amendment) 中未来 W8-E1a 等价设计的指标集合及定义；旧计划、历史分析及科研命题的 DV 保持原样。
 

@@ -3,7 +3,7 @@
 
 任务ID 20261027-001-w8-validation-recovery；轮次14；来源Leader，2026-10-28；复用Worker 55d8793e-4916-4045-ac19-5800e167ebfa。
 
-先读[第13轮审查](../round-13/review.md#round13-review)、[第13轮完整执行规格](../round-13/request.md#round13)、[本轮规格](../../../../.trae/specs/w8-validation-recovery/spec.md#round14)、[Runbook](../../../../docs/ROS2迁移步骤.md#usage)及[观测分级](../../../README.md#run-tiers)。本轮继承第13轮全部配置、A正负控制、门控、判读、证据和停止条件；以下显式替换新根/预算/前置，不复活旧轮预算。
+先读[第13轮审查](../round-13/review.md#round13-review)、[第13轮完整执行规格](../round-13/request.md#round13)、[本轮规格](../../../../docs/archive/specs/w8-validation-recovery/spec.md#round14)、[Runbook](../../../../docs/archive/ROS2迁移步骤.md#usage)及[观测分级](../../../README.md#run-tiers)。本轮继承第13轮全部配置、A正负控制、门控、判读、证据和停止条件；以下显式替换新根/预算/前置，不复活旧轮预算。
 
 ## 预算与写入
 

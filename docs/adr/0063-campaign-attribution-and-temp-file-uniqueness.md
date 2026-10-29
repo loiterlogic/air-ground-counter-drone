@@ -10,7 +10,7 @@ accepted
 
 ## 背景
 
-结构评审 [S-07](../../docs/reviews/agc-review-2026-10-14/20-结构.md#s-07)（运行产物规范）指出：[实验产物规范](../../docs/conventions/实验产物规范.md)
+结构评审 [S-07](../reviews/agc-review-2026-10-14/20-结构.md#s-07)（运行产物规范）指出：[实验产物规范](../conventions/实验产物规范.md)
 仍写 `run_id = <YYYYMMDD>-<scenario>-<seed>`（**已不可唯一**），而
 [ADR-0044](0044-unique-run-identity-and-reproducible-evidence.md) 已实装唯一 run 身份；
 [episode_runner](../../scripts/episode_runner.py) campaign `run_id = <YYYYMMDD>-campaign`（同日覆盖）且
@@ -28,7 +28,7 @@ campaign 报告直写 run 根（与 `config/` / `metrics/` 分工不同）；[w6
 
 ### (a) 规范同实装
 
-[实验产物规范](../../docs/conventions/实验产物规范.md) 与 [experiments/README](../../experiments/README.md) 同步到
+[实验产物规范](../conventions/实验产物规范.md) 与 [experiments/README](../../experiments/README.md) 同步到
 [ADR-0044](0044-unique-run-identity-and-reproducible-evidence.md) 的唯一 run 身份（只索引不复述约束）。
 
 ### (b) campaign run_id 唯一
@@ -61,8 +61,8 @@ campaign 汇总报告 `report.{json,md}` 落 campaign run 的 `metrics/`；报�
 
 ## 参考
 
-- 评审：[20-结构 S-07](../../docs/reviews/agc-review-2026-10-14/20-结构.md#s-07)
-- 规格：[fix-structure-geometry-evidence-toolchain-s06-s10 spec](../../.trae/specs/fix-structure-geometry-evidence-toolchain-s06-s10/spec.md)
+- 评审：[20-结构 S-07](../reviews/agc-review-2026-10-14/20-结构.md#s-07)
+- 规格：[fix-structure-geometry-evidence-toolchain-s06-s10 spec](../archive/specs/fix-structure-geometry-evidence-toolchain-s06-s10/spec.md)
 - 产物纪律：[ADR-0007](0007-experiment-artifacts-convention.md)
 - 运行身份：[ADR-0044](0044-unique-run-identity-and-reproducible-evidence.md)
 - 实现：`episode_runner.py` / `w6_composition.py` / `w6.launch.py`

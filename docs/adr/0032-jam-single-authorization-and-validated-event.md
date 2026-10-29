@@ -52,7 +52,7 @@ JAM_LOST` = 授权；`JAM_NONE` = **释放**（非注入）。`''/NONE/CLEAR` �
   回调 `_on_jam_state`：`key = m.data.strip().upper()`；`jammed = key not in ('', 'JAM_NONE')`；
   其后转移逻辑与 R-016 **不变**（False→True 记 `jam_on_us_`；True→False 且 `jam_on_us_` / `t0_` 均在则
   `t0_ += (now - jam_on_us_)`，日志 `jam CLEAR (rebaseline pause=...)`）。`jammed_`→停发 Offboard 流
-  （模拟链路被切断）语义不变（[ADR-0031](./0031-intruder-episode-start-protocol.md)）。
+  （模拟链路被切断）语义不变（[ADR-0031](0031-intruder-episode-start-protocol.md)）。
 
 ### (e) 不改冻结 ABI
 9 个 `agc_msgs` 消息 / 服务 ABI **不动**（沿用 `std_msgs/String`）；不新增地面 / 己方命令者。

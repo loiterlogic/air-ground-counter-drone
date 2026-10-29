@@ -10,7 +10,7 @@ accepted
 
 ## 背景
 
-结构评审 [S-11](../../docs/reviews/agc-review-2026-10-14/20-结构.md#s-11)（**路径与安装假设**，中·挑战）指出：
+结构评审 [S-11](../reviews/agc-review-2026-10-14/20-结构.md#s-11)（**路径与安装假设**，中·挑战）指出：
 两处 launch 入口 [`w6.launch.py`](../../src/agc_task/launch/w6.launch.py) 与
 [`air_bringup.launch.py`](../../src/agc_air/launch/air_bringup.launch.py) 原以
 `Path(get_package_share_directory(...)).parents[3]` **由包 share 目录深度上溯**推断项目根，
@@ -81,8 +81,8 @@ binary，**不**由 package share 目录深度猜；ROS 资产仍通过 **ament 
 
 ## 参考
 
-- 评审：[20-结构](../../docs/reviews/agc-review-2026-10-14/20-结构.md#s-11)（路径与安装假设）
-- 规格：[fix-structure-toolchain-root-asset-provenance-s11-s12 spec](../../.trae/specs/fix-structure-toolchain-root-asset-provenance-s11-s12/spec.md)
+- 评审：[20-结构](../reviews/agc-review-2026-10-14/20-结构.md#s-11)（路径与安装假设）
+- 规格：[fix-structure-toolchain-root-asset-provenance-s11-s12 spec](../archive/specs/fix-structure-toolchain-root-asset-provenance-s11-s12/spec.md)
 - 前序：[ADR-0065](0065-toolchain-rebuildable-pin-manifest.md)（工具链 pin 清单）/
   [ADR-0061](0061-w6-runtime-topology-backend-identity-and-single-parameterized-entry.md)（单参数化入口）
 - 契约：[#params](../ROS2迁移交接文档.md#params) / [#execution-port](../ROS2迁移交接文档.md#execution-port)

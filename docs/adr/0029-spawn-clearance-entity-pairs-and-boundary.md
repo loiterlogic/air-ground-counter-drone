@@ -3,7 +3,7 @@
 ## Status
 accepted
 
-> 注（S-05 / [ADR-0061](./0061-w6-runtime-topology-backend-identity-and-single-parameterized-entry.md)）：W6 顶层入口已统一为 [`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)（`backend` 参数 ∈ lightweight | full），原 `w6_task_eval.launch.py` / `w6_full.launch.py` 退役；本 ADR 历史结论正文不改，下文的旧入口名按现入口读作同一拓扑。
+> 注（S-05 / [ADR-0061](0061-w6-runtime-topology-backend-identity-and-single-parameterized-entry.md)）：W6 顶层入口已统一为 [`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)（`backend` 参数 ∈ lightweight | full），原 `w6_task_eval.launch.py` / `w6_full.launch.py` 退役；本 ADR 历史结论正文不改，下文的旧入口名按现入口读作同一拓扑。
 
 ## 背景
 
@@ -13,7 +13,7 @@ accepted
 （`spawn_randomize`）也不复核上述约束。于是出现"目标远但车压立柱 / 车与己方机近邻 / 车出界"
 仍可通过的漏洞。
 
-[ADR-0023](./0023-spawn-clearance-recalibration.md) 已把 C7 出生净空拆为**可标定下限**，但其
+[ADR-0023](0023-spawn-clearance-recalibration.md) 已把 C7 出生净空拆为**可标定下限**，但其
 承载实现只落到"车↔目标"一对。R-014 将其扩展为**多实体对 + 边界**的统一候选校验。
 
 ## 决策
@@ -38,7 +38,7 @@ accepted
 - **静态障碍对（车/目标↔立柱）**：用**几何不重叠**口径——下限 = 两实体**几何外伸之和**
   （车半长 `0.5037` + 立柱半宽 `0.15`；UAV 半宽 `0.25` + 立柱半宽 `0.15`）。立柱是刚性几何体，
   净空要求是"不嵌入"，故取几何外伸而非安全档。
-- **车↔目标**：**沿用 C7 标定值 6.0 m**（[ADR-0023](./0023-spawn-clearance-recalibration.md) 的
+- **车↔目标**：**沿用 C7 标定值 6.0 m**（[ADR-0023](0023-spawn-clearance-recalibration.md) 的
   地面安全包络口径：新 C2 安全档 4.0 + 车体半长 0.5 + 载荷外伸 1.0 + 裕度 ≈ 6.0）。二者为
   动态实体且车携网，须以安全包络而非几何不重叠为准。
 - **己方 UAV 对（车/目标↔己方机）**：用**几何外伸**口径（两 UAV 半宽之和 / 车半长 + UAV 半宽）。
@@ -48,7 +48,7 @@ accepted
 外伸之和推导**（`r_a + r_b`），即默认走几何口径。
 
 > 数值纪律：`0.5037` / `0.25` / `0.15` 与上述对下限均为**暂定值，待实测回填**，不得据作
-> 长期标定（同 [ADR-0023](./0023-spawn-clearance-recalibration.md) 表述纪律）。
+> 长期标定（同 [ADR-0023](0023-spawn-clearance-recalibration.md) 表述纪律）。
 
 ### (c) 显式运行模式
 `own_uav_present` 为**显式运行模式**开关，语义对齐 R-001 `air_present` 原则：**不得由实体缺席

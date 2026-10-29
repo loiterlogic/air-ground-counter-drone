@@ -3,7 +3,7 @@
 
 任务ID 20261027-001-w8-validation-recovery；轮次11；来源Leader，2026-10-28。复用Worker 55d8793e-4916-4045-ac19-5800e167ebfa。
 
-入口：[Runbook](../../../../docs/ROS2迁移步骤.md#usage)、[规格](../../../../.trae/specs/w8-validation-recovery/spec.md#round11)、[上轮审查](../round-10/review.md#round10-review)、[权限](../../../README.md#executor-autonomy)、[契约](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。先读完整审查和对应代码/原始回归，从既有已验证回收实现学习，不重复换domain/discovery配置。
+入口：[Runbook](../../../../docs/archive/ROS2迁移步骤.md#usage)、[规格](../../../../docs/archive/specs/w8-validation-recovery/spec.md#round11)、[上轮审查](../round-10/review.md#round10-review)、[权限](../../../README.md#executor-autonomy)、[契约](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。先读完整审查和对应代码/原始回归，从既有已验证回收实现学习，不重复换domain/discovery配置。
 
 ## 授权与基线
 

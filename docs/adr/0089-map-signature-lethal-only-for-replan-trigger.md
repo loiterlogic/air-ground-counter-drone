@@ -91,7 +91,7 @@ W7-b 的 P2 臂 B（`p2_rl_high`）诊断（[ADR-0087](0087-p1-mechanism-ablatio
 
 ## 参考
 
-- 审计来源：[spec](../../.trae/specs/verify-w7b-p1-p2-before-v7/spec.md)、[ADR-0087](0087-p1-mechanism-ablation-and-p2-arm-b-diagnosis-scope.md)
+- 审计来源：[spec](../archive/specs/verify-w7b-p1-p2-before-v7/spec.md)、[ADR-0087](0087-p1-mechanism-ablation-and-p2-arm-b-diagnosis-scope.md)
 - 前序：[ADR-0055](0055-map-content-identity-and-monotonic-update-sequence.md)、[ADR-0056](0056-goal-invalidation-policy-and-displacement-triggered-replan.md)、[ADR-0027](0027-baseline-path-binding-and-replan-failstop.md)
 - 实现：[`ground_baseline.cpp`](../../src/agc_ground/src/ground_baseline.cpp)（`mapSignature` / `mapSigInfo`）
 - 台架：[`w7b_p2_replan_bench.py`](../../scripts/w7b_p2_replan_bench.py)、[`w6_r041_check.py`](../../tests/w6_r041_check.py)

@@ -3,7 +3,7 @@
 
 任务ID 20261027-001-w8-validation-recovery；轮次13；来源Leader，2026-10-28。复用Worker 55d8793e-4916-4045-ac19-5800e167ebfa。第12轮[审查](../round-12/review.md#round12-review)已验收，仅结束离线驱动返工。
 
-入口：[Runbook](../../../../docs/ROS2迁移步骤.md#usage)、[规格](../../../../.trae/specs/w8-validation-recovery/spec.md#round13)、[原第9轮控制语义](../round-9/request.md#round9)、[观测分级](../../../README.md#run-tiers)、[硬约束](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。已学本机同版本rclpy/第3轮正负控制/第12轮离线成功实现，本轮复用不重写。
+入口：[Runbook](../../../../docs/archive/ROS2迁移步骤.md#usage)、[规格](../../../../docs/archive/specs/w8-validation-recovery/spec.md#round13)、[原第9轮控制语义](../round-9/request.md#round9)、[观测分级](../../../README.md#run-tiers)、[硬约束](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。已学本机同版本rclpy/第3轮正负控制/第12轮离线成功实现，本轮复用不重写。
 
 ## 授权
 

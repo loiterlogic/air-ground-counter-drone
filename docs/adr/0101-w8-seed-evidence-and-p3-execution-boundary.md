@@ -8,7 +8,7 @@ accepted（2026-10-26；证据分类及执行范围已裁定，P3 实施待执�
 <a id="scope"></a>
 ## 适用范围
 
-承接 [上轮交接审查](../../.coordination/archive/20261026-001-handoff-baseline/review.md#review)；补充 [ADR-0100](0100-full-chain-seed-protocol.md#scope) 的证据边界，以及 [ADR-0065](0065-toolchain-rebuildable-pin-manifest.md#status) 的本地补丁保存和校验覆盖。工具链值仍只归 [pin 清单](../../toolchain/README.md#pins)。P3 指标定义只归 [ADR-0099](0099-w8-fixed-budget-mission-fco-measurement.md#metric)，本 ADR 不另定义指标或契约。项目状态以 [Runbook](../ROS2迁移步骤.md#status) 为准。
+承接 [上轮交接审查](../../.coordination/archive/20261026-001-handoff-baseline/review.md#review)；补充 [ADR-0100](0100-full-chain-seed-protocol.md#scope) 的证据边界，以及 [ADR-0065](0065-toolchain-rebuildable-pin-manifest.md#status) 的本地补丁保存和校验覆盖。工具链值仍只归 [pin 清单](../../toolchain/README.md#pins)。P3 指标定义只归 [ADR-0099](0099-w8-fixed-budget-mission-fco-measurement.md#metric)，本 ADR 不另定义指标或契约。项目状态以 [Runbook](../archive/ROS2迁移步骤.md#status) 为准。
 
 <a id="evidence"></a>
 ## 证据裁定
@@ -49,4 +49,4 @@ accepted（2026-10-26；证据分类及执行范围已裁定，P3 实施待执�
 
 草案的缺测处理先采用保守门：任何 mission 的新 FCO 存在未知区间或拒算，正式门不得宣布等价；保留该任务及识别界，不做 available-case 删除。若后续需要识别界上的稳健推断方法，另行审查，不能在结果出现后变更。本轮只预备草案，不执行这一正式门。
 
-细节及预算见 [P3 spec](../../.trae/specs/w8-measurement-p3/spec.md#scope)。前置失败须阻塞后续；需要改变 PX4 RNG/seed 协议或控制行为则交回 Codex，不在本单试改。Gate 仍为 `not_evaluable_as_specified`；正式等价、新 pilot、headless 规模统计、W8-E2 和 W7-c 扩容均须后续独立派工。
+细节及预算见 [P3 spec](../archive/specs/w8-measurement-p3/spec.md#scope)。前置失败须阻塞后续；需要改变 PX4 RNG/seed 协议或控制行为则交回 Codex，不在本单试改。Gate 仍为 `not_evaluable_as_specified`；正式等价、新 pilot、headless 规模统计、W8-E2 和 W7-c 扩容均须后续独立派工。

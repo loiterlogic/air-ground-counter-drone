@@ -10,9 +10,9 @@ accepted
 
 ## 背景
 
-评审 [F-01](../reviews/agc-review-2026-10-14/30-未来.md#f-01) 指出：Runbook 依赖表把 **W7 前置写作仅 `W2`**（[#status](../ROS2迁移步骤.md#status)），而现 RL 主控链实际消费 **W4**（目标 / 感知）、**W5**（安全 / 控制）、**W6**（状态与 reset）——前置**未反映真实拓扑**；建议先定义 W7 可运行最小闭环的**依赖与出口**，且每个依赖**指向验收证据**。同段另有三条被本 ADR 一并裁定的相关意见：[F-04](../reviews/agc-review-2026-10-14/30-未来.md#f-04)（obs 版本化）、[F-05](../reviews/agc-review-2026-10-14/30-未来.md#f-05)（train/eval adapter）、[F-07](../reviews/agc-review-2026-10-14/30-未来.md#f-07)（种子分解）、[F-08](../reviews/agc-review-2026-10-14/30-未来.md#f-08)（并行隔离）、[F-15](../reviews/agc-review-2026-10-14/30-未来.md#f-15)（架构演进触发）。
+评审 [F-01](../reviews/agc-review-2026-10-14/30-未来.md#f-01) 指出：Runbook 依赖表把 **W7 前置写作仅 `W2`**（[#status](../archive/ROS2迁移步骤.md#status)），而现 RL 主控链实际消费 **W4**（目标 / 感知）、**W5**（安全 / 控制）、**W6**（状态与 reset）——前置**未反映真实拓扑**；建议先定义 W7 可运行最小闭环的**依赖与出口**，且每个依赖**指向验收证据**。同段另有三条被本 ADR 一并裁定的相关意见：[F-04](../reviews/agc-review-2026-10-14/30-未来.md#f-04)（obs 版本化）、[F-05](../reviews/agc-review-2026-10-14/30-未来.md#f-05)（train/eval adapter）、[F-07](../reviews/agc-review-2026-10-14/30-未来.md#f-07)（种子分解）、[F-08](../reviews/agc-review-2026-10-14/30-未来.md#f-08)（并行隔离）、[F-15](../reviews/agc-review-2026-10-14/30-未来.md#f-15)（架构演进触发）。
 
-本轮修复已把 41 项风险固化为决策（[ADR-0025](0025-gz-side-terminal-failstop-deadman-plugin.md)–[ADR-0068](0068-third-party-asset-provenance-license-and-hash-manifest.md)），`fix-*` 规格 checklist 多标"已核查"（例 [fix-episode-reset-intruder-r13-r17](../../.trae/specs/fix-episode-reset-intruder-r13-r17/checklist.md)）。但按评审自身判据（[00-总览](../reviews/agc-review-2026-10-14/00-总览.md#judgment)）——"**消息已发 ≠ 效果已发生**"、"**实现已改 ≠ 证据已复现**"——W7 前置**不能**以"代码 / ADR 已记录"为满足。
+本轮修复已把 41 项风险固化为决策（[ADR-0025](0025-gz-side-terminal-failstop-deadman-plugin.md)–[ADR-0068](0068-third-party-asset-provenance-license-and-hash-manifest.md)），`fix-*` 规格 checklist 多标"已核查"（例 [fix-episode-reset-intruder-r13-r17](../archive/specs/fix-episode-reset-intruder-r13-r17/checklist.md)）。但按评审自身判据（[00-总览](../reviews/agc-review-2026-10-14/00-总览.md#judgment)）——"**消息已发 ≠ 效果已发生**"、"**实现已改 ≠ 证据已复现**"——W7 前置**不能**以"代码 / ADR 已记录"为满足。
 
 契约真源：[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)（C1–C10 **不**改）。范围：W7 / W8 归"项目结束后后续"（[ADR-0016](0016-execution-scope-exit-w6.md)）；研究主线为**系统论文**、RL 为手段（[ADR-0014](0014-research-mainline-mobile-interception-system.md)）。
 
@@ -20,7 +20,7 @@ accepted
 
 ### (a) W7 第一个出口 = 可信实验平台，不是算法成果
 
-W7 第一阶段（**W7-a 最小平台**）产出"**语义正确、可复现、可被训练的环境 + 一致的 train / eval 协议**"，验收锚 = "同 seed 可复现 / 指标齐全"（Runbook [W7 卡片](../ROS2迁移步骤.md#workstreams)）。**RL 算法、网络、奖励、训练步数、论文问题不在 W7 入口出口内**，属 W7-b（[F-02](../reviews/agc-review-2026-10-14/30-未来.md#f-02)：先定可证伪命题，并**先用规则策略证明任务非平凡且可达**）。
+W7 第一阶段（**W7-a 最小平台**）产出"**语义正确、可复现、可被训练的环境 + 一致的 train / eval 协议**"，验收锚 = "同 seed 可复现 / 指标齐全"（Runbook [W7 卡片](../archive/ROS2迁移步骤.md#workstreams)）。**RL 算法、网络、奖励、训练步数、论文问题不在 W7 入口出口内**，属 W7-b（[F-02](../reviews/agc-review-2026-10-14/30-未来.md#f-02)：先定可证伪命题，并**先用规则策略证明任务非平凡且可达**）。
 
 ### (b) 复用当前空地仿真栈，不另建训练环境
 
@@ -49,7 +49,7 @@ W7 spec 的每条前置依赖 **SHALL 指向 `run_id` + 验收命题**，**不**
 
 ### (g) 落地物
 
-本 ADR 定性 → [`.trae/specs/w7-rl/`](../../.trae/specs/w7-rl/spec.md) → Runbook 依赖表（W7 前置）与 [W7 卡片](../ROS2迁移步骤.md#workstreams) 更新。
+本 ADR 定性 → [`docs/archive/specs/w7-rl/`](../archive/specs/w7-rl/spec.md) → Runbook 依赖表（W7 前置）与 [W7 卡片](../archive/ROS2迁移步骤.md#workstreams) 更新。
 
 ## 备选
 
@@ -69,6 +69,6 @@ W7 spec 的每条前置依赖 **SHALL 指向 `run_id` + 验收命题**，**不**
 ## 参考
 
 - 评审：[F-01](../reviews/agc-review-2026-10-14/30-未来.md#f-01)、[F-02](../reviews/agc-review-2026-10-14/30-未来.md#f-02)、[F-04](../reviews/agc-review-2026-10-14/30-未来.md#f-04)、[F-05](../reviews/agc-review-2026-10-14/30-未来.md#f-05)、[F-07](../reviews/agc-review-2026-10-14/30-未来.md#f-07)、[F-08](../reviews/agc-review-2026-10-14/30-未来.md#f-08)、[F-11](../reviews/agc-review-2026-10-14/30-未来.md#f-11)、[F-15](../reviews/agc-review-2026-10-14/30-未来.md#f-15)（[30-未来](../reviews/agc-review-2026-10-14/30-未来.md)）
-- Runbook：[#status](../ROS2迁移步骤.md#status)、[#workstreams](../ROS2迁移步骤.md#workstreams)
-- 规格：[w7-rl spec](../../.trae/specs/w7-rl/spec.md)
+- Runbook：[#status](../archive/ROS2迁移步骤.md#status)、[#workstreams](../archive/ROS2迁移步骤.md#workstreams)
+- 规格：[w7-rl spec](../archive/specs/w7-rl/spec.md)
 - 前序：[ADR-0004](0004-rl-primary-controller-nav2-safety-layer.md)、[ADR-0011](0011-node-language-policy.md)、[ADR-0014](0014-research-mainline-mobile-interception-system.md)、[ADR-0016](0016-execution-scope-exit-w6.md)、[ADR-0039](0039-time-budget-kinds-and-rtf-record.md)

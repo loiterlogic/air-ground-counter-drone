@@ -14,7 +14,7 @@ W7-b 闭合后，整链 `backend:=full` 被 own PX4 的
 
 `ERROR [uxrce_dds_client] create entities failed: participant: 255`
 
-阻塞。历史处置见 [ADR-0075](0075-uxrce-entity-creation-intermittent-failure-and-infra-retry.md)（残留孤儿 / 清场 / runner 重试）；本轮按 spec [`restore-fullchain-infra-and-w7c-admission`](../../.trae/specs/restore-fullchain-infra-and-w7c-admission/spec.md) 重新定位，得到三条新事实：
+阻塞。历史处置见 [ADR-0075](0075-uxrce-entity-creation-intermittent-failure-and-infra-retry.md)（残留孤儿 / 清场 / runner 重试）；本轮按 spec [`restore-fullchain-infra-and-w7c-admission`](../archive/specs/restore-fullchain-infra-and-w7c-admission/spec.md) 重新定位，得到三条新事实：
 
 1. **慢阶段是 agent 侧 DDS participant 创建，不是 XRCE 会话**。失败日志中 `create_client → establish_session` 恒 < 0.05 s；`establish_session → participant created` 为 **1.28–3.09 s**。
 2. **负载相关，不是 CPU 或单纯 SHM**。最小链 10 次冷启动 `participant_create_ms` 中位数 **80.6 ms**（max 85.7）；4×CPU busy loop 只升到 **87.6 ms**；10 个 ROS 节点仍为 **75 ms**；**20 个 ROS 节点**复现 **4.86 s** 与 PX4 1 s 超时；清 `/dev/shm` 后 n=10 首跑仍失败、后 9 次 543–563 ms。agent 仅 `FASTDDS_BUILTIN_TRANSPORTS=UDPv4` 把长尾压到 **~0.55 s**，但图刚起时首跑仍失败。
@@ -116,5 +116,5 @@ own PX4 延后后，runner 若仍以地面门（`/agc/task/start` 服务 + gt �
 
 - 前序：[ADR-0075](0075-uxrce-entity-creation-intermittent-failure-and-infra-retry.md)、[ADR-0093](0093-w7b-exit-closure-and-prefix-provenance.md)。
 - 代码：[`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)、[`episode_runner.py`](../../scripts/episode_runner.py)、[`w7b_arms_runner.py`](../../scripts/w7b_arms_runner.py)。
-- spec：[`restore-fullchain-infra-and-w7c-admission`](../../.trae/specs/restore-fullchain-infra-and-w7c-admission/spec.md)。
+- spec：[`restore-fullchain-infra-and-w7c-admission`](../archive/specs/restore-fullchain-infra-and-w7c-admission/spec.md)。
 - 运维：[`整链排障速查`](../conventions/整链排障速查.md)。

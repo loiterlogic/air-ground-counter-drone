@@ -18,14 +18,14 @@ accepted
 - **意图 / 执行分离**：ROS 侧话题名**不变**（`/model/agc_car/cmd_vel`，中继照旧发布），由 `ros_gz_bridge`（`src/agc_sim/config/bridge.yaml`）把其 **gz 侧**改桥到**意图话题** `/agc/sim/cmd_intent`。
 - **守门人插件** `agc_cmd_deadman`（`src/agc_sim/src/agc_cmd_deadman.cpp`，`gz::sim::System` + `ISystemConfigure` + `ISystemPreUpdate`）：
   订阅意图话题；`PreUpdate` 中 **fresh（距上次收到 < timeout）→ 转发缓存值；stale → 发零速** 到 `DiffDrive` 默认订阅的 gz 话题 `/model/agc_car/cmd_vel`（**不改 SDF 的 `DiffDrive` 主题**）。
-- **超时** `timeout` 由 SDF `<timeout>` 注入，值源自 `src/agc_sim/config/car.yaml`（`model.cmd_deadman_timeout_s = 0.3`）→ `world_bringup.launch.py` 的 xacro arg（**参数单一来源**，契约 [#params](../../docs/ROS2迁移交接文档.md#params)），与中继 `watchdog_s = 0.3` 同量级。
+- **超时** `timeout` 由 SDF `<timeout>` 注入，值源自 `src/agc_sim/config/car.yaml`（`model.cmd_deadman_timeout_s = 0.3`）→ `world_bringup.launch.py` 的 xacro arg（**参数单一来源**，契约 [#params](../ROS2迁移交接文档.md#params)），与中继 `watchdog_s = 0.3` 同量级。
 - 时钟用 `std::chrono::steady_clock`（与仿真暂停 / ROS 时钟冻结解耦）。
 
 `DiffDrive` 默认订阅话题的核验：既有可运行链路——桥把 ROS `/model/agc_car/cmd_vel` 桥到 **gz `/model/agc_car/cmd_vel`** 可驱动车（W2 起生效），且 `libgz-sim8-diff-drive-system.so` token 含 `/model/`、`/cmd_vel`、`/odometry`、`DiffDrive subscribing to twist messages on [` —— 故 `DiffDrive` 订阅的是 gz `/model/<model>/cmd_vel`。
 
 ## 边界声明（非第二 ROS 命令者）
 
-本插件 **SHALL NOT** 构成第二 ROS 命令者（契约 [#execution-port](../../docs/ROS2迁移交接文档.md#execution-port)）：
+本插件 **SHALL NOT** 构成第二 ROS 命令者（契约 [#execution-port](../ROS2迁移交接文档.md#execution-port)）：
 
 - **只「转发 ROS 已下达的值」或「归零」**，**永不自创运动**（无独立目标 / 轨迹 / 控制律）；
 - **不产生任何 ROS 话题 / 节点**（仅在 gz-transport 内订阅意图、发布命令）；

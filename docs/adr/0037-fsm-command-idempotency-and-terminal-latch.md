@@ -6,7 +6,7 @@ accepted
 
 ## 背景
 
-评审风险 **R-022（FSM 重入与终态）**（[10-风险](../../docs/reviews/agc-review-2026-10-14/10-风险.md#r-022)）指出
+评审风险 **R-022（FSM 重入与终态）**（[10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-022)）指出
 `task_manager`（[源码](../../src/agc_task/src/task_manager.cpp)）的命令入口**非幂等**：
 
 1. **start 无允许态检查**：`onStart` 顶部无状态判别，立即尝试 `scenario/reset`；**active** 期间重入
@@ -20,11 +20,11 @@ accepted
 **先学后做（取证依据）**：ROS 2 服务的「**接受 ≠ 结果**」语义与 `rclcpp::Client` 待决请求清理
 （`spin_until_future_complete` 超时后须 `remove_pending_request`，否则 Client 内部状态泄漏，参考本机
 `/opt/ros/jazzy/include/rclcpp/rclcpp/client.hpp`）；Nav2 lifecycle 的「命令仅在允许态被接受、否则拒绝并回显」
-模式（[ADR-0003](./0003-nav2-pattern-complete-absorption.md) / [ADR-0008](./0008-nav2-paradigm-absorption-as-code-principle.md)）；
+模式（[ADR-0003](0003-nav2-pattern-complete-absorption.md) / [ADR-0008](0008-nav2-paradigm-absorption-as-code-principle.md)）；
 契约 [#decisions](../ROS2迁移交接文档.md#decisions)（`task_manager` 架构 = **自研确定性 C++ 状态机**，
 **不**引入 `bt_navigator`）、[#params](../ROS2迁移交接文档.md#params)（参数单一注入 / 节点不得覆写）、
 [#terminal-semantics](../ROS2迁移交接文档.md#terminal-semantics)、[#execution-port](../ROS2迁移交接文档.md#execution-port)
-（唯一执行口 / 不新增第二命令者）；R-021（[ADR-0036](./0036-capture-event-episode-isolation-and-event-identity.md)）
+（唯一执行口 / 不新增第二命令者）；R-021（[ADR-0036](0036-capture-event-episode-isolation-and-event-identity.md)）
 已引入 episode 身份（`episode_epoch_` / `/agc/scenario/reset_epoch`）与配套事件——本 ADR 复用该基座。
 
 分类：**设计风险**。
@@ -91,7 +91,7 @@ best-effort（`required=false`）可选调用语义不变。
   与 R-021 配套事件可关联。
 - **ABI 不变**：新增话题均 `std_msgs` 状态；唯一执行口未改；未新增命令者；`capture_hit` 仍恰为 `CAPTURE_NET`。
 - **风险标注 / 置信度**：以自包含 harness（假源 + 假 reset 服务，含**慢应答**桩）验证，见 [Evidence](#evidence)；
-  命令入口与状态赋值的确定性由契约证据保证（[R-022](../../docs/reviews/agc-review-2026-10-14/10-风险.md#r-022) 置信度：高）。
+  命令入口与状态赋值的确定性由契约证据保证（[R-022](../reviews/agc-review-2026-10-14/10-风险.md#r-022) 置信度：高）。
 - 只读旧树边界：本次未读 `reference/`；未新增契约 / ABI 变更。
 
 ## Evidence

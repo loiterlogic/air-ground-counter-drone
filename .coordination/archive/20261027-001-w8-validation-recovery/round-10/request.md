@@ -3,7 +3,7 @@
 
 任务ID：20261027-001-w8-validation-recovery；轮次10；2026-10-28；来源Leader。复用Worker 55d8793e-4916-4045-ac19-5800e167ebfa。
 
-入口：[Runbook](../../../../docs/ROS2迁移步骤.md#usage)、[规格](../../../../.trae/specs/w8-validation-recovery/spec.md#round10)、[上轮独立审查](../round-9/review.md#round9-review)、[自主权限](../../../README.md#executor-autonomy)、[硬约束](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。沿用同链目标与原验收语义，不改变通信配置。
+入口：[Runbook](../../../../docs/archive/ROS2迁移步骤.md#usage)、[规格](../../../../docs/archive/specs/w8-validation-recovery/spec.md#round10)、[上轮独立审查](../round-9/review.md#round9-review)、[自主权限](../../../README.md#executor-autonomy)、[硬约束](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。沿用同链目标与原验收语义，不改变通信配置。
 
 ## 预算与白名单
 

@@ -3,7 +3,7 @@
 
 任务 ID 20261027-001-w8-validation-recovery；轮次17；来源 Leader，2026-10-28。原 Worker `1ac7d798-9215-494f-a7e6-013518f7894d` 因父会话边界无法复用；**用户于2026-10-28明确授权当前Leader新建Worker接续同一任务链**，新子会话ID由Leader写入本轮report。
 
-入口：[Runbook](../../../../docs/ROS2迁移步骤.md#usage)、[本轮规格](../../../../.trae/specs/w8-validation-recovery/spec.md#round17)、[第16轮审查](../round-16/review.md#round16-review)、[自主权限](../../../README.md#executor-autonomy)、[观测分级](../../../README.md#run-tiers)、[硬约束](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。先读第14/15/16轮完整回报、审查及原始证据，不摘取支持单一假设的片段。
+入口：[Runbook](../../../../docs/archive/ROS2迁移步骤.md#usage)、[本轮规格](../../../../docs/archive/specs/w8-validation-recovery/spec.md#round17)、[第16轮审查](../round-16/review.md#round16-review)、[自主权限](../../../README.md#executor-autonomy)、[观测分级](../../../README.md#run-tiers)、[硬约束](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。先读第14/15/16轮完整回报、审查及原始证据，不摘取支持单一假设的片段。
 
 ## 1. 目标与不再重复的分支
 

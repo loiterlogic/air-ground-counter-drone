@@ -4,7 +4,7 @@
 accepted
 
 ## 背景与决策
-论文"核"为**空地协同路径规划**（[ADR-0014](./0014-research-mainline-mobile-interception-system.md)）。据此定本次协同回路口径：
+论文"核"为**空地协同路径规划**（[ADR-0014](0014-research-mainline-mobile-interception-system.md)）。据此定本次协同回路口径：
 
 - **无人机**：对目标**常开跟踪**（**非可选**），保持**安全间距**（不紧贴），目的为**不丢失目标**并持续提供观测；同时负责**自身飞行安全**（自避障）。
 - **地面车**：**消费**无人机观测数据，**自主规划**自身路径——二者**不共享单一规划器**。
@@ -18,4 +18,4 @@ accepted
 ## Consequences
 - 契约 [硬约束](../ROS2迁移交接文档.md#hard-constraints) **C10 改写**（跟踪常开 + 安全间距）。
 - GLOSSARY **新增/澄清**"**无人机跟踪**""**协同感知**"，与"**跟随**"明确区分。
-- Runbook **W3** 收敛为"常开 standoff 跟踪 + 自保"；**W4** 提供全局 map 供地面规划（本次最小口径，[ADR-0016](./0016-execution-scope-exit-w6.md)）。
+- Runbook **W3** 收敛为"常开 standoff 跟踪 + 自保"；**W4** 提供全局 map 供地面规划（本次最小口径，[ADR-0016](0016-execution-scope-exit-w6.md)）。

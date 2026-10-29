@@ -3,7 +3,7 @@
 
 - 任务 ID：20261027-001-w8-validation-recovery；轮次：3；日期：2026-10-27。
 - 来源：Codex 根据第 2 轮独立审查派发；用户已授权本任务链继续。DSH 实施并回报，Codex 独立验收。
-- 依据：[交接协议](../../../README.md#protocol)、[观测分级](../../../README.md#run-tiers)、[第2轮审查](../round-2/review.md#round2-review)、[第2轮诊断](../../../../experiments/w8-validation/20261027-communication-diagnosis-r2/report/diagnosis.md#diagnosis) 与 [候选方案](../../../../experiments/w8-validation/20261027-communication-diagnosis-r2/report/next_probe.md#next-probe)。项目进度仍以 [Runbook](../../../../docs/ROS2迁移步骤.md#status) 为准。
+- 依据：[交接协议](../../../README.md#protocol)、[观测分级](../../../README.md#run-tiers)、[第2轮审查](../round-2/review.md#round2-review)、[第2轮诊断](../../../../experiments/w8-validation/20261027-communication-diagnosis-r2/report/diagnosis.md#diagnosis) 与 [候选方案](../../../../experiments/w8-validation/20261027-communication-diagnosis-r2/report/next_probe.md#next-probe)。项目进度仍以 [Runbook](../../../../docs/archive/ROS2迁移步骤.md#status) 为准。
 
 ## 目标
 

@@ -10,7 +10,7 @@ accepted
 有效时限**——目标不可达或地图增障后，车辆仍可能驶向**旧目标 / 旧通道**；安全层停车不等于规划基线正确。
 
 本 ADR 记录三项决策：**(a) 路径绑定（目标身份 + 地图签名 + 有效时限）**、**(b) 地图签名口径**、
-**(c) 规划失败 → 失效停车**；均已按 [ADR-0026](./0026-rl-action-conventions-and-ground-escape-calibration.md)
+**(c) 规划失败 → 失效停车**；均已按 [ADR-0026](0026-rl-action-conventions-and-ground-escape-calibration.md)
 同等的"先学后做"流程对齐同版本 Nav2 / ROS 约定后落地。
 
 ### (a) 路径绑定：目标身份 + 地图签名 + 有效时限
@@ -72,7 +72,7 @@ accepted
 | 路径 / 目标 / 地图版本关联与有效时限 | `全新重写` | `last_plan_goal_` / `last_plan_map_sig_` / `max_path_age_s` |
 | `Costmap2DROS::getCostmap()` + `Costmap2D::getCharMap()` 取栅格做**内容签名** | `复用 Nav2 组件`（本机 Jazzy 头文件已核验） | `mapSignature()`（硬障碍栅格 FNV-1a） |
 
-**未采纳**：不引入 `bt_navigator` / 行为树；**不新增第二 ROS 命令者**（契约 [#execution-port](../../docs/ROS2迁移交接文档.md#execution-port)）；
+**未采纳**：不引入 `bt_navigator` / 行为树；**不新增第二 ROS 命令者**（契约 [#execution-port](../ROS2迁移交接文档.md#execution-port)）；
 不改 Nav2 planner 插件本体。
 
 ## 参数（`src/agc_ground/config/baseline.yaml` 单一注入）

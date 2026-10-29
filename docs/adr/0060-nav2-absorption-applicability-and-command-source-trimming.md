@@ -5,9 +5,9 @@ accepted
 
 ## 背景与决策
 
-结构评审 [S-04](../../docs/reviews/agc-review-2026-10-14/20-结构.md#s-04)（**挑战既定约束 · 已裁定正式修订**）指出：「吸收 Nav2」不应以**空壳类数量 / 闲置进程数量**验收。两处须校准：
+结构评审 [S-04](../reviews/agc-review-2026-10-14/20-结构.md#s-04)（**挑战既定约束 · 已裁定正式修订**）指出：「吸收 Nav2」不应以**空壳类数量 / 闲置进程数量**验收。两处须校准：
 
-1. **决策适用关系不清**：[ADR-0003](./0003-nav2-pattern-complete-absorption.md) 早期正文列「地面域真跑 Nav2 本体（costmap、全局/局部 planner、controller、行为树）」，与 [ADR-0004](./0004-rl-primary-controller-nav2-safety-layer.md)（RL **直接出 `cmd_vel`** 为地面主控，Nav2 planner/controller 降为**离线对照基线**）及 [W6 spec](../../.trae/specs/w6-task-eval/spec.md) 已决的**自研确定性 C++ 状态机**冲突；[ADR-0008](./0008-nav2-paradigm-absorption-as-code-principle.md) 与两者的范围关系未显式标注。
+1. **决策适用关系不清**：[ADR-0003](0003-nav2-pattern-complete-absorption.md) 早期正文列「地面域真跑 Nav2 本体（costmap、全局/局部 planner、controller、行为树）」，与 [ADR-0004](0004-rl-primary-controller-nav2-safety-layer.md)（RL **直接出 `cmd_vel`** 为地面主控，Nav2 planner/controller 降为**离线对照基线**）及 [W6 spec](../archive/specs/w6-task-eval/spec.md) 已决的**自研确定性 C++ 状态机**冲突；[ADR-0008](0008-nav2-paradigm-absorption-as-code-principle.md) 与两者的范围关系未显式标注。
 2. **闲置进程**：`command_source=rl` 时 composition 仍起 RL **不消费**的独立 `nav2_costmap_2d` 进程。
 
 **裁定**（**不**推翻「代码层吸收」原则）：
@@ -26,6 +26,6 @@ accepted
 
 - 运行拓扑按命令源**如实裁剪**：`rl` 进程集与 `baseline` 进程集各自只含**实际责任**节点（`rl`：TF + `scan_self_filter` + `collision_monitor` + `ground_drive_relay` + RL 推理；`baseline`：TF + `scan_self_filter` + `collision_monitor` + `ground_drive_relay` + `ground_baseline`（自持 costmap））。
 - 吸收**验收**改看**行为**（责任 / 必要性 / 失败验收），不靠类名 / 节点计数。
-- [ADR-0003](./0003-nav2-pattern-complete-absorption.md) / [ADR-0008](./0008-nav2-paradigm-absorption-as-code-principle.md) 增「适用关系（S-04 校准）」节。
-- [W5 spec](../../.trae/specs/w5-ground-nav-safety/spec.md) 的 **R3** 由「服务离线基线 **/ RL 观测**」校准为「**离线基线自持**」（RL **不消费** costmap）——声明回归真实；`/costmap` 判据在 `command_source=baseline` 路径核验。
+- [ADR-0003](0003-nav2-pattern-complete-absorption.md) / [ADR-0008](0008-nav2-paradigm-absorption-as-code-principle.md) 增「适用关系（S-04 校准）」节。
+- [W5 spec](../archive/specs/w5-ground-nav-safety/spec.md) 的 **R3** 由「服务离线基线 **/ RL 观测**」校准为「**离线基线自持**」（RL **不消费** costmap）——声明回归真实；`/costmap` 判据在 `command_source=baseline` 路径核验。
 - 冻结 9 消息 / 服务 ABI、唯一执行口语义、硬约束 C1–C10 均**不改**。

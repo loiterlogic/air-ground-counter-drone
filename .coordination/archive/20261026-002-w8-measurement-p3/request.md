@@ -12,7 +12,7 @@
 <a id="sources"></a>
 ## 执行依据
 
-按 [项目入口](../../../AGENTS.md#铁律) 的开工顺序阅读，Runbook [当前进度](../../../docs/ROS2迁移步骤.md#status) → [P3 spec](../../../.trae/specs/w8-measurement-p3/spec.md#scope) / [tasks](../../../.trae/specs/w8-measurement-p3/tasks.md#tasks) / [checklist](../../../.trae/specs/w8-measurement-p3/checklist.md#checklist)。指标见 [ADR-0099](../../../docs/adr/0099-w8-fixed-budget-mission-fco-measurement.md#metric)，证据/版本裁定见 [ADR-0101](../../../docs/adr/0101-w8-seed-evidence-and-p3-execution-boundary.md#evidence)，种子范围见 [ADR-0100](../../../docs/adr/0100-full-chain-seed-protocol.md#scope)，工具链 pin 只见 [README](../../../toolchain/README.md#pins)。契约只引用 [硬约束](../../../docs/ROS2迁移交接文档.md#hard-constraints)。
+按 [项目入口](../../../AGENTS.md#铁律) 的开工顺序阅读，Runbook [当前进度](../../../docs/archive/ROS2迁移步骤.md#status) → [P3 spec](../../../docs/archive/specs/w8-measurement-p3/spec.md#scope) / [tasks](../../../docs/archive/specs/w8-measurement-p3/tasks.md#tasks) / [checklist](../../../docs/archive/specs/w8-measurement-p3/checklist.md#checklist)。指标见 [ADR-0099](../../../docs/adr/0099-w8-fixed-budget-mission-fco-measurement.md#metric)，证据/版本裁定见 [ADR-0101](../../../docs/adr/0101-w8-seed-evidence-and-p3-execution-boundary.md#evidence)，种子范围见 [ADR-0100](../../../docs/adr/0100-full-chain-seed-protocol.md#scope)，工具链 pin 只见 [README](../../../toolchain/README.md#pins)。契约只引用 [硬约束](../../../docs/ROS2迁移交接文档.md#hard-constraints)。
 
 已学习的项目同版本成功实现：run_logger 的 episode/终态锁存/target 与 Bool 包络回调；task_manager 的状态 header 时间；test_epoch_seconds / test_dynamic_fire_control 的 gtest 结构；既有 runner 的臂参数和 GUI renderer 记录。执行者须实际对照后实现，不自行重写另一份任务编排。来源分类与旧树边界见规格。
 
@@ -106,13 +106,13 @@
 - 回报区分原有与本次 diff，含实际命令/退出码/测试数/attempt 数/证据相对路径/关键 SHA256/归档取回结果/未执行与偏离。保护文件指纹结束时再核对。
 - 工程实现最终验收及下一步由 Codex 独立审查；执行者不能代填 review，不开始下一任务。
 
-发现契约硬约束违规按项目入口停止；超范围根因与证据不足写入 [规格未决](../../../.trae/specs/w8-measurement-p3/spec.md#unresolved)，回报阻塞原因和已耗预算，不带错继续。
+发现契约硬约束违规按项目入口停止；超范围根因与证据不足写入 [规格未决](../../../docs/archive/specs/w8-measurement-p3/spec.md#unresolved)，回报阻塞原因和已耗预算，不带错继续。
 
 <a id="round2"></a>
 ## 第 2 轮：仅通用 ROS 2 通信诊断与证据补全
 
 - 同一任务 ID，当前轮次 **2**；2026-10-26，Codex 派发，Trae / DeepSeek 执行。
-- 依据：[首轮审查](review.md#round1-evidence)、[限定规格](../../../.trae/specs/w8-measurement-p3/spec.md#infra-diagnosis) / [tasks](../../../.trae/specs/w8-measurement-p3/tasks.md#tasks) / [checklist](../../../.trae/specs/w8-measurement-p3/checklist.md#checklist)、[Runbook](../../../docs/ROS2迁移步骤.md#status)。先读 [执行者职责](../../roles/deepseek.md#role)。
+- 依据：[首轮审查](review.md#round1-evidence)、[限定规格](../../../docs/archive/specs/w8-measurement-p3/spec.md#infra-diagnosis) / [tasks](../../../docs/archive/specs/w8-measurement-p3/tasks.md#tasks) / [checklist](../../../docs/archive/specs/w8-measurement-p3/checklist.md#checklist)、[Runbook](../../../docs/archive/ROS2迁移步骤.md#status)。先读 [执行者职责](../../roles/deepseek.md#role)。
 - 目标：用官方 stock demo 核实是否存在可复现的 ROS 2 通信异常，补齐环境与双端原始证据。允许交回“未复现/尚不能定位”；禁止以残留段、graph 为空或超时直接认定根因。
 
 ### 基线与写入范围
@@ -146,7 +146,7 @@ HEAD/分支仍为首轮记录值。Codex 已创建本轮产物根 `experiments/r
 <a id="round3"></a>
 ## 第 3 轮：仅修正通用诊断进程管理与证据
 
-任务 ID `20261026-002-w8-measurement-p3`，轮次 **3**；2026-10-26，Codex 派发，Trae / DeepSeek 执行。先读 [执行职责](../../roles/deepseek.md#role)、[Runbook](../../../docs/ROS2迁移步骤.md#status)、[规格](../../../.trae/specs/w8-measurement-p3/spec.md#round3-correction) / [tasks](../../../.trae/specs/w8-measurement-p3/tasks.md#round3) / [checklist](../../../.trae/specs/w8-measurement-p3/checklist.md#round3)、[第二轮审查](review.md#round2-evidence)。只执行本节，旧授权暂停。
+任务 ID `20261026-002-w8-measurement-p3`，轮次 **3**；2026-10-26，Codex 派发，Trae / DeepSeek 执行。先读 [执行职责](../../roles/deepseek.md#role)、[Runbook](../../../docs/archive/ROS2迁移步骤.md#status)、[规格](../../../docs/archive/specs/w8-measurement-p3/spec.md#round3-correction) / [tasks](../../../docs/archive/specs/w8-measurement-p3/tasks.md#round3) / [checklist](../../../docs/archive/specs/w8-measurement-p3/checklist.md#round3)、[第二轮审查](review.md#round2-evidence)。只执行本节，旧授权暂停。
 
 ### 基线和学习来源
 
@@ -183,7 +183,7 @@ HEAD/分支仍为首轮记录值。Codex 已创建本轮产物根 `experiments/r
 
 - 任务 ID：`20261026-002-w8-measurement-p3`；轮次 **4**；派工 Codex；执行 Trae / DeepSeek；日期 2026-10-26。
 - 新授权：只执行本节，前 1–3 轮均耗尽且不可重领；原工程任务仍未验收，不结档。用户已要求先完成离线比较再派工，本轮 [分析与决策](../../../experiments/ros2-diagnostics/20261026-p3-r4/report/offline_comparison.md#analysis) 已完成，必须先读。
-- 规格：[spec](../../../.trae/specs/w8-measurement-p3/spec.md#round4-transport)、[tasks](../../../.trae/specs/w8-measurement-p3/tasks.md#round4)、[checklist](../../../.trae/specs/w8-measurement-p3/checklist.md#round4)。只使用通用官方 demo，不涉及业务节点/仿真。
+- 规格：[spec](../../../docs/archive/specs/w8-measurement-p3/spec.md#round4-transport)、[tasks](../../../docs/archive/specs/w8-measurement-p3/tasks.md#round4)、[checklist](../../../docs/archive/specs/w8-measurement-p3/checklist.md#round4)。只使用通用官方 demo，不涉及业务节点/仿真。
 
 ### 学习与接单基线
 
@@ -227,7 +227,7 @@ HEAD/分支仍为首轮记录值。Codex 已创建本轮产物根 `experiments/r
 
 ### 依据与基线
 
-先读共同入口/角色/协议、[Runbook](../../../docs/ROS2迁移步骤.md#status)、[spec](../../../.trae/specs/w8-measurement-p3/spec.md#round5-offline-runner)、[tasks](../../../.trae/specs/w8-measurement-p3/tasks.md#round5)、[checklist](../../../.trae/specs/w8-measurement-p3/checklist.md#round5)，再实际阅读 [R4 独立审查](review.md#round4-evidence) 与原脚本。学习本机 Python 3.12 `contextlib.ExitStack.__exit__`、`subprocess.Popen` 回收与 remaining-time 做法，以及项目 evidence_archive.py 临时输出+os.replace 模式；来源及 SHA 见新根 `config/reference_notes.json`。不照抄标准库无界 wait，不引入新依赖，不凭假设补一个 except 就结束。
+先读共同入口/角色/协议、[Runbook](../../../docs/archive/ROS2迁移步骤.md#status)、[spec](../../../docs/archive/specs/w8-measurement-p3/spec.md#round5-offline-runner)、[tasks](../../../docs/archive/specs/w8-measurement-p3/tasks.md#round5)、[checklist](../../../docs/archive/specs/w8-measurement-p3/checklist.md#round5)，再实际阅读 [R4 独立审查](review.md#round4-evidence) 与原脚本。学习本机 Python 3.12 `contextlib.ExitStack.__exit__`、`subprocess.Popen` 回收与 remaining-time 做法，以及项目 evidence_archive.py 临时输出+os.replace 模式；来源及 SHA 见新根 `config/reference_notes.json`。不照抄标准库无界 wait，不引入新依赖，不凭假设补一个 except 就结束。
 
 - HEAD `d5072aaff33276bcd1c5e7d38b5caa75fe45a290`，分支 `main`。
 - `experiments/ros2-diagnostics/20261026-p3-r5/config/codex_dispatch_baseline.json`，SHA256 **`cffb005dcc48ccd322db358cbcff3c03f909a29c5596a8ebe8ff019bca83b57e`**，772 路径；接单与结束逐项重算，报告已存在 dirty/untracked。允许本轮文档勾选差异，其它未知相关变化停止。
@@ -277,7 +277,7 @@ HEAD/分支仍为首轮记录值。Codex 已创建本轮产物根 `experiments/r
 
 ### 接单与学习
 
-依角色入口读 [协议](../../README.md#workflow)、[Runbook](../../../docs/ROS2迁移步骤.md#status)、[spec](../../../.trae/specs/w8-measurement-p3/spec.md#round6-offline-rework)、[tasks](../../../.trae/specs/w8-measurement-p3/tasks.md#round6)、[checklist](../../../.trae/specs/w8-measurement-p3/checklist.md#round6)，逐项阅读 [R5 独立审查](review.md#round5-evidence)。重新学习 R5 `config/reference_notes.json` 所列标准库/通用归档实现，重点是剩余回调、绝对期限、失败发布语义；将具体吸收点与代码/测试对应。不能只修改报告口径或放宽断言。
+依角色入口读 [协议](../../README.md#workflow)、[Runbook](../../../docs/archive/ROS2迁移步骤.md#status)、[spec](../../../docs/archive/specs/w8-measurement-p3/spec.md#round6-offline-rework)、[tasks](../../../docs/archive/specs/w8-measurement-p3/tasks.md#round6)、[checklist](../../../docs/archive/specs/w8-measurement-p3/checklist.md#round6)，逐项阅读 [R5 独立审查](review.md#round5-evidence)。重新学习 R5 `config/reference_notes.json` 所列标准库/通用归档实现，重点是剩余回调、绝对期限、失败发布语义；将具体吸收点与代码/测试对应。不能只修改报告口径或放宽断言。
 
 HEAD/分支沿用 `d5072aaff33276bcd1c5e7d38b5caa75fe45a290` / `main`。接单、结束均逐项重算新根 `experiments/ros2-diagnostics/20261026-p3-r6/config/codex_dispatch_baseline.json`（指纹见 CURRENT）；包含 R5 原脚本/测试/日志/tar/侧车保护。允许本轮 tasks/checklist 的指定变化，未知相关变化停止；不重置既有 dirty/untracked。接单先记首次核对的 monotonic_ns 与 epoch，将 CURRENT 设执行中并填模型身份。
 
@@ -313,7 +313,7 @@ report 逐项列出修复、测试名、可定位断言/原始输出/退出码�
 
 ### 接单、依据与白名单
 
-依角色入口/协议恢复，读取 [Runbook](../../../docs/ROS2迁移步骤.md#status)、[spec](../../../.trae/specs/w8-measurement-p3/spec.md#round7-offline-rework)、[tasks](../../../.trae/specs/w8-measurement-p3/tasks.md#round7)、[checklist](../../../.trae/specs/w8-measurement-p3/checklist.md#round7)，逐项读 R6 审查表及其静态缺口。复核并学习 R5 reference_notes 所列标准库 ExitStack、subprocess 和通用 evidence_archive，实现“资源先登记再取证、单个清理失败仍处理其它资源、剩余时间不延长”；报告具体吸收位置。不要凭通过数量代替逐项验收。
+依角色入口/协议恢复，读取 [Runbook](../../../docs/archive/ROS2迁移步骤.md#status)、[spec](../../../docs/archive/specs/w8-measurement-p3/spec.md#round7-offline-rework)、[tasks](../../../docs/archive/specs/w8-measurement-p3/tasks.md#round7)、[checklist](../../../docs/archive/specs/w8-measurement-p3/checklist.md#round7)，逐项读 R6 审查表及其静态缺口。复核并学习 R5 reference_notes 所列标准库 ExitStack、subprocess 和通用 evidence_archive，实现“资源先登记再取证、单个清理失败仍处理其它资源、剩余时间不延长”；报告具体吸收位置。不要凭通过数量代替逐项验收。
 
 HEAD/分支为 `d5072aaff33276bcd1c5e7d38b5caa75fe45a290` / `main`。新基线在 `experiments/ros2-diagnostics/20261026-p3-r7/config/codex_dispatch_baseline.json`，SHA/路径数见 CURRENT；接单与结束逐项核对，允许 tasks/checklist 的指定本轮追加，其它未知相关变化停止。历史 dirty/untracked 保留，旧轮候选、日志、归档和侧车全部只读，不补造/回写。
 
@@ -345,7 +345,7 @@ HEAD/分支为 `d5072aaff33276bcd1c5e7d38b5caa75fe45a290` / `main`。新基线�
 
 ### 接单、来源、保护与白名单
 
-按入口顺序恢复，再读 [spec](../../../.trae/specs/w8-measurement-p3/spec.md#round8-offline-rework)、[tasks](../../../.trae/specs/w8-measurement-p3/tasks.md#round8)、[checklist](../../../.trae/specs/w8-measurement-p3/checklist.md#round8) 与 R7 审查中的输入/实际输出。先对照 R5 `config/reference_notes.json` 所列 Python 3.12 ExitStack 独立释放、subprocess 剩余时间、项目 evidence_archive 临时发布，报告具体采用处；不可直接复制无界 wait。
+按入口顺序恢复，再读 [spec](../../../docs/archive/specs/w8-measurement-p3/spec.md#round8-offline-rework)、[tasks](../../../docs/archive/specs/w8-measurement-p3/tasks.md#round8)、[checklist](../../../docs/archive/specs/w8-measurement-p3/checklist.md#round8) 与 R7 审查中的输入/实际输出。先对照 R5 `config/reference_notes.json` 所列 Python 3.12 ExitStack 独立释放、subprocess 剩余时间、项目 evidence_archive 临时发布，报告具体采用处；不可直接复制无界 wait。
 
 HEAD/分支仍为 `d5072aaff33276bcd1c5e7d38b5caa75fe45a290` / `main`。本轮 baseline：`experiments/ros2-diagnostics/20261027-p3-r8/config/codex_dispatch_baseline.json`，SHA256/路径数只见 CURRENT；接单与结束逐项重算。覆盖此前保护清单及 R7 当前所有文件，四个可变交接文件除外，不宣称全文件系统覆盖。未知差异停止；结束只允许 tasks/checklist 本轮追加的预期变化。历史 dirty/untracked 保留，不重置/覆盖。
 
@@ -376,7 +376,7 @@ HEAD/分支仍为 `d5072aaff33276bcd1c5e7d38b5caa75fe45a290` / `main`。本轮 b
 
 ### 开工、来源与文件边界
 
-按入口顺序读 [spec](../../../.trae/specs/w8-measurement-p3/spec.md#round9-offline-rework)、[tasks](../../../.trae/specs/w8-measurement-p3/tasks.md#round9)、[checklist](../../../.trae/specs/w8-measurement-p3/checklist.md#round9)。先对照 R5 reference_notes 的 Python 3.12 ExitStack 独立释放/subprocess 剩余时间，以及 R8 EvidenceSink 的临时发布，报告采用的具体位置；不引入新依赖或复制无界 wait。
+按入口顺序读 [spec](../../../docs/archive/specs/w8-measurement-p3/spec.md#round9-offline-rework)、[tasks](../../../docs/archive/specs/w8-measurement-p3/tasks.md#round9)、[checklist](../../../docs/archive/specs/w8-measurement-p3/checklist.md#round9)。先对照 R5 reference_notes 的 Python 3.12 ExitStack 独立释放/subprocess 剩余时间，以及 R8 EvidenceSink 的临时发布，报告采用的具体位置；不引入新依赖或复制无界 wait。
 
 HEAD/分支 `d5072aaff33276bcd1c5e7d38b5caa75fe45a290` / `main`，保留已有 dirty/untracked。领取和结束逐项重算 `experiments/ros2-diagnostics/20261027-p3-r9/config/codex_dispatch_baseline.json`，SHA256/路径数见 CURRENT；包含此前保护清单、R8 全部输入/manifest/tar/两侧车，四个可变交接文件除外，不称全文件系统覆盖。未知变化停止；结束只允许 P3 tasks/checklist 的本轮事实追加。
 
@@ -407,7 +407,7 @@ HEAD/分支 `d5072aaff33276bcd1c5e7d38b5caa75fe45a290` / `main`，保留已有 d
 
 ### 依据、基线与白名单
 
-按入口恢复 [spec](../../../.trae/specs/w8-measurement-p3/spec.md#round10-offline-rework)、[tasks](../../../.trae/specs/w8-measurement-p3/tasks.md#round10)、[checklist](../../../.trae/specs/w8-measurement-p3/checklist.md#round10)。实施前对照 Python 3.12 `/usr/lib/python3.12/contextlib.py` L484 `pop_all` 的实际容器转交/返回 owner、`ExitStack.__exit__` 的独立释放；SHA256 `8b7a477f978a8532852fd81e241c78182516bc4975d672d580a5848a76e11eb6`。采用其归属转交原则即可，不要求引入 ExitStack。既有 subprocess 绝对剩余时间、EvidenceSink 临时发布做法不变；不读 reference/、不引入依赖或框架。
+按入口恢复 [spec](../../../docs/archive/specs/w8-measurement-p3/spec.md#round10-offline-rework)、[tasks](../../../docs/archive/specs/w8-measurement-p3/tasks.md#round10)、[checklist](../../../docs/archive/specs/w8-measurement-p3/checklist.md#round10)。实施前对照 Python 3.12 `/usr/lib/python3.12/contextlib.py` L484 `pop_all` 的实际容器转交/返回 owner、`ExitStack.__exit__` 的独立释放；SHA256 `8b7a477f978a8532852fd81e241c78182516bc4975d672d580a5848a76e11eb6`。采用其归属转交原则即可，不要求引入 ExitStack。既有 subprocess 绝对剩余时间、EvidenceSink 临时发布做法不变；不读 reference/、不引入依赖或框架。
 
 HEAD `d5072aaff33276bcd1c5e7d38b5caa75fe45a290`，分支 `main`，保留既有 dirty/untracked。领取/结束逐项重算 `experiments/ros2-diagnostics/20261027-p3-r10/config/codex_dispatch_baseline.json`，SHA256 与路径数见 CURRENT；保护此前 819 路径加 R9 全部 13 输入/manifest、tar 与两侧车。四个交接文件除外，不是全文件系统覆盖；未知变化停止，结束仅允许 P3 tasks/checklist 本轮事实追加。
 
@@ -435,7 +435,7 @@ HEAD `d5072aaff33276bcd1c5e7d38b5caa75fe45a290`，分支 `main`，保留既有 d
 
 ### 依据与已学习做法
 
-按入口顺序读 [spec](../../../.trae/specs/w8-measurement-p3/spec.md#round11-adapter)、[tasks](../../../.trae/specs/w8-measurement-p3/tasks.md#round11)、[checklist](../../../.trae/specs/w8-measurement-p3/checklist.md#round11)、[R10 审查](review.md#round10-evidence) 及 [R4 离线分析](../../../experiments/ros2-diagnostics/20261026-p3-r4/report/offline_comparison.md#references)。R10 核心/55 项回归为项目内已经验证的参照；不再重写生命周期。R4 脚本只作字段/缺陷对照，不继承吞错为空、简单 stat.split、双关闭等做法，不运行它。
+按入口顺序读 [spec](../../../docs/archive/specs/w8-measurement-p3/spec.md#round11-adapter)、[tasks](../../../docs/archive/specs/w8-measurement-p3/tasks.md#round11)、[checklist](../../../docs/archive/specs/w8-measurement-p3/checklist.md#round11)、[R10 审查](review.md#round10-evidence) 及 [R4 离线分析](../../../experiments/ros2-diagnostics/20261026-p3-r4/report/offline_comparison.md#references)。R10 核心/55 项回归为项目内已经验证的参照；不再重写生命周期。R4 脚本只作字段/缺陷对照，不继承吞错为空、简单 stat.split、双关闭等做法，不运行它。
 
 实施前实际阅读本机官方手册 `/usr/share/man/man5/proc_pid_{stat,maps,environ,cmdline,status}.5.gz`（gzip 解压读取不是运行实验），记录文件 SHA256 与吸收点。Codex 已核实 stat 的括号 comm、field 22 starttime，maps 的多段映射/pathname，以及 environ/cmdline 的 NUL 分隔和可观测限制；stat/maps/environ 压缩文件 SHA256 分别 `7f52df6374c8ad43bc6f348f0f831dfc22c710b45aed9fb04d06eaf992ad1d80` / `1d4b340b1e90680d6378c42be225bb37e593d104c8315f36919e48de7d9d7422` / `288c0256ed5c5a8bce9cc3c2be224db43484eb39fe55ba6d495a1ab6570991f7`。对照 Python 3.12 pathlib.readlink/resolve、subprocess._remaining_time 和 start_new_session 语义。沿用 R4 sources/index.json 的 demo 0.33.11 / Fast DDS 2.14.7 / Jazzy 官方配置快照；本轮不下载、不引入依赖、不读 reference/。
 
@@ -479,7 +479,7 @@ HEAD `d5072aaff33276bcd1c5e7d38b5caa75fe45a290`，分支 `main`；保留全部�
 
 ### 依据、学习与基线
 
-按共同入口顺序、角色与交接规则，读 [Runbook](../../../docs/ROS2迁移步骤.md#status)、[spec](../../../.trae/specs/w8-measurement-p3/spec.md#round12-adapter-rework)、[tasks](../../../.trae/specs/w8-measurement-p3/tasks.md#round12)、[checklist](../../../.trae/specs/w8-measurement-p3/checklist.md#round12)，逐项对照 R11 独立反例。先实际学习本机 proc_net/proc_pid 官方手册的 UDP 表头/记录格式；沿用 R11 proc 手册与 R4 已封存同版本官方快照，不下载。日志格式对照 R4 `log/A1/talker.console.log` 及 `log/A1/ros_log/`，其 logger 含 namespace 与 talker；读取 R11 核心实际记录的 endpoints.cmd / namespace / topic，按其事实校验日志，不凭空规定官方未输出的结束标记。以 R10/R11 EvidenceSink 的元数据提交方式做最少接线，不重写生命周期；在新报告记录实际来源与吸收点。
+按共同入口顺序、角色与交接规则，读 [Runbook](../../../docs/archive/ROS2迁移步骤.md#status)、[spec](../../../docs/archive/specs/w8-measurement-p3/spec.md#round12-adapter-rework)、[tasks](../../../docs/archive/specs/w8-measurement-p3/tasks.md#round12)、[checklist](../../../docs/archive/specs/w8-measurement-p3/checklist.md#round12)，逐项对照 R11 独立反例。先实际学习本机 proc_net/proc_pid 官方手册的 UDP 表头/记录格式；沿用 R11 proc 手册与 R4 已封存同版本官方快照，不下载。日志格式对照 R4 `log/A1/talker.console.log` 及 `log/A1/ros_log/`，其 logger 含 namespace 与 talker；读取 R11 核心实际记录的 endpoints.cmd / namespace / topic，按其事实校验日志，不凭空规定官方未输出的结束标记。以 R10/R11 EvidenceSink 的元数据提交方式做最少接线，不重写生命周期；在新报告记录实际来源与吸收点。
 
 HEAD `d5072aaff33276bcd1c5e7d38b5caa75fe45a290` / `main`，既有 dirty/untracked 全部保留。新根 `experiments/ros2-diagnostics/20261027-p3-r12/`，领取时仅有 Codex 基线 `config/codex_dispatch_baseline.json`：**878 路径，SHA256 `24da978400660e85fc3d08f769c95836e5b5b444d3c33d08b6fc89be04d10877`**。包含此前 851 路径及 R11 全部 24 文件、tar/两侧车；四个可变交接文件除外，不是全文件系统覆盖。领取/结束逐项重算；结束仅允许 tasks/checklist 的本轮事实变化，其他未知变化停止，不改基线掩盖。
 
@@ -514,7 +514,7 @@ HEAD `d5072aaff33276bcd1c5e7d38b5caa75fe45a290` / `main`，既有 dirty/untracke
 
 ### 依据与基线
 
-按共同入口/角色/交接协议读 [Runbook](../../../docs/ROS2迁移步骤.md#status)、[spec](../../../.trae/specs/w8-measurement-p3/spec.md#round13-udp-rework)、[tasks](../../../.trae/specs/w8-measurement-p3/tasks.md#round13)、[checklist](../../../.trae/specs/w8-measurement-p3/checklist.md#round13)。先实际学习本机 proc_net 官方手册及既有同版本格式来源，按协议解释 UDP/UDP6 的表头列和地址/端口表示，在报告列明来源与吸收点。不能以 R12 合成夹具当官方格式依据，尤其不能因 UDP6 夹具照搬 UDP 就假设两者完全相同；有效表头拼写与可选尾字段须依据来源明确记录。缺必要来源则停止回报，不下载/安装或读活动 /proc 来替代。本轮不造通用框架，不读 reference/ 或复制旧树。
+按共同入口/角色/交接协议读 [Runbook](../../../docs/archive/ROS2迁移步骤.md#status)、[spec](../../../docs/archive/specs/w8-measurement-p3/spec.md#round13-udp-rework)、[tasks](../../../docs/archive/specs/w8-measurement-p3/tasks.md#round13)、[checklist](../../../docs/archive/specs/w8-measurement-p3/checklist.md#round13)。先实际学习本机 proc_net 官方手册及既有同版本格式来源，按协议解释 UDP/UDP6 的表头列和地址/端口表示，在报告列明来源与吸收点。不能以 R12 合成夹具当官方格式依据，尤其不能因 UDP6 夹具照搬 UDP 就假设两者完全相同；有效表头拼写与可选尾字段须依据来源明确记录。缺必要来源则停止回报，不下载/安装或读活动 /proc 来替代。本轮不造通用框架，不读 reference/ 或复制旧树。
 
 HEAD `d5072aaff33276bcd1c5e7d38b5caa75fe45a290` / `main`，保留既有 dirty/untracked。新根 `experiments/ros2-diagnostics/20261027-p3-r13/`，领取时仅有 Codex 基线 `config/codex_dispatch_baseline.json`：**902 路径，SHA256 `5c4decf796ae7bb9ed25e6b5795d316870847c8980de98e59a07cc4985f3679a`**。保护此前 878 路径及 R12 全部 21 文件、tar/两侧车；四个可变交接文件除外，不是全文件系统覆盖。领取/结束逐项重算；结束仅 tasks/checklist 本轮事实允许变化，其余未知变化停止，不更新基线掩盖。
 
@@ -550,7 +550,7 @@ HEAD `d5072aaff33276bcd1c5e7d38b5caa75fe45a290` / `main`，保留既有 dirty/un
 
 ### 依据、学习与基线
 
-按共同入口/角色/协议读 [Runbook](../../../docs/ROS2迁移步骤.md#status)、[spec](../../../.trae/specs/w8-measurement-p3/spec.md#round14-entry)、[tasks](../../../.trae/specs/w8-measurement-p3/tasks.md#round14)、[checklist](../../../.trae/specs/w8-measurement-p3/checklist.md#round14)。先实读 R13 runtime_adapter.py 的 main/run_runtime_batch/collect_preflight、核心 SystemProcAdapter/_base_env/run_batch/exclusive_dir 与现有 ABBA 文件夹具；学习本机 Python 3.12 argparse 的 parse_args、main/__name__ 模式和 pathlib 独占创建，不下载。既有解析协议不重新设计；官方内核补证见本轮 config/sources/index.json 和五份只读快照，不复制为工程代码。沿用 R4 ROS 2 Jazzy/Fast DDS 同版本来源。新报告列实际来源/定位及吸收点；Nav2 无新增组件，不读 reference/或复制旧树，不造框架。
+按共同入口/角色/协议读 [Runbook](../../../docs/archive/ROS2迁移步骤.md#status)、[spec](../../../docs/archive/specs/w8-measurement-p3/spec.md#round14-entry)、[tasks](../../../docs/archive/specs/w8-measurement-p3/tasks.md#round14)、[checklist](../../../docs/archive/specs/w8-measurement-p3/checklist.md#round14)。先实读 R13 runtime_adapter.py 的 main/run_runtime_batch/collect_preflight、核心 SystemProcAdapter/_base_env/run_batch/exclusive_dir 与现有 ABBA 文件夹具；学习本机 Python 3.12 argparse 的 parse_args、main/__name__ 模式和 pathlib 独占创建，不下载。既有解析协议不重新设计；官方内核补证见本轮 config/sources/index.json 和五份只读快照，不复制为工程代码。沿用 R4 ROS 2 Jazzy/Fast DDS 同版本来源。新报告列实际来源/定位及吸收点；Nav2 无新增组件，不读 reference/或复制旧树，不造框架。
 
 HEAD d5072aaff33276bcd1c5e7d38b5caa75fe45a290 / main，保留既有 dirty/untracked（包括 AGENTS 既有差异）。新根 experiments/ros2-diagnostics/20261027-p3-r14/，领取时只有 Codex 基线和只读来源：config/codex_dispatch_baseline.json，**932 路径，SHA256 151066330f948c331bf8413271ab23d30e40dc36f61e5cfd22aee61cf0cfeebe**。保护此前 902 路径、R13 全部 21 文件、tar/两侧车、本轮 6 个来源文件；四个可变交接文件除外，不是全文件系统覆盖。Codex 审查前重算 R13 基线仅 tasks/checklist 改变，随后由 Codex 明确更新 Runbook/spec/tasks/checklist，四项新字节均纳入 R14 基线。领取/结束逐项重算，仅 tasks/checklist 的本轮事实更新允许变化，其他未知变化停止，不改基线掩盖。
 
@@ -587,7 +587,7 @@ report/runtime_entry.md 写实际来源、各入口契约/实现定位、生产�
 
 ### 依据、学习与保护基线
 
-按共同入口/角色/协议读 [Runbook](../../../docs/ROS2迁移步骤.md#status)、[spec](../../../.trae/specs/w8-measurement-p3/spec.md#round15-entry-rework)、[tasks](../../../.trae/specs/w8-measurement-p3/tasks.md#round15)、[checklist](../../../.trae/specs/w8-measurement-p3/checklist.md#round15)。先读 R13 已验证的核心 run_batch/owner 与 R14 入口差异、现有文件夹具/FakeClock/LoggingAdapter/conftest；Python 3.12 argparse/pathlib 独占创建仍是入口参照。生产库依据为新根 `config/sources/library_identity.json`（Codex 独立只读文件身份），R14 两份原始快照仅作为违规现场旁证。R14 的手动冒烟不构成可复用成功验证。既有内核/ROS 同版本来源只读沿用；报告写实际定位与吸收点，无新增组件/框架，不读 reference/或复制旧树，不下载依赖。
+按共同入口/角色/协议读 [Runbook](../../../docs/archive/ROS2迁移步骤.md#status)、[spec](../../../docs/archive/specs/w8-measurement-p3/spec.md#round15-entry-rework)、[tasks](../../../docs/archive/specs/w8-measurement-p3/tasks.md#round15)、[checklist](../../../docs/archive/specs/w8-measurement-p3/checklist.md#round15)。先读 R13 已验证的核心 run_batch/owner 与 R14 入口差异、现有文件夹具/FakeClock/LoggingAdapter/conftest；Python 3.12 argparse/pathlib 独占创建仍是入口参照。生产库依据为新根 `config/sources/library_identity.json`（Codex 独立只读文件身份），R14 两份原始快照仅作为违规现场旁证。R14 的手动冒烟不构成可复用成功验证。既有内核/ROS 同版本来源只读沿用；报告写实际定位与吸收点，无新增组件/框架，不读 reference/或复制旧树，不下载依赖。
 
 HEAD `d5072aaff33276bcd1c5e7d38b5caa75fe45a290` / main，既有 dirty/untracked 保留。新根 `experiments/ros2-diagnostics/20261027-p3-r15/`；领取时只有 Codex 基线及一份库身份来源。基线 `config/codex_dispatch_baseline.json`：**961 路径，SHA256 06e65e82cf68b022ae0963787622ac3ea72f4af6cb40948e8badc58704820279**。保护 R14 原有 932 路径、R14 全部 34 文件（6 个来源原已计入）及本轮新来源；四个可变交接文件除外，不是全文件系统覆盖。旧基线四份协调文档及后续根 override/Runbook 用法行更名已由 Codex 审读接受；Codex 随后/同期更新 Runbook/spec/tasks/checklist，最终相对 R14 共 9 路径变化，逐项写在新基线，历史指纹不改。领取/结束重算所有保护路径，仅 tasks/checklist 本轮段事实允许改变；其他未知变化立即停止，不更新基线掩盖。
 
@@ -626,7 +626,7 @@ HEAD `d5072aaff33276bcd1c5e7d38b5caa75fe45a290` / main，既有 dirty/untracked 
 
 ### 依据、学习与基线
 
-按共同开工顺序及 DSH 角色读取 [Runbook](../../../docs/ROS2迁移步骤.md#status)、[spec](../../../.trae/specs/w8-measurement-p3/spec.md#round16-entry-owner)、[tasks](../../../.trae/specs/w8-measurement-p3/tasks.md#round16)、[checklist](../../../.trae/specs/w8-measurement-p3/checklist.md#round16)。先学已通过的核心 `release_owner_handle`/`close_log` 错误容器、R10 资源归属及现有 FakeHandle/weakref/GC 夹具。独立反例脚本和观察在新根 `config/sources/codex_r15_review.{py,json}`，只读作为诊断来源，不把它另跑成未记录行为验证。无新增框架/组件，Nav2 无新增吸收点，不读 reference/、不复制旧树、不下载依赖。
+按共同开工顺序及 DSH 角色读取 [Runbook](../../../docs/archive/ROS2迁移步骤.md#status)、[spec](../../../docs/archive/specs/w8-measurement-p3/spec.md#round16-entry-owner)、[tasks](../../../docs/archive/specs/w8-measurement-p3/tasks.md#round16)、[checklist](../../../docs/archive/specs/w8-measurement-p3/checklist.md#round16)。先学已通过的核心 `release_owner_handle`/`close_log` 错误容器、R10 资源归属及现有 FakeHandle/weakref/GC 夹具。独立反例脚本和观察在新根 `config/sources/codex_r15_review.{py,json}`，只读作为诊断来源，不把它另跑成未记录行为验证。无新增框架/组件，Nav2 无新增吸收点，不读 reference/、不复制旧树、不下载依赖。
 
 HEAD `d5072aaff33276bcd1c5e7d38b5caa75fe45a290` / main，已有 dirty/untracked 保留。新根 `experiments/ros2-diagnostics/20261027-p3-r16/`，领取时仅 Codex 的基线与两份审查来源。基线 `config/codex_dispatch_baseline.json`：**988 路径，SHA256 7287975cc11cc1df246318a89e1444445a8e5a76319f85fe8d6bd7090b774aaf**。继承 R15 的 961 路径，补齐 R15 全根当前字节、tar/两侧车与本轮两份来源；四个可变交接文件不保护，不是全文件系统覆盖。Codex 本次协议/角色自主权限和 Runbook/spec/tasks/checklist 改动逐项登记在新基线，旧指纹不改。领取/结束核对全部路径；仅 tasks/checklist 的 R16 事实更新允许变化，其他未知变化停止，不能更新基线掩盖。
 

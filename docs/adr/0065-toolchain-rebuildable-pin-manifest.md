@@ -10,7 +10,7 @@ accepted
 
 ## 背景
 
-结构评审 [S-09](../../docs/reviews/agc-review-2026-10-14/20-结构.md#s-09)（**工具链可重建性**，高）指出：
+结构评审 [S-09](../reviews/agc-review-2026-10-14/20-结构.md#s-09)（**工具链可重建性**，高）指出：
 [`toolchain/`](../../toolchain/README.md) 内容**不入 git**（[.gitignore](../../.gitignore) 仅放行
 `/toolchain/README.md`），而 README 原先只有**版本 tag + 局部配方**，
 **无**源 SHA / submodule / 补丁与兼容输入来源 / 依赖版本 / 构建选项 / **产物 binary 哈希**清单。
@@ -26,7 +26,7 @@ accepted
 `px4_msgs` 内联 `src/`**）、[#messages](../ROS2迁移交接文档.md#messages)（冻结 9 消息 ABI，工具链变更**不**触碰）、
 [#params](../ROS2迁移交接文档.md#params)（单一注入）；上游决策 [ADR-0012](0012-px4-body-as-toolchain-dependency.md)
 （PX4 本体作 `toolchain/` 外部依赖）/ [ADR-0005](0005-px4-link-uxrce-dds.md)（uXRCE-DDS + `px4_msgs`）；
-复现步骤见 Runbook [附录 B](../ROS2迁移步骤.md#appendix-b)。**保留**外部依赖决定：
+复现步骤见 Runbook [附录 B](../archive/ROS2迁移步骤.md#appendix-b)。**保留**外部依赖决定：
 **不**回退 agent 2.4.2、**不**引入 MAVROS。
 
 ## 决策
@@ -94,13 +94,13 @@ ROS 侧 DDS 直接来自 `/opt/ros/jazzy`，**无需自建**）。
   产物哈希随重新构建而变，须**显式更新 README 并重跑校验**，不得静默接受漂移）；
   「空目录重建」仍**未实测**（见 (d)），当前只证明**现值一致**。
 - **未决 / 后续**：干净环境端到端重建实测（W3 复现出口 → W8 冻结前）；
-  多机/CI 环境下的工具链校验接入属 W8 范围。裁决**不**改 [Runbook #status](../ROS2迁移步骤.md#status)。
+  多机/CI 环境下的工具链校验接入属 W8 范围。裁决**不**改 [Runbook #status](../archive/ROS2迁移步骤.md#status)。
 - 与旧树：**只读**对齐**行为事实**（WHAT），**不**复制旧代码 / 资产（HOW）。
 
 ## 参考
 
-- 评审：[20-结构](../../docs/reviews/agc-review-2026-10-14/20-结构.md#s-09) / [00-总览](../../docs/reviews/agc-review-2026-10-14/00-总览.md)
-- 规格：[fix-structure-geometry-evidence-toolchain-s06-s10 spec](../../.trae/specs/fix-structure-geometry-evidence-toolchain-s06-s10/spec.md)
+- 评审：[20-结构](../reviews/agc-review-2026-10-14/20-结构.md#s-09) / [00-总览](../reviews/agc-review-2026-10-14/00-总览.md)
+- 规格：[fix-structure-geometry-evidence-toolchain-s06-s10 spec](../archive/specs/fix-structure-geometry-evidence-toolchain-s06-s10/spec.md)
 - 前序：[ADR-0012](0012-px4-body-as-toolchain-dependency.md)（PX4 本体外部依赖）/ [ADR-0005](0005-px4-link-uxrce-dds.md)（uXRCE-DDS + `px4_msgs`）/ [ADR-0003](0003-nav2-pattern-complete-absorption.md)（Nav2 走 apt + `<depend>` 对照）
 - 契约：[#decisions](../ROS2迁移交接文档.md#decisions)（PX4 本体 = 外部依赖）/ [#messages](../ROS2迁移交接文档.md#messages)（ABI 冻结）/ [#params](../ROS2迁移交接文档.md#params)
-- 实现：[`toolchain/README.md`](../../toolchain/README.md) / [`scripts/toolchain_pin_check.py`](../../scripts/toolchain_pin_check.py) / Runbook [附录 B](../ROS2迁移步骤.md#appendix-b)
+- 实现：[`toolchain/README.md`](../../toolchain/README.md) / [`scripts/toolchain_pin_check.py`](../../scripts/toolchain_pin_check.py) / Runbook [附录 B](../archive/ROS2迁移步骤.md#appendix-b)

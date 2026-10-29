@@ -144,7 +144,7 @@ pilot 已完成 20 个预声明 attempt（P1 `s15` / `p1_coop` / seed 5；P2 `s0
 - 契约：[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)、[#terminal-semantics](../ROS2迁移交接文档.md#terminal-semantics)、[#execution-port](../ROS2迁移交接文档.md#execution-port)
 - 前序 ADR：[ADR-0057](0057-c3-gui-acceptance-scope-authorization.md)、[ADR-0086](0086-decision-rule-three-state-ci-versus-mme.md)、[ADR-0088](0088-mme-change-governance-independent-justification-and-seed-isolation.md)、[ADR-0093](0093-w7b-exit-closure-and-prefix-provenance.md)、[ADR-0094](0094-uxrce-participant-warmup-and-px4-stagger.md)、[ADR-0095](0095-w7c-admission-metric-and-worker-run-dir-isolation.md)、[ADR-0007](0007-experiment-artifacts-convention.md)、[ADR-0064](0064-evidence-immutable-archive-and-intake-manifest.md)
 - 计划：[`w8_gui_headless_plan.yaml`](../../src/agc_rl/config/w8_gui_headless_plan.yaml)
-- spec：[`w8-parity-freeze`](../../.trae/specs/w8-parity-freeze/spec.md)
+- spec：[`w8-parity-freeze`](../archive/specs/w8-parity-freeze/spec.md)
 
 <a id="measurement-amendment"></a>
 ## 2026-10-26 测量 P2 修订边界

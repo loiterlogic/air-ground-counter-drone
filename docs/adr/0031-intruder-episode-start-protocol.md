@@ -4,7 +4,7 @@
 
 accepted
 
-> 注（S-05 / [ADR-0061](./0061-w6-runtime-topology-backend-identity-and-single-parameterized-entry.md)）：W6 顶层入口已统一为 [`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)（`backend` 参数 ∈ lightweight | full），原 `w6_task_eval.launch.py` / `w6_full.launch.py` 退役；本 ADR 历史结论正文不改，下文的旧入口名按现入口读作同一拓扑。
+> 注（S-05 / [ADR-0061](0061-w6-runtime-topology-backend-identity-and-single-parameterized-entry.md)）：W6 顶层入口已统一为 [`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)（`backend` 参数 ∈ lightweight | full），原 `w6_task_eval.launch.py` / `w6_full.launch.py` 退役；本 ADR 历史结论正文不改，下文的旧入口名按现入口读作同一拓扑。
 
 ## 背景
 
@@ -25,7 +25,7 @@ accepted
 
 已有可复用机制：`scenario_reset` 每次**成功复位**后发布 `/agc/scenario/reset_epoch`
 （`std_msgs/Int32`，`rclcpp::QoS(1).transient_local()` → RELIABLE + TRANSIENT_LOCAL，单调递增），
-见 [ADR-0030](./0030-scenario-reset-controlled-transaction.md)。该 epoch 即天然的多回合起始信号。
+见 [ADR-0030](0030-scenario-reset-controlled-transaction.md)。该 epoch 即天然的多回合起始信号。
 
 ## 决策
 
@@ -33,7 +33,7 @@ accepted
 节点启动即记 `warmup_t0_`（`_now_us()`）；`tw = now - warmup_t0_`。`tw > 1.0 s` 才请求 ARM；`armed_`
 且 `nav_state_ != OFFBOARD(14)` 时请求 `VEHICLE_CMD_SET_NAV_STATE = OFFBOARD`（保留 `arm_retry_s` 重试语义）。
 **预热时间不进入轨迹参数 t**——轨迹推进只由 episode `t0_` 驱动。依据：PX4 Offboard 要求切 OFFBOARD 前
-持续流 > 1 s，这段预热是**链路就绪**而非任务推进（对齐 [ADR-0019](./0019-uav-trajectory-and-tracking-parameter-calibration.md)
+持续流 > 1 s，这段预热是**链路就绪**而非任务推进（对齐 [ADR-0019](0019-uav-trajectory-and-tracking-parameter-calibration.md)
 的参考轨迹语义）。
 
 ### (b) episode epoch 订阅
@@ -89,7 +89,7 @@ OCM / setpoint 发布、`_send_cmd` 的 `target_system`、停止 Offboard 的 fa
 
 - **保持现状（首帧 odom 起算、无复位）** —— 被否：即 R-016 所指缺口（起点依赖启动快慢、多回合累积）。
 - **用 `/agc/task/state` 的相位变化当 episode 信号** —— 被否：状态机相位非「复位完成」的权威时刻，且
-  start 门禁的 epoch 语义已由 [ADR-0030](./0030-scenario-reset-controlled-transaction.md) 统一到
+  start 门禁的 epoch 语义已由 [ADR-0030](0030-scenario-reset-controlled-transaction.md) 统一到
   `/agc/scenario/reset_epoch`；consume 既有复位事件更简且不新增命令者。
 - **让 `maneuver` 从原点起跳、渐进到圆周** —— 被否：使 t=0 定义与场景登记（圆心 + 半径）不符，且与
   「起点 = 定义运动 t=0」语义矛盾；改把 t=0 定义为**圆周定义点**（切入连续）。

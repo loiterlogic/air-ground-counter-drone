@@ -24,7 +24,7 @@ W0 产出的 [包边界](../conventions/包边界.md) 把**消息通信 / 库链
 
 **本仓事实（取证）**：`agc_air` 的 `agc_air_lib` 为 `STATIC`、仅本包节点 / 测试使用；`agc_air` 只 `install(TARGETS <node>)` + `install(DIRECTORY launch config)`，**不**安装 `include/`；却曾 `ament_export_include_directories(include)` + `ament_export_dependencies(${DEPS} Eigen3)` + `agc_air_lib` 的 `$<INSTALL_INTERFACE:include>` → 生成的 `ament_cmake_export_include_directories-extras.cmake` 指向**不存在**的 `install/include`（下游 `find_package(agc_air)` 会报 "exports the include directory … which doesn't exist" 警告）；全仓**无** `find_package(agc_air)` 消费者。
 
-**裁定**：`agc_air_lib` 为**纯内部实现**，`agc_air` **不**对外承诺公共接口——移除 `ament_export_include_directories(include)`、`agc_air_lib` 的 `$<INSTALL_INTERFACE:include>` 与 `ament_export_dependencies`；`agc_air` **不**安装 `include/`（对齐 `nav2_bringup` 的「内部 / 仅 launch 包零导出」）。共享通用控制继续以 `agc_control`（`INTERFACE` + 安装 `include/` + `ament_export_*`）为**唯一**公共库家（[ADR-0018](./0018-shared-control-layer-and-lqr-plugin.md)）。**未**为修 export 新建任何跨域链接。若将来某 helper 需**真正公共**，须经包边界批准并**同时**安装头文件 / 正确导出。
+**裁定**：`agc_air_lib` 为**纯内部实现**，`agc_air` **不**对外承诺公共接口——移除 `ament_export_include_directories(include)`、`agc_air_lib` 的 `$<INSTALL_INTERFACE:include>` 与 `ament_export_dependencies`；`agc_air` **不**安装 `include/`（对齐 `nav2_bringup` 的「内部 / 仅 launch 包零导出」）。共享通用控制继续以 `agc_control`（`INTERFACE` + 安装 `include/` + `ament_export_*`）为**唯一**公共库家（[ADR-0018](0018-shared-control-layer-and-lqr-plugin.md)）。**未**为修 export 新建任何跨域链接。若将来某 helper 需**真正公共**，须经包边界批准并**同时**安装头文件 / 正确导出。
 
 ## Considered Options
 

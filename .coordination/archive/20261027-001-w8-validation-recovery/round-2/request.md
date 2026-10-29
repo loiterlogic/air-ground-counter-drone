@@ -4,7 +4,7 @@
 - 任务 ID：20261027-001-w8-validation-recovery；轮次：2；日期：2026-10-27。
 - 来源：用户要求开展当前工作区第二轮，并说明 DSH 尚未启动。Codex 裁定本轮目标、派工与验收；DSH 学习同版本实现、整理证据并交回方案。
 - 依照 [协议](../../../README.md#protocol)、[DSH 自主权限](../../../README.md#executor-autonomy)、[角色](../../../roles/deepseek.md#startup) 领取。先读当前指针、本单和 [第一轮审查](../round-1/review.md#round1-review)，按需展开引用。
-- 项目入口：[Runbook](../../../../docs/ROS2迁移步骤.md#status)；[spec](../../../../.trae/specs/w8-validation-recovery/spec.md#round2)、[tasks](../../../../.trae/specs/w8-validation-recovery/tasks.md#round2)、[checklist](../../../../.trae/specs/w8-validation-recovery/checklist.md#round2)。契约只引用 [硬约束](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。
+- 项目入口：[Runbook](../../../../docs/archive/ROS2迁移步骤.md#status)；[spec](../../../../docs/archive/specs/w8-validation-recovery/spec.md#round2)、[tasks](../../../../docs/archive/specs/w8-validation-recovery/tasks.md#round2)、[checklist](../../../../docs/archive/specs/w8-validation-recovery/checklist.md#round2)。契约只引用 [硬约束](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。
 
 ## 目标与已有判断
 

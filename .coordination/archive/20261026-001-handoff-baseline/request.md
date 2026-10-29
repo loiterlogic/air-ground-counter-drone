@@ -10,9 +10,9 @@
 
 先按项目入口开工顺序阅读，再核对：
 
-- [Runbook 用法](../../../docs/ROS2迁移步骤.md#usage) 与 [当前进度](../../../docs/ROS2迁移步骤.md#status)。
-- 关联当前已完成的测量 P2：[spec](../../../.trae/specs/w8-measurement-p2/spec.md#scope)、[tasks](../../../.trae/specs/w8-measurement-p2/tasks.md#tasks)、[checklist](../../../.trae/specs/w8-measurement-p2/checklist.md#checklist)。
-- 上游 W8：[spec](../../../.trae/specs/w8-parity-freeze/spec.md#top)，同目录 tasks/checklist 按其 Markdown 标题读取。
+- [Runbook 用法](../../../docs/archive/ROS2迁移步骤.md#usage) 与 [当前进度](../../../docs/archive/ROS2迁移步骤.md#status)。
+- 关联当前已完成的测量 P2：[spec](../../../docs/archive/specs/w8-measurement-p2/spec.md#scope)、[tasks](../../../docs/archive/specs/w8-measurement-p2/tasks.md#tasks)、[checklist](../../../docs/archive/specs/w8-measurement-p2/checklist.md#checklist)。
+- 上游 W8：[spec](../../../docs/archive/specs/w8-parity-freeze/spec.md#top)，同目录 tasks/checklist 按其 Markdown 标题读取。
 - [P3 待办](../../../docs/adr/0099-w8-fixed-budget-mission-fco-measurement.md#next) 与 [seed 协议](../../../docs/adr/0100-full-chain-seed-protocol.md#top)。
 - 同版本已存在的 P2 回报方式：沿上述 spec 与 ADR 的链接读取现有审计摘要，不重新运行审计脚本。
 - 硬约束仅引用 [契约](../../../docs/ROS2迁移交接文档.md#hard-constraints)。

@@ -1,9 +1,9 @@
 # spec 三件套模板
 
-> 每个 workstream 须具备 `.trae/specs/<ws-id>-<slug>/{spec.md,tasks.md,checklist.md}`，由本模板生成。
+> **状态**：本模板描述的是**迁移期 workstream 规格**的格式，用于读懂 [历史规格归档](../archive/specs/README.md#specs-index)。迁移已暂停（[开关](../plan/PAUSED.md#paused)），**当前阶段不再新建** workstream 规格目录，收尾任务按 [项目完成路线](../plan/README.md#plan-index) 组织。
 > 真源分层见 [ADR-0002](../adr/0002-docs-source-of-truth-layering.md)：约束只引用契约真源，不复述。
-> **进度真源**：唯一进度真源为 Runbook [状态表](../ROS2迁移步骤.md#status)；三件套**不**维护第二状态表——如需标注执行进度，一律**引用**该锚点，**不**凭推断改写完成状态（[ADR-0066](../adr/0066-decision-applicability-and-reference-discipline.md)）。
-> **引用纪律**：跨文档一律用**稳定锚点**可点击链接（`<文件>#<锚点>`），**禁** `§` 章节号；相对路径按三件套所处层级（`.trae/specs/<ws>/` → 项目根为 `../../../`）。
+> **进度真源**：历史规格**不是**进度真源；三件套**不**维护第二状态表——需要标注执行进度时，一律**引用**当时的编排记录并注明历史，**不**凭推断改写完成状态（[ADR-0066](../adr/0066-decision-applicability-and-reference-discipline.md)）。
+> **引用纪律**：跨文档一律用**稳定锚点**可点击链接（`<文件>#<锚点>`），**禁** `§` 章节号；历史规格现位于 `docs/archive/specs/<ws>/`，其指向项目根的相对层级为 `../../../../`。
 
 ---
 
@@ -26,8 +26,8 @@
 ```markdown
 # <WS> · <名称> — Spec
 
-> **依据**：契约真源 [<锚点>](../../../docs/ROS2迁移交接文档.md#<anchor>)；相关 ADR。
-> **上游**：Runbook 的 <WS> 卡片（[#workstreams](../ROS2迁移步骤.md#workstreams)）；进度以 [#status](../ROS2迁移步骤.md#status) 为**唯一真源**。
+> **依据**：契约真源 [<锚点>](../../../../docs/ROS2迁移交接文档.md#<anchor>)；相关 ADR。
+> **上游**：Runbook 的 <WS> 卡片（[#workstreams](../archive/ROS2迁移步骤.md#workstreams)）；进度以 [#status](../archive/ROS2迁移步骤.md#status) 为**唯一真源**。
 > **原则**：本 spec 从零撰写，不参考归档旧树的任何 spec / 任务 / 清单。
 
 ## Why
@@ -44,7 +44,7 @@
 <正文，含可命令化判据>
 
 ## Nav2 吸收点   <!-- 强制节：非空 -->
-<按 [ADR-0008](../../../docs/adr/0008-nav2-paradigm-absorption-as-code-principle.md) 吸收矩阵逐项列出，
+<按 [ADR-0008](../../../../docs/adr/0008-nav2-paradigm-absorption-as-code-principle.md) 吸收矩阵逐项列出，
 并标注每项来源：`全新重写` / `对齐旧树行为语义（附稳定锚点）` / `直接复用 Nav2 组件`。
 未采纳的范式须写明理由。>
 
@@ -64,7 +64,7 @@
 ```markdown
 # Tasks · <WS> <名称>
 
-> 依据 [spec.md](./spec.md)。完成一项即在 checkbox 打勾，并保留可核查证据。
+> 依据 [spec.md](spec.md)。完成一项即在 checkbox 打勾，并保留可核查证据。
 
 - [ ] Task 1：<标题>（关联 R#）
   - [ ] 1.1 <子项>
@@ -83,12 +83,12 @@
 ```markdown
 # Checklist · <WS> <名称>
 
-> 逐项核查 [spec.md](./spec.md) 与 [tasks.md](./tasks.md)。核查方式以**可执行命令**为准。
-> **进度**：唯一进度真源 = Runbook [#status](../ROS2迁移步骤.md#status)；本清单**不**另立第二状态表。
+> 逐项核查 [spec.md](spec.md) 与 [tasks.md](tasks.md)。核查方式以**可执行命令**为准。
+> **进度**：唯一进度真源 = Runbook [#status](../archive/ROS2迁移步骤.md#status)；本清单**不**另立第二状态表。
 
 ## R<#>
 - [ ] <可命令化判据>
 
 ## 通用红线（所有 workstream 适用）
-- [ ] 若发现任一硬约束（契约 [hard-constraints](../../../docs/ROS2迁移交接文档.md#hard-constraints)）未被满足，已**停止并报告**，未带错继续推进
+- [ ] 若发现任一硬约束（契约 [hard-constraints](../../../../docs/ROS2迁移交接文档.md#hard-constraints)）未被满足，已**停止并报告**，未带错继续推进
 ```

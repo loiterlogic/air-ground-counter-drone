@@ -10,7 +10,7 @@ accepted
 
 ## 背景
 
-评审风险 **R-029（运行身份与复现）**（[10-风险](../../docs/reviews/agc-review-2026-10-14/10-风险.md#r-029)）指出：
+评审风险 **R-029（运行身份与复现）**（[10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-029)）指出：
 [`run_logger`](../../src/agc_task/src/run_logger.cpp) 的 `run_id = <YYYYMMDD>-<scenario>-<seed>`
 在**同日同场景同 seed** 下落到**固定路径**，且以 `ofstream` **重写**已有产物；config 只保存 logger
 自身几项参数与 `git HEAD`，**未存**所有节点展开参数 / **dirty diff** / 未跟踪源码；当前工作区存在大量
@@ -109,8 +109,8 @@ run 关联；Phase F 核查 (a)…(f)。产物落 `experiments/w6-task-eval/<run
 
 ## 参考
 
-- 评审：[10-风险](../../docs/reviews/agc-review-2026-10-14/10-风险.md#r-029)
-- 规格：[fix-scenario-axis-metrics-identity-r26-r30 spec](../../.trae/specs/fix-scenario-axis-metrics-identity-r26-r30/spec.md)（R-029）
+- 评审：[10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-029)
+- 规格：[fix-scenario-axis-metrics-identity-r26-r30 spec](../archive/specs/fix-scenario-axis-metrics-identity-r26-r30/spec.md)（R-029）
 - 产物纪律：[ADR-0007](0007-experiment-artifacts-convention.md)
 - 前序：[ADR-0043](0043-episode-window-metrics-and-valid-sample-mask.md)
 - 实现：`run_logger.cpp` / `episode_runner.py` / `run_w6_r029.sh` / `w6_r029_check.py`

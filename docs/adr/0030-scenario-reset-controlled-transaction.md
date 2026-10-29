@@ -8,8 +8,8 @@ accepted
 评审风险 **R-015（复位事务）**：`scenario_reset` 的复位只有**两次非原子 `set_pose`**——车、目标依次
 写入，**目标写入失败会留下「车已移动、目标未复位」的中间态**；无写入后**读回**核验；
 `isResettable` **漏 `INTERCEPT_CONFIRMED`**（成功拦截后同进程下一回合不可复位）；启动 4 s 定时器
-以 `doReset(true)` **bypass 门控**，早启动时可被初始复位覆盖（契约 [#lessons](../../docs/ROS2迁移交接文档.md#lessons)
-要求「保留门控」）。同时评审 **X-03** 指出契约 [#task-gating](../../docs/ROS2迁移交接文档.md#task-gating)
+以 `doReset(true)` **bypass 门控**，早启动时可被初始复位覆盖（契约 [#lessons](../ROS2迁移交接文档.md#lessons)
+要求「保留门控」）。同时评审 **X-03** 指出契约 [#task-gating](../ROS2迁移交接文档.md#task-gating)
 「非运行期不得写位姿」与实现允许 IDLE/终态复位、拒绝 active 的**方向相反**，文字歧义须显式裁定。
 
 本 ADR 记录三项决策：**(a) 复位受控事务设计**、**(b) X-03 门控窗口裁定（措辞澄清，非语义变更）**、
@@ -29,7 +29,7 @@ accepted
 任务门控），故「停止执行」在策略层面已成立。
 
 ### (a-2) 停止执行 = 门控 + 车静止证据（**不新增命令者**）
-按契约 [#execution-port](../../docs/ROS2迁移交接文档.md#execution-port)，`/agc/ground/cmd_vel` 是
+按契约 [#execution-port](../ROS2迁移交接文档.md#execution-port)，`/agc/ground/cmd_vel` 是
 **唯一命令车体运动**的通道，落地者为 `ground_drive_relay`；唯一例外是**场景复位的位姿写入**。
 因此 `scenario_reset` **禁止发布任何 cmd_vel**（**SHALL NOT** 成为第二命令者）。「停止执行」以
 **门控（非 active）** + **车静止证据**实现：复位前订阅 `/agc/ground/odom`（`nav_msgs/Odometry`），
@@ -61,19 +61,19 @@ accepted
 ### (a-6) 执行器
 `main()` 由 `rclcpp::spin` 改 **`MultiThreadedExecutor`**；复位服务 + 启动定时器置**独立互斥回调组**，
 订阅留默认组——事务回调内的有界阻塞（静止观察 / 读回等待）期间，gt / odom 缓存仍由其它线程持续刷新
-（对齐 [ADR-0028](./0028-task-start-transaction-and-freshness-gate.md) 执行器范式）。
+（对齐 [ADR-0028](0028-task-start-transaction-and-freshness-gate.md) 执行器范式）。
 
 ---
 
 ## (b) X-03 门控窗口裁定（**措辞澄清**，非语义变更）
 
-**契约文字**：[#task-gating](../../docs/ROS2迁移交接文档.md#task-gating) 「`scenario_reset` 受**运行期门控**
+**契约文字**：[#task-gating](../ROS2迁移交接文档.md#task-gating) 「`scenario_reset` 受**运行期门控**
 （非运行期不得写位姿）」。**歧义**：「运行期」未定义——可指 (i) launch **会话**存在，或 (ii) **任务已获
-运动许可（active）**期间。现实现（IDLE / 终态可复位、拒 active）与字面 (i) **方向相反**，且 [#lessons](../../docs/ROS2迁移交接文档.md#lessons)
-要求「保留门控」、[#hard-constraints](../../docs/ROS2迁移交接文档.md#hard-constraints) C7 又要求 start
+运动许可（active）**期间。现实现（IDLE / 终态可复位、拒 active）与字面 (i) **方向相反**，且 [#lessons](../ROS2迁移交接文档.md#lessons)
+要求「保留门控」、[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints) C7 又要求 start
 前复位（计时前）——遵守一句可能违反另一句。
 
-**裁定**：把契约 [#task-gating](../../docs/ROS2迁移交接文档.md#task-gating) 的「运行期」明确为
+**裁定**：把契约 [#task-gating](../ROS2迁移交接文档.md#task-gating) 的「运行期」明确为
 **(ii) 任务已获运动许可（active）期间**。于是：
 
 > **复位允许窗口 = 非 active（`IDLE` + 全部终态，含 `INTERCEPT_CONFIRMED`）+ 受控事务。**
@@ -81,7 +81,7 @@ accepted
 > 任意写位姿」。
 
 **理由**：
-1. 门控的**意图**是防「非运行期写位姿覆盖 `car_start`」（[#lessons](../../docs/ROS2迁移交接文档.md#lessons)
+1. 门控的**意图**是防「非运行期写位姿覆盖 `car_start`」（[#lessons](../ROS2迁移交接文档.md#lessons)
    原话），而 `car_start` 仅在复位成功后发布——意指「active 期间不得被复位覆盖」。故「运行期」语义应
    锚定 **active（运动许可）**，而非 launch 会话。
 2. C7 要求 start 前复位（episode 起始把轨迹相位 / 位姿复位到 t=0），此刻任务尚未 active——若「运行期」
@@ -133,7 +133,7 @@ accepted
 | **复位用显式状态窗口**（进入 RESETTING 前撤销许可），非「服务可达即写入」 | `对齐 Nav2 lifecycle`（`nav2_lifecycle_manager` 显式迁移 + `get_state`） | (a-1) 门控窗口；(a-2) 撤销许可 + 静止证据 |
 | **资源可重建**（cleanup 后可重复 configure；异常清理） | `对齐 Nav2 lifecycle cleanup/configure` 语义 | (a-3) 原子写入 / 读回 / 回滚；(a-4) epoch 重开回合 |
 | **重试**（状态迁移带超时重试） | `对齐 nav2_util::startup/reset_lifecycle_nodes`（`retries`） | (a-3) 读回有界等待；R-014 候选重采样 |
-| 单点权威（不并行命令者） | `对齐 ROS 2 唯一权威控制`（契约 [#execution-port](../../docs/ROS2迁移交接文档.md#execution-port)） | (a-2) **不新增**第二命令者、不发布 cmd_vel |
+| 单点权威（不并行命令者） | `对齐 ROS 2 唯一权威控制`（契约 [#execution-port](../ROS2迁移交接文档.md#execution-port)） | (a-2) **不新增**第二命令者、不发布 cmd_vel |
 | 执行器 / 回调组隔离（阻塞回调不冻结本地缓存） | `对齐 rclcpp 多线程执行器` | (a-6) `MultiThreadedExecutor` + 事务回调组 |
 | `set_pose` 写入作用判定 | `全新重写`（GZ 语义无对应 lifecycle 语义） | (c-2) 真值读回为准 |
 
@@ -150,7 +150,7 @@ accepted
 
 - **保持两次非原子 `set_pose`（目标失败即留中间态）** —— 被否：即 R-015 所指缺口。
 - **复位前由 `scenario_reset` 下「零速」cmd_vel 作为「停止执行」** —— 被否：违反契约
-  [#execution-port](../../docs/ROS2迁移交接文档.md#execution-port)（唯一例外仅「位姿写入」），会新增第二命令者。
+  [#execution-port](../ROS2迁移交接文档.md#execution-port)（唯一例外仅「位姿写入」），会新增第二命令者。
   改以门控 + 静止证据（(a-2)）。
 - **只用 `set_pose.success` 判写入成功** —— 被否：(c-2) 实测证明其对不存在实体仍为 true；改以真值读回。
 - **非 active（IDLE+终态）+ 受控事务** —— **采纳**。
@@ -160,7 +160,7 @@ accepted
 - `scenario_reset` 服务应答：成功 `reset ok epoch=N`；失败 `reset rejected: <reason>`（reason 见 (a-3)）。
 - 启动初始复位不再 bypass 门控；早启动若任务 active 则被拒。
 - 新增 `/agc/scenario/reset_epoch`（`Int32`，transient_local）供多回合 / 起始新鲜门关联；`car_start`
-  仅在完整成功后发布（配套 [ADR-0028](./0028-task-start-transaction-and-freshness-gate.md) 的新鲜门）。
-- 门控窗口裁定以本 ADR 为准，**契约 [#task-gating](../../docs/ROS2迁移交接文档.md#task-gating) 文字未改**，
+  仅在完整成功后发布（配套 [ADR-0028](0028-task-start-transaction-and-freshness-gate.md) 的新鲜门）。
+- 门控窗口裁定以本 ADR 为准，**契约 [#task-gating](../ROS2迁移交接文档.md#task-gating) 文字未改**，
   供后续单独裁定回填。
 - 不新增 / 不修改冻结接口 ABI；不新增命令者。

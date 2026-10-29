@@ -21,16 +21,16 @@ accepted
 不新增命令者、不改冻结 9 消息 ABI、参数须经 `config/w6_base.yaml` **单一注入**；`INTERCEPT_CONFIRMED`
 的 `reason_code` 仍为 `JAM_*`。
 
-同版本取证（[ADR-0012](./0012-px4-body-as-toolchain-dependency.md) pin v1.15.4）：本机
+同版本取证（[ADR-0012](0012-px4-body-as-toolchain-dependency.md) pin v1.15.4）：本机
 `src/px4_msgs/msg/VehicleStatus.msg` 的 `nav_state` 枚举 `AUTO_LOITER=4` / `AUTO_RTL=5` /
 `OFFBOARD=14` / `AUTO_LAND=18`；`VehicleStatus` 由 commander 发布（BEST_EFFORT）。对齐 ROS 2 action
-「**goal accepted ≠ result succeeded**」语义（[ADR-0008](./0008-nav2-paradigm-absorption-as-code-principle.md)
+「**goal accepted ≠ result succeeded**」语义（[ADR-0008](0008-nav2-paradigm-absorption-as-code-principle.md)
 吸收矩阵的「结果与接受分离」）。
 
 ## 决策
 
 ### (a) 证据链拆分：意图 → 授权 → 发送 → ACK → 真实 nav 状态 → 持续行为
-`jammer` 仍是干扰**授权 / 确认的唯一裁决者**（[ADR-0032](./0032-jam-single-authorization-and-validated-event.md)）。
+`jammer` 仍是干扰**授权 / 确认的唯一裁决者**（[ADR-0032](0032-jam-single-authorization-and-validated-event.md)）。
 在既有 R-017 **授权事件**（`/agc/task/jam_state` 的 `JAM_*`，**语义保留**以驱动 `intruder_driver`）之外，
 新增两条 `std_msgs/String` 通道（**非**冻结 9 消息，非命令话题）：
 - **`/agc/task/jam_confirm`**（`confirm_topic`）：**仅**在满足确认真实条件时发布一次

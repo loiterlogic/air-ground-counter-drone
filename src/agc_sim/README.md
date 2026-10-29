@@ -74,7 +74,7 @@ SceneBroadcaster → Sensors`），与 Nav2 官方 `tb3_sandbox` 写法一致。
 
 ## 拦截相关模型（W2-interception）
 
-- **可控目标**（`intruder_uav`，R9）：模型改**双模 xacro**（`controlled` 参）——W6 前置 P 起由**第二 PX4 SITL 实例** attach 并驱动（`agc_task/intruder_driver` 经 uXRCE / `px4_msgs`）；桥 `/agc/sim/target_cmd_vel`（gz `VelocityControl` 通道）**已退役**（`.trae/specs/w6-task-eval/spec.md` 前置 P；ADR-0016）。
+- **可控目标**（`intruder_uav`，R9）：模型改**双模 xacro**（`controlled` 参）——W6 前置 P 起由**第二 PX4 SITL 实例** attach 并驱动（`agc_task/intruder_driver` 经 uXRCE / `px4_msgs`）；桥 `/agc/sim/target_cmd_vel`（gz `VelocityControl` 通道）**已退役**（历史规格 [w6-task-eval spec](../../docs/archive/specs/w6-task-eval/spec.md) 前置 P；ADR-0016）。
 - **地面拦截载荷**（`agc_car`，R10）：`car/capture_net`（直径 2 m 圆面，法线 `+x`，供 W6 物理捕获"穿越判据"）与 `car/jammer`（行为级干扰发射器）。二者均为**轻量、无 collision** 附件，参数（`capture_net_radius` / `payload_mass`）落 `config/car.yaml` 并由 launch 单一设置；**捕获裁决与干扰行为属 W6**（ADR-0015）。
 
 ## 物理与驱动

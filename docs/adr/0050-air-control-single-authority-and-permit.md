@@ -10,7 +10,7 @@ accepted
 
 ## 背景
 
-评审风险 **R-035（空中控制唯一性）**（[10-风险](../../docs/reviews/agc-review-2026-10-14/10-风险.md#r-035)）指出，
+评审风险 **R-035（空中控制唯一性）**（[10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-035)）指出，
 W3 空中链路把「**拓扑数量**」当成「**实际控制权**」的判据，不能证明唯一实际命令者：
 
 - [`trajectory_tracker.cpp`](../../src/agc_air/src/trajectory_tracker.cpp) 的 `tick()` **先**发
@@ -139,8 +139,8 @@ reliable；参数 `control_permit_topic`）。每条 claim 为 JSON（`std_msgs/
 
 ## 参考
 
-- 评审：[10-风险](../../docs/reviews/agc-review-2026-10-14/10-风险.md#r-035)
-- 规格：[fix-lifecycle-control-height-numeric-r34-r38 spec](../../.trae/specs/fix-lifecycle-control-height-numeric-r34-r38/spec.md)（R-035）
+- 评审：[10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-035)
+- 规格：[fix-lifecycle-control-height-numeric-r34-r38 spec](../archive/specs/fix-lifecycle-control-height-numeric-r34-r38/spec.md)（R-035）
 - 契约：[#execution-port](../ROS2迁移交接文档.md#execution-port)、[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)（C10）、
   [#messages](../ROS2迁移交接文档.md#messages)
 - Nav2 参照：`nav2_controller/controller_server.hpp`（`current_controller_` / `publishVelocity` / `TwistPublisher`）、

@@ -1,7 +1,7 @@
 # toolchain/ — 项目本地仿真工具链
 
 > 本目录**不纳入版本控制**（见根 `.gitignore` 仅放行本文件），**仅本 README 入库**。本 README 是工具链**唯一入库的可重建 pin 清单**：源 SHA / submodule / 兼容输入来源 / 依赖版本 / 构建选项 / 产物二进制哈希，全部只写在这里（`toolchain/` 其余内容被 git 忽略，pin 值写到别处即丢失）。
-> 复现步骤与环境坑见 Runbook [附录 B](../docs/ROS2迁移步骤.md#appendix-b)；本文**只索引、不复述**约束类信息（约束真源见契约文档与 Runbook）。
+> 复现步骤与环境坑见归档 Runbook [附录 B](../docs/archive/ROS2迁移步骤.md#appendix-b)（**历史**：Runbook 已于 2026-10-29 归档，仅按需查）；本文**只索引、不复述**约束类信息（约束真源见契约文档）。
 
 ## 组成
 

@@ -65,7 +65,7 @@ accepted
 
 ## 备选
 
-1. **在节点层缓存目标位姿继续判命中** —— 否决：会用过期位置伪造命中，违背「目标失效不判命中」与 [契约 #terminal-semantics](../../docs/ROS2迁移交接文档.md#terminal-semantics)。
+1. **在节点层缓存目标位姿继续判命中** —— 否决：会用过期位置伪造命中，违背「目标失效不判命中」与 [契约 #terminal-semantics](../ROS2迁移交接文档.md#terminal-semantics)。
 2. **在飞期间单独维护第二套弹道时钟** —— 否决：与既有 `t_fire_` / 网位姿模型重复，增加状态与漂移风险；直接把在飞分支提前即可。
 3. **用墙钟（`steady_clock`）做超时兜底** —— 否决：违反仿真时钟唯一时间基；GUI / headless 速率不同会改变结局。
 4. **把中止记录并为 `SHOT_MISS`** —— 否决：复位 / 时钟回退不是物理失手，混用会污染命中率与时序统计。
@@ -94,8 +94,8 @@ accepted
 - 时序段证据：[ADR-0087](0087-p1-mechanism-ablation-and-p2-arm-b-diagnosis-scope.md)(d-1)
 - 目标运动估计：[ADR-0079](0079-b2-fire-control-target-motion-estimation.md)
 - 实现：[`dynamic_fire_control.hpp`](../../src/agc_task/include/agc_task/dynamic_fire_control.hpp)、[`capture_adjudicator.cpp`](../../src/agc_task/src/capture_adjudicator.cpp)、[`w6_base.yaml`](../../src/agc_task/config/w6_base.yaml)
-- 契约：[硬约束](../../docs/ROS2迁移交接文档.md#hard-constraints)、[终态语义](../../docs/ROS2迁移交接文档.md#terminal-semantics)、[参数入口](../../docs/ROS2迁移交接文档.md#params)
-- 规格：[`fix-fire-control-inflight-lifecycle-w7b-closure`](../../.trae/specs/fix-fire-control-inflight-lifecycle-w7b-closure/spec.md)
+- 契约：[硬约束](../ROS2迁移交接文档.md#hard-constraints)、[终态语义](../ROS2迁移交接文档.md#terminal-semantics)、[参数入口](../ROS2迁移交接文档.md#params)
+- 规格：[`fix-fire-control-inflight-lifecycle-w7b-closure`](../archive/specs/fix-fire-control-inflight-lifecycle-w7b-closure/spec.md)
 
 ## 回归证据（2026-10-24）
 

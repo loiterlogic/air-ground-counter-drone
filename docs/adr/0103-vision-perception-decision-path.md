@@ -7,7 +7,7 @@ accepted（2026-10-29，来源：用户裁定——"要接进任务决策（用�
 
 ## 背景
 
-[ADR-0020](./0020-perception-as-truth-derived-simulation.md) 定本项目感知口径为**真值派生仿真**：`air_perception` 以世界真值为输入、按通道模型（丢包 / FOV / 遮挡 / 噪声）产出观测，**不做**真实视觉检测。
+[ADR-0020](0020-perception-as-truth-derived-simulation.md) 定本项目感知口径为**真值派生仿真**：`air_perception` 以世界真值为输入、按通道模型（丢包 / FOV / 遮挡 / 噪声）产出观测，**不做**真实视觉检测。
 
 现用户裁定：另一同学开发**空对地场景识别视觉算法**，且其识别结果**要接入任务决策**，即用视觉识别**替代**真值派生感知作为决策输入。
 
@@ -57,10 +57,10 @@ accepted（2026-10-29，来源：用户裁定——"要接进任务决策（用�
 
 | ADR | 关系 |
 |---|---|
-| [ADR-0020](./0020-perception-as-truth-derived-simulation.md) | **扩展**：真值派生仍为默认路径；本 ADR 增加视觉路径 |
-| [ADR-0052](./0052-sensor-and-vehicle-model-limitation-and-capability-calibration.md) | 相关：相机安装位置/视场/分辨率须按该 ADR 的"能力如实登记"纪律记录 |
-| [ADR-0011](./0011-node-language-policy.md) | 视觉推理属工具域，用 Python 独立节点，不进 C++ 实时域 |
-| [ADR-0081](./0081-public-repo-publishing-boundary.md) | 视觉模型权重若体积大/有许可限制，按该边界处理，不入公开仓库 |
+| [ADR-0020](0020-perception-as-truth-derived-simulation.md) | **扩展**：真值派生仍为默认路径；本 ADR 增加视觉路径 |
+| [ADR-0052](0052-sensor-and-vehicle-model-limitation-and-capability-calibration.md) | 相关：相机安装位置/视场/分辨率须按该 ADR 的"能力如实登记"纪律记录 |
+| [ADR-0011](0011-node-language-policy.md) | 视觉推理属工具域，用 Python 独立节点，不进 C++ 实时域 |
+| [ADR-0081](0081-public-repo-publishing-boundary.md) | 视觉模型权重若体积大/有许可限制，按该边界处理，不入公开仓库 |
 
 ## 待定（实现时闭合，不阻塞本裁定）
 

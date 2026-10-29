@@ -182,5 +182,5 @@ seed5 第二发之后该门未再通过 ⇒ 无任何结局行。
 ## 参考
 
 - 前序：[ADR-0084](0084-w7b-p1-active-window-dv-recheck.md)（P1 v4 复核 + 机制边界）、[ADR-0071](0071-w7b-adjudication-record-and-pending-arms.md)(k)、[ADR-0073](0073-p1-arm-fairness-noncoop-fixed-trajectory.md)（α 的两项差异）、[ADR-0070](0070-w7b-research-propositions-and-rl-role-adjudication.md)（命题 / 判定纪律）
-- 场景与承载：[`scenarios.yaml`](../../src/agc_task/config/scenarios.yaml)、[`scenario_carriers.yaml`](../../src/agc_task/config/scenario_carriers.yaml)、[`perception_sensors*.yaml`](../../src/agc_perception/config/)
+- 场景与承载：[`scenarios.yaml`](../../src/agc_task/config/scenarios.yaml)、[`scenario_carriers.yaml`](../../src/agc_task/config/scenario_carriers.yaml)、[`perception_sensors*.yaml`](../../src/agc_perception/config)
 - 预注册：[`w7b_prereg.yaml`](../../src/agc_rl/config/w7b_prereg.yaml)

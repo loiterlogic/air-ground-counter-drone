@@ -65,4 +65,4 @@ W7-b 步 1 目标：让 `backend:=full` 整链「**评价可用**」——能产
 
 - 契约：[#namespace](../ROS2迁移交接文档.md#namespace)（世界 `world` ENU）/ [#params](../ROS2迁移交接文档.md#params)（单一注入）/ [#execution-port](../ROS2迁移交接文档.md#execution-port)（唯一空中控制权）/ [#messages](../ROS2迁移交接文档.md#messages)（冻结 9 消息 ABI **未改**）
 - 前序 ADR：[ADR-0005](0005-px4-link-uxrce-dds.md)、[ADR-0034](0034-failsafe-factor-separation-and-runtime-param-lock.md)、[ADR-0040](0040-full-chain-coverage-matrix-and-same-run-causal-record.md)、[ADR-0050](0050-air-control-single-authority-and-permit.md)、[ADR-0051](0051-c1-height-semantics-and-same-time-evidence.md)、[ADR-0070](0070-w7b-research-propositions-and-rl-role-adjudication.md)、[ADR-0071](0071-w7b-adjudication-record-and-pending-arms.md)
-- 规格：[`.trae/specs/w7-rl-b/`](../../.trae/specs/w7-rl-b/spec.md)
+- 规格：[`docs/archive/specs/w7-rl-b/`](../archive/specs/w7-rl-b/spec.md)

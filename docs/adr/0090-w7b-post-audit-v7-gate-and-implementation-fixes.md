@@ -10,7 +10,7 @@ accepted
 
 ## 背景
 
-本 ADR 是核实子阶段 [`verify-w7b-p1-p2-before-v7`](../../.trae/specs/verify-w7b-p1-p2-before-v7/spec.md) 的 T5 决策记录。它汇总 P1 / P2 的诊断证据，回答「是否注册 v7」与「哪些实现缺陷须先修」，**不产生新的 P1 / P2 verdict**，也**不改写**历史 `executed_*` 字段或既有判定原文。
+本 ADR 是核实子阶段 [`verify-w7b-p1-p2-before-v7`](../archive/specs/verify-w7b-p1-p2-before-v7/spec.md) 的 T5 决策记录。它汇总 P1 / P2 的诊断证据，回答「是否注册 v7」与「哪些实现缺陷须先修」，**不产生新的 P1 / P2 verdict**，也**不改写**历史 `executed_*` 字段或既有判定原文。
 
 ### P1：旧失败未复现，`inconclusive` 维持
 
@@ -99,7 +99,7 @@ W7-c / W8 未开始；本决策不改变该状态。
 
 ## 参考
 
-- 核实 spec：[`verify-w7b-p1-p2-before-v7`](../../.trae/specs/verify-w7b-p1-p2-before-v7/spec.md)
+- 核实 spec：[`verify-w7b-p1-p2-before-v7`](../archive/specs/verify-w7b-p1-p2-before-v7/spec.md)
 - 判据与治理：[ADR-0086](0086-decision-rule-three-state-ci-versus-mme.md)、[ADR-0088](0088-mme-change-governance-independent-justification-and-seed-isolation.md)
 - 消融 / B 臂诊断：[ADR-0087](0087-p1-mechanism-ablation-and-p2-arm-b-diagnosis-scope.md)
 - 地图签名修复：[ADR-0089](0089-map-signature-lethal-only-for-replan-trigger.md)

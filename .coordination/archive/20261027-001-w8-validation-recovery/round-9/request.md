@@ -5,7 +5,7 @@
 
 ## 入口、学习与目标
 
-遵循 [Runbook](../../../../docs/ROS2迁移步骤.md#usage)、[规格](../../../../.trae/specs/w8-validation-recovery/spec.md#round9)、[任务](../../../../.trae/specs/w8-validation-recovery/tasks.md#round9)、[验收](../../../../.trae/specs/w8-validation-recovery/checklist.md#round9)、[观测分级](../../../README.md#run-tiers)及[契约](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。
+遵循 [Runbook](../../../../docs/archive/ROS2迁移步骤.md#usage)、[规格](../../../../docs/archive/specs/w8-validation-recovery/spec.md#round9)、[任务](../../../../docs/archive/specs/w8-validation-recovery/tasks.md#round9)、[验收](../../../../docs/archive/specs/w8-validation-recovery/checklist.md#round9)、[观测分级](../../../README.md#run-tiers)及[契约](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。
 
 先读已验收第3轮 probe_layered.py 的同进程正负控制及本机 Jazzy rclpy init/Node/create_publisher/create_subscription 实现，再新增独立探针；允许吸收同类实现，不另造框架。必须记录所读来源、版本与 SHA。新增 post_init、node_created、endpoint_created 事件，均紧邻相应 API 成功返回之后写出并 flush；endpoint 标记含 attempt唯一ID、PID、role、topic、QoS及配对 wall/monotonic。init 返回不等于participant已完成发现，endpoint_created只说明创建API已返回，不叫DDS就绪。
 

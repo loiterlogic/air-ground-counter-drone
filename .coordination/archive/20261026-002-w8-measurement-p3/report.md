@@ -42,7 +42,7 @@
   - 未执行：R3 两次 GUI、headless、正式等价、新 pilot、P1/P2 重跑、W8-E2、在线 RL、W7-c 并行、commit/push/merge/reset/clean/切分支。
   - **阻塞**：本机 **C++ rclcpp 节点间 DDS 发现故障**（stock `demo_nodes_cpp` 亦失败；Python↔Python 正常）；R2 节点级测试与 R3 被阻塞。需 Codex 裁定：授权清理 `/dev/shm/fastrtps_*` / 改用其他传输或修复环境后补跑，还是接受当前阻塞。
   - **偏离**：`AGENTS.md` 在任务期间被白名单外修改（接单指纹 `15d9c50d…` → 结束 `7b9bb7d6…`，mtime 19:31；diff 删除 Nav2 吸收 / spec 强制节 / 快检命令并改写红线）；非本会话工具写入，未回退。`AGENTS.override.md` 与 `.coordination/roles/` 为 Codex 19:36 创建的协调配置；`roles/README.md#verification` 也记录 AGENTS.md 差异来源未核实。
-  - 规格未决：[spec `#unresolved`](../../../.trae/specs/w8-measurement-p3/spec.md#unresolved)；R2 节点级、R3、seed 运行生效与 R4 可行性均待裁定。
+  - 规格未决：[spec `#unresolved`](../../../docs/archive/specs/w8-measurement-p3/spec.md#unresolved)；R2 节点级、R3、seed 运行生效与 R4 可行性均待裁定。
   - 结论：本轮**阻塞**，不代填验收；CURRENT 已写 `阻塞`，task 不归档。
 
 ## 第 2 轮

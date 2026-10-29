@@ -14,7 +14,7 @@ accepted
 
 ## Considered Options
 - 保留 `kinematic_sim`（数学积分 + `set_model_state`）—— 被否：物理仿真效果差、动力学不可信，与 C6 的真实逃逸口径不符。
-- 用 Nav2 controller 在线主控车体 —— 被否：与 [ADR-0004](./0004-rl-primary-controller-nav2-safety-layer.md) 冲突（RL 为地面主控）。
+- 用 Nav2 controller 在线主控车体 —— 被否：与 [ADR-0004](0004-rl-primary-controller-nav2-safety-layer.md) 冲突（RL 为地面主控）。
 
 ## Consequences
 - W2 重设车 SDF（底盘 + 轮 + 关节 + DiffDrive 插件）；契约 [唯一执行口](../ROS2迁移交接文档.md#execution-port) 与 [GLOSSARY](../../GLOSSARY.md) 的"唯一执行口"语义同步重述；契约 [已决事项](../ROS2迁移交接文档.md#decisions) 增列本 ADR。

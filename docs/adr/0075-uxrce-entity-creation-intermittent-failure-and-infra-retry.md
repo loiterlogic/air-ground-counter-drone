@@ -144,4 +144,4 @@ W7-b 步 2（`backend:=full` 整链、P1 两臂配对）被同一类 infra 挡�
 - 契约：[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)（C4 超时属任务终态 / 必报指标）、[#execution-port](../ROS2迁移交接文档.md#execution-port)、[#params](../ROS2迁移交接文档.md#params)
 - 前序 ADR：[ADR-0005](0005-px4-link-uxrce-dds.md)、[ADR-0007](0007-experiment-artifacts-convention.md)、[ADR-0046](0046-runner-three-layer-acceptance-and-integrity-gate.md)、[ADR-0069](0069-w7-entry-and-exit-definition.md)、[ADR-0070](0070-w7b-research-propositions-and-rl-role-adjudication.md)、[ADR-0071](0071-w7b-adjudication-record-and-pending-arms.md)、[ADR-0074](0074-visibility-metric-fixed-observation-window.md)
 - 预注册：[`src/agc_rl/config/w7b_prereg.yaml`](../../src/agc_rl/config/w7b_prereg.yaml)
-- 规格：[`.trae/specs/w7-rl-b/`](../../.trae/specs/w7-rl-b/spec.md)
+- 规格：[`docs/archive/specs/w7-rl-b/`](../archive/specs/w7-rl-b/spec.md)

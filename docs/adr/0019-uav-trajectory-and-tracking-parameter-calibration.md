@@ -26,7 +26,7 @@ accepted
 
 ## Consequences
 
-- 契约 [硬约束](../ROS2迁移交接文档.md#hard-constraints) **C1 改写**（真八字 + 恒速 `v=2.0`，删"角速度 0.1"）；此为契约真源变更，先例见 [ADR-0017](./0017-air-ground-collaboration-loop.md) 改写 C10。
+- 契约 [硬约束](../ROS2迁移交接文档.md#hard-constraints) **C1 改写**（真八字 + 恒速 `v=2.0`，删"角速度 0.1"）；此为契约真源变更，先例见 [ADR-0017](0017-air-ground-collaboration-loop.md) 改写 C10。
 - 触发 **W2 打补丁**（作业区放大 80×80、spawn 分离、柱重排）。
 - W3 spec 的 R5（轨迹）/R6（standoff）参数据此；`ε`/`ε′` 首轮实跑后回填。
-- 与 [ADR-0017](./0017-air-ground-collaboration-loop.md) 一致：C10 的"安全间距"由本条给出**可验证数值**。
+- 与 [ADR-0017](0017-air-ground-collaboration-loop.md) 一致：C10 的"安全间距"由本条给出**可验证数值**。

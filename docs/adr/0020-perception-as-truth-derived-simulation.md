@@ -7,7 +7,7 @@ accepted
 
 W4（感知与融合）重写旧 `air_perception` / `air_fusion` 时须定"感知到底模拟什么"。旧树的做法是**真值派生感知仿真**：从仿真世界真值出发，按通道建模**丢包 / 突发丢失 / 几何门控（量程 + FOV）/ 遮挡 / 高斯噪声与偏置**，并给出**已标定置信度**与观测序号——代码注释亦明确标注这是"诚实的建模，非真实视觉 / 雷达检测"。契约已有消息（`TargetObservation` 的 sigma / `confidence` / `obs_seq`、`SensorObservation` 的通道）正是为这一范式设计。
 
-据此定：本项目的**感知口径为真值派生仿真**——`air_perception` 以**世界真值**为输入、以**通道模型**产出观测；**不做**真实视觉 / 雷达的检测算法（点云聚类、图像识别等）。这与 [ADR-0009](./0009-sim-first-with-hardware-hooks.md)（纯仿真优先）一致。
+据此定：本项目的**感知口径为真值派生仿真**——`air_perception` 以**世界真值**为输入、以**通道模型**产出观测；**不做**真实视觉 / 雷达的检测算法（点云聚类、图像识别等）。这与 [ADR-0009](0009-sim-first-with-hardware-hooks.md)（纯仿真优先）一致。
 
 ## Considered Options
 
@@ -17,6 +17,6 @@ W4（感知与融合）重写旧 `air_perception` / `air_fusion` 时须定"感�
 
 ## Consequences
 
-- W4 spec 的 `air_perception` / `air_fusion` 按"真值派生 + 通道建模"落地（[W4 spec](../../.trae/specs/w4-perception-fusion/spec.md)），**通道定义与噪声 / 置信度模型**由 `/agc/perception/sensors_file`（契约 [参数入口](../ROS2迁移交接文档.md#params)）单一注入。
+- W4 spec 的 `air_perception` / `air_fusion` 按"真值派生 + 通道建模"落地（[W4 spec](../archive/specs/w4-perception-fusion/spec.md)），**通道定义与噪声 / 置信度模型**由 `/agc/perception/sensors_file`（契约 [参数入口](../ROS2迁移交接文档.md#params)）单一注入。
 - **表述纪律**：文档 / 报告 / 论文**不得**将本感知表述为"真实视觉 / 雷达检测"或"目标识别"；涉及"跟踪精度"等指标须限定为**仿真口径**。
-- 与 [ADR-0016](./0016-execution-scope-exit-w6.md) 一致：融合 / 感知归 W4；感知不消费 W2-full 点云（点云属 W5 costmap 输入）。
+- 与 [ADR-0016](0016-execution-scope-exit-w6.md) 一致：融合 / 感知归 W4；感知不消费 W2-full 点云（点云属 W5 costmap 输入）。

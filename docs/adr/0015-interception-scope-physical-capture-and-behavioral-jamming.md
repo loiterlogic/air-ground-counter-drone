@@ -8,7 +8,7 @@ accepted（W6 修订，见文末「修订」）
 
 - **物理拦截**：以**距离 / 圆面阈值判据**判定"捕获"（通行值 **≤2 m**，或"穿越 2 m 圆网面"）。
 - **电子干扰**：**行为级等价** —— 对入侵者施加干扰 → 强制 `RTL` / `LAND` / `HOLD` / 失联；**真实电磁场不建模**（gz-sim 无 EMI 传播模型，仅有 `RFComms` 路径损耗）。
-- **执行者**：捕获 / 干扰**由地面移动平台承载**；无人机只做观测、standoff 跟踪与自保（[ADR-0017](./0017-air-ground-collaboration-loop.md)）。
+- **执行者**：捕获 / 干扰**由地面移动平台承载**；无人机只做观测、standoff 跟踪与自保（[ADR-0017](0017-air-ground-collaboration-loop.md)）。
 
 **落地约束（先学后做核查所得，落地前须逐条在真机栈复验）**：
 
@@ -33,15 +33,15 @@ accepted（W6 修订，见文末「修订」）
 
 1. **入侵者形态改为 PX4 控制**（覆盖原文"可脚本化 / PX4 控制"的择一）：`intruder_uav` 由 W2 的失重 `VelocityControl` 刚体，升级为**第二个 PX4 SITL 实例**（各自独立 uXRCE-DDS agent + ROS 命名空间）；桥 `/agc/sim/target_cmd_vel` 退役。理由：行为级干扰需要"**被干扰后能自主 RTL / LAND / HOLD / 失联**"的**自主飞控对象**，脚本刚体无法真实承载该行为。
 2. **注入路径**：经 uXRCE 发 `px4_msgs/VehicleCommand`（`DO_SET_MODE`）强制 **RTL / LAND / HOLD**；"**失联**"以**停发 Offboard 指令**触发 PX4 自身 failsafe（`NAV_DLL_ACT`）**等价**。**v1.15.4 无 gz 故障注入后端**（`SIM_GZ_EN_*` 为 v1.17 PR；本项目 vendored 源码核查 `SIM_GZ_EN_*` / `SYS_FAILURE_EN` **零命中**），故**不**使用 gz 注入。真实电磁场仍不建模。
-3. **物理捕获判据改为发射式网**：原文"穿越 **2 m 圆网面**（固定网面）"的**判据作废**，改为**发射式网**——网由车载发射器射出并展开、交战包络由**网发射物理模型的可及集**推导（详见 [ADR-0022](./0022-launched-net-capture-mechanism.md)）。
-4. **执行者不变**：捕获 / 干扰**由地面移动平台承载**（与 [ADR-0017](./0017-air-ground-collaboration-loop.md) 一致）；无人机只做观测、standoff 跟踪与自保。
+3. **物理捕获判据改为发射式网**：原文"穿越 **2 m 圆网面**（固定网面）"的**判据作废**，改为**发射式网**——网由车载发射器射出并展开、交战包络由**网发射物理模型的可及集**推导（详见 [ADR-0022](0022-launched-net-capture-mechanism.md)）。
+4. **执行者不变**：捕获 / 干扰**由地面移动平台承载**（与 [ADR-0017](0017-air-ground-collaboration-loop.md) 一致）；无人机只做观测、standoff 跟踪与自保。
 5. **可行性闸门**：第二 PX4 实例与 mode 注入**须先经最小实验验证**（W6 前置 P R0）；**不通过则**撤销前置 P，干扰退回"目标 driver **行为剖面切换**"的脚本分支（语义与 `reason_code` 不变）。
 
 ## Consequences（修订补充）
 
 - W2-interception 的 `VelocityControl` 路径**回退**（W6 前置 P）；`/agc/sim/target_cmd_vel` 退役，目标运动改由 W6 `intruder_driver` 经 `px4_msgs` Offboard 驱动。
 - 契约 [终态语义](../ROS2迁移交接文档.md#terminal-semantics) 消解：**启用** `INTERCEPT_CONFIRMED`（**阶段 B**），`reason_code` 区分 `CAPTURE_NET` / `JAM_RTL|JAM_LAND|JAM_HOLD|JAM_LOST`；**阶段 A = 跟踪、阶段 B = 拦截**；不新增消息枚举（契约 [#messages](../ROS2迁移交接文档.md#messages) 字段 / 顺序不得变更）。
-- 新增 [ADR-0022](./0022-launched-net-capture-mechanism.md)（发射式网捕获机制）。
+- 新增 [ADR-0022](0022-launched-net-capture-mechanism.md)（发射式网捕获机制）。
 
 ---
 

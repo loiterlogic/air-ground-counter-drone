@@ -4,7 +4,7 @@
 accepted
 
 ## 背景与决策
-每类信息只归属一个"家"：契约真源 = 《交接文档》；执行编排 = 《步骤文档》（Runbook）；per-workstream 规格 = `.trae/specs/<ws>/{spec,tasks,checklist}.md`；不可逆决策 = `docs/adr/`；术语 = `GLOSSARY.md`。跨文档引用**一律使用稳定锚点**（`<文件>#<锚点>`），**禁止**用 `§章节号`；`§` 编号只保证本文件内自洽。
+每类信息只归属一个"家"：契约真源 = 《交接文档》；执行编排 = 《步骤文档》（Runbook）；per-workstream 规格 = 迁移期在 `.trae/specs/<ws>/{spec,tasks,checklist}.md`（2026-10-29 起归档于 `docs/archive/specs/`，[ADR-0105](0105-retire-trae-and-relocate-specs-skills.md)）；不可逆决策 = `docs/adr/`；术语 = `GLOSSARY.md`。跨文档引用**一律使用稳定锚点**（`<文件>#<锚点>`），**禁止**用 `§章节号`；`§` 编号只保证本文件内自洽。
 
 ## Considered Options
 - 单一大文档承载全部内容 —— 被否：已实测出现 §号交叉引用错乱与重复内容各自漂移。

@@ -123,7 +123,7 @@ run `20261025-w7-rl-b-repeat-ab`（A1–A3 / B1–B3，同 `s08` / `p2_rl_high` 
 本节只追加 W8 的输入链接，**不改写**上文 A/B 结果、W7-c `deferred` 结论与历史原文。
 
 - W8 拆为 **W8-E1**（ROS1/ROS2 行为对照与平台冻结）与 **W8-E2**（修复后 P1/P2 科研确证）；本阶段只做 W8-E1 的 **GUI/headless 模式等价 pilot**。
-- 预声明计划：[`w8_gui_headless_plan.yaml`](../../src/agc_rl/config/w8_gui_headless_plan.yaml)（v1，sha256 `3afa82c4…a292`）；决策与闸门：[ADR-0096](0096-w8-gui-headless-equivalence-design-bounds-and-gate.md)；spec：[`.trae/specs/w8-parity-freeze/`](../../.trae/specs/w8-parity-freeze/spec.md)。
+- 预声明计划：[`w8_gui_headless_plan.yaml`](../../src/agc_rl/config/w8_gui_headless_plan.yaml)（v1，sha256 `3afa82c4…a292`）；决策与闸门：[ADR-0096](0096-w8-gui-headless-equivalence-design-bounds-and-gate.md)；spec：[`.trae/specs/w8-parity-freeze/`](../archive/specs/w8-parity-freeze/spec.md)。
 - 渲染后端诊断：默认 GUI = llvmpipe 软件渲染（性能混杂）；GPU-GUI 可经 Mesa D3D12 + X11。产物 `experiments/w8-parity/20261025-w8-gui-headless-pilot/metrics/gpu_renderer_diagnosis.{json,md}` 与 `status_summary.md`；gate `not_evaluated`，headless 未授权。
 - 本 ADR 的 B3 `INFRA_FAILURE`（`cmd_vel_loopback_missing`）在 W8 中作为**独立 infra 项**登记，不归因于 GUI/headless 或隔离栈。
 - W7-c 仍 `deferred`；单 worker 保持接受；本阶段不启动并行扩容。

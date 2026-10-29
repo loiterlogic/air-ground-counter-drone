@@ -65,4 +65,4 @@ W7-b 步 3 的 P1 配对 run（`w7-rl-b/20261020-w7-rl-b-150408-8486`，40 episo
 
 - 契约：[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)（C4 超时一律失败 / C8 不降级）、[#terminal-semantics](../ROS2迁移交接文档.md#terminal-semantics)、[#params](../ROS2迁移交接文档.md#params)（单一注入）、[#execution-port](../ROS2迁移交接文档.md#execution-port)、[#messages](../ROS2迁移交接文档.md#messages)（冻结 9 消息 ABI **未改**）
 - 前序 ADR：[ADR-0014](0014-research-mainline-mobile-interception-system.md)、[ADR-0024](0024-capture-adjudication-fire-control-window.md)、[ADR-0040](0040-full-chain-coverage-matrix-and-same-run-causal-record.md)、[ADR-0070](0070-w7b-research-propositions-and-rl-role-adjudication.md)、[ADR-0071](0071-w7b-adjudication-record-and-pending-arms.md)、[ADR-0074](0074-visibility-metric-fixed-observation-window.md)、[ADR-0075](0075-uxrce-entity-creation-intermittent-failure-and-infra-retry.md)
-- 规格：[`.trae/specs/w7-rl-b/`](../../.trae/specs/w7-rl-b/spec.md)
+- 规格：[`docs/archive/specs/w7-rl-b/`](../archive/specs/w7-rl-b/spec.md)

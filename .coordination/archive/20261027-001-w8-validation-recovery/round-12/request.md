@@ -3,7 +3,7 @@
 
 任务ID 20261027-001-w8-validation-recovery；轮次12；来源Leader，2026-10-28。复用Worker 55d8793e-4916-4045-ac19-5800e167ebfa。
 
-入口：[Runbook](../../../../docs/ROS2迁移步骤.md#usage)、[规格](../../../../.trae/specs/w8-validation-recovery/spec.md#round12)、[上轮审查](../round-11/review.md#round11-review)、[自主权限](../../../README.md#executor-autonomy)、[契约](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。先读审查与第11轮对应helper/信号/回收实现，从既有自有子进程snapshot方法吸收，不扩新框架。
+入口：[Runbook](../../../../docs/archive/ROS2迁移步骤.md#usage)、[规格](../../../../docs/archive/specs/w8-validation-recovery/spec.md#round12)、[上轮审查](../round-11/review.md#round11-review)、[自主权限](../../../README.md#executor-autonomy)、[契约](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。先读审查与第11轮对应helper/信号/回收实现，从既有自有子进程snapshot方法吸收，不扩新框架。
 
 预算45min monotonic，**T1: 0次**，0ROS init/Node/participant/真实helper/构建/仿真/抓包/共享资源操作。仅纯假进程/mock离线验证。任何动作前配对claim写本轮report，结束同样配对；既有dirty/untracked不动。
 

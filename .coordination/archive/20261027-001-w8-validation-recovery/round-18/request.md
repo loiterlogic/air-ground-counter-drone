@@ -3,7 +3,7 @@
 
 任务ID 20261027-001-w8-validation-recovery；轮次18；来源Leader，2026-10-28；复用Worker `47a2651c-e420-4218-b4c6-454837cd33fd`。
 
-入口：[Runbook](../../../../docs/ROS2迁移步骤.md#usage)、[规格](../../../../.trae/specs/w8-validation-recovery/spec.md#round18)、[第17轮审查](../round-17/review.md#round17-review)、[自主权限](../../../README.md#executor-autonomy)、[观测分级](../../../README.md#run-tiers)、[硬约束](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。先读第14–17轮完整回报/审查与相关原始证据。
+入口：[Runbook](../../../../docs/archive/ROS2迁移步骤.md#usage)、[规格](../../../../docs/archive/specs/w8-validation-recovery/spec.md#round18)、[第17轮审查](../round-17/review.md#round17-review)、[自主权限](../../../README.md#executor-autonomy)、[观测分级](../../../README.md#run-tiers)、[硬约束](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。先读第14–17轮完整回报/审查与相关原始证据。
 
 ## 1. 目标：让失败也产生新分层信息
 

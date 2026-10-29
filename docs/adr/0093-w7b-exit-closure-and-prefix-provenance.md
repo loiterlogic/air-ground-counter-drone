@@ -47,7 +47,7 @@ W7-b 的出口定义见 [ADR-0070](0070-w7b-research-propositions-and-rl-role-ad
 
 | 出口 | 状态 | 说明 |
 |---|---|---|
-| E1–E5 入口前置 | ✔ | 各有可复现 run（[`w7-rl-b/checklist.md`](../../.trae/specs/w7-rl-b/checklist.md)） |
+| E1–E5 入口前置 | ✔ | 各有可复现 run（[`w7-rl-b/checklist.md`](../archive/specs/w7-rl-b/checklist.md)） |
 | R1 P1 协同收益 | ✔（`inconclusive`） | 现行读法保留；修复前实现 |
 | R2 P2 职责分层 + 消融 | ✔（可运行子集）/ 范围裁定 | P2 两臂、P1 2×2、安全干预 with/without shield 有证据；**P2 侧协同观测 / 目标预测消融未执行**，按 (d) 显式范围裁定 |
 | R3 基线锚 | ✔ | Navfn + 自研 LQR，准确命名 |
@@ -110,7 +110,7 @@ W7-b 的出口定义见 [ADR-0070](0070-w7b-research-propositions-and-rl-role-ad
 
 ## 参考
 
-- 出口：[ADR-0070](0070-w7b-research-propositions-and-rl-role-adjudication.md)(k)、[`w7-rl-b/spec.md`](../../.trae/specs/w7-rl-b/spec.md)、[`w7-rl-b/checklist.md`](../../.trae/specs/w7-rl-b/checklist.md)。
+- 出口：[ADR-0070](0070-w7b-research-propositions-and-rl-role-adjudication.md)(k)、[`w7-rl-b/spec.md`](../archive/specs/w7-rl-b/spec.md)、[`w7-rl-b/checklist.md`](../archive/specs/w7-rl-b/checklist.md)。
 - 判据：[ADR-0086](0086-decision-rule-three-state-ci-versus-mme.md)、[ADR-0088](0088-mme-change-governance-independent-justification-and-seed-isolation.md)。
 - 修复：[ADR-0090](0090-w7b-post-audit-v7-gate-and-implementation-fixes.md)、[ADR-0091](0091-fire-control-inflight-lifecycle-decoupling.md)、[ADR-0092](0092-moving-target-costmap-marking-and-replan-policy.md)。
 - infra：[ADR-0075](0075-uxrce-entity-creation-intermittent-failure-and-infra-retry.md)。

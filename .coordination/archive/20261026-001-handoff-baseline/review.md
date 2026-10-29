@@ -34,4 +34,4 @@ Codex 独立重算派工单全部 17 个基线 SHA256，17/17 一致；HEAD 与�
 
 ### 下一步与未完成项去向
 
-seed 变更的证据路径、外部补丁可重建性、full/standalone 适用范围、历史/未来运行的版本边界，以及提交拆分，挂入 [W8 未决交接前置](../../../.trae/specs/w8-parity-freeze/spec.md#handoff-prerequisites)。下一轮先裁定这些前置，暂不派发 P3 实现或实验；不自动提交、构建或启动 full 链。归档本轮后交接状态设为空闲。
+seed 变更的证据路径、外部补丁可重建性、full/standalone 适用范围、历史/未来运行的版本边界，以及提交拆分，挂入 [W8 未决交接前置](../../../docs/archive/specs/w8-parity-freeze/spec.md#handoff-prerequisites)。下一轮先裁定这些前置，暂不派发 P3 实现或实验；不自动提交、构建或启动 full 链。归档本轮后交接状态设为空闲。

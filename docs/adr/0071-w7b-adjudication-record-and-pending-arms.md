@@ -246,7 +246,7 @@ accepted
 
 - 前序 ADR：[ADR-0004](0004-rl-primary-controller-nav2-safety-layer.md)、[ADR-0024](0024-capture-adjudication-fire-control-window.md)、[ADR-0052](0052-sensor-and-vehicle-model-limitation-and-capability-calibration.md)、[ADR-0069](0069-w7-entry-and-exit-definition.md)、[ADR-0070](0070-w7b-research-propositions-and-rl-role-adjudication.md)
 - 后续 ADR：[ADR-0072](0072-px4-attitude-quaternion-field-order-and-full-chain-observation-fix.md)（整链控制权交接 + 观测链根因修复，(g)）
-- 规格：[`.trae/specs/w7-rl-b/`](../../.trae/specs/w7-rl-b/spec.md)
+- 规格：[`docs/archive/specs/w7-rl-b/`](../archive/specs/w7-rl-b/spec.md)
 - 预注册：[`src/agc_rl/config/w7b_prereg.yaml`](../../src/agc_rl/config/w7b_prereg.yaml)
 
 ## 闭合注记（2026-10-24）

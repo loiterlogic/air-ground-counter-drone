@@ -5,11 +5,11 @@ accepted
 
 ## 背景与决策
 
-**问题（C7 旧值过时）**。契约硬约束 **C7** 原为「场景生成须保证**出生间距 ≥2.4 m**；复位失败最多重试 3 次且不占 episode 预算」。核对溯源：`2.4 m` 与 [ADR-0021](./0021-ground-safety-thresholds-and-platform-recalibration.md) 已厘清并**作废**的旧 C2 距离阈值组 `0.7 / 0.9 / **2.4** m` **同源**——它是**旧标度（40×40 m 小场地 + 慢速平台）**下的**避障安全档**值，被挪用为"出生间距"。且它**糅合了两种不同语义**："**起飞净空**"（无人机起飞 / 悬停所需净空）与"**避障安全档**"（实体间避障安全距离）。
+**问题（C7 旧值过时）**。契约硬约束 **C7** 原为「场景生成须保证**出生间距 ≥2.4 m**；复位失败最多重试 3 次且不占 episode 预算」。核对溯源：`2.4 m` 与 [ADR-0021](0021-ground-safety-thresholds-and-platform-recalibration.md) 已厘清并**作废**的旧 C2 距离阈值组 `0.7 / 0.9 / **2.4** m` **同源**——它是**旧标度（40×40 m 小场地 + 慢速平台）**下的**避障安全档**值，被挪用为"出生间距"。且它**糅合了两种不同语义**："**起飞净空**"（无人机起飞 / 悬停所需净空）与"**避障安全档**"（实体间避障安全距离）。
 
-**在 [ADR-0019](./0019-uav-trajectory-and-tracking-parameter-calibration.md) 放大作业区到 80×80 m、[ADR-0021](./0021-ground-safety-thresholds-and-platform-recalibration.md) 换装平台并重标定 C2 之后**，旧 `2.4 m` 无推导依据，且语义不清。
+**在 [ADR-0019](0019-uav-trajectory-and-tracking-parameter-calibration.md) 放大作业区到 80×80 m、[ADR-0021](0021-ground-safety-thresholds-and-platform-recalibration.md) 换装平台并重标定 C2 之后**，旧 `2.4 m` 无推导依据，且语义不清。
 
-据此定（**C7 修订**，先例同 [ADR-0021](./0021-ground-safety-thresholds-and-platform-recalibration.md) 之于 C2）：
+据此定（**C7 修订**，先例同 [ADR-0021](0021-ground-safety-thresholds-and-platform-recalibration.md) 之于 C2）：
 
 ### (a) 语义拆分
 C7 拆为两条**独立**语义：
@@ -26,11 +26,11 @@ C7 拆为两条**独立**语义：
 ## Considered Options
 
 - **沿用旧值 `2.4 m`** —— 被否：与已作废的 C2 旧值同源、语义糅合、在新标度下无依据。
-- **等比放大 / 拍一个更大常数** —— 被否：同样无推导依据（同 [ADR-0021](./0021-ground-safety-thresholds-and-platform-recalibration.md) 对等比放大的否定）。
+- **等比放大 / 拍一个更大常数** —— 被否：同样无推导依据（同 [ADR-0021](0021-ground-safety-thresholds-and-platform-recalibration.md) 对等比放大的否定）。
 - **语义拆分 + 下限可标定（由新 C2 + 实体外伸推导）** —— **采纳**。
 
 ## Consequences
 
 - 契约 [硬约束](../ROS2迁移交接文档.md#hard-constraints) **C7 改写**：出生净空下限改为**可标定量**（按新 C2 安全档 + 实体外伸推导，旧值 `2.4 m` 作废）；复位重试预算不变。契约 [已决事项](../ROS2迁移交接文档.md#decisions) 增列本 ADR。
-- [W6 spec](../../.trae/specs/w6-task-eval/spec.md) 的 R6 承载：`scenario_reset` 生成 spawn 并**校验净空 ≥ 下限**；`task_manager` 记账"重试不占预算"；种子取契约参数 `/agc/log/seed`。
+- [W6 spec](../archive/specs/w6-task-eval/spec.md) 的 R6 承载：`scenario_reset` 生成 spawn 并**校验净空 ≥ 下限**；`task_manager` 记账"重试不占预算"；种子取契约参数 `/agc/log/seed`。
 - **表述纪律**：文档 / 报告**不得**再引用 `2.4 m` 作为出生间距现行值；C7 数值一律引用本 ADR（暂定值须标注"待实测回填"）。

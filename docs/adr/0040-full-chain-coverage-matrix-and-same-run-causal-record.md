@@ -4,11 +4,11 @@
 
 accepted
 
-> 注（S-05 / [ADR-0061](./0061-w6-runtime-topology-backend-identity-and-single-parameterized-entry.md)）：W6 顶层入口已统一为 [`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)（`backend` 参数 ∈ lightweight | full），原 `w6_task_eval.launch.py` / `w6_full.launch.py` 退役；本 ADR 历史结论正文不改，下文的旧入口名按现入口读作同一拓扑。
+> 注（S-05 / [ADR-0061](0061-w6-runtime-topology-backend-identity-and-single-parameterized-entry.md)）：W6 顶层入口已统一为 [`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)（`backend` 参数 ∈ lightweight | full），原 `w6_task_eval.launch.py` / `w6_full.launch.py` 退役；本 ADR 历史结论正文不改，下文的旧入口名按现入口读作同一拓扑。
 
 ## 背景
 
-评审风险 **R-025（验收整链范围）**（[10-风险](../../docs/reviews/agc-review-2026-10-14/10-风险.md#r-025)）指出：批量入口
+评审风险 **R-025（验收整链范围）**（[10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-025)）指出：批量入口
 [`episode_runner.py`](../../scripts/episode_runner.py) 运行的是**轻量栈**（
 [`w6_task_eval.launch.py`](../../src/agc_task/launch/w6.launch.py) = `m0_skeleton` + `capture_adjudicator` +
 `jammer`，**无** PX4 / 空中链路），却把「期望终态匹配」直接呈现为整链完成；既有整链产物（s02/s03
@@ -17,8 +17,8 @@ accepted
 `CAPTURE` / 真实终态。后果：**「轻量 PASS」可能被误读为「双 PX4 整链 / C3 GUI 验收」**；基准成功率可能来自
 更容易的静态真值目标。
 
-相关挑战：**X-02**（[10-风险](../../docs/reviews/agc-review-2026-10-14/10-风险.md#x-02)，挑战 C3「每份实证都 GUI」的范围）；
-**X-04**（[10-风险](../../docs/reviews/agc-review-2026-10-14/10-风险.md#x-04)，挑战冻结接口禁止任何语义演进）。
+相关挑战：**X-02**（[10-风险](../reviews/agc-review-2026-10-14/10-风险.md#x-02)，挑战 C3「每份实证都 GUI」的范围）；
+**X-04**（[10-风险](../reviews/agc-review-2026-10-14/10-风险.md#x-04)，挑战冻结接口禁止任何语义演进）。
 
 契约真源：[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints) **C3**（实证 / 验收非无头）、
 [#terminal-semantics](../ROS2迁移交接文档.md#terminal-semantics)、[#messages](../ROS2迁移交接文档.md#messages)（9 消息 ABI 不得变更）、
@@ -89,7 +89,7 @@ uXRCE-DDS Agent + 空中节点 + `takeoff_controller` 的 `/agc/air/release_cont
 
 ### (f) Runbook `#status` 保留为进度事实
 
-[Runbook](../ROS2迁移步骤.md#status) 的完成状态**保留**为**进度事实**，本修复**不改**该状态表；覆盖矩阵与
+[Runbook](../archive/ROS2迁移步骤.md#status) 的完成状态**保留**为**进度事实**，本修复**不改**该状态表；覆盖矩阵与
 整链因果记录**不**据此自动推定已覆盖。
 
 ## Considered Options

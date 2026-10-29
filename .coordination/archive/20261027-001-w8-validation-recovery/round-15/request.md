@@ -3,7 +3,7 @@
 
 任务ID 20261027-001-w8-validation-recovery；轮次15；来源Leader，2026-10-28。复用Worker 55d8793e-4916-4045-ac19-5800e167ebfa。
 
-入口：[Runbook](../../../../docs/ROS2迁移步骤.md#usage)、[规格](../../../../.trae/specs/w8-validation-recovery/spec.md#round15)、[第14轮审查](../round-14/review.md#round14-review)、[自主权限](../../../README.md#executor-autonomy)、[硬约束](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。先完整读第2/5/6/7/8轮离线来源与审查及第14轮原始事件，不从零猜、不仅取支持片段。
+入口：[Runbook](../../../../docs/archive/ROS2迁移步骤.md#usage)、[规格](../../../../docs/archive/specs/w8-validation-recovery/spec.md#round15)、[第14轮审查](../round-14/review.md#round14-review)、[自主权限](../../../README.md#executor-autonomy)、[硬约束](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。先完整读第2/5/6/7/8轮离线来源与审查及第14轮原始事件，不从零猜、不仅取支持片段。
 
 ## 目标与边界
 
