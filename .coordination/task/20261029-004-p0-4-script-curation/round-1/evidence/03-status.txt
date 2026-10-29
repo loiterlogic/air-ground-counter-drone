@@ -1,0 +1,69 @@
+=== git status --short ===
+ M .coordination/CURRENT.md
+ D .coordination/task/20261029-003-p0-3-docs-and-skills/round-1/evidence/final-linkcheck.txt
+ D .coordination/task/20261029-003-p0-3-docs-and-skills/round-1/evidence/linkcheck-specs-post.txt
+ D .coordination/task/20261029-003-p0-3-docs-and-skills/round-1/evidence/linkcheck-specs-pre.txt
+ D .coordination/task/20261029-003-p0-3-docs-and-skills/round-1/evidence/specs-sha256-after-move.txt
+ D .coordination/task/20261029-003-p0-3-docs-and-skills/round-1/evidence/specs-sha256-before.txt
+ D .coordination/task/20261029-003-p0-3-docs-and-skills/round-1/report.md
+ D .coordination/task/20261029-003-p0-3-docs-and-skills/round-1/request.md
+ D .coordination/task/20261029-003-p0-3-docs-and-skills/round-2/report.md
+ D .coordination/task/20261029-003-p0-3-docs-and-skills/round-2/request.md
+ M docs/adr/0071-w7b-adjudication-record-and-pending-arms.md
+ M docs/adr/0075-uxrce-entity-creation-intermittent-failure-and-infra-retry.md
+ M docs/adr/0083-w7b-p2-arm-information-equivalence-and-active-window-fco.md
+ M docs/adr/0084-w7b-p1-active-window-dv-recheck.md
+ M docs/adr/0085-w7b-p1-mechanism-activating-scenario-pilot.md
+ M docs/adr/0086-decision-rule-three-state-ci-versus-mme.md
+ M docs/adr/0087-p1-mechanism-ablation-and-p2-arm-b-diagnosis-scope.md
+ M docs/adr/0089-map-signature-lethal-only-for-replan-trigger.md
+ M docs/adr/0092-moving-target-costmap-marking-and-replan-policy.md
+ M docs/adr/0094-uxrce-participant-warmup-and-px4-stagger.md
+ M docs/adr/0098-w8-determinism-probe-and-measurement-spec-change.md
+ M "docs/archive/ROS2\350\277\201\347\247\273\346\255\245\351\252\244.md"
+ M "docs/conventions/\347\233\256\345\275\225\344\270\216\345\221\275\345\220\215\350\247\204\350\214\203.md"
+ M docs/plan/README.md
+ M "docs/plan/p0-4-\350\204\232\346\234\254\347\263\273\347\273\237\347\230\246\350\272\253.md"
+ M scripts/README.md
+RM scripts/w7b_full_perception_probe.py -> scripts/archive/w7b_full_perception_probe.py
+RM scripts/w7c_ab_series.py -> scripts/archive/w7c_ab_series.py
+RM scripts/w8_measurement_p2_audit.py -> scripts/archive/w8_measurement_p2_audit.py
+RM scripts/uxrce_participant_probe.py -> scripts/research/uxrce_participant_probe.py
+RM scripts/w7_episode_runner.py -> scripts/research/w7_episode_runner.py
+RM scripts/w7b_arms_runner.py -> scripts/research/w7b_arms_runner.py
+RM scripts/w7b_build_offline_dataset.py -> scripts/research/w7b_build_offline_dataset.py
+R  scripts/w7b_fire_control_lifecycle.py -> scripts/research/w7b_fire_control_lifecycle.py
+RM scripts/w7b_gui_headless_recheck.py -> scripts/research/w7b_gui_headless_recheck.py
+RM scripts/w7b_p1_ablation.py -> scripts/research/w7b_p1_ablation.py
+RM scripts/w7b_p1_adjudicate.py -> scripts/research/w7b_p1_adjudicate.py
+RM scripts/w7b_p1_decompose_fco.py -> scripts/research/w7b_p1_decompose_fco.py
+RM scripts/w7b_p1_point_only_failures.py -> scripts/research/w7b_p1_point_only_failures.py
+RM scripts/w7b_p2_adjudicate.py -> scripts/research/w7b_p2_adjudicate.py
+RM scripts/w7b_p2_arm_b_diagnose.py -> scripts/research/w7b_p2_arm_b_diagnose.py
+R  scripts/w7b_p2_map_trigger_audit.py -> scripts/research/w7b_p2_map_trigger_audit.py
+RM scripts/w7b_p2_prediction_chain.py -> scripts/research/w7b_p2_prediction_chain.py
+R  scripts/w7b_p2_replan_bench.py -> scripts/research/w7b_p2_replan_bench.py
+RM scripts/w7b_worker_repeatability.py -> scripts/research/w7b_worker_repeatability.py
+RM scripts/w7c_worker_run.py -> scripts/research/w7c_worker_run.py
+RM scripts/w8_determinism_probe.py -> scripts/research/w8_determinism_probe.py
+RM scripts/w8_gui_headless_pilot.py -> scripts/research/w8_gui_headless_pilot.py
+R  scripts/w8_mission_fco_audit.py -> scripts/research/w8_mission_fco_audit.py
+ M scripts/tests/test_episode_runner_labels.py
+ M scripts/tests/test_w8_determinism_probe.py
+ M scripts/tests/test_w8_gui_headless_pilot.py
+ M scripts/tests/test_w8_mission_fco_audit.py
+?? .coordination/archive/20261029-003-p0-3-docs-and-skills/
+?? .coordination/task/20261029-004-p0-4-script-curation/
+?? scripts/archive/README.md
+?? scripts/research/README.md
+?? scripts/tests/test_scripts_index.py
+
+=== diff --stat (tracked) ===
+ scripts/tests/test_episode_runner_labels.py        |   2 +-
+ scripts/tests/test_w8_determinism_probe.py         |   3 +-
+ scripts/tests/test_w8_gui_headless_pilot.py        |   6 +-
+ scripts/tests/test_w8_mission_fco_audit.py         |   4 +-
+ 53 files changed, 147 insertions(+), 1184 deletions(-)
+
+=== renames detected ===
+23

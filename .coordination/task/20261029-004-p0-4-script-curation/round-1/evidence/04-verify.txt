@@ -1,0 +1,58 @@
+=== FINAL VERIFY 2026-10-29T13:33:01+08:00 ===
+HEAD: e6f4f0897dffd00c3015abf8b55b83025eba8b82
+
+--- 1 pytest ---
+.....................................................................    [100%]
+69 passed in 1.12s
+rc=0
+
+--- 2 docs_link_check ---
+扫描文件：343
+本地链接：4994（锚点校验 2125；外部 36；证据绝对路径 248；模板占位跳过 0）
+
+活跃范围断链：0
+
+历史归档断链（不计入失败，逐条列名）：3
+  [history] .coordination/archive/20261026-002-w8-measurement-p3/request.md:115  ->  ../../roles/deepseek.md#role  [目标文件不存在]
+  [history] .coordination/archive/20261026-002-w8-measurement-p3/request.md:149  ->  ../../roles/deepseek.md#role  [目标文件不存在]
+  [history] .coordination/archive/20261027-001-w8-validation-recovery/round-2/request.md:6  ->  ../../../roles/deepseek.md#startup  [目标文件不存在]
+
+指向本机保留路径的链接（不计入断链，也**不**代表公开 clone 可导航）：529
+  口径：这些目标被 `.gitignore` 精确排除（规格/实验/旧树/工具链），
+        本地完整检出里存在，公开 clone 中必然缺失——属既有发布边界（ADR-0081/0105）。
+  本地可解析 529 条；本地也缺失 0 条
+
+PASS：活跃文档范围内无断链（本地完整检出口径；本机保留路径单列）
+rc=0
+
+--- 3 adr_index --check ---
+PASS：ADR 索引与 105 篇 ADR 一致
+rc=0
+
+--- 4 top-level count ---
+10
+
+--- 5 follow traceability ---
+2  scripts/research/uxrce_participant_probe.py
+2  scripts/research/w7_episode_runner.py
+8  scripts/research/w7b_arms_runner.py
+2  scripts/research/w7b_build_offline_dataset.py
+3  scripts/research/w7b_fire_control_lifecycle.py
+2  scripts/research/w7b_gui_headless_recheck.py
+3  scripts/research/w7b_p1_ablation.py
+4  scripts/research/w7b_p1_adjudicate.py
+2  scripts/research/w7b_p1_decompose_fco.py
+2  scripts/research/w7b_p1_point_only_failures.py
+3  scripts/research/w7b_p2_adjudicate.py
+3  scripts/research/w7b_p2_arm_b_diagnose.py
+2  scripts/research/w7b_p2_map_trigger_audit.py
+2  scripts/research/w7b_p2_prediction_chain.py
+3  scripts/research/w7b_p2_replan_bench.py
+2  scripts/research/w7b_worker_repeatability.py
+3  scripts/research/w7c_worker_run.py
+2  scripts/research/w8_determinism_probe.py
+3  scripts/research/w8_gui_headless_pilot.py
+2  scripts/research/w8_mission_fco_audit.py
+2  scripts/archive/w7b_full_perception_probe.py
+2  scripts/archive/w7c_ab_series.py
+2  scripts/archive/w8_measurement_p2_audit.py
