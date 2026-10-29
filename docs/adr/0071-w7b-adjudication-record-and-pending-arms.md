@@ -82,7 +82,7 @@ accepted
 
 > **⚠ 语义已被取代（同日）**：本节判定产生于**旧终态语义**（capture 场景中跟踪里程碑提前锁存 `TRACKING_SUCCESS`）。该语义已由 [ADR-0076](0076-capture-scenario-tracking-milestone-not-terminal.md) 修正（`tracking_milestone_is_terminal: false`，仅 capture 场景）→ episode 时长与固定窗口内的行为随之改变，故本节的**数值不作为最终结论**；原记录**保留不动**，待新语义下重跑 N=20 后在本节追加"修订"子节。
 
-- **承载 run**：`w7-rl-b/20261020-w7-rl-b-150408-8486`（`backend:=full` / `s08` / seeds 0–19 / CRN 同 seed 配对 / 40 episodes / 墙钟 1.32 h），判定脚本 `scripts/w7b_p1_adjudicate.py`。
+- **承载 run**：`w7-rl-b/20261020-w7-rl-b-150408-8486`（`backend:=full` / `s08` / seeds 0–19 / CRN 同 seed 配对 / 40 episodes / 墙钟 1.32 h），判定脚本 `scripts/research/w7b_p1_adjudicate.py`。
 - **先于本 run 落地的前置**（各有独立 ADR）：臂公平性 [ADR-0073](0073-p1-arm-fairness-noncoop-fixed-trajectory.md)、DV 口径（固定观测窗口）[ADR-0074](0074-visibility-metric-fixed-observation-window.md)、整链 infra 处置（运行前清场 + infra 重试）[ADR-0075](0075-uxrce-entity-creation-intermittent-failure-and-infra-retry.md)。
 - **结果**：
 
@@ -99,7 +99,7 @@ accepted
 
 #### 修订一（2026-10-21，新终态语义；含 ADR-0078 前的缺陷批次）
 
-- **承载 run**：`w7-rl-b/20261021-w7-rl-b-104120-1456`（`backend:=full` / `s08` / seeds 0–19 / CRN 同 seed 配对 / 40 episodes / 墙钟 1.92 h），判定脚本 [`scripts/w7b_p1_adjudicate.py`](../../scripts/w7b_p1_adjudicate.py)，判定产物 `metrics/p1_adjudication.json`（同 run 目录）。
+- **承载 run**：`w7-rl-b/20261021-w7-rl-b-104120-1456`（`backend:=full` / `s08` / seeds 0–19 / CRN 同 seed 配对 / 40 episodes / 墙钟 1.92 h），判定脚本 [`scripts/w7b_p1_adjudicate.py`](../../scripts/research/w7b_p1_adjudicate.py)，判定产物 `metrics/p1_adjudication.json`（同 run 目录）。
 - **语义前提**：[ADR-0076](0076-capture-scenario-tracking-milestone-not-terminal.md)（`tracking_milestone_is_terminal: false`，仅 `s08`）；运行前按源码增量重建 `agc_task`（含 2026-10-20 的 `air_hover_timeout_s` 缺省值修复），使二进制与源码一致。
 - **结果**：
 
@@ -152,7 +152,7 @@ accepted
 
 > **2026-10-22 审计更新**：本批次因臂信息不等价（A 只订 `/agc/ground/goal`；s08 固定目标 = 目标真值；B 订 `/agc/targets`）与 primary DV 终态后污染（约 97%/100% 机会拍在终态之后）判为 **confounded**；以下数值仅作历史 / 探索证据，**不**构成 P2 成立或证伪。现行 P2 = v3 已执行并判定（见 (j)；[ADR-0083](0083-w7b-p2-arm-information-equivalence-and-active-window-fco.md)）。
 
-- **承载 run**：`w7-rl-b/20261022-w7-rl-b-112833-1155`（`backend:=full` / `s08_static_none_nominal_capture` / seeds 0–19 / CRN 同 seed 配对 / 40 episodes / 墙钟 2.37 h）；判定产物同 run `metrics/p2_adjudication.json`；脚本 [`scripts/w7b_p2_adjudicate.py`](../../scripts/w7b_p2_adjudicate.py)。
+- **承载 run**：`w7-rl-b/20261022-w7-rl-b-112833-1155`（`backend:=full` / `s08_static_none_nominal_capture` / seeds 0–19 / CRN 同 seed 配对 / 40 episodes / 墙钟 2.37 h）；判定产物同 run `metrics/p2_adjudication.json`；脚本 [`scripts/w7b_p2_adjudicate.py`](../../scripts/research/w7b_p2_adjudicate.py)。
 - **臂与条件**：臂 A `p2_c2_low_level`（`command_source=rl`，直接出 `cmd_vel`）；臂 B `p2_rl_high`（**规则高层**拦截点 + 成熟低层 Navfn+LQR，[ADR-0082](0082-w7b-p2-arm-b-rule-high-level-first.md)）；固定协同、同安全层 / 唯一执行口 / 终态；两臂训练 / 调参预算均为 0，推理算力单列、不声称等算力。
 - **结果**：
 
@@ -226,7 +226,7 @@ accepted
 - **臂画像**：协同 **15/20 `INTERCEPT_CONFIRMED`** + 4 `MISSION_FAILED` + 1 重试耗尽 infra；非协同 **13/20** + 7 `MISSION_FAILED`；infra 重试 14 次（9/5），终态 infra 1。primary 零填 **12**（协同 5 / 非协同 7），剔除 0。
 - **结论（现行 P1 结论）**：在机制已激活的固定条件下，协同观测的 FCO 优势为 **+0.080（绝对值）、CI 不含 0、p=0.005**——**方向与假设一致且统计显著**，但按**当日预注册口径**（v5：`p<α AND Δ≥MDE=0.10`）"未通过"。**三态读法（ADR-0086，2026-10-23 补记）**：CI95 [+0.0281, +0.1328] **覆盖** MME 0.10 ⇒ **`inconclusive`（未通过门槛）**——既**未支持**"收益 ≥ 10 pt"，也**未排除**它（要排除需 CI 上限 < 0.10）。故：**不得**称"协同无效"（效应方向一致、显著），**也不得**称"收益达到 10 pt"；须并列报告点估计 + CI + 决断所需样本量（[ADR-0086](0086-decision-rule-three-state-ci-versus-mme.md)(d)）。
 - **解释边界**：协同臂仍为**显式 oracle 指向臂**（(d)）；结论限已验证通道族（本场景为窄视场通道），不涉真实检测 / sim-to-real（[ADR-0070](0070-w7b-research-propositions-and-rl-role-adjudication.md)(i)）。
-- **描述性拆解（[ADR-0085](0085-w7b-p1-mechanism-activating-scenario-pilot.md)(i)，2026-10-23；不改 verdict）**：把"任务成功"与"过程中的火控机会"拆开后——**零填压缩很小**（判定 +0.0804 vs 全回合真实 +0.0846）；**可见率并没等比例转化为机会**（池化：可见率 0.327 vs 0.065，但**可见拍中包络占比 0.134 vs 0.227**）；失败回合最长且机会极少（真实 FCO ≤0.012）使池化 Δ 降到 +0.029。产物 `metrics/p1_fco_decomposition.{json,md}`（[`scripts/w7b_p1_decompose_fco.py`](../../scripts/w7b_p1_decompose_fco.py)）。另登记**候选缺陷**：协同 seed5 第二发 `SHOT_FIRED` 无结果行且此后窗口未再开启（待查）。
+- **描述性拆解（[ADR-0085](0085-w7b-p1-mechanism-activating-scenario-pilot.md)(i)，2026-10-23；不改 verdict）**：把"任务成功"与"过程中的火控机会"拆开后——**零填压缩很小**（判定 +0.0804 vs 全回合真实 +0.0846）；**可见率并没等比例转化为机会**（池化：可见率 0.327 vs 0.065，但**可见拍中包络占比 0.134 vs 0.227**）；失败回合最长且机会极少（真实 FCO ≤0.012）使池化 Δ 降到 +0.029。产物 `metrics/p1_fco_decomposition.{json,md}`（[`scripts/w7b_p1_decompose_fco.py`](../../scripts/research/w7b_p1_decompose_fco.py)）。另登记**候选缺陷**：协同 seed5 第二发 `SHOT_FIRED` 无结果行且此后窗口未再开启（待查）。
 - **机制消融（[ADR-0087](0087-p1-mechanism-ablation-and-p2-arm-b-diagnosis-scope.md)(f)，2026-10-24；估计型，不改 verdict）**：2×2（指向 × 跟踪参考）N=20 —— **收益主要来自"指向"**（指向主效应 +0.066 / +0.135，均显著）；**"跟踪参考"在 pointing=target 时为负**（①−③ = −0.072，p=0.011）；交互 −0.067；`p1_point_only` 的 FCO（0.155）约为 `p1_coop`（0.083）的 1.9×，但成功率 **15/20 vs 19/20**（权衡，未 adjudicate）。**限 s15 静止目标**，不得外推到移动目标；"跟踪对运动目标的价值"仍**未测**。
 - **未决 / 后续**：如需取得**决断性**结论（`supported` / `falsified`），须按 [ADR-0086](0086-decision-rule-three-state-ci-versus-mme.md)(d) 以**新预注册**加大样本量（MME 0.10、σ≈0.112 时：余量 0.03 → N≈109；余量 0.02 → N≈246），**不得**事后改 v5 阈值；**P1 机制消融已完成**（[ADR-0087](0087-p1-mechanism-ablation-and-p2-arm-b-diagnosis-scope.md)(f)）；**P2 侧消融（目标预测 / 协同观测）与 W7-c 仍未执行**。
 

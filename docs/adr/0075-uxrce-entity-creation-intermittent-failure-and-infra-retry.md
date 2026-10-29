@@ -48,7 +48,7 @@ W7-b 步 2（`backend:=full` 整链、P1 两臂配对）被同一类 infra 挡�
 - **判据唯一来源** = [`agc_rl.termination.classify_episode_outcome`](../../src/agc_rl/agc_rl/termination.py) 的 `classification`：
   - `classification == 'infra'`（`INFRA_FAILURE` / 未达终态的墙钟截断）→ 按上限**重跑**该 (arm, seed)；
   - `classification == 'mission'`（含 `MISSION_FAILED(TIMEOUT)` —— 契约 [#hard-constraints](../ROS2迁移交接文档.md#hard-constraints) 的 C4 超时属**任务终态**）→ **一律不重试**（不得以重试掩盖 mission 结果）。
-- **实现**：[`episode_runner.run_episode_with_infra_retry`](../../scripts/episode_runner.py)（`run_episode` 的包装，`infra_retries=0` = 关闭、既有行为不变）；[`w7b_arms_runner.py`](../../scripts/w7b_arms_runner.py) 新增 `--infra-retries`（缺省 3）。
+- **实现**：[`episode_runner.run_episode_with_infra_retry`](../../scripts/episode_runner.py)（`run_episode` 的包装，`infra_retries=0` = 关闭、既有行为不变）；[`w7b_arms_runner.py`](../../scripts/research/w7b_arms_runner.py) 新增 `--infra-retries`（缺省 3）。
 - **证据纪律**：每次尝试**各留产物**——首试沿用原 `log_tag`，第 k 次重试追加 `.r<k>` 后缀（日志不覆盖），逐次 `run_id` / 终态 / 原因记入 `infra_attempts`（落 `metrics/arms.json`）；上报结果 = **最后一次尝试**。
 - **公平性**：两臂施加**同一**协议（同 K、同判据、同触发条件）→ 不构成自变量差异。
 
@@ -71,7 +71,7 @@ W7-b 步 2（`backend:=full` 整链、P1 两臂配对）被同一类 infra 挡�
 
 - **正面**：间歇 infra 由"整轮作废 / 需人工重跑"降级为**自动恢复**，且逐次证据可审计；P1 配对 run 得以开展。
 - **代价 / 限制**：单 episode 墙钟最坏 ×(K+1)（缺省 K=3）；报出的成功率含"重试后成功"，故 **infra 率与重试分布必须随报告一并报出**；本 ADR **不**消除根因。
-- **未决 / 后续**：① 根治路线（PX4 客户端预算放宽）另行裁定与留痕；② ~~判定脚本剔除 infra 配对~~ → **已修（2026-10-20）**：[`w7b_p1_adjudicate.py`](../../scripts/w7b_p1_adjudicate.py) 现按预注册把**失败 / infra / 缺值**的 primary DV 记 **0 并计入分母**（`integrity.…primary_honored` 自检），并在既有数据集上复验（20/20 计入、剔除 0 对）；③ 判定结论见[ADR-0071](0071-w7b-adjudication-record-and-pending-arms.md)(h)（其语义随后被 [ADR-0076](0076-capture-scenario-tracking-milestone-not-terminal.md) 取代，待重跑）。
+- **未决 / 后续**：① 根治路线（PX4 客户端预算放宽）另行裁定与留痕；② ~~判定脚本剔除 infra 配对~~ → **已修（2026-10-20）**：[`w7b_p1_adjudicate.py`](../../scripts/research/w7b_p1_adjudicate.py) 现按预注册把**失败 / infra / 缺值**的 primary DV 记 **0 并计入分母**（`integrity.…primary_honored` 自检），并在既有数据集上复验（20/20 计入、剔除 0 对）；③ 判定结论见[ADR-0071](0071-w7b-adjudication-record-and-pending-arms.md)(h)（其语义随后被 [ADR-0076](0076-capture-scenario-tracking-milestone-not-terminal.md) 取代，待重跑）。
 
 ### (i) 风险与限制（**显式登记**）
 

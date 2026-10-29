@@ -21,7 +21,7 @@ W8 测量规格裁定要求在继续 pilot 或正式等价前，对同一场景�
 <a id="redo"></a>
 ## 2026-10-26 独立重做与判据勘误
 
-用户要求重新完成 P1；执行规格见 [重做 spec](../archive/specs/redo-w8-determinism-probe/spec.md#scope)，生成器为 [`w8_determinism_probe.py`](../../scripts/w8_determinism_probe.py)。
+用户要求重新完成 P1；执行规格见 [重做 spec](../archive/specs/redo-w8-determinism-probe/spec.md#scope)，生成器为 [`w8_determinism_probe.py`](../../scripts/research/w8_determinism_probe.py)。
 
 原评审「spread 在 0.0–0.27」与「spread <0.01」重叠。重做前先冻结互斥判据：`<0.01` 记为探针分辨率内可重复；`0.01≤spread≤0.27` 为观察到执行级散布；`>0.27` 为超出参考范围。样本不足或缺测不判定。n=5 是描述性诊断，不是等价检验或因果识别。
 

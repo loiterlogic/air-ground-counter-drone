@@ -95,5 +95,5 @@ n ≈ ( (z_{1−α/2} + z_{1−power}) · σ / (Δ_true − MME) )²         （
 ## 参考
 
 - 触发记录：[ADR-0085](0085-w7b-p1-mechanism-activating-scenario-pilot.md)(h)（v5 结果）、[ADR-0071](0071-w7b-adjudication-record-and-pending-arms.md)(l)（现行 P1 结论）、(j)（P2 v3）
-- 预注册：[`w7b_prereg.yaml`](../../src/agc_rl/config/w7b_prereg.yaml)、判定脚本 [`w7b_p1_adjudicate.py`](../../scripts/w7b_p1_adjudicate.py) / [`w7b_p2_adjudicate.py`](../../scripts/w7b_p2_adjudicate.py)
+- 预注册：[`w7b_prereg.yaml`](../../src/agc_rl/config/w7b_prereg.yaml)、判定脚本 [`w7b_p1_adjudicate.py`](../../scripts/research/w7b_p1_adjudicate.py) / [`w7b_p2_adjudicate.py`](../../scripts/research/w7b_p2_adjudicate.py)
 - 纪律：[ADR-0070](0070-w7b-research-propositions-and-rl-role-adjudication.md)(h)（预注册判定）、[F-13](../reviews/agc-review-2026-10-14/30-未来.md#f-13)（防事后拟合）

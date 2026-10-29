@@ -89,7 +89,7 @@ own PX4 延后后，runner 若仍以地面门（`/agc/task/start` 服务 + gt �
 - 冷启动期间 `/dev/shm` fastrtps 段数：A5b 221 → 325；A4 173 → 242（未手工清理；增长与 run 数大致线性，无 SHM 初始化失败）。
 - **最终默认配置回归（A7，`px4_warmup=false` / own 25 s / intruder 35 s，不显式传参）**：`a7-final-default-01` own 701.3 / intruder 737.2 ms；`a7-final-default-02` own 701.2 / intruder 751.0 ms；均 `INTERCEPT_CONFIRMED`、`create entities failed` 0、infra 0；shm 251 → 259。
 - 诊断报告：[`experiments/w7-rl-b/20261024-w7-rl-b-uxrce-diagnosis/metrics/uxrce_diagnosis.md`](../../experiments/w7-rl-b/20261024-w7-rl-b-uxrce-diagnosis/metrics/uxrce_diagnosis.md)。
-- 探针：[`scripts/uxrce_participant_probe.py`](../../scripts/uxrce_participant_probe.py)；各条件 JSON 见诊断报告索引。
+- 探针：[`scripts/uxrce_participant_probe.py`](../../scripts/research/uxrce_participant_probe.py)；各条件 JSON 见诊断报告索引。
 
 ## 备选
 
@@ -115,6 +115,6 @@ own PX4 延后后，runner 若仍以地面门（`/agc/task/start` 服务 + gt �
 ## 参考
 
 - 前序：[ADR-0075](0075-uxrce-entity-creation-intermittent-failure-and-infra-retry.md)、[ADR-0093](0093-w7b-exit-closure-and-prefix-provenance.md)。
-- 代码：[`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)、[`episode_runner.py`](../../scripts/episode_runner.py)、[`w7b_arms_runner.py`](../../scripts/w7b_arms_runner.py)。
+- 代码：[`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)、[`episode_runner.py`](../../scripts/episode_runner.py)、[`w7b_arms_runner.py`](../../scripts/research/w7b_arms_runner.py)。
 - spec：[`restore-fullchain-infra-and-w7c-admission`](../archive/specs/restore-fullchain-infra-and-w7c-admission/spec.md)。
 - 运维：[`整链排障速查`](../conventions/整链排障速查.md)。

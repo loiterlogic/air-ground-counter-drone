@@ -40,7 +40,7 @@ P2 v3（[ADR-0071](0071-w7b-adjudication-record-and-pending-arms.md)(j)）判定
   3. 对比量（逐 seed 配对）：**指向主效应**（tracking=on：①−④；tracking=off：③−②）、**跟踪主效应**（pointing=target：①−③；pointing=velocity：④−②）、**交互**（(①−④)−(③−②)）；DV = **真实过程 FCO**（失败回合保留真实值、缺测配对剔除；**不等于** v5 失败置零判定口径），辅报 `vis_rate` / `env_occ|vis` 的分解；
   4. **预登记的已知风险**：cell ④（`velocity`+`on`）在 [ADR-0073](0073-p1-arm-fairness-noncoop-fixed-trajectory.md) 中已被实证会触发 **C10 hold 自锁**（获目标后丢失 → 冻结、机头随速度 → 目标出视场不可恢复）⇒ 该 cell **可能退化**；若退化，照实报告并把"跟踪主效应"只按 cell ①/③ 一侧（pointing=target）解读，**不得**把退化 cell 当作公平基线。
   5. **pilot 先行**：先 3 seeds × 4 cell（同批 12 episodes）验证四 cell 可运行 / 可解释；pilot **不入判定**，仅用于确认设计可承载；随后按 (a)3 的规则跑 N=20。
-- **产物**：`experiments/w7-rl-b/<run_id>/metrics/{arms.json, p1_ablation.json}`；分析脚本 [`scripts/w7b_p1_ablation.py`](../../scripts/w7b_p1_ablation.py)。
+- **产物**：`experiments/w7-rl-b/<run_id>/metrics/{arms.json, p1_ablation.json}`；分析脚本 [`scripts/w7b_p1_ablation.py`](../../scripts/research/w7b_p1_ablation.py)。
 - **不改判定**：本消融**不**改 P1 v1/v4/v5 的 verdict；若消融后要立"某单项即足够"的新判定，须**新预注册版本（v7）**。
 
 ### (b) P2：臂 B 负向结果的**诊断先行**（不改 verdict、不改臂）
@@ -61,7 +61,7 @@ P2 v3（[ADR-0071](0071-w7b-adjudication-record-and-pending-arms.md)(j)）判定
 
 ### (d) P2 臂 B 诊断结果（2026-10-23；用 v3 run 既有产物）
 
-产物：`experiments/w7-rl-b/20261022-w7-rl-b-v3-n20r/metrics/p2_arm_b_diagnosis.{json,md}`（[`scripts/w7b_p2_arm_b_diagnose.py`](../../scripts/w7b_p2_arm_b_diagnose.py)）。
+产物：`experiments/w7-rl-b/20261022-w7-rl-b-v3-n20r/metrics/p2_arm_b_diagnosis.{json,md}`（[`scripts/w7b_p2_arm_b_diagnose.py`](../../scripts/research/w7b_p2_arm_b_diagnose.py)）。
 
 | 量 | A `p2_c2_low_level` | B `p2_rl_high` | 差 |
 |---|---|---|---|
@@ -89,7 +89,7 @@ P2 v3（[ADR-0071](0071-w7b-adjudication-record-and-pending-arms.md)(j)）判定
 **定位**：诊断，**不改** v3 `falsified`、保留 c2；真值仅用于离线评估，不进入运行时门。
 
 **证据产物**（均新增，不覆盖既有数值）：
-- `experiments/w7-rl-b/20261022-w7-rl-b-v3-n20r/metrics/p2_prediction_chain.{json,md}`（[`scripts/w7b_p2_prediction_chain.py`](../../scripts/w7b_p2_prediction_chain.py)）；
+- `experiments/w7-rl-b/20261022-w7-rl-b-v3-n20r/metrics/p2_prediction_chain.{json,md}`（[`scripts/w7b_p2_prediction_chain.py`](../../scripts/research/w7b_p2_prediction_chain.py)）；
 - 同 run `metrics/p2_arm_b_diagnosis.{json,md}` 的**新增** active 窗口干预字段（既有字段数值逐项不变）。
 
 **预测链（B，38 shots / 17 hit / 21 miss；旧日志字段缺失照实标注）**：
@@ -145,7 +145,7 @@ P2 v3（[ADR-0071](0071-w7b-adjudication-record-and-pending-arms.md)(j)）判定
 
 ### (e) P1 消融 pilot（3 seeds × 4 cell）与随之启动的 N=20
 
-**pilot** run `w7-rl-b/20261023-w7-rl-b-p1abl-pilot`（12 episodes + 重试；[`scripts/w7b_p1_ablation.py`](../../scripts/w7b_p1_ablation.py) → `metrics/p1_ablation.{json,md}`）：
+**pilot** run `w7-rl-b/20261023-w7-rl-b-p1abl-pilot`（12 episodes + 重试；[`scripts/w7b_p1_ablation.py`](../../scripts/research/w7b_p1_ablation.py) → `metrics/p1_ablation.{json,md}`）：
 
 | cell | 指向 | 跟踪 | 终态（3 seeds） | active FCO 均值 | active 可见率 | 可见拍中包络占比 |
 |---|---|---|---|---|---|---|
@@ -219,7 +219,7 @@ P2 v3（[ADR-0071](0071-w7b-adjudication-record-and-pending-arms.md)(j)）判定
 - 命题与纪律：[ADR-0070](0070-w7b-research-propositions-and-rl-role-adjudication.md)、[ADR-0082](0082-w7b-p2-arm-b-rule-high-level-first.md)、[ADR-0086](0086-decision-rule-three-state-ci-versus-mme.md)
 - 臂定义：[ADR-0073](0073-p1-arm-fairness-noncoop-fixed-trajectory.md)（`air_tracking_ref` + C10 hold 自锁实证）
 - 上游结果：[ADR-0085](0085-w7b-p1-mechanism-activating-scenario-pilot.md)(h)(i)、[ADR-0071](0071-w7b-adjudication-record-and-pending-arms.md)(j)(l)
-- 实现：[`w7b_arms_runner.py`](../../scripts/w7b_arms_runner.py)、[`w7b_p1_ablation.py`](../../scripts/w7b_p1_ablation.py)、[`run_logger.cpp`](../../src/agc_task/src/run_logger.cpp)
+- 实现：[`w7b_arms_runner.py`](../../scripts/research/w7b_arms_runner.py)、[`w7b_p1_ablation.py`](../../scripts/research/w7b_p1_ablation.py)、[`run_logger.cpp`](../../src/agc_task/src/run_logger.cpp)
 
 ## 闭合注记（2026-10-24）
 

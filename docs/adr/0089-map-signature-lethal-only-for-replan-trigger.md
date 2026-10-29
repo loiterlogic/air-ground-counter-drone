@@ -77,7 +77,7 @@ W7-b 的 P2 臂 B（`p2_rl_high`）诊断（[ADR-0087](0087-p1-mechanism-ablatio
 - **适用范围**：本修复消除「未知 255 / inflation 253」两类伪触发。若 B 的地图触发主要由 obstacle/voxel 层
   对**移动目标**的 `254` marking 迁移造成（「动态目标被当作静态地图障碍」），本修复**不会**消除该部分；
   需全链新 run 按原因复核后另行决策（本次不合并修改）。
-- **回归**：`scripts/w7b_p2_replan_bench.py` C1–C6；修复后 C5 由 14 → 0 次，C4 保持 1 次；
+- **回归**：`scripts/research/w7b_p2_replan_bench.py` C1–C6；修复后 C5 由 14 → 0 次，C4 保持 1 次；
   既有 R-041 契约测试 `tests/w6_r041_check.py` 仍全 PASS（见证据）。
 - **边界**：不改冻结 9 消息 / 服务 ABI；不改唯一执行口语义；不新增第二 ROS 命令者；不改规划器 / 控制律 /
   安全层 / 终态语义；不进入在线 RL。
@@ -94,4 +94,4 @@ W7-b 的 P2 臂 B（`p2_rl_high`）诊断（[ADR-0087](0087-p1-mechanism-ablatio
 - 审计来源：[spec](../archive/specs/verify-w7b-p1-p2-before-v7/spec.md)、[ADR-0087](0087-p1-mechanism-ablation-and-p2-arm-b-diagnosis-scope.md)
 - 前序：[ADR-0055](0055-map-content-identity-and-monotonic-update-sequence.md)、[ADR-0056](0056-goal-invalidation-policy-and-displacement-triggered-replan.md)、[ADR-0027](0027-baseline-path-binding-and-replan-failstop.md)
 - 实现：[`ground_baseline.cpp`](../../src/agc_ground/src/ground_baseline.cpp)（`mapSignature` / `mapSigInfo`）
-- 台架：[`w7b_p2_replan_bench.py`](../../scripts/w7b_p2_replan_bench.py)、[`w6_r041_check.py`](../../tests/w6_r041_check.py)
+- 台架：[`w7b_p2_replan_bench.py`](../../scripts/research/w7b_p2_replan_bench.py)、[`w6_r041_check.py`](../../tests/w6_r041_check.py)

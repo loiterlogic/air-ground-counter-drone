@@ -110,7 +110,7 @@ pilot = `p1_coop` / `p1_noncoop` 两臂 × seeds {0,1,2} × 候选 A、B（共 1
 
 **动机**：判定口径把失败 / infra 回合的 primary 记 0（`keep_all_failures_and_infra`，本 run 共 **12** 个零填值）⇒ 判定量混合了"**任务成功**"与"**过程中的火控机会**"。**超时 (=失败) 不等于此前没有火控机会**，故须把两者拆开，并解释"可见率 +41 pt 而计分只 +8 pt"。
 
-**产物**：[`scripts/w7b_p1_decompose_fco.py`](../../scripts/w7b_p1_decompose_fco.py) 读既有产物（`arms.json` + 各 episode `summary.json` + 逐 episode 日志），输出 run 目录下 `metrics/p1_fco_decomposition.{json,md}`（逐回合表 + 聚合表 + 分解）。
+**产物**：[`scripts/w7b_p1_decompose_fco.py`](../../scripts/research/w7b_p1_decompose_fco.py) 读既有产物（`arms.json` + 各 episode `summary.json` + 逐 episode 日志），输出 run 目录下 `metrics/p1_fco_decomposition.{json,md}`（逐回合表 + 聚合表 + 分解）。
 
 **乘法分解**（active 窗口；`FCO_rate = vis_rate × env_occ|vis`，`env_occ|vis` = **可见拍中落入交战包络**的比例）：
 

@@ -33,7 +33,7 @@ accepted
 - **样本 / 显著性不变**：N=20 配对 / α=0.05 / power=0.80 / **MDE=0.10**（不因观测到更小效应而下调）；
 - **臂定义不变**：`p1_coop`（`target` + `air_tracking_ref=on`）vs `p1_noncoop`（`velocity` + `air_tracking_ref=off`），同场景 / 同 seed / 同安全层 / 同终态。
 
-预注册在本 ADR 与配置文件写定**之后**才启动新 run；判定由 [`scripts/w7b_p1_adjudicate.py`](../../scripts/w7b_p1_adjudicate.py) 按 `decision.p1` / `statistics.p1` 执行，脚本不硬编码阈值。
+预注册在本 ADR 与配置文件写定**之后**才启动新 run；判定由 [`scripts/w7b_p1_adjudicate.py`](../../scripts/research/w7b_p1_adjudicate.py) 按 `decision.p1` / `statistics.p1` 执行，脚本不硬编码阈值。
 
 ### (b) v1 结论保留为历史，不回溯改写
 

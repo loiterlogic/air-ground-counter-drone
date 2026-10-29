@@ -83,7 +83,7 @@ P2 v3 的 primary = `fire_control_opportunity_rate_active`
 ### (e) 重跑与判定
 
 用 v3 口径重跑 seeds 0–19（两臂 / 40 episodes），由
-[`scripts/w7b_p2_adjudicate.py`](../../scripts/w7b_p2_adjudicate.py) 按 `statistics.p2` 判定；
+[`scripts/w7b_p2_adjudicate.py`](../../scripts/research/w7b_p2_adjudicate.py) 按 `statistics.p2` 判定；
 **结果（2026-10-22）**：run `w7-rl-b/20261022-w7-rl-b-v3-n20r` 已完成（40 episodes / 墙钟 2.39 h / 终态 infra 0/40）；primary active FCO **Δ = −0.0561**（95% CI [−0.0971, −0.0151]）、p = 0.010、n=20 → **未达 MDE 0.10 且方向为负 → P2 证伪、保留 c2**（详见 [ADR-0071](0071-w7b-adjudication-record-and-pending-arms.md)(j)）。
 
 ### (f) P1 不变

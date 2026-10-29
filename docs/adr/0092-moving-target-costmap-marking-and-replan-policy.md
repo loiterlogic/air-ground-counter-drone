@@ -71,7 +71,7 @@ accepted
 - 分层触发序列：同 run `log/ep_p2_rl_high.r1_s08_static_none_nominal_capture_2.log`（t=25.9–28.1 s）。
 - 前序：[ADR-0089](0089-map-signature-lethal-only-for-replan-trigger.md) 的 C4 / C5 回归。
 - 实现：[`ground_baseline.cpp`](../../src/agc_ground/src/ground_baseline.cpp)（`mapSigInfo` / `mapSignature` / `logMapTrigger`）。
-- 台架：[`w7b_p2_replan_bench.py`](../../scripts/w7b_p2_replan_bench.py)（C1–C8）、[`w6_r041_check.py`](../../tests/w6_r041_check.py)。
+- 台架：[`w7b_p2_replan_bench.py`](../../scripts/research/w7b_p2_replan_bench.py)（C1–C8）、[`w6_r041_check.py`](../../tests/w6_r041_check.py)。
 
 ## 参考
 
