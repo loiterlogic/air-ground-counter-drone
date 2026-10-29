@@ -16,6 +16,8 @@
 | `lock_px4_failsafe_params.sh` | 注入 PX4 失效安全参数锁定（ADR-0034） |
 | `w3_target_driver.py` | 目标驱动（直线 / 圆周）运行时驱动 |
 
+交接自动叫醒脚本位于 [`.coordination/scripts/`](../.coordination/scripts/)，不属于本目录的长期工程工具索引。
+
 ## 新增脚本前先问一句
 
 - 它是**长期工具**吗？→ 留 `scripts/`。
