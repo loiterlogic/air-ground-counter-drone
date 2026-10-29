@@ -100,7 +100,7 @@ W8 验证任务 `20261027-001-w8-validation-recovery` 的实测数据：
 <a id="adr-0104-amendment"></a>
 ## 修订（P0-5 实测后，2026-10-29）
 
-来源：Leader 在用户已授权成本治理范围内裁定；证据见 [P0-5 出口判据](../plan/p0-5-协作成本治理.md#p0-5-exit) 与 [成本摘要](../../.coordination/task/20261029-005-p0-5-collaboration-cost/round-1/evidence/collaboration-cost.json)。**本文前文正文不改写**，以下为追加修订。
+来源：Leader 在用户已授权成本治理范围内裁定；证据见 [P0-5 出口判据](../plan/p0-5-协作成本治理.md#p0-5-exit) 与 [成本摘要](../../.coordination/archive/20261029-005-p0-5-collaboration-cost/round-1/evidence/collaboration-cost.json)。**本文前文正文不改写**，以下为追加修订。
 
 ### 1. 成本模型修正（覆盖前文"每次约 22 万 `cacheRead`"）
 
