@@ -28,7 +28,7 @@ import episode_runner as er  # noqa: E402
 
 
 def _load_adjudicate():
-    path = os.path.join(ROOT, 'scripts', 'w7b_p1_adjudicate.py')
+    path = os.path.join(ROOT, 'scripts', 'research', 'w7b_p1_adjudicate.py')
     spec = importlib.util.spec_from_file_location('w7b_p1_adjudicate', path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)

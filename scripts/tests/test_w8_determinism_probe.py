@@ -4,7 +4,8 @@ from pathlib import Path
 
 import pytest
 
-spec = importlib.util.spec_from_file_location('probe', Path(__file__).parents[1] / 'w8_determinism_probe.py')
+spec = importlib.util.spec_from_file_location(
+    'probe', Path(__file__).parents[1] / 'research' / 'w8_determinism_probe.py')
 probe = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(probe)
 

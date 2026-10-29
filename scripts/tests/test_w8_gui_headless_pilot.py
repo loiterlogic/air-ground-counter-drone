@@ -18,7 +18,7 @@ import sys
 import pytest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-sys.path.insert(0, os.path.join(ROOT, 'scripts'))
+sys.path.insert(0, os.path.join(ROOT, 'scripts', 'research'))
 
 import w8_gui_headless_pilot as w8  # noqa: E402
 
@@ -77,7 +77,7 @@ def test_attempt_plan_run_ids_and_commands():
     assert p1[1]['run_id'] == 'dryrun-check-p1-g-01'
     assert p1[-1]['run_id'] == 'dryrun-check-p1-g-05'
     cmd = p1[0]['command']
-    assert cmd[:3] == ['python3', 'scripts/w7b_arms_runner.py', '--campaign']
+    assert cmd[:3] == ['python3', 'scripts/research/w7b_arms_runner.py', '--campaign']
     for flag, value in (('--mode', 'headless'), ('--arms', 'p1_coop'), ('--seeds', '5'),
                         ('--scene', 's15_static_none_fov_capture'),
                         ('--infra-retries', '0'), ('--obs-horizon-s', '60.0'),
@@ -218,7 +218,7 @@ def test_dry_run_prints_20_attempts_without_subprocess(tmp_path, monkeypatch, ca
                   '--scene', 'all', '--dry-run', '--repo-root', str(tmp_path)])
     out = capsys.readouterr().out
     assert rc == 0
-    assert out.count('scripts/w7b_arms_runner.py') == 20
+    assert out.count('scripts/research/w7b_arms_runner.py') == 20
     assert 'dryrun-check-p1-h-01' in out
     assert 'dryrun-check-p2-g-01' in out
     assert 'dryrun-check-p2-h-05' in out

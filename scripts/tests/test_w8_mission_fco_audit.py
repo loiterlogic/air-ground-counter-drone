@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 spec = importlib.util.spec_from_file_location(
-    'mfc_audit', Path(__file__).parents[1] / 'w8_mission_fco_audit.py')
+    'mfc_audit', Path(__file__).parents[1] / 'research' / 'w8_mission_fco_audit.py')
 audit_mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(audit_mod)
 
@@ -130,7 +130,7 @@ def test_cli_writes_report(tmp_path):
     import subprocess, sys
     out = tmp_path / 'audit.json'
     proc = subprocess.run(
-        [sys.executable, str(Path(__file__).parents[1] / 'w8_mission_fco_audit.py'),
+        [sys.executable, str(Path(__file__).parents[1] / 'research' / 'w8_mission_fco_audit.py'),
          '--run-dir', str(run.parent), '--out', str(out)],
         capture_output=True, text=True)
     assert proc.returncode == 0, proc.stdout + proc.stderr
