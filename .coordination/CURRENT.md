@@ -1,12 +1,11 @@
 <a id="current"></a>
 # 当前交接
 
-- 任务 ID：**20261029-002-p0-2-pause-and-baseline**
-- 轮次：**1**
-- 状态：**待审查**（Worker 于 2026-10-29T10:23 领取、约 10:34 完成回报；见 [第1轮 report](task/20261029-002-p0-2-pause-and-baseline/round-1/report.md#report)，**待 Leader 独立验收**）
-- 来源：用户 2026-10-29 要求进行 P0-2；Leader 授权分主题本地提交固定基线，禁止 push/reset/clean/stash。
-- 当前派工：[第1轮 request](task/20261029-002-p0-2-pause-and-baseline/round-1/request.md)；T1 仅 4 次只读接续机制查询，T2 为 0。
-- 最近结档：[P0-1 第1轮 review](archive/20261029-001-p0-1-completion-definition/round-1/review.md#p0-1-round1-review)；验收仅限书面完成定义，项目闭环未完成。
+- 任务 ID：**无**
+- 轮次：**无**
+- 状态：**空闲（P0-2 已验收，待下一任务派工）**
+- 来源：Leader 2026-10-29 独立审查通过；基线已本地提交，未 push，W8 代码未构建/测试。
+- 最近结档：[P0-2 第1轮 review](archive/20261029-002-p0-2-pause-and-baseline/round-1/review.md#p0-2-round1-review)；6 个内容主题提交，工作区干净，无活跃自动接续机制。
 - 上轮：[W8 第24轮](archive/20261027-001-w8-validation-recovery/round-24/review.md#round24-review)：**已关闭（非验收）**；迁移 workstream 保持暂停。
 - 当前方向：[项目完成路线](../docs/plan/README.md#plan-index)——P0（暂停/瘦身）→ P1（地图/入口/呈现/视觉）→ P2（交付物）。
 - 协作规则：批次授权 N=6 / 熔断 K=4（[ADR-0104](../docs/adr/0104-batch-authorization-and-stall-circuit-breaker.md)）——Leader 不再逐轮审查。
