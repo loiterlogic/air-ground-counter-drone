@@ -12,7 +12,7 @@ steps / spawn / terminal / outcome / 文件 sha256）、字段版本、可重建
 **范围声明**：本数据集为**离线回放 / 离线学习**用（F-16）；**不**新增任何命令者，**不**替代在线执行链。
 
 用法：
-  python3 scripts/w7b_build_offline_dataset.py --sources w7-rl --campaign w7-rl-b
+  python3 scripts/research/w7b_build_offline_dataset.py --sources w7-rl --campaign w7-rl-b
 """
 
 import argparse
@@ -90,7 +90,7 @@ def main():
         'fields': ['source_file', 'sha256', 'scene', 'master_seed', 'attempt_index',
                    'steps', 'spawn', 'terminal', 'outcome_class', 'seed_plan',
                    'n_actions', 'n_poses', 'noise_seq_head'],
-        'rebuild_command': 'python3 scripts/w7b_build_offline_dataset.py --sources %s' % ','.join(sources),
+        'rebuild_command': 'python3 scripts/research/w7b_build_offline_dataset.py --sources %s' % ','.join(sources),
         'entries': entries,
         'scope_note': '离线回放 / 离线学习数据集（F-16）；**不**新增命令者，**不**替代在线执行链。',
     }

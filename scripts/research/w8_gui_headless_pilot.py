@@ -3,8 +3,8 @@
 
 **定位**：本脚本只做 **GUI ↔ headless 模式等价核验**：
   * `run`：按预声明计划 `src/agc_rl/config/w8_gui_headless_plan.yaml` 逐 attempt 调用
-    `scripts/w7b_arms_runner.py`（**唯一差异是 `--mode`**），全部尝试保留、不重试、不覆盖；
-  * `report`：读取既有 attempt 产物，复用 `scripts/w7b_worker_repeatability.py` 的
+    `scripts/research/w7b_arms_runner.py`（**唯一差异是 `--mode`**），全部尝试保留、不重试、不覆盖；
+  * `report`：读取既有 attempt 产物，复用 `scripts/research/w7b_worker_repeatability.py` 的
     arms / summary / 日志解析，产出 pilot 报告或正式等价报告。
 
 **边界**：
@@ -14,10 +14,10 @@
   * 缺失产物 / 缺失字段一律记 `null` 并写进 `missing_fields` / `notes`，不崩溃、不插补。
 
 用法：
-  python3 scripts/w8_gui_headless_pilot.py run \\
+  python3 scripts/research/w8_gui_headless_pilot.py run \\
     --plan src/agc_rl/config/w8_gui_headless_plan.yaml --pilot-id <id> --scene all --phase pilot
-  python3 scripts/w8_gui_headless_pilot.py run ... --dry-run        # 只打印序列与命令，不落盘
-  python3 scripts/w8_gui_headless_pilot.py report \\
+  python3 scripts/research/w8_gui_headless_pilot.py run ... --dry-run        # 只打印序列与命令，不落盘
+  python3 scripts/research/w8_gui_headless_pilot.py report \\
     --pilot-id <id> --phase pilot --out-run-id <id>
 
 产物：
@@ -320,7 +320,7 @@ def build_command(campaign, run_id, mode, arm, seed, scene_name, fixed):
         # base plan v1 的 GUI 条件 = 软件渲染；保持其可复现性，不因项目默认 auto 而漂移。
         backend_arg = 'software'
     return [
-        'python3', 'scripts/w7b_arms_runner.py',
+        'python3', 'scripts/research/w7b_arms_runner.py',
         '--campaign', str(campaign),
         '--run-id', str(run_id),
         '--mode', str(mode),
@@ -572,7 +572,7 @@ def cmd_run(args):
 
         attempts.append(record)
         write_json_atomic(attempts_path, {
-            'generated_by': 'scripts/w8_gui_headless_pilot.py',
+            'generated_by': 'scripts/research/w8_gui_headless_pilot.py',
             'pilot_id': args.pilot_id, 'campaign': campaign,
             'updated_at': now_iso(), 'attempts': attempts,
         })
@@ -956,7 +956,7 @@ def build_formal_design_inputs(records, plan):
 def build_pilot_report(records, plan, meta, pilot_root, obs_horizon_s):
     data = {
         'kind': 'pilot（描述性；等价未判定）',
-        'generated_by': 'scripts/w8_gui_headless_pilot.py',
+        'generated_by': 'scripts/research/w8_gui_headless_pilot.py',
         'generated_at': now_iso(),
         'campaign': plan.get('campaign') or 'w8-parity',
         'phase': 'pilot',
@@ -1249,7 +1249,7 @@ def build_formal_report(records, plan, meta, obs_horizon_s, n_per_mode):
                 or '未通过：不授权 headless 规模统计；定位模式差异或改用 GUI 并记录成本。')
     data = {
         'kind': 'formal_equivalence',
-        'generated_by': 'scripts/w8_gui_headless_pilot.py',
+        'generated_by': 'scripts/research/w8_gui_headless_pilot.py',
         'generated_at': now_iso(),
         'campaign': plan.get('campaign') or 'w8-parity',
         'phase': 'formal',

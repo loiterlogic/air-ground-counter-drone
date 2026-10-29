@@ -16,7 +16,7 @@
 air_perception 被守卫**拒收**的证据（一次性 WARN）在**节点日志**里，由调用方 grep，不在本脚本。
 
 用法（配合已起的 full 整链）：
-  python3 scripts/w7b_full_perception_probe.py --seconds 20 --tag during --start
+  python3 scripts/archive/w7b_full_perception_probe.py --seconds 20 --tag during --start
 """
 
 import argparse

@@ -17,9 +17,9 @@
 
 用法（先 source 环境，否则 `agc_msgs` 不在 Python 路径）：
   source /opt/ros/jazzy/setup.bash && source install/setup.bash
-  python3 scripts/w7b_arms_runner.py --mode headless --campaign w7-rl-b
-  python3 scripts/w7b_arms_runner.py --arms p1_coop,p1_noncoop --seeds 0,1 --timeout 200 --ready-timeout-s 300
-  python3 scripts/w7b_arms_runner.py --arms p2_c2_low_level,p2_rl_high --seeds 0,1 --timeout 200 --ready-timeout-s 300
+  python3 scripts/research/w7b_arms_runner.py --mode headless --campaign w7-rl-b
+  python3 scripts/research/w7b_arms_runner.py --arms p1_coop,p1_noncoop --seeds 0,1 --timeout 200 --ready-timeout-s 300
+  python3 scripts/research/w7b_arms_runner.py --arms p2_c2_low_level,p2_rl_high --seeds 0,1 --timeout 200 --ready-timeout-s 300
 """
 
 import argparse
@@ -125,7 +125,7 @@ def paired_deltas(results):
 
 def paired_deltas_p2(results):
     """CRN 配对（P2）：按 seed 对齐两臂，给**逐 seed 配对差**（臂 B − 臂 A）+ 汇总。
-    判定（显著性 / 置信区间 / 阈值）**不在**此处——由 `scripts/w7b_p2_adjudicate.py`
+    判定（显著性 / 置信区间 / 阈值）**不在**此处——由 `scripts/research/w7b_p2_adjudicate.py`
     按预注册 `statistics.p2` 执行（ADR-0082 / 预注册 v2）。"""
     by = {(r['arm'], r['seed']): r for r in results}
     seeds = sorted({r['seed'] for r in results if r['group'] == 'P2'})
@@ -163,7 +163,7 @@ def paired_deltas_p2(results):
         'mean_d_min_clearance_m': mean('d_min_clearance_m'),
         'mean_d_wall_elapsed_s': mean('d_wall_elapsed_s'),
         'mean_d_rtf': mean('d_rtf'),
-        'adjudication': 'not_executed（由 scripts/w7b_p2_adjudicate.py 按 statistics.p2 判定）',
+        'adjudication': 'not_executed（由 scripts/research/w7b_p2_adjudicate.py 按 statistics.p2 判定）',
     }
 
 
@@ -440,7 +440,7 @@ def main():
              'reason': '依赖空中协同观测通道（同上）'}]),
         'proposition': 'R1–R3：各臂**可运行 + 同权限同约束同安全层同终态**；P1（R1）以 `--backend full` 承载，'
                        'CRN 配对结果见 `p1_pairing`（判定属步 3，按预注册）。P2（R2）以 full 链 + 固定协同承载，'
-                       'CRN 配对结果见 `p2_pairing`（判定由 scripts/w7b_p2_adjudicate.py 按预注册 statistics.p2 执行）。',
+                       'CRN 配对结果见 `p2_pairing`（判定由 scripts/research/w7b_p2_adjudicate.py 按预注册 statistics.p2 执行）。',
         'diversity_note': '各臂仅自变量不同（命令源 / shield / observe_yaw_mode），余同'
                           '（同场景 / 同 seed / 同安全层 / 同终态语义；'
                           'P2 v3 两臂 goal_follow_target 同置 → 同源感知目标，见 ADR-0083）。',

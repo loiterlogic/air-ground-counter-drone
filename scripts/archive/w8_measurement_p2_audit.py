@@ -7,7 +7,8 @@ import statistics
 
 from scipy.stats import t
 
-ROOT = Path(__file__).resolve().parents[1]
+# 本脚本位于 scripts/archive/：项目根在上两层（P0-4 迁移；原 `parents[1]`）。
+ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'experiments/w8-parity/20261026-w8-measurement-p2'
 
 

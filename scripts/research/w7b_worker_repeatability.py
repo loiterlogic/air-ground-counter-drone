@@ -14,7 +14,7 @@
 A/B 或 P 尚未运行时，对应门结果写 `not_evaluated`。
 
 用法：
-  python3 scripts/w7b_worker_repeatability.py \
+  python3 scripts/research/w7b_worker_repeatability.py \
     --campaign w7-rl-b \
     --out-run-id 20261025-w7-rl-b-repeat-diagnosis \
     --case c1-01=20261024-w7-rl-b-c1-serial-01 \
@@ -1315,7 +1315,7 @@ def render_md(data):
           '> **描述性诊断，不参与 P1 / P2 判定。** 只读既有产物（`metrics/arms.json` + '
           '`summary.json` + 逐 episode 日志）；不启动新 run，不改写任何 report / ADR / verdict。', '',
           '- campaign: `%s`' % data['campaign'],
-          '- generated_by: `scripts/w7b_worker_repeatability.py`',
+          '- generated_by: `scripts/research/w7b_worker_repeatability.py`',
           '- generated_at: `%s`' % data['generated_at'],
           '- plan: `%s`' % plan['path'],
           '- plan sha256: `%s`' % (plan['sha256'] or '-'),
@@ -1532,7 +1532,7 @@ def main():
 
     data = {
         'kind': 'descriptive_diagnosis（描述性诊断，不参与 P1 / P2 判定）',
-        'generated_by': 'scripts/w7b_worker_repeatability.py',
+        'generated_by': 'scripts/research/w7b_worker_repeatability.py',
         'generated_at': datetime.now(timezone.utc).astimezone().isoformat(timespec='seconds'),
         'campaign': args.campaign,
         'out_run_id': args.out_run_id,

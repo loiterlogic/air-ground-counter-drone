@@ -16,7 +16,7 @@
      首次开火时刻只作**代理**，**不**替代首次机会时间。
 
 用法：
-  python3 scripts/w7b_p1_point_only_failures.py --run-id 20261023-w7-rl-b-p1abl-n20
+  python3 scripts/research/w7b_p1_point_only_failures.py --run-id 20261023-w7-rl-b-p1abl-n20
 """
 
 import argparse

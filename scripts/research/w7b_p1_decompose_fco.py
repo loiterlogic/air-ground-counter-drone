@@ -19,7 +19,7 @@
 两者需给 `run_logger` 加诊断计数（后续 run 生效，不改判定口径）。
 
 用法：
-  python3 scripts/w7b_p1_decompose_fco.py --run-id 20261023-w7-rl-b-p1v5-n20
+  python3 scripts/research/w7b_p1_decompose_fco.py --run-id 20261023-w7-rl-b-p1v5-n20
   # 产物：experiments/<campaign>/<run_id>/metrics/p1_fco_decomposition.{json,md}
 """
 
@@ -180,7 +180,7 @@ def main():
     out = {
         'kind': 'descriptive_posthoc（不参与判定；verdict 字段不改写）',
         'run_id': args.run_id, 'campaign': args.campaign,
-        'generated_by': 'scripts/w7b_p1_decompose_fco.py',
+        'generated_by': 'scripts/research/w7b_p1_decompose_fco.py',
         'dv_definition': 'active 窗口（GROUND_APPROACH→终态）：FCO_rate = vis_rate × env_occ|vis',
         'note_scored': '计分口径 = 失败 / infra 回合记 0（keep_all_failures_and_infra，判定用）',
         'note_real': '真实口径 = 失败回合**保留其真实** active FCO（描述用；超时≠此前无机会）',
@@ -212,7 +212,7 @@ def main():
 
     # —— 描述性 markdown（读给人看）——
     md = ['# P1 FCO 描述性拆解 · %s' % args.run_id, '',
-          '> **描述性**后验分析（`scripts/w7b_p1_decompose_fco.py`）：**不**参与判定、**不**改写 verdict；',
+          '> **描述性**后验分析（`scripts/research/w7b_p1_decompose_fco.py`）：**不**参与判定、**不**改写 verdict；',
           '> 目的：拆开"任务成功"与"过程中的火控机会"，解释可见率差 → 计分差的压缩。', '',
           '## 逐回合（失败 / infra 回合保留**真实** FCO）', '',
           '| arm | seed | terminal | reason | retries | active ticks | vis_rate | fco(real) | env_occ\\|vis | 时长(s) | 开火次数 | 首射 t(s) |',

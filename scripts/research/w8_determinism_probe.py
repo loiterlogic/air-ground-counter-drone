@@ -10,7 +10,8 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 
-ROOT = Path(__file__).resolve().parents[1]
+# 本脚本位于 scripts/research/：项目根在上两层（P0-4 迁移；原 `parents[1]`）。
+ROOT = Path(__file__).resolve().parents[2]
 SCENE = 's15_static_none_fov_capture'
 MISSION = {'INTERCEPT_CONFIRMED', 'TRACKING_SUCCESS', 'MISSION_FAILED'}
 
@@ -107,14 +108,14 @@ def run(batch):
             'required_missions': 5, 'max_attempts': 10, 'infra_retries': 0,
             'rule': '<0.01 reproducible; [0.01,0.27] execution variability; >0.27 beyond reference',
             'git_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
-            'source_sha256': {p: sha(ROOT/p) for p in ['scripts/w8_determinism_probe.py',
-                'scripts/w7b_arms_runner.py', 'scripts/episode_runner.py',
+            'source_sha256': {p: sha(ROOT/p) for p in ['scripts/research/w8_determinism_probe.py',
+                'scripts/research/w7b_arms_runner.py', 'scripts/episode_runner.py',
                 '.trae/specs/redo-w8-determinism-probe/spec.md']}}
     write(batch / 'config/plan.json', plan)
     attempts, valid = [], 0
     for i in range(1, 11):
         run_id = '%s-%02d' % (batch.name, i)
-        cmd = [sys.executable, str(ROOT/'scripts/w7b_arms_runner.py'), '--campaign', campaign,
+        cmd = [sys.executable, str(ROOT/'scripts/research/w7b_arms_runner.py'), '--campaign', campaign,
                '--run-id', run_id, '--scene', SCENE, '--seeds', '5', '--arms', 'p1_coop',
                '--mode', 'headless', '--infra-retries', '0', '--timeout', '240',
                '--ready-timeout-s', '180', '--start-timeout-s', '60', '--obs-horizon-s', '60',

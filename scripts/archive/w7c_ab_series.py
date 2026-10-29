@@ -181,7 +181,7 @@ def main():
                     seed_target = shared_build
                     _seed_params(shared_build, canonical)
                     cmd = [
-                        'python3', 'scripts/w7b_arms_runner.py',
+                        'python3', 'scripts/research/w7b_arms_runner.py',
                         '--arms', args.arm, '--seeds', str(args.seed),
                         '--scene', args.scene, '--mode', args.mode,
                         '--campaign', args.campaign, '--run-id', run_id,
@@ -196,7 +196,7 @@ def main():
                         _seed_params(px4_run_root / ('instance_%d' % inst), canonical)
                     seed_target = px4_run_root / 'instance_0'
                     cmd = [
-                        'python3', 'scripts/w7c_worker_run.py',
+                        'python3', 'scripts/research/w7c_worker_run.py',
                         '--worker-id', '0', '--run-id', run_id,
                         '--arm', args.arm, '--scene', args.scene,
                         '--seed', str(args.seed), '--mode', args.mode,

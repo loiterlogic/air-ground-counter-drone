@@ -24,7 +24,7 @@ DV = 真实过程 FCO（`fire_control_opportunity_rate_active`；失败回合保
 cell 画像表直接给每 cell 的终态分布与真实 FCO，退化即照实呈现。
 
 用法：
-  python3 scripts/w7b_p1_ablation.py --run-id 20261023-w7-rl-b-p1abl-pilot
+  python3 scripts/research/w7b_p1_ablation.py --run-id 20261023-w7-rl-b-p1abl-pilot
   # 产物：experiments/<campaign>/<run_id>/metrics/p1_ablation.{json,md}
 """
 

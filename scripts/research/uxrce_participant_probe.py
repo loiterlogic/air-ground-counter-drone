@@ -15,7 +15,7 @@ create_client → establish_session → create_participant 的耗时，判断是
 
 用法：
   source /opt/ros/jazzy/setup.bash
-  python3 scripts/uxrce_participant_probe.py --runs 10
+  python3 scripts/research/uxrce_participant_probe.py --runs 10
 """
 
 import argparse

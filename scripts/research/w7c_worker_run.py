@@ -7,7 +7,7 @@ ADR-0077：每个 worker 跑在独立的 user+net namespace（`unshare -Urn`）�
 调用方须已 `source /opt/ros/jazzy/setup.bash` 与 `source install/setup.bash`。
 
 用法：
-  python3 scripts/w7c_worker_run.py --worker-id 0 --run-id <id> \
+  python3 scripts/research/w7c_worker_run.py --worker-id 0 --run-id <id> \
       --arm p2_rl_high --scene s08_static_none_nominal_capture --seed 0 --mode headless
 """
 
@@ -122,7 +122,7 @@ def main():
     })
 
     runner = [
-        sys.executable, str(root / 'scripts' / 'w7b_arms_runner.py'),
+        sys.executable, str(root / 'scripts' / 'research' / 'w7b_arms_runner.py'),
         '--arms', args.arm, '--seeds', str(args.seed), '--scene', args.scene,
         '--mode', args.mode, '--campaign', args.campaign, '--run-id', args.run_id,
         '--worker-id', str(args.worker_id), '--infra-retries', '0',

@@ -8,7 +8,7 @@
 复用 `w7b_worker_repeatability.py` 的 arms / summary / 日志解析函数，避免两套口径。
 
 用法：
-  python3 scripts/w7b_gui_headless_recheck.py \
+  python3 scripts/research/w7b_gui_headless_recheck.py \
     --campaign w7-rl-b --out-run-id 20261025-w7-rl-b-gui-headless-recheck
 
 产物：`experiments/<campaign>/<out_run_id>/metrics/gui_headless.{json,md}`。
@@ -194,8 +194,8 @@ def render_md(data):
           '> **描述性复核，不参与 P1 / P2 判定。** 只用既有产物；**不**新增 GUI run，'
           '**不**改写既有 B 报告 / checklist / ADR；全部尝试保留（含 P1 GUI 首跑超时）。', '',
           '- campaign: `%s`' % data['campaign'],
-          '- generated_by: `scripts/w7b_gui_headless_recheck.py`（复用 '
-          '`scripts/w7b_worker_repeatability.py` 的解析）',
+          '- generated_by: `scripts/research/w7b_gui_headless_recheck.py`（复用 '
+          '`scripts/research/w7b_worker_repeatability.py` 的解析）',
           '- generated_at: `%s`' % data['generated_at'],
           '- 口径：active 窗口 primary；legacy `window_fixed_v1` 仅作描述（含终态后停泊）。',
           '']
@@ -309,7 +309,7 @@ def main():
     conclusion = build_conclusion(pairs, attempts)
     data = {
         'kind': 'descriptive_recheck（描述性复核，不参与 P1 / P2 判定）',
-        'generated_by': 'scripts/w7b_gui_headless_recheck.py',
+        'generated_by': 'scripts/research/w7b_gui_headless_recheck.py',
         'generated_at': datetime.now(timezone.utc).astimezone().isoformat(timespec='seconds'),
         'campaign': args.campaign,
         'out_run_id': args.out_run_id,

@@ -14,7 +14,7 @@ command_source:=train scene:=<scene> seed:=<spawn_seed> spawn_randomize:=true`�
 `experiments/w7-rl/<run_id>/{config/*.json, episodes/ep_a*.json, metrics/replay.json, log/*.log}`。
 
 用法：
-  python3 scripts/w7_episode_runner.py --scene s01_static_none_nominal_track \
+  python3 scripts/research/w7_episode_runner.py --scene s01_static_none_nominal_track \
       --master-seed 7 --attempts 2 --obs-noise-sigma 0.02
 """
 
@@ -179,7 +179,7 @@ def main():
                                 capture_output=True, text=True).stdout.strip()
     with open(os.path.join(out_dir, 'config', 'run_identity.json'), 'w', encoding='utf-8') as f:
         json.dump({'campaign': args.campaign, 'run_id': run_id, 'git_commit': git_commit,
-                   'runner': 'scripts/w7_episode_runner.py', 'backend': 'lightweight',
+                   'runner': 'scripts/research/w7_episode_runner.py', 'backend': 'lightweight',
                    'launch': LAUNCH, 'command_source': 'train', 'scene': args.scene,
                    'master_seed': args.master_seed, 'episode_index': args.episode_index,
                    'attempts': args.attempts, 'w7_config': w7cfg,

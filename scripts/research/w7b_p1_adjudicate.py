@@ -26,7 +26,7 @@
     （本 run σ / n 下的可检测效应）、`decision_n_required_est`（点估计 > MME 时断言所需的配对数）。
 
 用法：
-  python3 scripts/w7b_p1_adjudicate.py --run-id 20261020-w7-rl-b-xxxxxx-xxxx
+  python3 scripts/research/w7b_p1_adjudicate.py --run-id 20261020-w7-rl-b-xxxxxx-xxxx
 """
 
 import argparse

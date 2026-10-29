@@ -23,7 +23,7 @@
   * 另报 95% 配对差 CI + Wilcoxon 符号秩 p（稳健性，**不**参与判定）。
 
 用法：
-  python3 scripts/w7b_p2_adjudicate.py --run-id 20261022-w7-rl-b-xxxxxx-xxxx \
+  python3 scripts/research/w7b_p2_adjudicate.py --run-id 20261022-w7-rl-b-xxxxxx-xxxx \
       --out experiments/w7-rl-b/<run_id>/metrics/p2_adjudication.json
 """
 

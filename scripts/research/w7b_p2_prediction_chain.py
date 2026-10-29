@@ -19,8 +19,8 @@
 
 产物：`experiments/<campaign>/<run_id>/metrics/p2_prediction_chain.{json,md}`（只新增，不覆盖既有）。
 用法：
-  python3 scripts/w7b_p2_prediction_chain.py --run-id 20261022-w7-rl-b-v3-n20r
-  python3 scripts/w7b_p2_prediction_chain.py --run-id 20261024-w7-rl-b-p2-predchain
+  python3 scripts/research/w7b_p2_prediction_chain.py --run-id 20261022-w7-rl-b-v3-n20r
+  python3 scripts/research/w7b_p2_prediction_chain.py --run-id 20261024-w7-rl-b-p2-predchain
 """
 
 import argparse
