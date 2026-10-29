@@ -1,6 +1,6 @@
 # scripts/ 索引
 
-> 本目录**只放长期工具**。一次性、按风险项（R-xxx）产出的驱动 / 台架 / 探针脚本已归档到 [archive/](./archive/)；验收 / 回归核查已迁到 [../tests/](../tests/)。
+> 本目录**只放长期工具**。一次性、按风险项（R-xxx）产出的驱动 / 台架 / 探针脚本已归档到 [archive/](archive)；验收 / 回归核查已迁到 [../tests/](../tests)。
 > 规则与家的划分见 [目录与命名规范](../docs/conventions/目录与命名规范.md)。
 
 ## 长期工具
@@ -15,8 +15,9 @@
 | `third_party_asset_check.py` | 第三方资产 provenance / 许可 / 哈希核对（ADR-0068） |
 | `lock_px4_failsafe_params.sh` | 注入 PX4 失效安全参数锁定（ADR-0034） |
 | `w3_target_driver.py` | 目标驱动（直线 / 圆周）运行时驱动 |
+| `adr_index.py` | 从 `docs/adr/*.md` 生成 ADR 索引；`--check` 校验漂移（纯静态、无副作用，ADR-0105） |
 
-交接自动叫醒脚本位于 [`.coordination/scripts/`](../.coordination/scripts/)，不属于本目录的长期工程工具索引。
+跨进程交接叫醒脚本（原 `.coordination/scripts/`）随机制退役已删除（[ADR-0102](../docs/adr/0102-leader-worker-dual-model-handoff.md)），不属于本目录的长期工程工具索引；现行 Leader / Worker 交接见 [.coordination/README.md](../.coordination/README.md#auto-wake)。
 
 ## 新增脚本前先问一句
 

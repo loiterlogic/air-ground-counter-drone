@@ -13,6 +13,24 @@ python3 tests/run_all.py --run w6_r034_check.py
 python3 tests/run_all.py --all --timeout 600   # 全跑（带超时）
 ```
 
+## 文档护栏（P0-3 起）
+
+下面两个是**纯静态、秒级、无副作用**的护栏，改文档后应当跑一遍：
+
+| 脚本 | 断言 | 用法 |
+|---|---|---|
+| [`docs_link_check.py`](./docs_link_check.py) | 活跃范围 markdown 的**本地链接可解析、锚点存在**（显式 `<a id>` / 标题 slug / `#L<n>` / `.md:<line>`） | `python3 tests/docs_link_check.py`；`--include GLOB` 追加范围；`--strict-history` 把历史断链也算失败 |
+| [`../scripts/adr_index.py`](../scripts/adr_index.py) | `docs/adr/README.md` 与 105 篇 ADR 的**编号/标题/Status/结论一致** | `python3 scripts/adr_index.py --check` |
+| [`docs_tooling_check.py`](./docs_tooling_check.py) | 上面两个工具**自身的口径**（断链/锚点/代码块排除/历史范围/索引幂等/漂移检测） | `python3 tests/docs_tooling_check.py`；不碰真实仓库，临时目录造最小项目 |
+
+`docs_link_check.py` 的排除边界是**刻意的**，不是忽略：
+
+- 围栏代码块与行内代码里的"链接"是示例/模板，不解析；
+- 绝对路径（`/home/...`、`/opt/ros/...`）与 `experiments/` 内路径是**取证记录**，指向本机源码树或本地保留的证据，计入"证据引用"而不判断链；
+- `docs/archive/`、`.coordination/archive/` 属**历史范围**：断链逐条列名、不计入退出码（历史路径是当时事实，改写即伪造记录，见 [ADR-0066](../docs/adr/0066-decision-applicability-and-reference-discipline.md)）。
+
+退出码：`0` = 活跃范围无断链；`1` = 有断链；`2` = 用法/环境错误。
+
 ## 命名
 
 沿用原风险项编号：`w<ws>_r<nnn>_check.py`、`w<ws>_<name>_check.py`。
