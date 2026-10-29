@@ -3,7 +3,7 @@
 
 - 任务 ID：**20261029-002-p0-2-pause-and-baseline**
 - 轮次：**1**
-- 状态：**待审查**（Worker 于 2026-10-29T10:23 领取、10:38 回报；见 [第1轮 report](task/20261029-002-p0-2-pause-and-baseline/round-1/report.md#report)，**待 Leader 独立验收**）
+- 状态：**待审查**（Worker 于 2026-10-29T10:23 领取、约 10:34 完成回报；见 [第1轮 report](task/20261029-002-p0-2-pause-and-baseline/round-1/report.md#report)，**待 Leader 独立验收**）
 - 来源：用户 2026-10-29 要求进行 P0-2；Leader 授权分主题本地提交固定基线，禁止 push/reset/clean/stash。
 - 当前派工：[第1轮 request](task/20261029-002-p0-2-pause-and-baseline/round-1/request.md)；T1 仅 4 次只读接续机制查询，T2 为 0。
 - 最近结档：[P0-1 第1轮 review](archive/20261029-001-p0-1-completion-definition/round-1/review.md#p0-1-round1-review)；验收仅限书面完成定义，项目闭环未完成。
