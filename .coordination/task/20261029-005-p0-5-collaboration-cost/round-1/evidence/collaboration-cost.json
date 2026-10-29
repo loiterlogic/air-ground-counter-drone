@@ -18,7 +18,8 @@
       "用户侧客户端与网络开销",
       "W8 历史会话（不在本次只读名单）",
       "本任务（P0-5）自身 Worker 会话——另见 p0_5_self_snapshot（快照，未并入 P0-3/P0-4 对照）"
-    ]
+    ],
+    "step_definition": "assistant message 数 = 有 usage 的 step；step/start 事件数略多（Leader 112 vs 110、P0-3 334 vs 332），本文件一律用 assistant message 口径"
   },
   "sessions": {
     "leader": {
@@ -509,5 +510,10 @@
       "total": 130
     },
     "significance": "单轮治理任务（无 T1/T2、无新工程实验）已消耗 769 万 cacheRead，说明“只读证据 + 写文档”一轮本身就是百万级上下文成本；成本模型必须以 step×上下文规模为主，不能只看轮次/唤醒数。"
+  },
+  "analysis_files": {
+    "location": "/tmp/p05-*.mjs",
+    "nature": "一次性只读分析脚本（临时目录，未入库、未新增长期工具）",
+    "not_evidence": "辅助推导；权威数据为 transcript 与 projcache 原始文件"
   }
 }
