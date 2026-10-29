@@ -3,10 +3,11 @@
 
 - 任务 ID：**20261029-003-p0-3-docs-and-skills**
 - 轮次：**1**
-- 状态：**执行中**
+- 状态：**待审查**
 - 来源：用户授权继续 P0-3，新增退役 Trae、迁出 specs 并适配 skills；Leader 已裁定历史规格保留本地发布边界。
-- 当前派工：[第1轮 request](task/20261029-003-p0-3-docs-and-skills/round-1/request.md)；只做文档迁移与指定离线检查，不构建/仿真。
+- 当前派工：[第1轮 request](task/20261029-003-p0-3-docs-and-skills/round-1/request.md) / [report](task/20261029-003-p0-3-docs-and-skills/round-1/report.md)；**已完成，待 Leader 独立审查**——出口判据 11/11（[实测](../docs/plan/p0-3-文档瘦身与入口重构.md#p0-3-exit)）：L1 111 行（降 82%）、活跃断链 0、规格 97/97 哈希一致、ADR 105 篇 `--check` 通过、4 技能已迁 `.agents/skills`。4 个提交 `f3fa05e`→`d8291ef`，工作区干净。
 - 最近结档：[P0-2 第1轮 review](archive/20261029-002-p0-2-pause-and-baseline/round-1/review.md#p0-2-round1-review)；6 个内容主题提交，工作区干净，无活跃自动接续机制。
+- 待 Leader：验收 P0-3 后归档本任务；报告列出 5 点口径说明（尤：`docs/archive/specs/` 被忽略故其索引也不发布；3 条不可解历史断链按 ADR-0066 保留）。
 - 上轮：[W8 第24轮](archive/20261027-001-w8-validation-recovery/round-24/review.md#round24-review)：**已关闭（非验收）**；迁移 workstream 保持暂停。
 - 当前方向：[项目完成路线](../docs/plan/README.md#plan-index)——P0（暂停/瘦身）→ P1（地图/入口/呈现/视觉）→ P2（交付物）。
 - 协作规则：批次授权 N=6 / 熔断 K=4（[ADR-0104](../docs/adr/0104-batch-authorization-and-stall-circuit-breaker.md)）——Leader 不再逐轮审查。
