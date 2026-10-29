@@ -14,7 +14,7 @@
 - [P0-2 任务](../../../../docs/plan/p0-2-暂停迁移与基线固定.md#p0-2-goal)
 - [项目完成路线](../../../../docs/plan/README.md#plan-index)
 - [协作协议](../../../README.md#protocol)
-- [W8 第24轮关闭审查](../../../../archive/20261027-001-w8-validation-recovery/round-24/review.md#round24-review)
+- [W8 第24轮关闭审查](../20261027-001-w8-validation-recovery/round-24/review.md#round24-review)
 - [ADR-0102](../../../../docs/adr/0102-leader-worker-dual-model-handoff.md#top)
 
 W8 第24轮已以“已关闭（非验收）”归档，CURRENT 已明确暂停迁移；这两项是已完成事实，不得重复关闭或改写历史结论。P0-2 草案中“CURRENT 仍待执行”等描述已过时，应改成历史背景并回填当前事实。

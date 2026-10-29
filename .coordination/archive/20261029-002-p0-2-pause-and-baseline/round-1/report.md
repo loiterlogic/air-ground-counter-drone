@@ -119,7 +119,7 @@
 - 基线全量原始输出：`/tmp/agc-p0-2-baseline/baseline-1023.txt`（208 行）
 - 提交后现场：`/tmp/agc-p0-2-baseline/after-commits.txt`
 - T1 四次查询输出：`/tmp/agc-p0-2-probe/t1-0{1..4}-*.txt`
-- 文档内证据锚点：[基线](../../../docs/plan/p0-2-暂停迁移与基线固定.md#p0-2-baseline)、[提交清单](../../../docs/plan/p0-2-暂停迁移与基线固定.md#p0-2-commits)、[自动接续核查](../../../docs/plan/p0-2-暂停迁移与基线固定.md#p0-2-continuation-check)、[出口判据](../../../docs/plan/p0-2-暂停迁移与基线固定.md#p0-2-exit-result)
+- 文档内证据锚点：[基线](../../../../docs/plan/p0-2-暂停迁移与基线固定.md#p0-2-baseline)、[提交清单](../../../../docs/plan/p0-2-暂停迁移与基线固定.md#p0-2-commits)、[自动接续核查](../../../../docs/plan/p0-2-暂停迁移与基线固定.md#p0-2-continuation-check)、[出口判据](../../../../docs/plan/p0-2-暂停迁移与基线固定.md#p0-2-exit-result)
 
 > `/tmp` 产物属过程性证据，不入库、不承诺长期留存；可复核结论已写入 `docs/plan/p0-2-*.md`。
 
