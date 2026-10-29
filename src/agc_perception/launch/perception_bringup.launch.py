@@ -37,6 +37,7 @@ def generate_launch_description():
     map_file = LaunchConfiguration('map_file')
     # R-040（ADR-0055）：场景 / 源版本 → 折入地图内容身份 hash（诊断，非 ABI）
     scenario_version = LaunchConfiguration('scenario_version')
+    seed = LaunchConfiguration('seed')
 
     declared = [
         DeclareLaunchArgument('use_sim_time', default_value='true'),
@@ -52,6 +53,8 @@ def generate_launch_description():
                               description='S-06 地图几何文件（缺省 = 包内回退副本；由上层按真源派生注入）'),
         DeclareLaunchArgument('scenario_version', default_value='',
                               description='R-040 场景 / 源版本（由上层按场景轴选择；折入地图内容身份 hash）'),
+        DeclareLaunchArgument('seed', default_value='unseeded',
+                              description='感知随机种子（仅注入 air_perception；unseeded=兼容默认）'),
     ]
 
     common = [params_file, {'use_sim_time': use_sim_time}]
@@ -70,7 +73,8 @@ def generate_launch_description():
         Node(package='agc_perception', executable='air_perception',
              name='air_perception',
              parameters=common + [{'sensors_file': sensors_file,
-                                   'obstacles_file': obstacles_file}],
+                                   'obstacles_file': obstacles_file,
+                                   'seed': seed}],
              output='screen'),
         Node(package='agc_perception', executable='air_fusion',
              name='air_fusion',

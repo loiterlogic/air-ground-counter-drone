@@ -119,6 +119,20 @@ BACKENDS = {
 }
 
 
+def derive_px4_sim_seed(master_seed, instance):
+    """Derive a stable per-PX4 simulation seed from the experiment seed.
+
+    The PX4 processes are outside Python's RNG graph, so passing the experiment
+    seed only to ``scenario_reset`` is insufficient.  Keep this small integer
+    mixer here as the single launch-side derivation used by both PX4 instances
+    and the run manifest.
+    """
+    z = (int(master_seed) + 0x9E3779B9 + int(instance) * 0x85EBCA6B) & 0xFFFFFFFF
+    z = ((z ^ (z >> 16)) * 0x85EBCA6B) & 0xFFFFFFFF
+    z = ((z ^ (z >> 13)) * 0xC2B2AE35) & 0xFFFFFFFF
+    return (z ^ (z >> 16)) & 0xFFFFFFFF
+
+
 def carrier_entry(carriers, axis, value, scene):
     """R-026：声明轴值必须有承载者；无承载者 → 显式拒绝运行（不以命名当执行）。"""
     ent = (carriers.get(axis) or {}).get(value)
@@ -363,6 +377,12 @@ def build_manifest(backend, info, merged, assertions_result):
     obstacles_file = info['obstacles_file']
     world_file = info['world_file']
     target_source = BACKENDS[backend]['target_source']
+    px4_seed_protocol = 'agc-px4-sim-seed-v1'
+    px4_seeds = {
+        'own': derive_px4_sim_seed(seed, 0),
+        'intruder': derive_px4_sim_seed(seed, 1),
+        'warmup': derive_px4_sim_seed(seed, 3),
+    }
 
     # 实际障碍集：从**真源派生** obstacles_file 读取 id（none → []；static → pole_1/pole_2）
     _obs_doc = yaml.safe_load(open(obstacles_file)) or {}
@@ -415,6 +435,11 @@ def build_manifest(backend, info, merged, assertions_result):
                 'motion', 'speed_mps', 'radius_m')},
             'run_logger': {'scenario': merged.get('run_logger', {}).get('scenario'), 'seed': seed},
             'target_source': target_source,
+            'seed_protocol': {
+                'name': px4_seed_protocol,
+                'master_seed': seed,
+                'px4_sim_seeds': px4_seeds,
+            },
             'sensors_file': sensors_file, 'obstacles_file': obstacles_file,
             'world_obstacles': world_obstacles, 'world_file': world_file,
         },

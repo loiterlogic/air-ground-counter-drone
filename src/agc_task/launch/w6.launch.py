@@ -54,6 +54,7 @@ from w6_composition import (  # noqa: E402
     assertions,
     build_manifest,
     compose_params,
+    derive_px4_sim_seed,
     load_scene,
     new_run_token,
     write_manifest,
@@ -125,6 +126,7 @@ def _compose(context, *args, **kwargs):
                     # **空串**，会**覆盖** perception_bringup 的默认值 → gt_adapter/air_fusion 均
                     # 「不发布 /agc/targets」→ 任务无目标 → TIMEOUT（实测轻量栈回归）。
                     'target_source': target_source,
+                    'seed': LaunchConfiguration('seed'),
                 }.items(),
             ),
             # W6 拦截裁决（地面侧，无需 PX4）：发射式网捕获裁决器 + 行为级干扰注入
@@ -258,6 +260,7 @@ def _compose(context, *args, **kwargs):
             #   都用默认 8888（8889 空置）→ 单 agent 承双客户端，约 1 s 的客户端实体创建超时更易触发
             #   `create entities failed: participant: 255`（own 实例无 odom / 不收 arm）。
             'PX4_UXRCE_DDS_PORT': agent1_port,
+            'AGC_PX4_SIM_SEED': str(derive_px4_sim_seed(seed, 1)),
         }, output='screen')
 
     # ADR-0094：sacrificial SIH warmup——只创建 participant，不参与任务。
@@ -271,6 +274,7 @@ def _compose(context, *args, **kwargs):
                 'GZ_SIM_RESOURCE_PATH': gz_models + ':' + gz_worlds,
                 'PX4_SIMULATOR': 'sihsim', 'PX4_SIM_MODEL': 'none',
                 'PX4_UXRCE_DDS_PORT': agent0_port,
+                'AGC_PX4_SIM_SEED': str(derive_px4_sim_seed(seed, 3)),
             }, output='screen')])
 
     actions = [
@@ -303,6 +307,7 @@ def _compose(context, *args, **kwargs):
                 # R-026：整链以 air_fusion 承载感知轴 + 按轴选择通道 / 障碍文件
                 # W7-b（P1）：`target_source` 可被 launch 覆盖（协同=air_fusion / 非协同=gt_adapter）
                 'target_source': target_source,
+                'seed': LaunchConfiguration('seed'),
                 'sensors_file': info['sensors_file'],
                 # S-06：障碍先验 / 地图几何由**真源派生**（不再读 agc_perception 包内副本）
                 'obstacles_file': info['obstacles_file'],
@@ -332,6 +337,7 @@ def _compose(context, *args, **kwargs):
                 'PX4_SIM_MODEL': 'gz_x500', 'PX4_GZ_MODEL_POSE': own_pose,
                 # 己方实例绑 agent0 端口（显式，与入侵者的 agent1 端口对称，单一来源）
                 'PX4_UXRCE_DDS_PORT': agent0_port,
+                'AGC_PX4_SIM_SEED': str(derive_px4_sim_seed(seed, 0)),
             }, output='screen')]),
         # 入侵者 PX4（实例 1）：attach 已生 `intruder_uav`（world_bringup 于 gz+3 s spawn）。
         # ADR-0094：默认 35 s——与 own（25 s）错峰 10 s，避免两个 agent 同时创建 participant

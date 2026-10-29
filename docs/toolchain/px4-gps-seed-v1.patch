@@ -1,0 +1,136 @@
+diff --git a/src/modules/simulation/sensor_gps_sim/SensorGpsSim.cpp b/src/modules/simulation/sensor_gps_sim/SensorGpsSim.cpp
+index 56417063..accd5582 100644
+--- a/src/modules/simulation/sensor_gps_sim/SensorGpsSim.cpp
++++ b/src/modules/simulation/sensor_gps_sim/SensorGpsSim.cpp
+@@ -33,6 +33,10 @@
+ 
+ #include "SensorGpsSim.hpp"
+ 
++#include <cerrno>
++#include <cstdlib>
++#include <limits>
++
+ #include <drivers/drv_sensor.h>
+ #include <lib/drivers/device/Device.hpp>
+ #include <lib/geo/geo.h>
+@@ -52,6 +56,34 @@ SensorGpsSim::~SensorGpsSim()
+ 
+ bool SensorGpsSim::init()
+ {
++	// The launch layer supplies AGC_PX4_SIM_SEED per PX4 instance.  Keep a
++	// deterministic fallback for standalone PX4 launches, but reject malformed
++	// values instead of silently falling back to an unrelated stream.
++	const char *seed_text = std::getenv("AGC_PX4_SIM_SEED");
++	if (seed_text == nullptr || seed_text[0] == '\0') {
++		PX4_WARN("AGC_PX4_SIM_SEED unset; using deterministic standalone seed 1");
++		_rng_state = 1u;
++
++	} else {
++		errno = 0;
++		char *end = nullptr;
++		const unsigned long parsed = std::strtoul(seed_text, &end, 10);
++
++		if (errno == ERANGE || end == seed_text || *end != '\0' ||
++			parsed > std::numeric_limits<uint32_t>::max()) {
++			PX4_ERR("invalid AGC_PX4_SIM_SEED='%s' (expected uint32 decimal)", seed_text);
++			return false;
++		}
++
++		// xorshift32 has an absorbing zero state; map it to a fixed non-zero
++		// state while retaining the documented seed in the launch manifest.
++		_rng_state = static_cast<uint32_t>(parsed);
++		if (_rng_state == 0u) {
++			_rng_state = 0x6D2B79F5u;
++		}
++	}
++
++	PX4_INFO("GPS simulation RNG seed=%u", static_cast<unsigned>(_rng_state));
+ 	ScheduleOnInterval(125_ms); // 8 Hz
+ 	return true;
+ }
+@@ -59,31 +91,32 @@ bool SensorGpsSim::init()
+ float SensorGpsSim::generate_wgn()
+ {
+ 	// generate white Gaussian noise sample with std=1
+-
+-	// algorithm 1:
+-	// float temp=((float)(rand()+1))/(((float)RAND_MAX+1.0f));
+-	// return sqrtf(-2.0f*logf(temp))*cosf(2.0f*M_PI_F*rand()/RAND_MAX);
+-	// algorithm 2: from BlockRandGauss.hpp
+-	static float V1, V2, S;
+-	static bool phase = true;
++	// Box-Muller polar form, using this module's private xorshift32 stream.
++	auto uniform01 = [this]() {
++		_rng_state ^= _rng_state << 13;
++		_rng_state ^= _rng_state >> 17;
++		_rng_state ^= _rng_state << 5;
++		return (static_cast<float>(_rng_state) + 1.f) / 4294967297.f;
++	};
+ 	float X;
+ 
+-	if (phase) {
++	if (_gaussian_phase) {
++		float v1;
+ 		do {
+-			float U1 = (float)rand() / (float)RAND_MAX;
+-			float U2 = (float)rand() / (float)RAND_MAX;
+-			V1 = 2.0f * U1 - 1.0f;
+-			V2 = 2.0f * U2 - 1.0f;
+-			S = V1 * V1 + V2 * V2;
+-		} while (S >= 1.0f || fabsf(S) < 1e-8f);
++			float U1 = uniform01();
++			float U2 = uniform01();
++			v1 = 2.0f * U1 - 1.0f;
++			_gaussian_v2 = 2.0f * U2 - 1.0f;
++			_gaussian_s = v1 * v1 + _gaussian_v2 * _gaussian_v2;
++		} while (_gaussian_s >= 1.0f || fabsf(_gaussian_s) < 1e-8f);
+ 
+-		X = V1 * float(sqrtf(-2.0f * float(logf(S)) / S));
++		X = v1 * float(sqrtf(-2.0f * float(logf(_gaussian_s)) / _gaussian_s));
+ 
+ 	} else {
+-		X = V2 * float(sqrtf(-2.0f * float(logf(S)) / S));
++		X = _gaussian_v2 * float(sqrtf(-2.0f * float(logf(_gaussian_s)) / _gaussian_s));
+ 	}
+ 
+-	phase = !phase;
++	_gaussian_phase = !_gaussian_phase;
+ 	return X;
+ }
+ 
+diff --git a/src/modules/simulation/sensor_gps_sim/SensorGpsSim.hpp b/src/modules/simulation/sensor_gps_sim/SensorGpsSim.hpp
+index fac4e520..9a45e1bd 100644
+--- a/src/modules/simulation/sensor_gps_sim/SensorGpsSim.hpp
++++ b/src/modules/simulation/sensor_gps_sim/SensorGpsSim.hpp
+@@ -33,6 +33,8 @@
+ 
+ #pragma once
+ 
++#include <cstdint>
++
+ #include <lib/perf/perf_counter.h>
+ #include <px4_platform_common/defines.h>
+ #include <px4_platform_common/module.h>
+@@ -69,7 +71,7 @@ private:
+ 	void Run() override;
+ 
+ 	// generate white Gaussian noise sample with std=1
+-	static float generate_wgn();
++	float generate_wgn();
+ 
+ 	// generate white Gaussian noise sample as a 3D vector with specified std
+ 	matrix::Vector3f noiseGauss3f(float stdx, float stdy, float stdz) { return matrix::Vector3f(generate_wgn() * stdx, generate_wgn() * stdy, generate_wgn() * stdz); }
+@@ -80,6 +82,13 @@ private:
+ 
+ 	uORB::PublicationMulti<sensor_gps_s> _sensor_gps_pub{ORB_ID(sensor_gps)};
+ 
++	// Private, explicitly seeded RNG.  Do not use libc rand(): PX4 modules share
++	// that process-global stream, which made repeated AGC runs order-dependent.
++	uint32_t _rng_state{0x6D2B79F5u};
++	bool _gaussian_phase{true};
++	float _gaussian_v2{0.f};
++	float _gaussian_s{0.f};
++
+ 	perf_counter_t _loop_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")};
+ 
+ 	DEFINE_PARAMETERS(

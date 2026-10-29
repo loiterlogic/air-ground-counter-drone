@@ -45,6 +45,7 @@ make -C build_ros -j4     # 产出 build_ros/MicroXRCEAgent
 隐式 ostream formatter，上游 agent 代码需该兼容头才能编译）；③v2.4.2 源码用的是 fastcdr 1.x 的 camelCase API，
 **无法**对 fastcdr 2.x 编译，故必须用 v2.4.3。
 
+<a id="pins"></a>
 ## 可重建 pin 清单
 
 下表为人类可读摘要；紧随其后的 ```yaml 块是**机器可读真源**（`scripts/toolchain_pin_check.py` 按此解析并比对实测）。
@@ -62,6 +63,14 @@ make -C build_ros -j4     # 产出 build_ros/MicroXRCEAgent
 # agc_toolchain_pins —— 工具链唯一入库的可重建 pin 清单；由 scripts/toolchain_pin_check.py 解析并与实测比对
 agc_toolchain_pins:
   schema: 1
+  local_patches:
+    - id: px4-gps-seed-v1
+      repo: px4
+      path: docs/toolchain/px4-gps-seed-v1.patch
+      sha256: f8f13e7b696654ea5582844f11650fead362b71a154f15b12386f0ea539b3999
+      source_files:
+        src/modules/simulation/sensor_gps_sim/SensorGpsSim.cpp: ad4bae3a38518e2e957cbb022052e4e0617b3d464bc144ef8b5ca725ec750d3e
+        src/modules/simulation/sensor_gps_sim/SensorGpsSim.hpp: 4d3f8302175bead59e62a71551c9165420fd27ca8cb4b2adf1565430342a6e2e
   git_repos:
     - id: px4
       path: toolchain/PX4-Autopilot
@@ -91,8 +100,8 @@ agc_toolchain_pins:
       sha256: adb91e47bd8c2b0db61c590fd9e5ea36e898535564bd3e88e7b62658255bd483
       note: agent 真实二进制（构建产物）
     - path: toolchain/PX4-Autopilot/build/px4_sitl_default/bin/px4
-      sha256: 1c990470f5735282e85a59c342d20bfa34f566764f7fe1ac062ce9387c12dac2
-      note: PX4 SITL 可执行文件（构建产物）
+      sha256: 0c2be6189fc6a0ee857379127bfc46ce516c509b16605dd5ab6dc0b6aa8863f5
+      note: PX4 SITL 可执行文件（2026-10-26 R1 由补丁源码强制重编；旧值 1c990470f5735282e85a59c342d20bfa34f566764f7fe1ac062ce9387c12dac2 保留为历史）
     - path: toolchain/microxrce_compat/fmt_compat.hpp
       sha256: 727f13ffb43bc2d93ccd80bf4ec74f263dfaa1123bd40dca76b2a0c31a8669bd
       note: AGC 自研兼容头（非上游文件，来源=本项目排障产出）
@@ -139,6 +148,18 @@ agc_toolchain_pins:
     libtinyxml2-dev_10.0.0+dfsg-2_amd64.deb: cbdab1d3cb31a306f485c4158cc9072763647eb75090d0a55b70778a927d9387
 ```
 
+<a id="px4-local-patches"></a>
+## PX4 本地补丁与验证边界（2026-10-26）
+
+`local_patches` 与 `git_repos[px4]` 一起标识源版本；上游 HEAD 不变不等于无本地改动。补丁入主仓候选路径，外部工作树仍不入库；许可见 [NOTICE](../docs/toolchain/PX4-NOTICE.md#notice)。在干净的指定 PX4 基准提交上，先 `git apply --check`，再 `git apply` 对应补丁，然后执行下文构建配方；已应用补丁的工作树不能重复应用或重置。
+
+已完成两文件从基准内容应用补丁后的字节级重建核对，见 [证据说明](../docs/adr/0101-w8-seed-evidence-and-p3-execution-boundary.md#evidence)。这不代表完整工具链空目录构建已验证。
+
+本次只读 pin 核查 **24 PASS / 1 FAIL / 0 SKIP，退出码 1**：PX4 二进制现值为 `0c2be6189fc6a0ee857379127bfc46ce516c509b16605dd5ab6dc0b6aa8863f5`，与 `artifacts` 中保留的历史 pin 不同。当前二进制与补丁源码的构建对应关系**未核验**，禁止仅抄现值更新 pin。P3 前置需留存新构建命令、退出码、输入/产物指纹，之后显式更新 artifact pin 并重跑校验。当前 checker 尚未校验 `local_patches`；P3 必须补上并验证负例，旧 checker 的通过也不足以证明补丁一致。
+
+**2026-10-26 R1 更新**：checker 已实现 `local_patches` 校验（补丁 sha256、从基准可应用、当前工作树 = 基准 + 补丁、登记源文件哈希、额外 dirty/untracked、子模块 commit 标记与已跟踪内容 dirty），负例在临时夹具构造。GPS 模块已按补丁源码强制重编（`ninja -C build/px4_sitl_default px4`，退出码 0，日志见 `experiments/w8-parity/20261026-w8-measurement-p3/log/px4_build.log`）；二进制 pin 已从 `1c990470…` 显式更新为 `0c2be618…`，旧值保留在 `note`。R1 完成后的 checker 结果见本轮交接报告。
+
+<a id="rebuild"></a>
 ## 从空目录恢复（配方）
 
 > **验证缺口（必须显式声明）**：本清单**本轮未在真正空目录端到端实跑**——不复制现有 `build/` 当重建证明。
@@ -153,7 +174,7 @@ agc_toolchain_pins:
      src/lib/events/libevents src/lib/heatshrink/heatshrink \
      src/modules/mavlink/mavlink src/modules/uxrce_dds_client/Micro-XRCE-DDS-Client
    ```
-2. **PX4 SITL 构建**：
+2. **PX4 SITL 构建**：先按 [本地补丁](#px4-local-patches) 应用清单内补丁，再构建。
    ```bash
    make -C toolchain/PX4-Autopilot px4_sitl_default   # 等价 PX4_CONFIG=px4_sitl_default
    ```

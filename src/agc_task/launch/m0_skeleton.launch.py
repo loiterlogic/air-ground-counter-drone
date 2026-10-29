@@ -52,6 +52,7 @@ def generate_launch_description():
             'use_sim_time': LaunchConfiguration('use_sim_time'),
             # W7-b（P1）：观测来源（lightweight 缺省 gt_adapter；可被上层覆盖）
             'target_source': LaunchConfiguration('target_source'),
+            'seed': LaunchConfiguration('seed'),
             # R-026：传感器通道 / 障碍真值文件按场景轴由上层选择并单一注入
             'sensors_file': LaunchConfiguration('sensors_file'),
             'obstacles_file': LaunchConfiguration('obstacles_file'),
@@ -113,6 +114,9 @@ def generate_launch_description():
     ld.add_action(DeclareLaunchArgument(
         'target_source', default_value='gt_adapter',
         description='W7-b P1：观测来源（air_fusion / gt_adapter）'))
+    ld.add_action(DeclareLaunchArgument(
+        'seed', default_value='0',
+        description='感知随机种子（由 w6 顶层注入；默认 0）'))
     # W7-b（T1/E1）：安全层开关透传（缺省 true；false = 无 shield 对照臂，纯仿真）
     ld.add_action(DeclareLaunchArgument(
         'shield', default_value='true',

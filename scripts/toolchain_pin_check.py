@@ -148,10 +148,129 @@ def check_git_repos(pins, checks, root):
             marker, got = m.group(1), m.group(2)
             if marker == '-':
                 _check(checks, name, 'FAIL', sm_sha, got, 'not_initialized')
-            elif got == sm_sha:
-                _check(checks, name, 'PASS', sm_sha, got, '')
-            else:
+            elif got != sm_sha:
                 _check(checks, name, 'FAIL', sm_sha, got, 'sha_mismatch')
+            elif marker != ' ':
+                _check(checks, name, 'FAIL', sm_sha, got,
+                       'submodule_marker_%s' % marker)
+            else:
+                _check(checks, name, 'PASS', sm_sha, got, '')
+
+            # 子模块内已跟踪文件被改动同样属于未登记 dirty，不能只看 commit。
+            sm_path_abs = os.path.join(path, sm_path)
+            rc_content, dirty = _run(['git', '-C', sm_path_abs, 'status', '--porcelain',
+                                      '--untracked-files=no'])
+            name_dirty = '%s:content' % name
+            if rc_content != 0:
+                _check(checks, name_dirty, 'FAIL', 'clean', None, 'submodule_unavailable')
+            elif dirty:
+                _check(checks, name_dirty, 'FAIL', 'clean', dirty, 'submodule_dirty')
+            else:
+                _check(checks, name_dirty, 'PASS', 'clean', 'clean', '')
+
+
+def _porcelain_path(line):
+    """从 `git status --porcelain` 行提取路径（兼容 rename / quote）。"""
+    path = line[3:]
+    if ' -> ' in path:
+        path = path.split(' -> ', 1)[1]
+    if len(path) >= 2 and path[0] == '"' and path[-1] == '"':
+        path = path[1:-1]
+    return path
+
+
+def check_local_patches(pins, checks, root):
+    """校验本地补丁：补丁哈希、基准可应用、当前源码=基准+补丁、无额外 dirty。
+
+    活动外部树只读；负例由调用方在临时夹具中构造。
+    """
+    patches = pins.get('local_patches') or []
+    if not patches:
+        return
+    repos = {r.get('id', r.get('path')): r for r in (pins.get('git_repos') or [])}
+
+    for patch in patches:
+        pid = patch.get('id', patch.get('path'))
+        rel = patch.get('path')
+        prefix = 'patch:%s' % pid
+        if not rel:
+            _check(checks, prefix + ':path', 'FAIL', 'path', None, 'missing_path')
+            continue
+
+        patch_path = os.path.join(root, rel)
+        if not os.path.isfile(patch_path):
+            _check(checks, prefix + ':sha256', 'FAIL', patch.get('sha256'), None, 'missing')
+            continue
+        got = sha256_file(patch_path)
+        if got == patch.get('sha256'):
+            _check(checks, prefix + ':sha256', 'PASS', patch.get('sha256'), got, '')
+        else:
+            _check(checks, prefix + ':sha256', 'FAIL', patch.get('sha256'), got,
+                   'sha256_mismatch')
+
+        repo = repos.get(patch.get('repo'))
+        if repo is None:
+            _check(checks, prefix + ':repo', 'FAIL', patch.get('repo'), None, 'unknown_repo')
+            continue
+        repo_path = os.path.join(root, repo['path'])
+        if not os.path.isdir(repo_path):
+            _check(checks, prefix + ':repo', 'FAIL', repo['path'], None, 'missing_repo')
+            continue
+        _check(checks, prefix + ':repo', 'PASS', repo['path'], repo['path'], '')
+
+        source_files = patch.get('source_files') or {}
+        if not source_files:
+            _check(checks, prefix + ':source_files', 'FAIL', 'non-empty', None,
+                   'missing_source_files')
+        for sf, exp in source_files.items():
+            name = '%s:source:%s' % (prefix, sf)
+            sf_path = os.path.join(repo_path, sf)
+            if not os.path.isfile(sf_path):
+                _check(checks, name, 'FAIL', exp, None, 'missing')
+                continue
+            got = sha256_file(sf_path)
+            if got == exp:
+                _check(checks, name, 'PASS', exp, got, '')
+            else:
+                _check(checks, name, 'FAIL', exp, got, 'sha256_mismatch')
+
+        # 补丁必须能应用到基准（--cached 只看 index = HEAD，不受工作区脏影响）
+        rc, out = _run(['git', '-C', repo_path, 'apply', '--check', '--cached', patch_path])
+        if rc == 0:
+            _check(checks, prefix + ':applies_to_baseline', 'PASS', 'clean', 'clean', '')
+        else:
+            _check(checks, prefix + ':applies_to_baseline', 'FAIL', 'clean', None,
+                   'apply_check_failed: %s' % out)
+
+        # 当前工作区必须恰好是“基准 + 补丁”：反向应用应干净通过
+        rc, out = _run(['git', '-C', repo_path, 'apply', '--check', '--reverse', patch_path])
+        if rc == 0:
+            _check(checks, prefix + ':worktree_equals_baseline_plus_patch', 'PASS',
+                   'clean', 'clean', '')
+        else:
+            _check(checks, prefix + ':worktree_equals_baseline_plus_patch', 'FAIL',
+                   'clean', None, 'reverse_apply_failed: %s' % out)
+
+        # 除登记源文件外，不允许其它 tracked dirty / untracked（非 ignored）
+        rc, _ = _run(['git', '-C', repo_path, 'status', '--porcelain=v1',
+                      '--untracked-files=normal'])
+        out = _raw_run(['git', '-C', repo_path, 'status', '--porcelain=v1',
+                        '--untracked-files=normal'])
+        if rc != 0:
+            _check(checks, prefix + ':extra_dirty', 'FAIL', 'clean', None, 'status_failed')
+        else:
+            allowed = set(source_files)
+            extra = []
+            for line in (out or '').splitlines():
+                if not line.strip():
+                    continue
+                if _porcelain_path(line) not in allowed:
+                    extra.append(line)
+            if extra:
+                _check(checks, prefix + ':extra_dirty', 'FAIL', 'none', extra,
+                       'unregistered_changes')
+            else:
+                _check(checks, prefix + ':extra_dirty', 'PASS', 'none', 'none', '')
 
 
 def _dpkg_version(pkg):
@@ -278,6 +397,10 @@ def main():
         _check(checks, 'readme_pins_block', 'PASS', 'agc_toolchain_pins',
                'schema=%s' % pins.get('schema'), '')
         check_artifacts(pins, checks, root)
+        check_local_patches(pins, checks, root)
+        if 'local_patches' not in pins:
+            _check(checks, 'local_patches', 'FAIL', 'present', None,
+                   'missing_local_patches')
         check_git_repos(pins, checks, root)
         check_dds_versions(pins, checks, root)
         check_localdeps_debs(pins, checks, root)

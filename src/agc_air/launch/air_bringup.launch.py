@@ -36,6 +36,7 @@ def _generate(context, *args, **kwargs):
     share = get_package_share_directory('agc_air')
     sim_share = get_package_share_directory('agc_sim')
     perception_share = get_package_share_directory('agc_perception')
+    seed = LaunchConfiguration('seed')
     # S-11：项目根**显式注入**（launch 参数 agc_root，默认固定根 /home/chen/AGC），
     # 不再由包 share 目录深度上溯推断；ROS 资产仍经 ament index。
     agc_root = Path(LaunchConfiguration('agc_root').perform(context))
@@ -82,6 +83,7 @@ def _generate(context, *args, **kwargs):
         launch_arguments={
             'use_sim_time': LaunchConfiguration('use_sim_time'),
             'target_source': LaunchConfiguration('target_source'),
+            'seed': seed,
         }.items(),
     )
 
@@ -98,6 +100,7 @@ def _generate(context, *args, **kwargs):
         'PX4_GZ_WORLD': 'agc_world',
         'PX4_SIM_MODEL': 'gz_x500',
         'PX4_GZ_MODEL_POSE': LaunchConfiguration('px4_gz_model_pose'),
+        'AGC_PX4_SIM_SEED': seed,
     }
     # 用 PX4 官方启动脚本（与官方 gz_x500 流程一致；不注入任何自定义参数）
     px4 = ExecuteProcess(
@@ -184,6 +187,8 @@ def generate_launch_description():
         DeclareLaunchArgument('target_source', default_value='gt_adapter',
                               description='契约 /agc/target/source（W4 目标源）：'
                                           'gt_adapter | air_fusion | none（none 用于单独录制 C1 八字轨迹）'),
+        DeclareLaunchArgument('seed', default_value='0',
+                              description='实验随机种子（注入 air_perception 与 PX4 GPS 仿真）'),
     ]
 
     ld = LaunchDescription()
