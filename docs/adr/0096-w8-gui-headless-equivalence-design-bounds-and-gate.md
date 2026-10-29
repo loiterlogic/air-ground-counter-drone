@@ -1,5 +1,7 @@
 # W8 出口分层、GUI/headless 等价设计与执行闸门
 
+> **现行测量状态（2026-10-26）**：gate=`not_evaluable_as_specified`。测量 P1 结果见 [ADR-0098](0098-w8-determinism-probe-and-measurement-spec-change.md#redo)，未来等价门的指标语义及集合由 [ADR-0099](0099-w8-fixed-budget-mission-fco-measurement.md#metric) 取代；以下 2026-10-25 的 pilot、设计与不可行判断保留为历史记录。新记录器和 plan v2 尚未冻结。
+
 ## Status
 
 deferred（2026-10-25：GPU-GUI 修正 pilot 完成；项目默认 GUI 渲染后端 `auto` 已落地；RTF 与 headless 对齐，但 active FCO / 率类散布大，δ≤0.05、n≤40 下正式等价不可行；gate `not_evaluated`；headless 规模统计未授权）
@@ -143,3 +145,8 @@ pilot 已完成 20 个预声明 attempt（P1 `s15` / `p1_coop` / seed 5；P2 `s0
 - 前序 ADR：[ADR-0057](0057-c3-gui-acceptance-scope-authorization.md)、[ADR-0086](0086-decision-rule-three-state-ci-versus-mme.md)、[ADR-0088](0088-mme-change-governance-independent-justification-and-seed-isolation.md)、[ADR-0093](0093-w7b-exit-closure-and-prefix-provenance.md)、[ADR-0094](0094-uxrce-participant-warmup-and-px4-stagger.md)、[ADR-0095](0095-w7c-admission-metric-and-worker-run-dir-isolation.md)、[ADR-0007](0007-experiment-artifacts-convention.md)、[ADR-0064](0064-evidence-immutable-archive-and-intake-manifest.md)
 - 计划：[`w8_gui_headless_plan.yaml`](../../src/agc_rl/config/w8_gui_headless_plan.yaml)
 - spec：[`w8-parity-freeze`](../../.trae/specs/w8-parity-freeze/spec.md)
+
+<a id="measurement-amendment"></a>
+## 2026-10-26 测量 P2 修订边界
+
+[ADR-0099](0099-w8-fixed-budget-mission-fco-measurement.md#endpoints) 取代未来设计中的 co-primary 集合：固定预算任务 FCO、完整任务捕获成功率、超时率；active FCO / 可见率降为 secondary。旧计划和既有产物不回写；P3 须先实现新记录器，再预声明新设计、界限、n 与成本。当前不执行本 ADR 历史设计中的 go 规则，不授权 headless 规模统计。

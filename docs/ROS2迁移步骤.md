@@ -15,6 +15,7 @@
 2. 卡片的"验收"必须**可命令化判定**；不通过的 workstream 不得进入其下游。
 3. 完成一个 workstream，就在 [状态表](#status) 打勾。
 4. 遇到约束问题，查契约真源对应锚点，**不改约束、改实现**。
+5. Leader（DSH 高质量模型）主导、Worker（DSH 一般模型）实施的交接，按 [协作规则](../.coordination/README.md#protocol)、[交接与复用](../.coordination/README.md#auto-wake) 和 [当前交接](../.coordination/CURRENT.md#current) 进行；交接单引用本入口及对应规格，不另立执行路线。
 
 <a id="principles"></a>
 ## 1. 原则
@@ -40,7 +41,7 @@
 | **W5** | 地面导航与安全层 | W2·W4 | C6 | ✅ |
 | **W6** | 任务与评估 | W5 | C4·C5·C7·C8·C9 | ✅ |
 | **W7** | RL 平台 | W2-full·W4·W5·W6（已验收证据，[ADR-0069](./adr/0069-w7-entry-and-exit-definition.md)） | — | ✅ W7-b 已闭合（2026-10-24；W7-a ✅；W7-b **P1 v5 = `inconclusive`**（CI [+0.0281, +0.1328] 覆盖 MME 0.10；[ADR-0086](./adr/0086-decision-rule-three-state-ci-versus-mme.md) / [ADR-0071](./adr/0071-w7b-adjudication-record-and-pending-arms.md)(l)）；**P1 机制消融（2×2）已完成：收益主要来自"指向"，跟踪参考在静止目标下无收益且为负**（[ADR-0087](./adr/0087-p1-mechanism-ablation-and-p2-arm-b-diagnosis-scope.md)(f)）；P2 v3 = `falsified` → 保留 c2，且 B 负向已归因（重规划/窗口/干预/预测重尾，(d)）；P2 侧剩余消融显式范围裁定；W7-c `deferred`；W8 进行中（[spec](../.trae/specs/w8-parity-freeze/spec.md)）；见 [ADR-0093](./adr/0093-w7b-exit-closure-and-prefix-provenance.md)） |
-| **W8** | 对照与冻结 | W6·W7 | C1–C10（容差） | 进行中（W8-E1a 模式等价：pilot + GPU-GUI 修正 pilot 完成，项目默认 GPU-GUI `auto` 已落地，但 δ≤0.05 / n≤40 下等价不可行，gate `not_evaluated`，headless 未授权；W8-E1b 历史证据对照完成，平台冻结 `conditional`，`live_ros1_parity = not_established`；W8-E2 未预注册）· [spec](../.trae/specs/w8-parity-freeze/spec.md) |
+| **W8** | 对照与冻结 | W6·W7 | C1–C10（容差） | 进行中（W8-E1a 当前 gate `not_evaluable_as_specified`，测量 P1 重做见 [ADR-0098](./adr/0098-w8-determinism-probe-and-measurement-spec-change.md#redo)，测量 P2 已裁定（[ADR-0099](./adr/0099-w8-fixed-budget-mission-fco-measurement.md#metric)），P3 首轮阻塞，第二轮取证未验收，第三轮通用取证已审查、根因未定位；第 4 轮 runner 异常导致无效对照，第 5 轮部分修复未验收，第 6 轮部分修复仍未验收，第 7 轮部分修复未验收且真实 helper 越界，第 8/9 轮部分修复未验收，第 10 轮离线资源归属修复已验收，第 11/12 轮适配部分通过未验收，第 13 轮端口格式离线修复已验收，第 14 轮真实运行越界且入口未验收，第 15 轮配置/pin/入口 ABBA 部分通过，第 16/17 轮入口 owner 收口已验收、旧任务已结档；新四步验证恢复链 S1 第1轮取证已审查、四例无接收，第2轮离线分层诊断已验收，第3轮 T1 分层微观测已派发（[规格](../.trae/specs/w8-validation-recovery/spec.md#round3)），工程验证继续阻塞（[范围](../.trae/specs/w8-measurement-p3/spec.md#infra-diagnosis)），headless 未授权；W8-E1b 历史证据对照完成，平台冻结 `conditional`，`live_ros1_parity = not_established`；W8-E2 未预注册）· [spec](../.trae/specs/w8-parity-freeze/spec.md) |
 
 ### 依赖图
 
@@ -50,10 +51,10 @@ W0 ─┬─> W1 ─────────┐
     └─> W2 ─┬───────┘
             ├─> W3 空中链路
             └─> W4 感知融合 ─┐
-                             └─> W5 地面导航 ──> W6 任务评估 ──> W7 RL 平台（W7-a/W7-b 已闭合；W7-c deferred）──> W8 对照与冻结（进行中：E1a gate not_evaluated；E1b conditional freeze）
+                             └─> W5 地面导航 ──> W6 任务评估 ──> W7 RL 平台（W7-a/W7-b 已闭合；W7-c deferred）──> W8 对照与冻结（进行中：E1a gate not_evaluable_as_specified；E1b conditional freeze）
 ```
 
-> **当前范围**：W6 出口（[ADR-0016](./adr/0016-execution-scope-exit-w6.md)）已完成；W7 已闭合（W7-c `deferred`，单 worker）；W8 进行中（E1a gate `not_evaluated`、E1b 平台冻结 `conditional`、E2 未预注册）。W5 的地面主控**维持 [ADR-0004](./adr/0004-rl-primary-controller-nav2-safety-layer.md)**，本次以 **RL 最小版**落地；研究主线见 [ADR-0014](./adr/0014-research-mainline-mobile-interception-system.md)。
+> **当前范围**：W6 出口（[ADR-0016](./adr/0016-execution-scope-exit-w6.md)）已完成；W7 已闭合（W7-c `deferred`，单 worker）；W8 进行中（E1a gate `not_evaluable_as_specified`、E1b 平台冻结 `conditional`、E2 未预注册）。W5 的地面主控**维持 [ADR-0004](./adr/0004-rl-primary-controller-nav2-safety-layer.md)**，本次以 **RL 最小版**落地；研究主线见 [ADR-0014](./adr/0014-research-mainline-mobile-interception-system.md)。
 
 ---
 
@@ -153,6 +154,66 @@ W0 ─┬─> W1 ─────────┐
   - **补充（2026-10-25 单 worker 重复性诊断与隔离）**：新增 [ADR-0095](./adr/0095-w7c-admission-metric-and-worker-run-dir-isolation.md)，准入 primary 改用 **active-window FCO**（`episode_window_metrics`），legacy 固定窗仅作描述；C4 的“不准入 / 保留单 worker”记录保留，不回溯改判（legacy `vis_rate=0.2292` 与 active 口径不可比）。预声明分析计划 `src/agc_rl/config/w7c_admission_plan.yaml`（sha256 `9d7000…d710`）在任何对照 run 前冻结。PX4 可写运行目录隔离已落地：`px4_run_root` + 每实例 `-w` + 私有 `etc`（锁脚本 `AGC_PX4_ETC_DIR`）；smoke `20261025-w7-rl-b-smoke-isolation` → `INTERCEPT_CONFIRMED`、infra 0、共享 build 零写入、私有 `instance_0/1` 各有 `dataman` / `parameters*.bson` / `.ulg`。A/B 交替系列 `20261025-w7-rl-b-repeat-ab`：A 3/3 `INTERCEPT_CONFIRMED`；B1/B2 `INTERCEPT_CONFIRMED`、B3 **`INFRA_FAILURE`（`cmd_vel_loopback_missing`，ground lifecycle 未 activate）**；B 的 3 次共享 build 均零写入；B1/B2 active 窗口 / active 可见率在 A 范围内，A/B 门因 B3 infra（1 > A 0）与终态类别不一致 **未通过**。按预声明计划**不启动 P 两 worker 重试，显式保留单 worker**；W7-c 仍 `deferred`，W8 未开始。诊断报告 `experiments/w7-rl-b/20261025-w7-rl-b-repeat-ab-diagnosis/metrics/worker_repeatability.md`；GUI/headless 复核 `20261025-w7-rl-b-gui-headless-recheck/metrics/gui_headless.md` 结论为**等价未建立 / 证据不足**；**P1/P2 verdict 不变**。
 
 ### W8 · 对照与冻结（进行中：W8-E1 模式等价阶段）
+
+- **验证恢复第23轮审查 / 第24轮派工（2026-10-28，Leader接管）**：原Worker因限流连续中断，Leader接管执行。A首次0 participant路径错误后按协议修复；修复A运行但XSD通过的log profile触发Fast DDS运行时XMLPARSER Error，故无discovery日志证据。B address-only `ROS_STATIC_PEERS=127.0.0.1`有效阴性，后起方仍0/0/0；port==0消费语义未完全闭合。58文件封存、tar SHA `748ad620…`、43732项基线漂移0。第24轮必须由新Worker先修复日志机制/闭合port语义，T0不通过不跑T1；通过后只做一个pub-first日志观测，不重复无信息样本。S2/S3/S4/gate/headless/科研不变。
+
+- **验证恢复第22轮审查 / 第23轮派工（2026-10-28，Leader）**：第22轮A sub-first与B pub-first延长均valid，两顺序各n≥2；后起sub在完整25.38s窗口内一次都未看到先起pub，慢发现在≤25s尺度排除。端口已按双endpoint fsync闸门双PID双时点采集（p0=7410/7411、p1=7412/7413、无7400、inode不变），端口绑定层无不对称；rcl→rmw交接点定位到`rmw_discovery_options_t`。55文件封存与43671项基线复核通过。仅派[第23轮发现通告机制判别](../.trae/specs/w8-validation-recovery/spec.md#round23)：T0定位discovery日志启用机制与ROS_STATIC_PEERS语义，T1两例均pub-first——A仅加discovery日志观测通告发出/收到/拒绝，B仅给后起方显式initial peer指向先起方metatraffic unicast；判读区分发送层/路径接收层/处理层与注入后可发现/仍不可发现，诊断条件下恢复不得称工程恢复。S2/S3/S4/gate/headless/科研不变。
+
+- **验证恢复第21轮审查 / 第22轮派工（2026-10-28，Leader）**：第21轮A pub-first与B sub-first均valid，后启动参与者在完整8.002s窗口中看不到先启动参与者，形态随启动顺序而非角色翻转；第20轮pub-first同结果使该顺序n=2。端口T0因快照早于后起endpoint_created 543ms而不完整，不能支持方向结论；55文件封存与43610项基线复核通过。仅派[第22轮sub-first重复与延长窗口发现判别](../.trae/specs/w8-validation-recovery/spec.md#round22)：A sub-first同窗重复，B pub-first将后起sub窗口延长约25s，双endpoint建立后补采双PID端口；若延长仍单向且两顺序n≥2，第23轮再授权发现通告/locator诊断。本轮不改传输配置。S2/S3/S4/gate/headless/科研不变。
+
+- **验证恢复第20轮审查 / 第21轮派工（2026-10-28，Leader）**：第20轮修复回收锚定后，当前boot/domain0/LOCALHOST/default下rclpy pub-first完整窗口正式复现历史单向形态：pub侧graph_sub=1、matched=1，sub侧8.01s全程graph_pub=0、matched=0、heard=0；40文件封存与43564项基线复核通过。单侧结果支持发现通告方向分支，但不是根因、不是UDPv4/SHM结论。仅派[第21轮单向发现形态稳定性与方向性对照](../.trae/specs/w8-validation-recovery/spec.md#round21)，A重复pub-first、B翻转sub-first，T1两次/45min，并做发现端口T0观测与Fast DDS LOCALHOST机制离线研究；本轮不改传输配置。S2/S3/S4/gate/headless/科研不变。
+
+- **验证恢复第19轮审查 / 第20轮派工（2026-10-28，Leader）**：第19轮A（rclpy↔rclpy默认传输）因Worker驱动回收竞态invalid——driver按spawn计时而probe按自身启动计时，170.5ms source偏差使SIGINT打在spin窗口内、result未写；B/C按门未执行，无UDPv4/数据面结论。非权威partial观测显示pub侧matched=1、sub侧7.42s全0，属历史单向形态但窗口截断不作发现。38文件封存与43520项基线复核通过。仅派[第20轮修复回收竞态并重做rclpy跨进程基线](../.trae/specs/w8-validation-recovery/spec.md#round20)，离线守卫通过后重做A，T1两次/45min；UDPv4分支本轮不开放。S2/S3/S4/gate/headless/科研不变。
+
+- **验证恢复第18轮审查 / 第19轮派工（2026-10-28，Leader）**：当前boot/domain0/LOCALHOST的stock↔rclpy两方向均graph/endpoint可见、matched=1持续但零送达；C0同进程heard=59，类型hash/QoS兼容，断点下移至跨进程数据面/回调层。66文件封存与43448项基线复核通过；maps早采集、C0两次失败尝试和派生计数缺陷均披露并不改判。仅派 [第19轮跨进程数据面与UDPv4单变量对照](../.trae/specs/w8-validation-recovery/spec.md#round19)，A同boot rclpy↔rclpy默认，B/C纯UDPv4-only条件对照，T1三次/45min；显式授权UDPv4变量，不称永久修复。S2/S3/S4/gate/headless/科研不变。
+
+- **验证恢复第17轮审查 / 第18轮派工（2026-10-28，Leader）**：历史stock阳性在当前boot/domain37/11键/直接exec下未复现，A有效阴性，B/C按停止门跳过；35文件封存与43405项新增漂移复核通过。第16/17轮间确认发生boot切换，不作根因归因，不新增domain0/探针结论。仅派 [第18轮stock↔rclpy混合端点分层观测](../.trae/specs/w8-validation-recovery/spec.md#round18)，C0控制后A/B两方向采集graph/matched/endpoint info/QoS/heard，T1三次/45min；S2/S3/S4/gate/headless/科研不变。
+
+- **验证恢复第16轮审查 / 第17轮派工（2026-10-28，Leader）**：官方stock在domain0的clean/继承环境均零接收，OS loopback UDP双向5/5；1926保护项无漂移，原始证据与封存验收通过。“仅自写探针失败”及本轮输出缓冲/listener早退/UDP整体不通被排除，DDS内部断点未定位。历史stock阳性与本轮存在domain/env/进程树不可比，仅派 [第17轮历史阳性复现与受控domain对照](../.trae/specs/w8-validation-recovery/spec.md#round17)，T1三次/45min；stock37失败即停止，成功后才同域检查既有探针。S2/S3/S4/gate/headless/科研不变。派工通知因原Worker属于另一父会话而失败，尚未领取；CURRENT为阻塞，待原父会话投递或用户裁定跨会话接续，不静默新建Worker。
+
+- **验证恢复第14轮审查 / 第15轮派工（2026-10-28，Leader）**：A正负控制与endpoint门控双向顺序取证验收通过，1865保护项/56文件封存通过；旧单向形态仍在，通信未恢复，仅排除后方启动时先方endpoint尚未创建，不排除DDS发现时序。仅派 [第15轮同版本机制核查](../.trae/specs/w8-validation-recovery/spec.md#round15)，T1=0、45min，给可区分候选不执行；S2/S3/S4/gate/headless/科研不变。
+
+- **验证恢复第13轮审查 / 第14轮派工（2026-10-28，Leader）**：A因编排模板误带--second于argparse阶段退出，0participant、B/C未执行，无通信结论；1843保护项/16文件封存通过。第14轮仅修新根编排并以真实parser做零ROS参数预检，通过后同轮 [T1三次A/B/C](../.trae/specs/w8-validation-recovery/spec.md#round14)，45min，无追加重跑；第12轮脚本与历史证据不改，S2/S3/S4/gate/headless/科研不变。
+
+- **验证恢复第12轮审查 / 第13轮派工（2026-10-28，Leader）**：helper身份与回收定点修复验收通过，1562保护项/275文件封存核验通过，结束离线返工。仅派 [第13轮真实A/B/C](../.trae/specs/w8-validation-recovery/spec.md#round13)，固定domain0/LOCALHOST，同进程正负控制后endpoint创建返回事件门控双向顺序，T1三次/45min；旧探针/证据只读，S2/S3/S4/gate/headless/科研不变。
+
+- **验证恢复第11轮审查 / 第12轮返工（2026-10-28，Leader）**：1343保护项/213文件封存通过，多数边界修复通过；helper回收传缺失预期身份、信号函数跳过比对且回收记录丢弃仍未闭合。仅派 [第12轮helper身份收口](../.trae/specs/w8-validation-recovery/spec.md#round12)，T1=0、45min，不扩其他诊断方向；真实A/B/C、S2/S3/S4未开放，gate/headless/科研不变。
+
+- **验证恢复第10轮审查 / 第11轮返工（2026-10-28，Leader）**：1322保护项/15文件封存通过，有限等待框架与门控后存活复核部分通过；独立反例发现坏事件末行/必填字段缺失被接受、身份缺失仍发信号，另有helper截止与失败RC丢失缺口。仅派 [第11轮离线收口](../.trae/specs/w8-validation-recovery/spec.md#round11)，T1=0、45min；真实A/B/C尚不放行，S2/S3/S4、gate/headless/科研结论不变。
+
+- **验证恢复第9轮审查 / 第10轮返工（2026-10-28，Leader）**：A因新探针记录函数参数冲突invalid，B/C未执行，无通信结论；1299保护项和17文件封存独立核验通过。驱动存在无界wait、A回收证据缺口及门控后存活检查缺口，先派 [第10轮离线返工](../.trae/specs/w8-validation-recovery/spec.md#round10)，T1=0、45min，新根修复不改旧证据；真实A/B/C另轮授权。S2/S3/S4、gate/headless/科研结论不变。
+
+- **验证恢复第 8 轮审查 / 第 9 轮派工（2026-10-28，Leader；用户授权）**：第8轮证据与封存核验通过，domain0下旧形态仍复现，关闭继续替换domain/discovery/transport名称的配置分支。第9轮仅派 [独立endpoint标记探针](../.trae/specs/w8-validation-recovery/spec.md#round9)：先同进程正负控制，再以endpoint创建API返回事件控制双向顺序；T1三次、45min。旧探针与历史证据不改，S2/S3/S4、gate、headless与科研结论不变。
+
+- **验证恢复第 7 轮审查 / 第 8 轮派工（2026-10-28，Leader）**：第7轮独立复核通过，SUBNET+静态peer+UDPv4仍复现旧形态，排除LOCALHOST分支的单独解释。项目既有记录提示非0 domain服务数据面异常，第8轮仅派 [domain0 LOCALHOST对照](../.trae/specs/w8-validation-recovery/spec.md#round8)，T1两次、45min；更正probe_start只是脚本启动标记而非participant就绪。S2/S3/S4、gate、headless与科研结论不变。
+
+- **验证恢复第 6 轮审查 / 第 7 轮派工（2026-10-28，Leader）**：第6轮独立复核通过，G/H同形，LOCALHOST下UDPv4环境变量未显示改善，G再次复现启动方向不对称；结束该变量分支，不归因SHM。第7轮仅派 [SUBNET下UDPv4双向顺序对照](../.trae/specs/w8-validation-recovery/spec.md#round7)，T1两次、45min，沿用同一Worker；S2/S3/S4、工程/设计、gate、headless与科研结论不变。
+
+- **验证恢复第 5 轮审查 / 第 6 轮派工（2026-10-28，Leader）**：第 5 轮原始证据与封存通过，但 OFF 不消费静态 peer，仅验收为配置语义负对照，不评价 UDPv4 有效性；回执 1203/实际1204及17.137/18.530 s 的更正均保留。第 6 轮仅派 [LOCALHOST 下 UDPv4 单变量对照](../.trae/specs/w8-validation-recovery/spec.md#round6)，T1 三次、45 min，沿用同一 Worker；S2/S3/S4、工程/设计、gate、headless 与科研结论不变。
+
+- **验证恢复第 5 轮派工（2026-10-28，Leader）**：第 4 轮启动顺序诊断已由前 Leader 独立验收，通信根因/可用配置仍阻塞。本轮仅派 [UDPv4 单播发现对照](../.trae/specs/w8-validation-recovery/spec.md#round5)，T1 两次、45 min，沿用同一任务链；S2/S3/S4 仍关闭，工程/设计、gate、headless 与科研结论不变。
+
+- **验证恢复第二轮派工（2026-10-27，Codex）**：用户要求开展第二轮；第一轮取证有效但四组均无接收，通信未恢复。本轮仅同版本源码/官方资料核查及最小分层取证方案，45 min、0 ROS/构建/仿真，候选执行另轮派发；见 [规格](../.trae/specs/w8-validation-recovery/spec.md#round2) 与 [派工](../.coordination/task/20261027-001-w8-validation-recovery/round-2/request.md#round2)。S2/S3/S4仍关闭，工程/设计阻塞，原gate/headless/科研结论不变。
+- **验证恢复第二轮审查与第三轮派工（2026-10-27，Codex）**：第2轮离线诊断已独立验收。其静态证据确认匹配成功日志在本机 release 库中不可观测，并指出 LOCALHOST 分支使第一轮 A/B transport 变量很可能未生效；通信仍未恢复。第3轮仅授权 `T1: 2 次` 分层微观测（同进程正/负控制，条件跨进程对照），A 失败不得归因环境整体；见 [审查](../.coordination/task/20261027-001-w8-validation-recovery/round-2/review.md#round2-review)、[派工](../.coordination/task/20261027-001-w8-validation-recovery/round-3/request.md#round3)。S2/S3/S4仍关闭，工程/设计阻塞，原gate/headless/科研结论不变。
+
+- **2026-10-27 新验证恢复链（Codex，来源：用户授权四点推进）**：前任务 R17 离线入口 owner 收口已验收并结档。按 [四步规格](../.trae/specs/w8-validation-recovery/spec.md#stages) 依次进行官方通信、节点测量、两场 GUI、设计裁定；当前只派 S1 一次 ABBA/最多4例/0重试，后续逐轮验收派发。真实通信根因未知，原 P3 工程/设计未验收，gate/headless/科研 P1/P2 不变。当前交接只见 [CURRENT](../.coordination/CURRENT.md#current)，不以离线152项通过代表真实通信恢复。
+
+- **验证恢复第三轮审查与第四轮派工（2026-10-27，Codex）**：第3轮 T1 证据已独立验收。A 正/负控制有效；B 跨进程出现单向发现、单向 matched 与零消费，单次且存在启动顺序差，不能定位根因。第4轮只授权 pub-first/sub-first 两次 T1 顺序对照，固定其余配置；自动叫醒链已达4/4，DSH 若回报后被守卫拒绝须保留退出码4。见 [审查](../.coordination/task/20261027-001-w8-validation-recovery/round-3/review.md#round3-review)、[派工](../.coordination/task/20261027-001-w8-validation-recovery/round-4/request.md#round4)。S2/S3/S4仍关闭，工程/设计阻塞，原gate/headless/科研结论不变。
+
+> **当前测量状态（2026-10-26）**：E1a gate = `not_evaluable_as_specified`，依据 [ADR-0098](./adr/0098-w8-determinism-probe-and-measurement-spec-change.md#decision)。测量 P1 独立重做见 [spec](../.trae/specs/redo-w8-determinism-probe/spec.md#scope)；测量 P2 已完成（[ADR-0099](./adr/0099-w8-fixed-budget-mission-fco-measurement.md#metric)），P3 **部分执行、阻塞**（R2 节点级合成未通过、R3 GUI 未执行；见下条，[规格](../.trae/specs/w8-measurement-p3/spec.md#scope)），headless 规模统计未授权。下列 2026-10-25 的 `not_evaluated` 为历史 pilot 状态。
+
+- **测量 P3 第 14 轮审查 / 第 15 轮派工（2026-10-27）**：R14 未验收，实际授权入口越界启动 ROS；无 pytest/入口测试/guard/封存。A1 库名不符 invalid、后三例未执行，无通信结论，原件保留；实际约 4 s 提前收尾、DSH 更名基线变化及时间纠正见 [审查](../.coordination/task/review.md#round14-evidence)。下一步仅 [入口离线返工](../.trae/specs/w8-measurement-p3/spec.md#round15-entry-rework)，修固定 canonical 库配置/默认 pin 来源/main owner 并补完整离线证据。0 ROS/通信/活动扫描/真实被测进程/helper/工程/仿真，不清共享资源；R13 验收保持。入口通过后另派真实通信；原工程/设计阻塞、通信根因未知，gate/headless/P1/P2 不变。
+- **测量 P3 第 13 轮审查 / 第 14 轮派工（2026-10-27，历史）**：端口格式离线修复验收通过；独立坏表拒绝、官方内核合法布局、边界和 ABBA 核实，115 项原始测试、902 路径保护、21 文件归档及预算相符，见 [审查](../.coordination/task/review.md#round13-evidence)。下一步仅 [真实运行入口准备与离线验证](../.trae/specs/w8-measurement-p3/spec.md#round14-entry)，0 ROS/通信/活动扫描/真实被测进程/helper/工程/仿真。入口通过后另派真实通信；原工程/设计阻塞、通信根因未知，gate/headless/P1/P2 不变。
+- **测量 P3 第 12 轮审查 / 第 13 轮派工（2026-10-27，历史）**：94 项原始测试、878 路径保护、21 文件归档及预算核实；独立 pin、日志有效性/归属与最终来源修复通过，整轮未验收。残缺端口表头和非法地址/端口记录仍被放行，见 [审查](../.coordination/task/review.md#round12-evidence)。只派 [端口表格式收口](../.trae/specs/w8-measurement-p3/spec.md#round13-udp-rework)，0 ROS/通信/真实扫描/helper/工程/仿真；R12 epoch 实差 828.480140249 s（旧回报多算 100 s），旧证据不改。通信根因未知，原工程/设计继续阻塞，gate/headless/P1/P2 不变。
+- **测量 P3 第 11 轮审查 / 第 12 轮派工（2026-10-27，历史）**：79 项最终原始测试、851 路径保护、24 文件归档与预算核实；整轮未验收。独立反例发现空/无头端口表漏检、observed 自动作为 binary pin、损坏日志误计零接收、其他 case 日志误计成功，且最终来源元数据丢失，见 [审查](../.coordination/task/review.md#round11-evidence)。只派 [适配定点离线返工](../.trae/specs/w8-measurement-p3/spec.md#round12-adapter-rework)，0 ROS/通信/真实 helper/工程/仿真；R10 owner 修复不重开，通信根因未知、原工程/设计继续阻塞，gate/headless/P1/P2 不变。
+- **测量 P3 第 10 轮审查 / 第 11 轮派工（2026-10-27，历史）**：批返回/GC 后实际 owner 转交、恢复释放、独立清理与磁盘/回执一致性通过；55 项原始测试、835 路径保护及 13 文件归档核实，结束该项离线返工，见 [审查](../.coordination/task/review.md#round10-evidence)。随后仅派 [运行适配候选](../.trae/specs/w8-measurement-p3/spec.md#round11-adapter)，CLI 拒绝真实运行，0 ROS/真实 helper/工程/仿真；通信根因未知，P3 工程/设计仍未验收，原 gate/headless/P1/P2 不变。
+- **测量 P3 第 9 轮审查（2026-10-27）**：52 passed 原始日志/最终指纹、819 路径保护及 13 文件归档核验通过；四个最终读回 OSError/JSONDecodeError 的瞬时/持续失败收尾与 batch receipt 首次失败后的返回/盘面/回执 3/3/3 经独立检查成立。整轮未验收：run_case 有实际 owner，但 run_batch 丢弃 owner，持续 close 失败 handle 在批返回/GC 后不可达，见 [审查](../.coordination/task/review.md#round9-evidence)。只派 [第 10 轮](../.coordination/task/request.md#round10) 补该归属转交；0 ROS/真实 helper/工程/仿真，通信根因未知，工程阻塞、原 gate/headless/P1/P2 不变。
+- **测量 P3 第 8 轮审查（2026-10-27）**：43 passed 原始日志/最终指纹、804 路径保护及 12 文件封存核验通过；端点记录、慢回执/真正慢读回超期拒绝、二进制/库身份、未知 variant 修复成立。整轮仍未验收：实际句柄归属丢失、读回异常遗留成功盘面、batch 回执首次失败后返回 3/磁盘及回执 0，见 [审查](../.coordination/task/review.md#round8-evidence)。只派 [第 9 轮](../.coordination/task/request.md#round9) 闭合这三项；0 ROS/真实 helper/工程/仿真，通信根因未知，工程阻塞、原 gate/headless/P1/P2 结论不变。
+- **测量 P3 第 7 轮审查（2026-10-27）**：797 路径保护基线通过；两次测试共 4 次真实 helper（授权 0），最终删除 helper 后的 33 项未重跑、未封存。假进程复现端点记录缺失、case/batch 慢回执越限仍成功、预期二进制未绑定及未知 variant 磁盘非终态，详见 [独立审查](../.coordination/task/review.md#round7-evidence)。整轮未验收，只派 [第 8 轮有限离线返工](../.coordination/task/request.md#round8)，不启动 ROS/真实 helper/工程/仿真；通信根因未知，工程继续阻塞、原 gate 与科研结论不变。
+- **测量 P3 派工基线（2026-10-26，历史）**：先完成 [证据与版本边界裁定](./adr/0101-w8-seed-evidence-and-p3-execution-boundary.md#evidence)；派工时 PX4 binary pin 校验 24 PASS / 1 FAIL，seed 实施未验收。按 [P3 规格](../.trae/specs/w8-measurement-p3/spec.md#scope) 先补前置构建/测试/版本取证，再实现记录器并作最多两次指定 GUI 工程验证，交回新设计草案；正式等价/新 pilot 未授权。派工前未启动新 run，gate 不变。本轮实际结果见下条。
+- **测量 P2 完成（2026-10-26）**：指标口径见 [ADR-0099](./adr/0099-w8-fixed-budget-mission-fco-measurement.md#metric)；active FCO / 可见率降为过程指标，新固定预算指标尚需 P3 实现及验证。只读审计与科研 P2 v3 敏感性复算完成，历史 verdict 不变；未启动新 run。下一执行规格覆盖 [P3 待办](./adr/0099-w8-fixed-budget-mission-fco-measurement.md#next)。
+- **测量 P1 重做完成（2026-10-26）**：同 s15 / p1_coop / seed5 / full / headless 串行 n=5，5/5 捕获、批次 infra=0；active FCO 极差 0.071010、窗口极差 33.484 s，观察到执行级散布。旧 5 次计数复算一致，补记遗漏的启动失败；计划 / 脚本 / 原始证据见 [ADR-0098](./adr/0098-w8-determinism-probe-and-measurement-spec-change.md#redo)。P1/P2 科研 verdict 保持不变。
+- **测量 P3 部分执行（2026-10-26，阻塞）**：R1 完成——checker 扩展 `local_patches` 后 **41 PASS / 0 FAIL**，GPS 模块由补丁源码强制重编（exit 0）并显式更新 binary pin；生产 `SensorGpsSim` RNG harness 13 项、checker 正负例 7 项通过。R2 完成独立积分器 + `run_logger` 字段/区间账 + 手算 gtest 12/12 + 只读审核器 6/6。**节点级合成测试与 R3 GUI 未通过/未执行**：执行者怀疑 C++ DDS 发现问题，但 stock demo 对照缺原始命令/双端日志，根因尚未证实；已确认节点测试匹配数为 0，0 GUI attempts。R4 草案已交回 `draft_pending_codex_review`，按现行 40/模式、6 h/场景 cap 判 **`infeasible_as_specified`**（率类 co-primary n≈190–393/模式；FCO 单指标 δ=0.10 需 36/模式但等于 MME，依据待裁）。gate 仍 `not_evaluable_as_specified`，headless 未授权；P1/P2 verdict 不变。
 - **目标**：新旧实现同场景、同种子各跑 N 次；出对比报告；ROS1 归档只读。
 - **验收**：频率 / 数值差异在容差内；终态语义一致。
 - **挂载**：C1–C10 全量容差复核。
@@ -265,7 +326,22 @@ W0 ─┬─> W1 ─────────┐
 | `docs/adr/` | 架构决策记录 |
 | `docs/conventions/` | 工程规范（W0 产出） |
 | `.trae/specs/<ws>/` | per-workstream 规格三件套 |
+| `.coordination/` | Leader / Worker 交接单、执行回报与审查记录；仅交接状态，不承载项目进度真源 |
 | `src/` | ROS2 包（`agc_msgs`·`agc_sim`·`agc_control`·`agc_air`·`agc_perception`·`agc_ground`·`agc_task`·`agc_rl` + 第三方 `px4_msgs`） |
 | `experiments/` | 实验产物唯一落点 |
 | `reference/` | 归档旧树（只读） |
 | `toolchain/` | 外部仓库 / 工具链 |
+
+- **P3 阻塞复核（2026-10-26，Codex）**：首轮未验收，第二轮只做 [通用 ROS 2 通信取证](../.trae/specs/w8-measurement-p3/spec.md#infra-diagnosis)，暂不恢复工程节点或仿真。已独立核对 tar 的 49 个文件及哈希；工作目录归档输出日志与 manifest 的打包后漂移另留侧车。审查与返工范围见 [交接审查](../.coordination/task/review.md#round1-evidence)。实现、设计与原有 gate 不因这次基础设施诊断获验收或改变。
+
+- **P3 第二轮复核（2026-10-26，Codex）**：五组官方 demo 通信观察与 43 文件最终归档完整性已核实；真实 listener 跨例残留、逐例超限，整轮未验收。第三轮仅做通用诊断进程管理/证据更正与至多一次官方 demo 对照，见 [规格](../.trae/specs/w8-measurement-p3/spec.md#round3-correction) 与 [审查](../.coordination/task/review.md#round2-evidence)；工程验证继续暂停，既有 gate 不变。
+
+- **P3 第三轮复核（2026-10-26，Codex）**：官方 demo 真实端点 12.152 秒内回收、最终 12 文件归档核对通过，单次 C++ 对照仍未观察到接收。总诊断预算/封存覆盖和时钟推断限制见 [审查](../.coordination/task/review.md#round3-evidence)；停止追加运行，后续先离线形成区分假说的最小方案再派工。当前任务阻塞，未恢复项目工程验证，gate 不变。
+
+- **P3 第四轮派工（2026-10-26，Codex）**：先完成成功/失败离线比较与精确版本官方做法核查，见 [分析](../experiments/ros2-diagnostics/20261026-p3-r4/report/offline_comparison.md#analysis)；仅新授权官方 C++ talker/listener 的默认/UDPv4 ABBA 通用对照，见 [规格](../.trae/specs/w8-measurement-p3/spec.md#round4-transport)。未运行、未验收；工程继续阻塞，原 gate 不变。
+
+- **P3 第四轮复核 / 第五轮派工（2026-10-26，Codex）**：A1 runner 关闭已关闭日志抛异常，快照丢失，后 3 例未运行；19 文件封存核对通过，传输对照无效。见 [审查](../.coordination/task/review.md#round4-evidence)。仅派 [通用 runner 离线修复及故障注入](../.trae/specs/w8-measurement-p3/spec.md#round5-offline-runner)，不授权 ROS demo 新 attempt，工程继续阻塞、gate 不变。
+
+- **P3 第五轮复核 / 第六轮返工（2026-10-26，Codex）**：10 文件归档与 772 路径保护基线核对通过；18 passed 不能证明失败退出、统一期限、资源归属与实际校验闭合。helper 可核实 4 次、台账仅后两次，历史不补造。见 [审查](../.coordination/task/review.md#round5-evidence)。只派 [离线 runner 返工](../.trae/specs/w8-measurement-p3/spec.md#round6-offline-rework)，0 ROS/通信/工程/仿真 attempts，工程继续阻塞、gate 不变。
+
+- **P3 第六轮复核 / 第七轮返工（2026-10-26，Codex）**：785 路径与 9 文件归档通过；24 passed 未覆盖全部失败路径，假进程检查复现写盘/期限后启动、非零退出误成功、登记窗口及库路径缺口。helper 两轮共 4 次、仅后两次台账保留，不补造历史。见 [审查](../.coordination/task/review.md#round6-evidence)。只派 [定点离线返工](../.trae/specs/w8-measurement-p3/spec.md#round7-offline-rework)，0 ROS/真实 helper/工程/仿真，原 gate 不变。
