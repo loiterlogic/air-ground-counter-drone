@@ -124,7 +124,7 @@
 | [0101](./0101-w8-seed-evidence-and-p3-execution-boundary.md) | W8：种子证据、版本边界与测量 P3 派工 | accepted（2026-10-26；证据分类及执行范围已裁定，P3 实施待执行、待 Codex 审查） | 承接 [上轮交接审查](../../.coordination/archive/20261026-001-handoff-baseline/review.md#review)；补充 [ADR-0100](0100-full-chain-seed-protocol.md#scope) 的证据边界，以… |
 | [0102](./0102-leader-worker-dual-model-handoff.md) | 协作机制：Leader/Worker 双模型替代 Codex+DSH | accepted（2026-10-28，来源：用户裁定；配置已实施，端到端验收待新 Leader 会话完成） | 改用**同一 DSH 进程内的双模型分工**： |
 | [0103](./0103-vision-perception-decision-path.md) | 视觉识别接入任务决策路径（真值派生 → 视觉驱动） | accepted（2026-10-29，来源：用户裁定——"要接进任务决策（用视觉替代真值感知）"） | *新增"视觉驱动感知路径"作为与真值派生并行的第二条决策输入路径，二者互斥选择、显式标注、不可混读。** |
-| [0104](./0104-batch-authorization-and-stall-circuit-breaker.md) | 批次授权：以唤醒次数为成本单元替代逐轮审查 | accepted（2026-10-29，来源：用户裁定——"leader 的 tokens 消耗负担不起，worker 的消耗再多也无所谓，主要是 worker 权限和自由度太低"） | *成本单元从"轮次"改为"唤醒次数"**，具体四改： |
+| [0104](./0104-batch-authorization-and-stall-circuit-breaker.md) | 批次授权：以唤醒次数为成本单元替代逐轮审查 | accepted（2026-10-29，来源：用户裁定——"leader 的 tokens 消耗负担不起，worker 的消耗再多也无所谓，主要是 worker 权限和自由度太低"；2026-10-29 P0-5 追加修订，见文末"修订（P0-5 实测后）"，不改前文正文） | *成本单元从"轮次"改为"唤醒次数"**，具体四改： |
 | [0105](./0105-retire-trae-and-relocate-specs-skills.md) | 退役 Trae：规格迁入 `docs/archive/specs/`、技能迁入 `.agents/skills/` | accepted（2026-10-29，来源：用户裁定——"完成 P0-3；以后不再用 Trae"，并明确要求把 specs 迁出、把 4 个技能迁到 `.agents/skills` 并适配当前 Harness） | ### (a) 规格整体迁到 `docs/archive/specs/`，仍然不发布 |
 
 ## 相关

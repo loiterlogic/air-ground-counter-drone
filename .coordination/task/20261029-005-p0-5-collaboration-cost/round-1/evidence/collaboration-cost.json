@@ -1,0 +1,513 @@
+{
+  "schema": "agc.collab-cost/1",
+  "task": "20261029-005-p0-5-collaboration-cost",
+  "round": 1,
+  "generated_at": "2026-10-29T06:00:09Z",
+  "snapshot_note": "Leader 会话在生成后仍会追加（审查本报告等）；totals/per_turn 仅代表快照时刻。",
+  "source_authority": "Leader 派工单 round-1/request.md；用户授权连续完成 P0-3/P0-4/P0-5，P0-5 主要复用前两项证据。",
+  "scope_tasks": [
+    "20261029-003-p0-3-docs-and-skills",
+    "20261029-004-p0-4-script-curation"
+  ],
+  "method": {
+    "data_source": "本机 ~/.dsh/sessions/--home-chen-AGC--/<session>/session.v4.jsonl.zstd（多帧 zstd，按 0x28B52FFD 切帧后逐行 JSON）与 ~/.dsh/storages/session_projcache/sessions/<session>.json 的 tokenUsage.totals",
+    "cross_check": "两路独立读取：逐 assistant/message.usage 求和 == projcache tokenUsage.totals，三个会话均一致",
+    "observed_fields": "role / turn / step / time / usage{inputTokens,cacheReadTokens,outputTokens,reasoningTokens} / 消息来源类型；不含消息正文",
+    "privacy": "未输出任何消息正文、密钥或全局配置；未读取无关用户会话；未改宿主状态或配置",
+    "not_counted": [
+      "用户侧客户端与网络开销",
+      "W8 历史会话（不在本次只读名单）",
+      "本任务（P0-5）自身 Worker 会话——另见 p0_5_self_snapshot（快照，未并入 P0-3/P0-4 对照）"
+    ]
+  },
+  "sessions": {
+    "leader": {
+      "transcript": {
+        "path": "~/.dsh/sessions/--home-chen-AGC--/session-ba311a76-c26e-4589-9ae5-20489d8a61ea/session.v4.jsonl.zstd",
+        "bytes": 686784,
+        "mtime_utc": "2026-10-29T05:40:16Z"
+      },
+      "totals": {
+        "steps": 110,
+        "uncached_input": 3283149,
+        "cache_read": 18866816,
+        "output": 36033
+      },
+      "per_turn": [
+        {
+          "turn": 1,
+          "start": "2026-10-29T01:45:23Z",
+          "end": "2026-10-29T01:49:14Z",
+          "end_reason": "completed",
+          "causes": [],
+          "steps": 13,
+          "uncached_input": 37757,
+          "cache_read": 353792,
+          "output": 4642
+        },
+        {
+          "turn": 2,
+          "start": "2026-10-29T02:14:06Z",
+          "end": "2026-10-29T02:18:53Z",
+          "end_reason": "completed",
+          "causes": [],
+          "steps": 17,
+          "uncached_input": 78415,
+          "cache_read": 1052672,
+          "output": 6289
+        },
+        {
+          "turn": 3,
+          "start": "2026-10-29T02:19:53Z",
+          "end": "2026-10-29T02:23:46Z",
+          "end_reason": "completed",
+          "causes": [],
+          "steps": 11,
+          "uncached_input": 15543,
+          "cache_read": 954368,
+          "output": 4703
+        },
+        {
+          "turn": 4,
+          "start": "2026-10-29T02:36:16Z",
+          "end": "2026-10-29T02:40:48Z",
+          "end_reason": "completed",
+          "causes": [],
+          "steps": 16,
+          "uncached_input": 121016,
+          "cache_read": 1711616,
+          "output": 5930
+        },
+        {
+          "turn": 5,
+          "start": "2026-10-29T02:48:02Z",
+          "end": "2026-10-29T02:49:12Z",
+          "end_reason": "error",
+          "causes": [],
+          "steps": 4,
+          "uncached_input": 130053,
+          "cache_read": 372736,
+          "output": 1157
+        },
+        {
+          "turn": 6,
+          "start": "2026-10-29T02:50:47Z",
+          "end": "2026-10-29T02:50:48Z",
+          "end_reason": "error",
+          "causes": [],
+          "steps": 0,
+          "uncached_input": 0,
+          "cache_read": 0,
+          "output": 0
+        },
+        {
+          "turn": 7,
+          "start": "2026-10-29T02:51:16Z",
+          "end": "2026-10-29T02:56:16Z",
+          "end_reason": "completed",
+          "causes": [],
+          "steps": 18,
+          "uncached_input": 920552,
+          "cache_read": 3939456,
+          "output": 4406
+        },
+        {
+          "turn": 8,
+          "start": "2026-10-29T04:27:33Z",
+          "end": "2026-10-29T04:29:19Z",
+          "end_reason": "completed",
+          "causes": [],
+          "steps": 5,
+          "uncached_input": 453738,
+          "cache_read": 1193216,
+          "output": 828
+        },
+        {
+          "turn": 9,
+          "start": "2026-10-29T04:59:51Z",
+          "end": "2026-10-29T05:01:29Z",
+          "end_reason": "completed",
+          "causes": [],
+          "steps": 6,
+          "uncached_input": 266013,
+          "cache_read": 2029312,
+          "output": 1283
+        },
+        {
+          "turn": 10,
+          "start": "2026-10-29T05:09:42Z",
+          "end": "2026-10-29T05:13:17Z",
+          "end_reason": "completed",
+          "causes": [],
+          "steps": 10,
+          "uncached_input": 411814,
+          "cache_read": 3579264,
+          "output": 3181
+        },
+        {
+          "turn": 11,
+          "start": "2026-10-29T05:37:20Z",
+          "end": "2026-10-29T05:40:16Z",
+          "end_reason": "completed",
+          "causes": [],
+          "steps": 10,
+          "uncached_input": 848248,
+          "cache_read": 3680384,
+          "output": 3614
+        }
+      ]
+    },
+    "worker_p0_3": {
+      "transcript": {
+        "path": "~/.dsh/sessions/--home-chen-AGC--/9954c123-203e-4de7-955c-d7d9efc02adf/session.v4.jsonl.zstd",
+        "bytes": 1359209,
+        "mtime_utc": "2026-10-29T05:09:48Z"
+      },
+      "totals": {
+        "steps": 332,
+        "uncached_input": 360977,
+        "cache_read": 53736192,
+        "output": 171827
+      },
+      "per_turn": [
+        {
+          "turn": 1,
+          "start": "2026-10-29T02:54:06Z",
+          "end": "2026-10-29T02:54:07Z",
+          "end_reason": "error",
+          "causes": [],
+          "steps": 0,
+          "uncached_input": 0,
+          "cache_read": 0,
+          "output": 0
+        },
+        {
+          "turn": 2,
+          "start": "2026-10-29T02:54:48Z",
+          "end": "2026-10-29T02:54:49Z",
+          "end_reason": "error",
+          "causes": [],
+          "steps": 0,
+          "uncached_input": 0,
+          "cache_read": 0,
+          "output": 0
+        },
+        {
+          "turn": 3,
+          "start": "2026-10-29T04:29:01Z",
+          "end": "2026-10-29T05:00:05Z",
+          "end_reason": "completed",
+          "causes": [],
+          "steps": 271,
+          "uncached_input": 315181,
+          "cache_read": 38162816,
+          "output": 136043
+        },
+        {
+          "turn": 4,
+          "start": "2026-10-29T05:01:01Z",
+          "end": "2026-10-29T05:09:48Z",
+          "end_reason": "completed",
+          "causes": [],
+          "steps": 61,
+          "uncached_input": 45796,
+          "cache_read": 15573376,
+          "output": 35784
+        }
+      ]
+    },
+    "worker_p0_4": {
+      "transcript": {
+        "path": "~/.dsh/sessions/--home-chen-AGC--/18c3fa78-558e-4736-9efd-7189920a9910/session.v4.jsonl.zstd",
+        "bytes": 1044158,
+        "mtime_utc": "2026-10-29T05:37:29Z"
+      },
+      "totals": {
+        "steps": 196,
+        "uncached_input": 170086,
+        "cache_read": 20542592,
+        "output": 175709
+      },
+      "per_turn": [
+        {
+          "turn": 1,
+          "start": "2026-10-29T05:12:46Z",
+          "end": "2026-10-29T05:37:29Z",
+          "end_reason": "completed",
+          "causes": [],
+          "steps": 196,
+          "uncached_input": 170086,
+          "cache_read": 20542592,
+          "output": 175709
+        }
+      ]
+    }
+  },
+  "counters": {
+    "engineering_rounds": 3,
+    "notifications_worker_to_leader": 3,
+    "rounds_to_notifications_ratio": "3:3（=1:1）",
+    "round_detail": [
+      {
+        "task": "P0-3",
+        "round": 1,
+        "worker_turns": [
+          3
+        ],
+        "worker_start": "2026-10-29T04:29:01Z",
+        "worker_end": "2026-10-29T05:00:05Z",
+        "notified_at": "2026-10-29T04:59:51Z",
+        "kind": "里程碑",
+        "new_evidence": true,
+        "rework": false
+      },
+      {
+        "task": "P0-3",
+        "round": 2,
+        "worker_turns": [
+          4
+        ],
+        "worker_start": "2026-10-29T05:01:01Z",
+        "worker_end": "2026-10-29T05:09:48Z",
+        "notified_at": "2026-10-29T05:09:42Z",
+        "kind": "里程碑",
+        "new_evidence": true,
+        "rework": true
+      },
+      {
+        "task": "P0-4",
+        "round": 1,
+        "worker_turns": [
+          1
+        ],
+        "worker_start": "2026-10-29T05:12:46Z",
+        "worker_end": "2026-10-29T05:37:29Z",
+        "notified_at": "2026-10-29T05:37:20Z",
+        "kind": "里程碑",
+        "new_evidence": true,
+        "rework": false
+      }
+    ],
+    "runtime_settled_notices": 7,
+    "settled_notices_creating_extra_turn": 0,
+    "settled_notice_note": "measured: 7 次 subagent-settled 均落在 Leader 仍在运行的 turn 内（如 05:00:18、05:09:58、05:37:37），被并入当前 turn，未新增激活；若 Leader 已 idle，同类通知会真实唤醒，属潜在重复激活风险",
+    "rework_rounds": 1,
+    "zero_execution_turns": 2,
+    "zero_execution_detail": {
+      "trigger": "workbuddy 账号配额 429（RATE_WINDOW_EXCEEDED），非模型/路由/网络",
+      "worker_turns": [
+        {
+          "turn": 1,
+          "at": "2026-10-29T02:54:06Z",
+          "steps": 0
+        },
+        {
+          "turn": 2,
+          "at": "2026-10-29T02:54:48Z",
+          "steps": 0
+        }
+      ],
+      "leader_error_turns": [
+        {
+          "turn": 5,
+          "steps": 4,
+          "cache_read": 372736
+        },
+        {
+          "turn": 6,
+          "steps": 0,
+          "cache_read": 0
+        }
+      ],
+      "note": "不计入工程轮次；恢复由用户 04:27:33 触发"
+    },
+    "circuit_breaker": {
+      "K": 4,
+      "triggered": false,
+      "max_consecutive_no_new_evidence_rounds": 0,
+      "evidence_conditions": [
+        "3 个工程轮次各自产出可区分新证据：round-1 新增 2 工具/技能迁移/链接重算，round-2 修 6 项并补扫出 19 条技能断链，P0-4 新增索引 + 自动核对测试",
+        "Worker 报告与本级复核均无“又做了一次但无结论”的轮次",
+        "无 round 被记为无进展；距 K=4 差 4 轮"
+      ]
+    },
+    "n_consumption": {
+      "P0-3": "2 / 6",
+      "P0-4": "1 / 6"
+    },
+    "k_consumption": "0 / 4",
+    "t1": 0,
+    "t2": 0,
+    "batch_authorization_stress_tested": false,
+    "batch_authorization_note": "两个任务均在 1–2 轮内完成，批次内从未出现“Worker 自定下一轮且不唤醒”，N=6 的上限与 K=4 的熔断都未被压测；轮数:唤醒仍为 1:1",
+    "p0_4_deviations_preserved": [
+      {
+        "item": "离线检查次数",
+        "authorized": 18,
+        "observed": 32,
+        "disposition": "按当时授权记为越界；本任务修正护栏但不追溯豁免"
+      },
+      {
+        "item": "提交笔数",
+        "authorized": 4,
+        "observed": 7,
+        "disposition": "3 实质 + 1 结档 + 3 记录（后 2 笔为报告自身更正）；保留"
+      },
+      {
+        "item": "白名单外写入",
+        "detail": "docs/archive/specs/ 36 处纯链接修正",
+        "disposition": "ignored 目录、不入库；接受现状，不扩大为任意写入权限"
+      }
+    ]
+  },
+  "leader_cost": {
+    "session_totals": {
+      "steps": 110,
+      "uncached_input": 3283149,
+      "cache_read": 18866816,
+      "output": 36033
+    },
+    "wake_attribution": [
+      {
+        "wake": 1,
+        "turn": 9,
+        "activity": "审查 P0-3 第1轮 → 判 6 项定点返工并派 round-2",
+        "source": "worker send_message 2026-10-29T04:59:51Z",
+        "steps": 6,
+        "cache_read": 2029312,
+        "avg_cache_read_per_step": 338219
+      },
+      {
+        "wake": 2,
+        "turn": 10,
+        "activity": "审查 P0-3 第2轮 → 验收归档、派 P0-4",
+        "source": "worker send_message 2026-10-29T05:09:42Z",
+        "steps": 10,
+        "cache_read": 3579264,
+        "avg_cache_read_per_step": 357926
+      },
+      {
+        "wake": 3,
+        "turn": 11,
+        "activity": "审查 P0-4 → 功能验收、纪律偏离记录、派 P0-5",
+        "source": "worker send_message 2026-10-29T05:37:20Z",
+        "steps": 10,
+        "cache_read": 3680384,
+        "avg_cache_read_per_step": 368038
+      }
+    ],
+    "wake_total_cache_read": 9288960,
+    "wake_total_steps": 26,
+    "wake_avg_cache_read_per_step": 357268,
+    "estimate_under_220k_per_wake": {
+      "assumptions": "3 次工程唤醒 × 22 万 cacheRead/次（原出口假设）",
+      "value": 660000
+    },
+    "measured_over_estimate": 14.1,
+    "failure_attempt_cost": {
+      "leader_error_turns_cache_read": 372736,
+      "recovery_turn_7_cache_read": 3939456,
+      "note": "恢复轮含诊断与重派，规模主要由上下文而非故障本身决定（推断，不可分解）"
+    },
+    "per_step_context_growth": {
+      "turn_1_avg": 27215,
+      "turn_11_avg": 368038,
+      "note": "每 step cacheRead 随会话上下文单调增长；唤醒成本 ≈ 每唤醒步数 × 上下文规模"
+    },
+    "window_p0_3_p0_4_turns": {
+      "turns": [
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "cache_read": 14421632
+    }
+  },
+  "worker_cost": {
+    "worker_p0_3_cache_read": 53736192,
+    "worker_p0_4_cache_read": 20542592,
+    "total": 74278784,
+    "note": "Worker cacheRead 约为 Leader 同期窗口的 5 倍；与用户“Worker 消耗不是瓶颈”的裁定一致，不计为问题"
+  },
+  "baseline_w8": {
+    "task": "20261027-001-w8-validation-recovery",
+    "rounds": 24,
+    "cache_read": 5300000,
+    "provenance": "历史记录估算（.coordination/README.md#batch、ADR-0104）；本次只读名单不含该会话，未复核",
+    "comparable": false,
+    "reason": "任务类型、轮次结构与上下文长度均不同；原口径把一次唤醒当作单步上下文重读"
+  },
+  "metric_correction": {
+    "claim": "每次唤醒约 22 万 cacheRead（README#batch / ADR-0104 / leader.md）",
+    "measured": "本批 3 次工程唤醒实测 2,029,312 / 3,579,264 / 3,680,384；每 step 平均 357,268",
+    "interpretation": "“22 万”对应单步上下文重读量（约 22 万 token 上下文），不是一次唤醒的常数成本；一次唤醒含多步，成本随步数与上下文规模放大"
+  },
+  "verdict": {
+    "wake_count_recorded": true,
+    "notification_count_recorded": true,
+    "circuit_breaker_evidence_recorded": true,
+    "leader_cache_read_reduction_vs_baseline": "unverified",
+    "claimed_reduction_percent": null,
+    "reasons": [
+      "3 次工程唤醒实测 Leader cacheRead 合计 9288960，高于 W8 全任务历史估算 5,300,000",
+      "W8 基线为历史估算且本次无权复核，口径不可比",
+      "“22 万/次唤醒”实为单步量级；一次唤醒含 6–10 step",
+      "Leader 每 step cacheRead 随会话增长（2.7 万 → 36.8 万），唤醒数下降不必然带来 token 下降",
+      "本任务自身单轮即消耗 769 万 cacheRead（100 step），进一步说明轮次/唤醒数与 token 不成比例"
+    ],
+    "explicitly_not_claimed": [
+      "cacheRead 下降 75%",
+      "token 成本已达标",
+      "N/K 已由实测证明最优"
+    ],
+    "what_is_supported": [
+      "工程轮数 24→3（两个任务合计）",
+      "通知次数 3、路由故障 2 单列、返工 1 次",
+      "K=4 未触发且有“无连续无新证据轮次”证据"
+    ]
+  },
+  "guardrail_2026_10_29": {
+    "source": "Leader 在已授权成本治理范围内裁定（本任务 request.md 第 4/5 项）",
+    "budget_unit": "离线/静态检查以“总墙钟 + 单次时限 + 明确资源边界”为主，次数只作记账观测；不因次数触发唤醒",
+    "unchanged": [
+      "T1 单次 ≤30 s / 进程 ≤2 / 独占 /tmp / 不碰共享状态",
+      "T1/T2 次数与闸门不变",
+      "T2 逐轮派发",
+      "独立验收与硬约束红线不变"
+    ],
+    "not_retroactive": "仅适用新派工；P0-4 的 32 次 / 7 笔 / 36 链接仍按当时授权记为越界",
+    "commit_discipline": "收尾先完成全部自查与计数核对，再一次提交回报；不为修哈希/账目自增提交，已有错误如实追加更正"
+  },
+  "p0_5_self_snapshot": {
+    "session_id": "eab0a592-1bac-4038-943a-d21e02fee1ba",
+    "role": "Worker(P0-5, this task)",
+    "snapshot_at": "2026-10-29T06:05:28Z",
+    "note": "本任务自身会话；生成时仍在进行，仅作快照，不计入 P0-3/P0-4 对照",
+    "per_turn": [
+      {
+        "turn": 1,
+        "steps": 100,
+        "cache_read": 7692928,
+        "uncached_input": 123532,
+        "output": 222232
+      }
+    ],
+    "totals": {
+      "steps": 100,
+      "cache_read": 7692928,
+      "uncached_input": 123532,
+      "output": 222232
+    },
+    "tool_calls": {
+      "bash": 96,
+      "read": 15,
+      "edit": 15,
+      "todo_write": 2,
+      "write": 2,
+      "total": 130
+    },
+    "significance": "单轮治理任务（无 T1/T2、无新工程实验）已消耗 769 万 cacheRead，说明“只读证据 + 写文档”一轮本身就是百万级上下文成本；成本模型必须以 step×上下文规模为主，不能只看轮次/唤醒数。"
+  }
+}

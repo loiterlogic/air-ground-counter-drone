@@ -3,7 +3,7 @@
 
 ## Status
 
-accepted（2026-10-29，来源：用户裁定——"leader 的 tokens 消耗负担不起，worker 的消耗再多也无所谓，主要是 worker 权限和自由度太低"）
+accepted（2026-10-29，来源：用户裁定——"leader 的 tokens 消耗负担不起，worker 的消耗再多也无所谓，主要是 worker 权限和自由度太低"；2026-10-29 P0-5 追加修订，见文末"修订（P0-5 实测后）"，不改前文正文）
 
 ## 背景
 
@@ -94,3 +94,42 @@ W8 验证任务 `20261027-001-w8-validation-recovery` 的实测数据：
 - 修改的规则：[.coordination/README.md#batch](../../.coordination/README.md#batch)、[leader.md#review](../../.coordination/roles/leader.md#review)、[worker.md#batch-autonomy](../../.coordination/roles/worker.md#batch-autonomy)
 - 前序：[ADR-0102](0102-leader-worker-dual-model-handoff.md)（Leader/Worker 双模型机制）
 - 方向：[项目完成路线](../plan/README.md#plan-index)
+
+---
+
+<a id="adr-0104-amendment"></a>
+## 修订（P0-5 实测后，2026-10-29）
+
+来源：Leader 在用户已授权成本治理范围内裁定；证据见 [P0-5 出口判据](../plan/p0-5-协作成本治理.md#p0-5-exit) 与 [成本摘要](../../.coordination/task/20261029-005-p0-5-collaboration-cost/round-1/evidence/collaboration-cost.json)。**本文前文正文不改写**，以下为追加修订。
+
+### 1. 成本模型修正（覆盖前文"每次约 22 万 `cacheRead`"）
+
+实测 P0-3/P0-4 两个任务的 Leader 会话（只读 `usage` 字段）：
+
+| 项 | 实测 | 前文假设 |
+|---|---|---|
+| 工程唤醒 | 3 次，对应 26 step | — |
+| 单次唤醒 `cacheRead` | **202.9 万 / 357.9 万 / 368.0 万** | 约 22 万/次 |
+| 每 step `cacheRead` | 会话内从约 **2.7 万** 涨到约 **36.8 万** | 视为常数 |
+
+"22 万"实为**单 step 的上下文重读量级**；一次唤醒含 6–10 step，且每 step 随会话上下文增长。因此**唤醒次数是代理指标，不是成本本身**：24 轮 → 2 轮不等于 token 按比例下降。
+
+### 2. `cacheRead` 降 75% 指标改为未验证
+
+- 前文"预期收益"表与 `P0-5` 出口判据中的"`cacheRead` 降幅 ≥75%"**不成立为已验证结论**：3 次工程唤醒实测合计 928.9 万，已高于 W8 全任务的历史估算 530 万；而 W8 基线本身是估算，本次无权复核，两者口径不可比。
+- 结论：**实测 token 降幅未证实**。保留该指标为"未验证"，不得以唤醒次数比例替代 token 测量。
+- 仍成立的部分：工程轮数与通知次数可比（W8 24 轮 → P0-3/P0-4 合计 3 轮），路由故障 2 次单列不计入工程轮次，返工 1 次，K=4 未触发且有"无连续无新证据轮次"的证据。
+
+### 3. N/K 维持 6/4（本批未构成调参依据）
+
+- 两个任务分别用 2/6 与 1/6 轮，**批次内从未出现"Worker 自定下一轮"**，轮数:唤醒仍是 1:1；因此 N=6 与 K=4 的**上限从未被压测**，既不能证明合适，也不构成下调或上调的证据。
+- 前文"降幅约 75–80%"系线性外推，实测不支持；调参判据改为：**先看每批 step 数与上下文规模**，再看轮数。
+- **不取消**熔断与独立验收的条款原文有效。
+
+### 4. 离线/静态检查预算改为"墙钟+时限+资源边界"为主
+
+覆盖前文隐含的"次数即预算"写法，理由与细则见 [.coordination/README.md#offline-budget](../../.coordination/README.md#offline-budget)：P0-4 按 18 次卡、实际约 32 次，而总墙钟不足 30 s、资源边界未触碰。次数字面越界仍记为偏离、不追溯豁免，但**新派工不再以次数为硬限或唤醒条件**。`T1`/`T2` 的次数授权与闸门**完全不变**。
+
+### 5. 重复激活风险
+
+运行时 `subagent-settled` 通知与 Worker 的 `send_message` 报同一里程碑。实测本批 7 次 settled 通知全部落在 Leader 仍在运行的 turn 内，未新增激活；但 Leader 若已 idle，同一里程碑会使它被唤醒两次。**成本模型应按"可能重复"计**，不以"这次没重复"作为无风险证据。
