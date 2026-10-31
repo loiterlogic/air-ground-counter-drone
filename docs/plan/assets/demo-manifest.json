@@ -1,0 +1,37 @@
+{
+  "schema": "p2-1-gif/1",
+  "out": "/home/chen/AGC/docs/plan/assets/demo.gif",
+  "source_frames": 18,
+  "source_fps": 1.4,
+  "final": {
+    "frames_used": 18,
+    "stride": 1,
+    "duration_ms": 714,
+    "fps_effective": 1.4,
+    "width": 800,
+    "height": 916,
+    "bytes": 5095380,
+    "colors": 256,
+    "under_max": true
+  },
+  "duration_s": 12.85,
+  "spec": {
+    "width_800": true,
+    "under_5mb": true,
+    "duration_10_15s": true
+  },
+  "attempts": [
+    {
+      "fps": 1.4,
+      "width": 800,
+      "stride": 1,
+      "frames_used": 18,
+      "duration_ms": 714,
+      "fps_effective": 1.4,
+      "height": 916,
+      "bytes": 5095380,
+      "colors": 256,
+      "under_max": true
+    }
+  ]
+}

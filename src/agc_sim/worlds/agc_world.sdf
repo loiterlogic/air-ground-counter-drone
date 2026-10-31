@@ -588,7 +588,10 @@
         <scene>scene</scene>
         <ambient_light>0.45 0.45 0.45</ambient_light>
         <background_color>0.78 0.82 0.86</background_color>
-        <camera_pose>0 0 118 0 1.5708 1.5708</camera_pose>
+        <!-- P2-1 round-4（2026-10-31）：相机高度 118 → 85 m。118 m 时 100×100 作业区只占
+             画面约 65%，用户反馈"太远看不清"；85 m 使其约占 90%（边距仍在）。
+             **纯 GUI 视觉**：只改视图相机高度，不碰物理 / 传感器 / 几何真源 / 光照。 -->
+        <camera_pose>0 0 85 0 1.5708 1.5708</camera_pose>
         <camera_clip>
           <near>0.25</near>
           <far>25000</far>
@@ -612,6 +615,27 @@
         <real_time>1</real_time>
         <real_time_factor>1</real_time_factor>
         <iterations>1</iterations>
+      </plugin>
+
+      <!-- Screenshot（P2-1 α，2026-10-31）：**GUI 取证用；不进入仿真、不改变任何物理/感知口径**。
+           存在的唯一理由：本块（<gui>）覆盖了发行版默认 gui.config，其中不含本插件，
+           于是 /gui/screenshot 服务不上线、无法从 3D 视图相机取真实帧（round-3 实测 0 帧）。
+           它只注册一个 GUI 服务（把相机视图存 PNG），**不订阅话题、不发命令、不碰模型位姿**，
+           因此与唯一执行口（#execution-port）和 C3 口径无关。
+           取证方式见 scripts/demo/gui_capture.py（`data` 传**目录**，服务立即返回 true，
+           存盘在下一个 Render 事件 → 必须轮询新增 png）。
+           属性照抄发行版 gui.config 的同名块（仅影响工具条外观，不影响取到的画面）。 -->
+      <plugin filename="Screenshot" name="Screenshot">
+        <gz-gui>
+          <property key="resizable" type="bool">false</property>
+          <property key="x" type="double">250</property>
+          <property key="y" type="double">50</property>
+          <property key="width" type="double">50</property>
+          <property key="height" type="double">50</property>
+          <property key="state" type="string">floating</property>
+          <property key="showTitleBar" type="bool">false</property>
+          <property key="cardBackground" type="string">#777777</property>
+        </gz-gui>
       </plugin>
     </gui>
 

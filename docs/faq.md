@@ -92,18 +92,18 @@ ros2 launch agc_task w6.launch.py backend:=full gui_render_backend:=software
 ```
 
 **关于"截不到图"**：本机 `DISPLAY=:0` 是 **Wayland（XWayland）**，`xwd`/`import`/`scrot`/`ffmpeg`
-全未安装，X11 抓根窗口只会得到**全黑**（合成器不暴露窗口像素）。取真实画面请用 Gazebo
-**自己的** Screenshot 插件（`/gui/screenshot` 服务，从 3D 视图相机取帧，不经过合成器）：
+全未安装，X11 抓根窗口只会得到**全黑**（合成器不暴露窗口像素）。取真实画面用 Gazebo
+**自己的** Screenshot 插件（`/gui/screenshot`，从 3D 视图相机取帧，不经过合成器）；
+本仓世界 SDF 的 `<gui>` 块**已自带**该插件，**自然运行**即可取帧：
 
 ```bash
-# 世界 SDF 的 <gui> 块覆盖了发行版默认 gui.config，不含 Screenshot 插件 → 先派生一份
-python3 scripts/demo/gui_capture.py derive-config \
-    --world install/agc_sim/share/agc_sim/worlds/agc_world.sdf --out /tmp/gui.config
-AGC_GUI_CONFIG=/tmp/gui.config ./run_demo.sh      # 运行期间才能取帧
+./run_demo.sh &                                     # 正常启动（运行期间才能取帧）
 python3 scripts/demo/gui_capture.py snap --out /tmp/shot.png
 ```
 
 > **headless 截不了图**：`gz -s` 不启动渲染客户端，**不生成画面**。截图必须带 GUI。
+> **别用 `--gui-config` 取图**：gz-gui 加载它之后**还会再加载** `~/.gz/sim/<ver>/gui.config`
+> 并**覆盖**相机位姿 → 视角被换成 3/4 斜视，图**不代表用户所见**（该机制已移除）。
 
 ## 6. 冒烟测试某组失败，但看不出原因
 

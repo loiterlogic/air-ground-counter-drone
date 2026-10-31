@@ -4,8 +4,13 @@
 > 空中持续跟踪目标并保持安全间距，地面车自主规划接近，抵达跟踪距离后持续驻留判定成功。
 
 <p align="center">
-  <img src="docs/plan/assets/demo-start.png" width="640"
-       alt="演示真实画面：Gazebo 渲染（机载相机视角），橙色高亮球为目标">
+  <img src="docs/plan/assets/demo.gif" width="640"
+       alt="演示动图：Gazebo 正俯视场景，地面车（绿框）接近橙色高亮目标">
+</p>
+
+<p align="center">
+  <img src="docs/plan/assets/demo-terminal.png" width="640"
+       alt="终态：TRACKING_SUCCESS，地面车抵达目标附近（正俯视画面）">
 </p>
 
 纯仿真项目：**ROS 2 Jazzy + Gazebo Harmonic (gz-sim 8) + PX4 SITL**，在 Ubuntu 24.04 / WSL2 上开发。
@@ -74,10 +79,18 @@
 `summary.json`）、`metrics/summary.json`（机器可读指标）。语义见
 [P1-3 可观测与演示呈现](docs/plan/p1-3-任务可观测与演示呈现.md#p1-3-goal)。
 
-> **跟踪中 / 终态两张截图与 GIF 尚未取到**：本机 GUI 取帧只成功 3 帧（启动阶段），
-> 原因是 `Screenshot` 插件取的是**场景里第一个相机**，当前拿到的是机载相机视角而非 GUI 俯视视图；
-> 修复需在插件侧指定相机名。详见 [P2-1 round-2 报告](.coordination/task/20261031-011-p2-1-deliverables/round-2/report.md#p2-1-r2-report)。
-> **不**用示意图或旧图占位。
+真实运行画面（`full + yard + s04 + observe_yaw_mode=target`，**自然运行**、正俯视）：
+
+<p align="center">
+  <img src="docs/plan/assets/demo-start.png" width="560" alt="启动：任务开始，无人机搜索">
+  <img src="docs/plan/assets/demo-tracking.png" width="560" alt="跟踪中：地面车接近目标">
+</p>
+<p align="center">
+  <img src="docs/plan/assets/demo-terminal.png" width="560" alt="终态：TRACKING_SUCCESS，车已抵达目标附近">
+</p>
+
+> 三张取自同一次运行的不同时刻（t≈44 s / 46 s / 73 s）；终态图分辨率略高（窗口在终态后被放大），
+> 视角与另两张一致（skyband 均为 **0.00**，即正俯视）。
 
 ## 系统结构
 

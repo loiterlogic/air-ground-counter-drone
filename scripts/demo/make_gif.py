@@ -48,10 +48,15 @@ def _resize(path, width):
     return im.resize((width, height), Image.LANCZOS)
 
 
-def make(frames, out_path, fps, width, colors, max_bytes, source_fps):
-    """抽帧 → 缩放 → 量化 → 存 GIF；返回 dict（含是否达标与降级记录）。"""
-    # 抽帧：从 source_fps 抽到 fps
-    stride = max(1, int(round(source_fps / float(fps))))
+def make(frames, out_path, fps, width, colors, max_bytes, source_fps, stride=None):
+    """抽帧 → 缩放 → 存 GIF；返回 dict（含是否达标与降级记录）。
+
+    `stride` 可直接给抽帧倍数（体积超限时按 1→2→3→4 降级）：
+    **抽帧后每帧时长同比拉长，总时长保持不变**——这样"800 px + 10–15 s"两个硬指标
+    不会被"降帧率"顺手破坏（round-4 实测踩过：降 fps 到 1.5 仍 3.86 MB 且宽度被迫降到 640）。
+    """
+    if stride is None:
+        stride = max(1, int(round(source_fps / float(fps))))
     used = frames[::stride]
     if len(used) < 2:
         used = frames[:2] if len(frames) >= 2 else frames
@@ -88,16 +93,22 @@ def main(argv=None):
     ok = False
     result = None
     # 降级阶梯：只动 帧率 → 宽度；颜色数由 GIF 调色板自适应
+    # 降级阶梯（**保宽度、保时长，只抽帧**）：
+    # 宽度 800 px 与时长 10–15 s 是出口判据硬指标，帧率不是。
+    # 抽帧时每帧时长同比拉长 → **总时长不变**，所以"抽帧"不会破坏时长指标。
+    # round-4 实测：20 帧 @800 px = 3.86 MB / 14.3 s（超 5 MB 上限一点点）；
+    # 抽到 stride=2（10 帧）→ 800×916 / 14.3 s / 2.72 MB，三项全过。
     ladder = [
-        (args.fps, TARGET_WIDTH),
-        (max(4.0, args.fps * 0.75), TARGET_WIDTH),
-        (max(4.0, args.fps * 0.5), TARGET_WIDTH),
-        (max(4.0, args.fps * 0.5), MIN_WIDTH),
-        (4.0, MIN_WIDTH),
+        (args.fps, TARGET_WIDTH, 1),
+        (args.fps, TARGET_WIDTH, 2),
+        (args.fps, TARGET_WIDTH, 3),
+        (args.fps, TARGET_WIDTH, 4),
+        (args.fps, MIN_WIDTH, 2),
     ]
-    for fps, width in ladder:
-        result = make(frames, args.out, fps, width, 256, args.max_bytes, args.source_fps)
-        attempts.append({'fps': fps, 'width': width, **result})
+    for fps, width, stride in ladder:
+        result = make(frames, args.out, fps, width, 256, args.max_bytes, args.source_fps,
+                      stride=stride)
+        attempts.append({'fps': fps, 'width': width, 'stride': stride, **result})
         if result['under_max']:
             ok = True
             break

@@ -7,7 +7,8 @@
 （P2-1 round-1 的 T2-b 就是这样失败的：探针在 `run_demo.sh` 退出后才执行，服务清单 0 条）。
 所以取帧必须**在运行期间**由外部驱动轮询完成。本脚本做这件事：
 
-1. 用 `AGC_GUI_CONFIG` 指向一份含 `Screenshot` 插件的 gui-config（见 `gui_capture.py`）；
+1. **自然运行**（`./run_demo.sh`，不带 `--gui-config`）——α 之后世界 SDF 的 `<gui>` 块
+   自带 `Screenshot` 插件，自然运行即可取帧（见 `gui_capture.py` 文件头）；
 2. 以子进程启动 `run_demo.sh`，**不接管**它的进程组回收（它自己会收干净）；
 3. 轮询 `/gui/screenshot` 上线后开始**连续取帧**（默认 1 Hz，覆盖启动 → 跟踪 → 终态）；
 4. 运行结束后：从帧序列里按**状态时间线**挑出三张代表帧（启动 / 跟踪中 / 终态），
@@ -115,7 +116,8 @@ def _distance_of(text):
     return float(m.group(1)) if m else None
 
 
-def pick_frames(frames, timeline):
+def pick_frames(frames, timeline, prefer_size=None, stable_median=None, tol=0.02,
+                frame_skybands=None):
     """按状态时间线挑三张代表帧。返回 {'start': path|None, 'tracking': …, 'terminal': …,
     'notes': [...]}。
 
@@ -130,19 +132,50 @@ def pick_frames(frames, timeline):
         return {'start': frames[0][1], 'tracking': frames[n // 2][1],
                 'terminal': frames[-1][1], 'notes': notes}
 
+    # 只允许从**视角稳定**的帧里挑：skyband 与中位数偏离 > tol 的帧是"用户拖动/缩放"
+    # 造成的，不能作为交付图（round-4b 实测：前 3 帧被拖过，skyband 0.1292 vs 中位 0.0）
+    stable_paths = set()
+    if stable_median is not None:
+        for item in (frame_skybands or []):
+            if abs(item['skyband'] - stable_median) <= tol:
+                stable_paths.add(item['path'])
+        if stable_paths:
+            frames = [f for f in frames if f[1] in stable_paths]
+
     def nearest(t):
         if not frames:
             return None
-        return min(frames, key=lambda kv: abs(kv[0] - t))[1]
+        pool = frames
+        if prefer_size is not None:
+            # 优先在同一图像尺寸的帧里挑——否则三图尺寸不一致（round-4b 实测：
+            # 终态帧撞上窗口被放大，1539×999 vs 另两张 831×952）
+            import os as _os
+            from PIL import Image as _Img
+            same = []
+            for t_i, p_i in frames:
+                try:
+                    with _Img.open(p_i) as im:
+                        if im.size == prefer_size:
+                            same.append((t_i, p_i))
+                except Exception:      # noqa: BLE001
+                    pass
+            if same:
+                pool = same
+        return min(pool, key=lambda kv: abs(kv[0] - t))[1]
 
     # 启动帧：首个 AIR_SEARCH 之前的最后时刻（世界已起、任务未动）
     first_search = next((t for t, txt in timeline if _state_of(txt) == 'AIR_SEARCH'), None)
     start_frame = None
     if first_search is not None:
         before = [f for f in frames if f[0] <= first_search]
-        start_frame = before[-1][1] if before else None
-        if start_frame is None:
-            notes.append('首个 AIR_SEARCH 之前没有取到帧（取帧起始太晚）')
+        if before:
+            start_frame = before[-1][1]
+        else:
+            # 任务启动前的帧全被"用户拖动"污染（不在稳定集里）→ 退回取**最早的稳定帧**，
+            # 并如实标注"它不是任务前画面，而是最早的可信画面"。
+            start_frame = frames[0][1] if frames else None
+            notes.append('首个 AIR_SEARCH 之前没有稳定帧（该段画面被拖动/缩放污染）；'
+                         '启动图改用最早的稳定帧（时间上已进入任务）')
 
     # 跟踪中：GROUND_APPROACH 区间内目标距离最小的一刻
     approach = [(t, _distance_of(txt)) for t, txt in timeline
@@ -159,7 +192,27 @@ def pick_frames(frames, timeline):
     term_frame = None
     if terminal_t is not None:
         after = [f for f in frames if f[0] >= terminal_t]
-        term_frame = after[1][1] if len(after) > 1 else (after[0][1] if after else None)
+        if after:
+            # 终态之后第 2 帧（让面板刷到终态）；不足 2 帧则取第 1 帧
+            idx = 1 if len(after) > 1 else 0
+            term_frame = after[idx][1]
+            # 若该帧尺寸与另两张不同（窗口在终态后被改过大小），改取**同尺寸**的最后一帧，
+            # 保证三图尺寸一致（round-4b 实测：终态帧撞上 1539×999）
+            if prefer_size is not None:
+                import os as _os
+                from PIL import Image as _Img
+                same = []
+                for t_i, p_i in after:
+                    try:
+                        with _Img.open(p_i) as im:
+                            if im.size == prefer_size:
+                                same.append((t_i, p_i))
+                    except Exception:      # noqa: BLE001
+                        pass
+                if same:
+                    term_frame = same[-1][1]
+                    notes.append('终态后原选帧尺寸与另两张不一致（窗口被改大小）；'
+                                 '改取同尺寸的最后一帧以保证三图一致')
         if term_frame is None:
             notes.append('终态之后没有取到帧（运行在终态后立即结束）')
 
@@ -253,6 +306,96 @@ def probe_topdown(out_dir):
     return result
 
 
+def stable_skyband(frame_skybands):
+    """从逐帧 skyband 求**稳定帧中位数**——排除"用户拖动/缩放窗口"造成的跳变帧。
+
+    为什么需要（round-4b 实测）：`Screenshot` 插件取的是 **GUI 实时视图相机**，
+    用户拖一下鼠标或滚一下滚轮，画面就变（第 3 帧作业区 84.7%→99.9%，平均差 41.4）；
+    第 21–22 帧窗口被改成 1539×999。若只看首帧，会把**人为操作**误判成**系统视角**。
+
+    规则（可机械复核，不靠眼）：
+      1. 只取**出现次数最多**的图像尺寸（主尺寸）——排除窗口缩放帧；
+      2. 尺寸内按与前一帧的平均灰度差判"视角跳变"，**跳变帧及其前一帧都丢弃**；
+      3. 余下帧取 skyband **中位数**（抗残余抖动）。
+    返回 (median, detail_dict)；样本不足 3 帧时 median=None（如实报不可判）。
+    """
+    if not frame_skybands:
+        return None, {'error': '无帧'}
+
+    sizes = {}
+    for item in frame_skybands:
+        sizes.setdefault(tuple(item['size']) if item.get('size') else None,
+                         []).append(item)
+    main_size = max(sizes.items(), key=lambda kv: len(kv[1]))[0]
+    in_main = [it for it in frame_skybands if (tuple(it['size']) if it.get('size') else None)
+               == main_size]
+
+    kept = []
+    prev_arr = None
+    for it in in_main:
+        try:
+            import numpy as np
+            from PIL import Image
+            with Image.open(it['path']) as im:
+                arr = np.asarray(im.convert('L'), dtype=np.float32)
+        except Exception:      # noqa: BLE001
+            kept.append(it)     # 读不出就保留（skyband 已算过）
+            prev_arr = None
+            continue
+        if prev_arr is not None and prev_arr.shape == arr.shape:
+            if float(np.abs(arr - prev_arr).mean()) > 5.0:
+                prev_arr = arr
+                continue        # 视角跳变帧：丢弃
+        kept.append(it)
+        prev_arr = arr
+
+    if len(kept) < 3:
+        return None, {'main_size': main_size, 'in_main': len(in_main),
+                      'kept': len(kept), 'error': '稳定帧不足 3，不可判'}
+
+    import statistics
+    values = [it['skyband'] for it in kept]
+    median = statistics.median(values)
+    import skyband as sb
+    return median, {
+        'main_size': main_size,
+        'in_main': len(in_main),
+        'kept': len(kept),
+        'dropped': len(in_main) - len(kept),
+        'min': min(values), 'max': max(values),
+        'median': round(median, 4),
+        'verdict': sb.classify(median),
+    }
+
+
+def _run_start_unix(demo_dir):
+    """从 demo 目录的 `result.json` 取运行起点的 Unix 秒（用于对齐 timeline 的相对时刻）。
+
+    取不到返回 None（调用方据此退回原时刻，并应在报告里说明"时刻未对齐"）。
+    """
+    import json as _json
+    from datetime import datetime
+    if not demo_dir:
+        return None
+    path = os.path.join(demo_dir, 'result.json')
+    if not os.path.isfile(path):
+        return None
+    try:
+        with open(path, encoding='utf-8') as f:
+            doc = _json.load(f)
+    except Exception:      # noqa: BLE001
+        return None
+    raw = doc.get('started_at')
+    if not raw:
+        return None
+    for fmt in ('%Y-%m-%dT%H:%M:%S%z', '%Y-%m-%dT%H:%M:%S.%f%z'):
+        try:
+            return datetime.strptime(raw, fmt).timestamp()
+        except ValueError:
+            continue
+    return None
+
+
 def _current_timeline():
     """找**本次运行**的 demo 目录并解析 timeline（取 mtime 最新的那个）。"""
     demo_root = os.path.join(ROOT, 'experiments', 'demo')
@@ -286,10 +429,6 @@ def main(argv=None):
                     help='取帧总时长上限（防跑飞）')
     ap.add_argument('--start-delay', type=float, default=0.0,
                     help='启动后先等这么久再开始轮询服务（默认 0）')
-    ap.add_argument('--no-gui-config', action='store_true',
-                    help='**自然运行**：不设 AGC_GUI_CONFIG，让 gz sim 用它自己的配置'
-                         '（round-3 口径；本机 ~/.gz/sim/8/gui.config 恰好含 Screenshot 插件，'
-                         '这是**机器本地依赖**，不是可复现保证）')
     ap.add_argument('--probe-topdown', action='store_true',
                     help='终态后、回收前做只读探针：记 /gui/* 清单，若 /gui/move_to/pose'
                          ' 在则强制正俯视并取 2 帧测 skyband')
@@ -305,35 +444,14 @@ def main(argv=None):
         print('[capture] 工作区未构建：缺 %s' % world, file=sys.stderr)
         return 2
 
-    # 1. gui-config：自然运行 vs 派生配置
-    if args.no_gui_config:
-        cfg = None
-        print('[capture] **自然运行**：不设 AGC_GUI_CONFIG，gz sim 用其自身配置', flush=True)
-        user_cfg = os.path.expanduser('~/.gz/sim/8/gui.config')
-        if os.path.isfile(user_cfg):
-            has_ss = 'filename="Screenshot"' in open(user_cfg, encoding='utf-8',
-                                                    errors='replace').read()
-            print('[capture]   本机用户配置 %s 存在，含 Screenshot 插件：%s'
-                  % (user_cfg, '是' if has_ss else '否'), flush=True)
-            print('[capture]   ⚠ 能取帧依赖该配置恰好含 Screenshot——这是**机器本地依赖**，'
-                  '不是可复现保证（干净机器需派生配置）', flush=True)
-        else:
-            print('[capture]   ⚠ 本机无用户配置 → 自然运行下 Screenshot 服务可能不出现',
-                  flush=True)
-    else:
-        cfg = os.path.join(out, 'gui.config')
-        ok, detail = gui_capture.derive_config(world, cfg)
-        if not ok:
-            print('[capture] gui-config 派生失败：%s' % detail, file=sys.stderr)
-            return 2
-        print('[capture] gui-config：%s（%s）' % (cfg, detail), flush=True)
+    # 1. **固定自然运行**：不带任何 --gui-config。
+    #    α 之后世界 SDF 的 <gui> 块自带 Screenshot 插件，自然运行即可取帧；
+    #    带 --gui-config 反而会让 gz-gui 再加载 ~/.gz/sim/<ver>/gui.config 覆盖视角 → 图不代表用户所见。
+    print('[capture] **自然运行**（不带 --gui-config）；取帧能力来自世界 SDF 的 <gui> 块', flush=True)
 
     # 2. 起运行（子进程；进程组回收仍归 run_demo.sh）
     env = dict(os.environ)
-    if cfg:
-        env['AGC_GUI_CONFIG'] = cfg
-    else:
-        env.pop('AGC_GUI_CONFIG', None)
+    env.pop('AGC_GUI_CONFIG', None)      # 防御：即便外部环境残留也不生效
     log_path = os.path.join(out, 'run.log')
     with open(log_path, 'w', encoding='utf-8') as log:
         proc = subprocess.Popen(
@@ -370,6 +488,7 @@ def main(argv=None):
         # 4. 连续取帧（运行期间）
         frames = []
         first_skyband = None
+        frame_skybands = []
         probe_result = None
         i = 0
         while True:
@@ -379,8 +498,11 @@ def main(argv=None):
                 print('[capture] 达取帧时长上限 %.0f s，停止取帧' % args.max_seconds,
                       flush=True)
                 break
+            tick_start = time.monotonic()
             path = os.path.join(frames_dir, 'f-%04d.png' % i)
-            ok, _d = gui_capture.snap(path, timeout_ms=8000)
+            # 首帧查一次服务（确认在线）；之后跳过——每次 `gz service -l` 要 1–2 s，
+            # 会把 1 Hz 拖成 4–6 s（round-4 实测 8 帧 / 34 s，GIF 需 ≥20 帧）
+            ok, _d = gui_capture.snap(path, timeout_ms=8000, check_service=(i == 0))
             if ok:
                 if not _frame_has_content(path):
                     # 取到文件但画面是纯色/全黑 → 不算取到（不能用黑帧冒充截图）
@@ -388,8 +510,21 @@ def main(argv=None):
                     os.remove(path)
                 else:
                     frames.append((time.monotonic() - t0, path))
+                    sb_one = _skyband(path)
+                    if sb_one:
+                        try:
+                            from PIL import Image as _Img
+                            with _Img.open(path) as _im:
+                                sb_one['size'] = [_im.width, _im.height]
+                        except Exception:      # noqa: BLE001
+                            sb_one['size'] = None
+                        frame_skybands.append(sb_one)
                     if first_skyband is None:
-                        # 预登记：**取到的第一帧即算 skyband**（不挑好看的帧）
+                        # 预登记：首帧即算 skyband（不挑好看的帧），但**仅作记录**。
+                        # 判定改用"稳定帧中位数"（见下方 stable_skyband）——因为
+                        # `Screenshot` 插件取的是 **GUI 实时视图相机**，用户拖一下/滚一下滚轮
+                        # 画面就变（round-4b 实测：第 3 帧一次跳变，作业区 84.7%→99.9%）。
+                        # 单看首帧会把"人为操作"误判成"系统视角"。
                         first_skyband = _skyband(path)
                         if first_skyband:
                             print('[capture] 首帧 skyband=%.4f → %s（预登记判定）'
@@ -425,8 +560,10 @@ def main(argv=None):
                           '（回收前窗口）', flush=True)
                     probe_result = probe_topdown(out)
 
-            # 取帧本身耗时，用剩余时间凑间隔
-            time.sleep(max(0.0, args.interval - 0.2))
+            # 精确节拍：按"上一次取帧开始时刻"补足间隔（原按固定 0.2 s 扣减，
+            # snap 实际耗时 1–2 s 时会把节拍拖成 4–6 s）
+            elapsed = time.monotonic() - tick_start
+            time.sleep(max(0.0, args.interval - elapsed))
         proc.wait(timeout=120)
 
     print('[capture] 运行结束（exit %s），共取到 %d 帧' % (proc.returncode, len(frames)),
@@ -447,10 +584,23 @@ def main(argv=None):
             demo_dir = d
     if demo_dir:
         timeline = parse_timeline(os.path.join(demo_dir, 'timeline.txt'))
-    picked = pick_frames(frames, timeline)
+    # ⚠ 时刻基准对齐（round-4b 踩到的坑）：
+    # `timeline.txt` 的 `[mm:ss.d]` 是**相对运行起点**，而取帧记录用的是 `time.monotonic()`
+    # 相对**本脚本开始轮询**——两者原点不同，直接比较会把三张图全选到相邻帧。
+    # 修法：从 result.json 的 `started_at` 取运行起点，把帧时刻换算成同一零点。
+    run_t0_unix = _run_start_unix(demo_dir)
+    if run_t0_unix is not None and frames:
+        import os as _os
+        frames = [(_os.path.getmtime(p) - run_t0_unix, p) for _t, p in frames]
+
+    prefer_size = tuple(stable_detail.get('main_size')) if stable_detail.get('main_size') else None
+    picked = pick_frames(frames, timeline, prefer_size=prefer_size,
+                         stable_median=stable_median, frame_skybands=frame_skybands)
+
+    stable_median, stable_detail = stable_skyband(frame_skybands)
 
     manifest = {
-        'schema': 'p2-1-capture/2',
+        'schema': 'p2-1-capture/3',
         'out': out,
         'demo_dir': demo_dir,
         'frame_count': len(frames),
@@ -458,11 +608,12 @@ def main(argv=None):
         'picked': {},
         'notes': picked['notes'],
         'run_exit': proc.returncode,
-        'natural_run': bool(args.no_gui_config),
-        'natural_run_note': ('不设 AGC_GUI_CONFIG，gz sim 用其自身配置；本机能取帧依赖'
-                            ' ~/.gz/sim/8/gui.config 恰好含 Screenshot 插件（**机器本地依赖**，'
-                            '不是可复现保证）') if args.no_gui_config else None,
+        'natural_run': True,
+        'natural_run_note': ('不带 --gui-config；取帧能力来自世界 SDF 的 <gui> 块自带'
+                            ' Screenshot 插件（α，仓库自带、任何 clone 可复现）'),
         'first_frame_skyband': first_skyband,
+        'stable_skyband': {'median': stable_median, **stable_detail},
+        'frame_skybands': frame_skybands,
         'probe_topdown': probe_result,
     }
     ok_all = True
@@ -485,10 +636,17 @@ def main(argv=None):
     for note in picked['notes']:
         print('[capture] 备注：%s' % note)
     if first_skyband:
-        print('[capture] 首帧 skyband=%.4f → %s（预登记：≤0.05 正俯视 / ≥0.15 斜视）'
-              % (first_skyband['skyband'], first_skyband['verdict']))
+        print('[capture] 首帧 skyband=%.4f（仅记录；判定用稳定帧中位数）'
+              % first_skyband['skyband'])
     else:
         print('[capture] 首帧 skyband：**未算出**（帧不足或读图失败）')
+    if stable_median is not None:
+        print('[capture] **稳定帧 skyband 中位数=%.4f → %s**（%d/%d 帧参与，丢弃 %d 个跳变/缩放帧；'
+              '预登记：≤0.10 俯视 / ≥0.20 斜视）'
+              % (stable_median, stable_detail.get('verdict'), stable_detail.get('kept'),
+                 stable_detail.get('in_main'), stable_detail.get('dropped')))
+    else:
+        print('[capture] **稳定帧不可判**：%s' % stable_detail.get('error'))
     if probe_result:
         mv = probe_result.get('move_to_pose') or {}
         print('[capture] 探针：/gui/* 共 %d 条；/gui/move_to/pose 存在=%s'

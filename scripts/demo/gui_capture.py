@@ -16,13 +16,16 @@ headless（`gz sim -s`）**不启动渲染客户端**，根本不会生成画面
 | GNOME Shell DBus 截图 | `ServiceUnknown`（非 GNOME 会话） |
 
 **可行路径**：Gazebo 自带的 `Screenshot` GUI 插件（服务 `/gui/screenshot`）。它用 **ogre2 从 3D 视图
-的相机**直接取帧，**不经过**窗口合成器——所以 Wayland 也取得到。实测本仓 `agc_world.sdf` 的
-`<gui>` 块**覆盖**了发行版默认 `gui.config`，里面**没有** Screenshot 插件，故：
+的相机**直接取帧，**不经过**窗口合成器——所以 Wayland 也取得到。
 
-1. 从世界 SDF 的 `<gui>` 块**派生**一份 gui-config（不手抄、不复制整份默认配置）；
-2. 在派生的配置里**追加** `Screenshot` 插件（只加这一个，其余原样）；
-3. `gz sim` 用 `--gui-config` 加载它 → 服务 `/gui/screenshot` 上线；
-4. 发 `gz.msgs.StringMsg{data: "<输出路径>"}` → 插件把该相机视图存成 PNG。
+**前置条件（α，2026-10-31 已落地）**：本仓 `agc_world.sdf` 的 `<gui>` 块**自带**该插件。
+（该块覆盖发行版默认 `gui.config`；此前不含此插件，服务不上线 → 0 帧，见 round-3 报告。）
+因此**自然运行**（`./run_demo.sh`，不带任何 `--gui-config`）即可取帧。
+
+> ⚠ **不要**用 `--gui-config` 取交付图：gz-gui 在加载它之后**还会再加载**
+> `~/.gz/sim/<ver>/gui.config` 并**覆盖** `camera_pose` → 视角被换成 3/4 斜视，
+> 取到的图**不代表用户所见**（实测 skyband 0.2848 vs 俯视 0.06）。
+> 该机制已在本轮移除（round-3 审查裁定 ②），`run_demo.sh` 也不再支持。
 
 ## 与 P1-1 round-6 结论的关系（必须写清，不得改写历史）
 
@@ -40,10 +43,7 @@ P1-1 round-6 记录"本机无可用截屏工具（xwd/import/ffmpeg/scrot 全缺
 ## 用法
 
 ```bash
-# 一次性：派生 gui-config（调试用；正常由 start.py 自动做）
-python3 scripts/demo/gui_capture.py derive-config --world <sdf> --out /tmp/gui.config
-
-# 取一帧（GUI 已在跑）
+# 取一帧（GUI 已在跑；自然运行即可，无需任何额外配置）
 python3 scripts/demo/gui_capture.py snap --out experiments/p2-1/run/shot.png
 
 # 逐帧录（10–15 s GIF 用；每帧一个 PNG，后续由 make_gif.py 合成）
@@ -71,72 +71,6 @@ SCREENSHOT_REP_TYPE = 'gz.msgs.Boolean'
 # 追加的插件块：只加 Screenshot，**不改**世界 SDF 里已有的任何 GUI 插件。
 # 字段取自发行版默认 `gui.config` 的同一插件块（`Screenshot` 是 gz-gui 内置插件，
 # 不依赖本仓代码，故此处照抄其必要属性；属性只影响工具条外观，不影响取到的画面）。
-SCREENSHOT_PLUGIN = '''  <plugin filename="Screenshot" name="Screenshot">
-    <gz-gui>
-      <property key="resizable" type="bool">false</property>
-      <property key="x" type="double">250</property>
-      <property key="y" type="double">50</property>
-      <property key="width" type="double">50</property>
-      <property key="height" type="double">50</property>
-      <property key="state" type="string">floating</property>
-      <property key="showTitleBar" type="bool">false</property>
-      <property key="cardBackground" type="string">#777777</property>
-    </gz-gui>
-  </plugin>
-'''
-
-
-def _blank_comments(text):
-    """把 XML 注释替换成等长空白（**保持偏移不变**），避免在注释里的示例标签上匹配。
-
-    实测踩坑：`agc_world.sdf` 的 `<gui>` 上方注释里写了 `<gui><plugin MinimalScene>…`
-    这样的**说明文字**，直接用正则 `re.search(r'<gui\\b')` 会先命中注释里的那一处，
-    派生出以注释片段开头的非法 XML（`xmllint` 报 `Specification mandates value`）。
-    """
-    return re.sub(r'<!--.*?-->', lambda m: ' ' * len(m.group(0)), text, flags=re.S)
-
-
-def _find_gui_block(text):
-    """返回真实 `<gui>…</gui>` 块体的 (start, end) 偏移；找不到返回 None。
-
-    只在**注释之外**查找（见 `_blank_comments` 的实测踩坑说明）。
-    """
-    clean = _blank_comments(text)
-    m = re.search(r'<gui\b[^>]*>', clean)
-    if not m:
-        return None
-    start = m.end()
-    end = clean.find('</gui>', start)
-    if end < 0:
-        return None
-    return start, end
-
-
-def derive_config(world_sdf, out_path):
-    """从世界 SDF 的 `<gui>` 块派生 gui-config，并追加 Screenshot 插件。
-
-    返回 (ok, detail)。世界里已有 Screenshot 时**不重复追加**（幂等）。
-    """
-    with open(world_sdf, encoding='utf-8') as f:
-        text = f.read()
-    span = _find_gui_block(text)
-    if span is None:
-        return False, '世界 SDF 里没有 <gui> 块：%s' % world_sdf
-    body = text[span[0]:span[1]]
-    if 'filename="Screenshot"' in body:
-        config_body = body
-        appended = False
-    else:
-        config_body = body.rstrip() + '\n' + SCREENSHOT_PLUGIN
-        appended = True
-    config = ('<?xml version="1.0"?>\n'
-              '<!-- 由 scripts/demo/gui_capture.py 从世界 SDF 派生；'
-              '仅追加 Screenshot 插件，其余原样。 -->\n'
-              '<gui fullscreen="false">\n' + config_body + '\n</gui>\n')
-    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
-    with open(out_path, 'w', encoding='utf-8') as f:
-        f.write(config)
-    return True, ('已追加 Screenshot 插件' if appended else '世界 SDF 已含 Screenshot 插件（未追加）')
 
 
 def _gz():
@@ -162,7 +96,7 @@ def service_present(timeout_ms=3000):
             % ('有' if SCREENSHOT_SERVICE in listed else '没有', SCREENSHOT_SERVICE, len(listed)))
 
 
-def snap(out_path, timeout_ms=15000, retries=1, wait_s=6.0):
+def snap(out_path, timeout_ms=15000, retries=1, wait_s=6.0, check_service=True):
     """请求一帧并落到 out_path。返回 (ok, detail)。
 
     ## 服务的真实语义（读上游源码后确认，2026-10-31）
@@ -204,9 +138,12 @@ def snap(out_path, timeout_ms=15000, retries=1, wait_s=6.0):
     os.makedirs(save_dir, exist_ok=True)
     if os.path.exists(out_abs):
         os.remove(out_abs)          # 防止把旧文件当本次结果
-    present, detail = service_present()
-    if not present:
-        return False, '取帧服务不可用：%s' % detail
+    if check_service:
+        # ⚠ 每次 snap 都做一次 `gz service -l`（全量服务查询）实测要 1–2 s，
+        # 会把 1 Hz 节拍拖成 4–6 s（round-4 实测：8 帧 / 34 s）。批量录制时首帧后跳过。
+        present, detail = service_present()
+        if not present:
+            return False, '取帧服务不可用：%s' % detail
 
     last = ''
     for attempt in range(retries + 1):
@@ -237,7 +174,7 @@ def snap(out_path, timeout_ms=15000, retries=1, wait_s=6.0):
                 # 直接读会得到 `OSError: image file is truncated`（实测踩到）。
                 # 判据：文件大小连续两次采样相同且 > 0，才认为写完。
                 prev = -1
-                for _ in range(60):
+                for _ in range(40):          # 40 × 0.05 s = 上限 2 s（原 60×0.1=6 s，拖慢节拍）
                     try:
                         size = os.path.getsize(src)
                     except OSError:
@@ -245,7 +182,7 @@ def snap(out_path, timeout_ms=15000, retries=1, wait_s=6.0):
                     if size > 0 and size == prev:
                         break
                     prev = size
-                    time.sleep(0.1)
+                    time.sleep(0.05)
                 try:
                     os.replace(src, out_abs)
                 except OSError as exc:      # noqa: BLE001
@@ -285,10 +222,6 @@ def main(argv=None):
     ap = argparse.ArgumentParser(add_help=True, description='Gazebo GUI 3D 视图取帧')
     sub = ap.add_subparsers(dest='cmd', required=True)
 
-    p = sub.add_parser('derive-config', help='从世界 SDF 派生 gui-config（追加 Screenshot 插件）')
-    p.add_argument('--world', required=True)
-    p.add_argument('--out', required=True)
-
     p = sub.add_parser('snap', help='取一帧')
     p.add_argument('--out', required=True)
     p.add_argument('--timeout-ms', type=int, default=15000)
@@ -304,11 +237,6 @@ def main(argv=None):
     p.add_argument('--timeout-ms', type=int, default=3000)
 
     args = ap.parse_args(argv)
-
-    if args.cmd == 'derive-config':
-        ok, detail = derive_config(args.world, args.out)
-        print('[gui_capture] %s → %s' % (detail, args.out))
-        return 0 if ok else 1
 
     if args.cmd == 'probe':
         present, detail = service_present(args.timeout_ms)

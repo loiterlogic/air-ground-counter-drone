@@ -36,6 +36,29 @@ python3 tests/run_all.py --all --timeout 600   # 全跑（带超时）
 
 退出码：`0` = 活跃范围无断链；`1` = 有断链；`2` = 用法/环境错误。
 
+## 纪律：测试基线**不得跟随 `HEAD`**
+
+写"改动前 vs 改动后"的回归时，基线**必须钉成常量 rev**，不能取 `HEAD`：
+
+```python
+BASELINE_REV = 'b627043'   # 改动入库前的最后一次提交
+r = sub('git -C %s show %s:%s > %s' % (ROOT, BASELINE_REV, REL_PATH, tmp))
+if r.returncode != 0:
+    pytest.skip('git 里取不到基线 %s' % BASELINE_REV)   # 跳过要**说明**，不静默通过
+```
+
+**为什么**（2026-10-31 P2-1 实测踩到）：`test_intruder_visual_highlight.py` 曾用
+`git show HEAD:<path>` 取"改动前"基线。当时改动尚未提交，`HEAD` 恰好等于改动前——
+但一次**正常入库**之后，`HEAD` 就变成了"改动后"，于是：
+
+| 断言 | 后果 |
+|---|---|
+| "剥掉新增元素后与基线逐字节一致" | **恒真**（自己跟自己比）→ 守卫静默失效 |
+| "原有 joint 数应 +1" | **恒假**（基线已含新增）→ 误报 |
+
+**恒真的守卫比失败的守卫更危险**：它看起来一直在跑，其实什么都没守。
+基线钉常量后，入库不再改变基线语义；取不到 rev 时 `skip` 并打印原因，而不是静默通过。
+
 ## 命名
 
 沿用原风险项编号：`w<ws>_r<nnn>_check.py`、`w<ws>_<name>_check.py`。
