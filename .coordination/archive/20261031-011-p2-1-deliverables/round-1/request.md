@@ -43,7 +43,7 @@
 - `tests/**`、`scripts/tests/**`（冒烟入口与其测试）
 - `.gitignore`（仅在需要排除大文件时）
 - `docs/plan/p2-1-项目交付物.md`（勾选判据、记录干净环境验证）
-- `.coordination/task/20261031-011-p2-1-deliverables/**`
+- `.coordination/archive/20261031-011-p2-1-deliverables/**`
 - 产物目录：`experiments/p2-1/**`（运行证据，**不入 git**）；截图/GIF 落 `docs/plan/assets/`
 - **提交**：见步骤 0（本地 `commit`，**禁止** `push` / `reset` / `clean` / 切分支）
 

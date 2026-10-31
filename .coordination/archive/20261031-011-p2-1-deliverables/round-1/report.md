@@ -59,7 +59,7 @@
 | 分支 | `main` | `main` | ✅ |
 | 工作区脏 | 62 项 | **64 项** | ⚠ 差 2 项，见下 |
 
-差 2 项 = `.coordination/CURRENT.md`（Leader 写本轮派工）+ `.coordination/task/20261031-011-p2-1-deliverables/`
+差 2 项 = `.coordination/CURRENT.md`（Leader 写本轮派工）+ `.coordination/archive/20261031-011-p2-1-deliverables/`
 （Leader 写本轮 `request.md`）。**均属本轮派工自身产物，不是未知漂移**。其余 62 项与派工单逐类吻合。
 
 <a id="p2-1-r1-step0"></a>
