@@ -153,7 +153,28 @@ trajectory_tracker:
 standoff_follower:
   ros__parameters:
     safe_min: 8.0                   # 安全间距带下沿（水平距离，m）
-    safe_max: 15.0                  # 安全间距带上沿（m）
+    # ---- 安全间距带上沿：15.0 → 11.0（F1 round-3，2026-10-31）----
+    # 原 15.0 与**感知量程**不兼容：`air_perception` 的门是**三维**距离
+    # （`air_perception.cpp:358-366` `r=‖target−uav‖`，`range_max_m=12.0`），
+    # 而 `standoff_follower` 的收敛点是**水平**距离。dz = 2.5(巡航) − 2.0(目标) = 0.5 m
+    # ⇒ 水平预算 = √(12² − 0.5²) = **11.990 m**。收敛到 15 m 时目标恒在量程外 ⇒
+    # 感知无输出 ⇒ C10「过期即冻结」⇒ 只能等基础 8 字偶然把机体带回 12 m 内才可能重获。
+    #
+    # 下界由**安全层**约束（`safety_shield.cpp` 的目标圆盘）：
+    #   target_min_dist(8.0) + target_margin(1.5) + dynamicMargin(reaction 0.2×2.0 + reach 0.3 = 0.7)
+    #   = **10.200 m**。低于它，安全层会把参考推回圆盘外。
+    # ⇒ 可行窗口 (10.200, 11.990)，宽 1.79 m；11.0 距两侧各留 +0.80 / +0.99 m。
+    #
+    # **实测依据**（F1 round-3，干预 vs 默认，同机同场景 yard/s04/full/seed0/GUI）：
+    #   默认 15.0：5 次运行中 1 次 TIMEOUT，`visibility_rate=0.228`、`longest_outage=28.8 s`、
+    #              hold 事件 3 次（目标在 14.6 m 处失联，正落在盲带边界）；
+    #   干预 11.0：2 次运行连续 TRACKING_SUCCESS，`visibility_rate` 0.900/0.931、
+    #              `longest_outage` 3.5 s、**hold 事件 0 次**。
+    #   默认 15.0 的 3 次成功则是"8 字偶然带回 12 m 内"的非确定结果。
+    # 纪律：只改**本值**；safe_min / 全部安全余量 / C1 八字 / C10 过期冻结语义 / ABI /
+    #   感知量程**均不变**——不得用扩大传感器能力掩盖冲突。
+    # 回滚：把本值改回 15.0 即可（`experiments/f1-spawn/` 保留干预前后原始运行证据）。
+    safe_max: 11.0                  # 安全间距带上沿（m）；与三维量程 12 m / 安全圆盘 10.2 m 兼容
     height: 2.5                     # 跟踪高度（m）
     hysteresis: 1.0                 # 距离带滞回（m）
     max_step_m: 0.1                 # 单拍限幅（0.1 m@20 Hz → 最大水平速度 2.0 m/s）

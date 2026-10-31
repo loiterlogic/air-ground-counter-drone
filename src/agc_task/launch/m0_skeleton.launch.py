@@ -42,6 +42,17 @@ def generate_launch_description():
             'world_obstacles': LaunchConfiguration('world_obstacles'),
             # P1-1：按地图选择几何真源（minimal | yard | open_field）
             'world_map': LaunchConfiguration('world_map'),
+            # F1（2026-10-31）：世界 spawn 由**出生布局单一真源**派生后经 w6 透传。
+            # 缺省 'auto' = 不覆盖 world_bringup 自己的 car.yaml / target.yaml 缺省
+            # （即 standalone 行为不变）；w6 会显式传入**与复位同值**的坐标。
+            'car_x': LaunchConfiguration('car_x'),
+            'car_y': LaunchConfiguration('car_y'),
+            'car_z': LaunchConfiguration('car_z'),
+            'car_yaw': LaunchConfiguration('car_yaw'),
+            'target_x': LaunchConfiguration('target_x'),
+            'target_y': LaunchConfiguration('target_y'),
+            'target_z': LaunchConfiguration('target_z'),
+            'target_yaw': LaunchConfiguration('target_yaw'),
         }.items(),
     )
 
@@ -131,6 +142,19 @@ def generate_launch_description():
     ld.add_action(DeclareLaunchArgument(
         'world_map', default_value='minimal',
         description='地图（几何真源选择）：minimal（默认）| yard | open_field（由上层传入）'))
+    # F1（2026-10-31）：出生布局透传口。缺省 **'auto'** = 不改 world_bringup 的缺省
+    # （car.yaml / target.yaml 的值）→ standalone 行为逐字不变；w6.launch.py 显式传入
+    # 布局真源派生值（或场景覆盖值），两侧（世界 spawn / 复位）同源。
+    for _arg, _desc in (
+            ('car_x', '车 spawn x（world ENU，m；auto=用 agc_sim car.yaml 缺省）'),
+            ('car_y', '车 spawn y（world ENU，m；auto=用 agc_sim car.yaml 缺省）'),
+            ('car_z', '车 spawn z（轮触地，m；auto=用 agc_sim car.yaml 缺省）'),
+            ('car_yaw', '车 spawn yaw（rad；auto=用 agc_sim car.yaml 缺省）'),
+            ('target_x', '目标 spawn x（world ENU，m；auto=用 agc_sim target.yaml 缺省）'),
+            ('target_y', '目标 spawn y（world ENU，m；auto=用 agc_sim target.yaml 缺省）'),
+            ('target_z', '目标 spawn z（m；auto=用 agc_sim target.yaml 缺省）'),
+            ('target_yaw', '目标 spawn yaw（rad；auto=用 agc_sim target.yaml 缺省）')):
+        ld.add_action(DeclareLaunchArgument(_arg, default_value='auto', description=_desc))
     ld.add_action(DeclareLaunchArgument(
         'sensors_file',
         default_value=os.path.join(perception_share, 'config', 'perception_sensors.yaml'),

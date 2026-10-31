@@ -34,8 +34,31 @@ from ament_index_python.packages import get_package_share_directory
 
 SERVICE = '/agc/scenario/reset'
 
+# F1（2026-10-31）：出生位不再硬编码——从**出生布局单一真源**读取，否则本核查会在
+# `spawn_layout.yaml` 改动后继续验证旧坐标（"配置改了、核查还绿"的静默漂移）。
+_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+_LAYOUT_PATH = os.path.join(_ROOT, 'src', 'agc_task', 'config', 'spawn_layout.yaml')
+_layout = yaml.safe_load(open(_LAYOUT_PATH))['spawn_layout']
+CAR_X, CAR_Y = float(_layout['car']['x']), float(_layout['car']['y'])
+TARGET_X, TARGET_Y = float(_layout['target']['x']), float(_layout['target']['y'])
+
+# F1 round-2（审查第 2 条）：越界样本的输入**由当前 work_area + 车外伸派生**，不写死数值。
+# 为什么：作业区在 2026-10-29 由 80×80 扩到 100×100（origin −50,−50），写死的 `car_x=45.0`
+# 在 80×80 时代越界、在 100×100 时代**合法** —— 该用例因此长期"通过"但已不是在验越界。
+# 现按真源派生：合法上界 = origin_x + size_x − 车外伸（scenario_reset 的 clearance_radius_car_m），
+# 越界样本取"上界 + 0.5 m"，故无论作业区如何调整，它都**必然**越界。
+_GEOM_PATH = os.path.join(_ROOT, 'src', 'agc_sim', 'config', 'world_geometry.yaml')
+_geom = yaml.safe_load(open(_GEOM_PATH))['work_area']
+_BASE_CFG = yaml.safe_load(open(os.path.join(_ROOT, 'src', 'agc_task', 'config', 'w6_base.yaml')))
+_CAR_EXTENT_M = float(
+    _BASE_CFG['scenario_reset']['ros__parameters']['clearance_radius_car_m'])
+_CAR_X_MAX = float(_geom['origin_x']) + float(_geom['size_x']) - _CAR_EXTENT_M
+# 越界样本：上界再外 0.5 m（同时仍让车-目标距离充足，确保**先**被边界门拒绝而不是净空门）。
+OUT_OF_BOUNDS_CAR_X = round(_CAR_X_MAX + 0.5, 4)
+OUT_OF_BOUNDS_TARGET = (0.0, 0.0)   # 车越界时目标放原点：两门都会命中，故须断言**具体原因**
+
 # 场景实体几何事实（决策依据见 ADR-0029）：立柱 pole_1(0,-6) / pole_2(6,6)，0.3×0.3；
-# 默认 spawn car(-4,-3) / target(6.5,2.5)。
+# 默认 spawn 取自 `spawn_layout.yaml`（现为 car(−15, 1) / target(15, −2)）。
 CASES = [
     {
         'name': 'a_car_on_pole',
@@ -44,16 +67,26 @@ CASES = [
         'expect_success': False, 'reason_prefix': 'car_obstacle_clearance',
     },
     {
+        # 己方 UAV 与车**重合**（两者都取布局真源的 car 位）→ 车-己方机净空必被拒。
         'name': 'b_own_uav_overlap',
-        'overrides': {'own_uav_present': True, 'own_uav_x': -4.0, 'own_uav_y': -3.0},
+        'overrides': {'car_x': CAR_X, 'car_y': CAR_Y, 'target_x': TARGET_X,
+                      'target_y': TARGET_Y,
+                      'own_uav_present': True, 'own_uav_x': CAR_X, 'own_uav_y': CAR_Y},
         'expect_success': False, 'reason_exact': 'car_own_uav_clearance',
     },
     {
+        # 越界：输入由 work_area + 车外伸**派生**（见文件头），不是写死数值。
+        # 同时断言**具体拒绝原因** = boundary_out_car：避免"被净空/其它门误拒"也算通过。
+        # 目标放 (0,0)：车越界样本 (≈49.9963, car_y) 与目标距离充足，故不会先命中净空门。
         'name': 'c_out_of_bounds',
-        'overrides': {'car_x': 45.0},
+        'overrides': {'car_x': OUT_OF_BOUNDS_CAR_X,
+                      'car_y': float(_layout['car']['y']),
+                      'target_x': OUT_OF_BOUNDS_TARGET[0],
+                      'target_y': OUT_OF_BOUNDS_TARGET[1]},
         'expect_success': False, 'reason_exact': 'boundary_out_car',
     },
     {
+        # C7 下限的**边界值**用例（与布局无关）：车↔目标恰 6.0 m，须被接受。
         'name': 'd_limit_legal',
         'overrides': {'car_x': -4.0, 'car_y': -3.0, 'target_x': 2.0, 'target_y': -3.0},
         'expect_success': True,
@@ -66,8 +99,10 @@ CASES = [
         'expect_success': False, 'reason_prefix': 'car_obstacle_clearance',
     },
     {
+        # 以布局真源为基线的随机采样必能找到合法候选（布局本身已通过 C7 核查）。
         'name': 'f_random_legal',
-        'overrides': {'car_x': -4.0, 'car_y': -3.0, 'target_x': 6.5, 'target_y': 2.5,
+        'overrides': {'car_x': CAR_X, 'car_y': CAR_Y, 'target_x': TARGET_X,
+                      'target_y': TARGET_Y,
                       'spawn_randomize': True, 'spawn_search_radius_m': 3.0, 'spawn_seed': 0},
         'expect_success': True,
     },

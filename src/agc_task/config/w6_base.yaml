@@ -4,8 +4,13 @@ task_manager:
   ros__parameters:
     world_name: "agc_world"
     goal_topic: "/agc/ground/goal"
-    goal_x: 4.0
-    goal_y: 3.0
+    # F1（2026-10-31）跟随出生布局：`goal_follow_target:false` 的场景以本固定点为任务目标，
+    # 而 C8 判据要求**车↔目标** ≤ d_track=3.0 m（GROUND_APPROACH 的有效拍）——故任务目标必须
+    # 落在目标出生位附近，不能停留在旧布局的 (4,3)。
+    # 取值 = 目标出生位 (15,-2) 向西 2.50 m（旧布局同为 2.55 m 的同类关系），仍在中央作业坪内。
+    # 布局改了就同步改这里（`tests/w6_geometry_check.py` 的 (g) 组会核对三组距离）。
+    goal_x: 12.5
+    goal_y: -2.0
     goal_follow_target: false
     # R-041：目标失效策略 =「保留有期限的最后有效目标」。目标失效时在 goal_hold_valid_s 窗口内保持
     # 最后有效目标的**原位置 + 原源时刻**（不刷新 stamp、不反射固定点）；超窗显式失效（地面安全停车）。
@@ -58,12 +63,17 @@ scenario_reset:
     world_name: "agc_world"
     state_topic: "/agc/task/state"
     car_start_topic: "/agc/scenario/car_start"
-    car_x: -4.0
-    car_y: -3.0
+    # F1（2026-10-31）：出生布局坐标的**单一真源**是 `config/spawn_layout.yaml`——`w6.launch.py`
+    # 读取后经 launch 参数**显式覆盖**下列值，使「世界 spawn / 复位 / 己方机起飞参考」三处取同一
+    # 组坐标。此处数值仅作 **standalone 回退**（不经 w6 入口、直接 `ros2 run agc_task
+    # scenario_reset` 时使用），不构成第二份布局真源；现回退值 = `spawn_layout.yaml` 的车/目标位
+    # （z 取复位口径），使两条路径不再互相矛盾。
+    car_x: -15.0
+    car_y: 1.0
     car_z: 0.010
     car_yaw: 0.0
-    target_x: 6.5
-    target_y: 2.5
+    target_x: 15.0
+    target_y: -2.0
     target_z: 2.0
     target_yaw: 0.0
     # C7 出生净空下限（ADR-0023；旧值 2.4 m 作废）；R-014 起为**车↔目标对**下限（标定值）

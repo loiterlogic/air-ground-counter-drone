@@ -306,10 +306,21 @@ def _blocked_cells(geometry_obs, ring, world_map_mod):
     return blocked
 
 
-# s04 主场景的出生位与目标（scenarios.yaml / w6_base.yaml 真源；用于 C7 / 环带计算）。
-CAR_XY = (-4.0, -3.0)
-TARGET_X, TARGET_Y = 6.5, 2.5
-OWN_XY = (0.0, 0.0)
+# s04 主场景的出生位与目标（F1，2026-10-31：**改从出生布局真源读取**，不再硬编码）。
+# 真源 = `src/agc_task/config/spawn_layout.yaml`（世界 spawn / 复位 / 己方机起飞参考的单一来源）。
+# 硬编码副本会让"配置改了、核查还在验旧位"这种漂移静默通过——正是 F1 要消灭的病灶。
+SPAWN_LAYOUT_PATH = os.path.join(ROOT, 'src', 'agc_task', 'config', 'spawn_layout.yaml')
+
+
+def _spawn_layout():
+    doc = _load_yaml(SPAWN_LAYOUT_PATH)['spawn_layout']
+    return doc
+
+
+_LAYOUT = _spawn_layout()
+CAR_XY = (float(_LAYOUT['car']['x']), float(_LAYOUT['car']['y']))
+TARGET_X, TARGET_Y = float(_LAYOUT['target']['x']), float(_LAYOUT['target']['y'])
+OWN_XY = (float(_LAYOUT['own_uav']['x']), float(_LAYOUT['own_uav']['y']))
 
 
 def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path,
@@ -589,7 +600,10 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
     out['f_derivation_and_hash'] = f
 
     # ---- (g) C7 出生净空（与 scenario_reset.validateCandidate 同判据）----
-    g = {'map': map_name}
+    # F1（2026-10-31）：坐标来自出生布局真源（`spawn_layout.yaml`），并追加
+    # 「车-目标 / 己方机-目标 / 车-己方机」三组设计距离判据——这是派工单的验收口径，
+    # 不再只有"车↔目标 ≥6 m"这一条。
+    g = {'map': map_name, 'spawn_layout_source': SPAWN_LAYOUT_PATH}
     worst = {}
     for name, (px, py), extent in (
             ('car', CAR_XY, 0.5037), ('target', (TARGET_X, TARGET_Y), 0.25),
@@ -601,13 +615,22 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
     g['all_spawns_clear'] = all(v > 0.0 for v in worst.values())
     # 车↔目标 C7 标定值 6.0 m（ADR-0023）
     car_target = math.hypot(CAR_XY[0] - TARGET_X, CAR_XY[1] - TARGET_Y)
+    own_target = math.hypot(OWN_XY[0] - TARGET_X, OWN_XY[1] - TARGET_Y)
+    car_own = math.hypot(CAR_XY[0] - OWN_XY[0], CAR_XY[1] - OWN_XY[1])
     g['car_target_distance_m'] = round(car_target, 6)
+    g['own_uav_target_distance_m'] = round(own_target, 6)
+    g['car_own_uav_distance_m'] = round(car_own, 6)
     g['car_target_clearance_ok'] = car_target >= 6.0
+    # F1 设计目标（派工单）：车/目标 ≥30 m、己方机/目标 ≥25 m、己方车机 3–8 m。
+    g['car_target_ge_30'] = car_target >= 30.0
+    g['own_uav_target_ge_25'] = own_target >= 25.0
+    g['car_own_uav_in_3_8'] = 3.0 <= car_own <= 8.0
     g['boundary_inner_ok'] = bool(
         wa['origin_x'] + 0.5037 <= CAR_XY[0] <= wa['origin_x'] + wa['size_x'] - 0.5037
         and wa['origin_y'] + 0.5037 <= CAR_XY[1] <= wa['origin_y'] + wa['size_y'] - 0.5037)
     g['pass'] = all(g[k] for k in (
-        'all_spawns_clear', 'car_target_clearance_ok', 'boundary_inner_ok'))
+        'all_spawns_clear', 'car_target_clearance_ok', 'boundary_inner_ok',
+        'car_target_ge_30', 'own_uav_target_ge_25', 'car_own_uav_in_3_8'))
     out['g_spawn_clearance_c7'] = g
 
     # ---- (h) 障碍族可见性（z=0.48 处有水平截面）----

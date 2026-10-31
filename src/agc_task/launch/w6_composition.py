@@ -25,6 +25,7 @@ carrier 承载者校验、参数合并、轴断言、manifest 生成、临时文
 
 import hashlib
 import json
+import math
 import os
 import random
 import tempfile
@@ -109,6 +110,207 @@ def geometry_sha256(sim_share, world_map=DEFAULT_WORLD_MAP):
         return hashlib.sha256(f.read()).hexdigest()
 
 
+# ---------------------------------------------------------------- 出生布局（F1）
+# 出生布局坐标的**单一真源**（F1，2026-10-31）：`agc_task/config/spawn_layout.yaml`。
+# 为什么需要它：世界 spawn（world_bringup 的 car_x/target_x…）、复位位置（scenario_reset 的
+# 同一组参数）、己方机起飞参考（PX4_GZ_MODEL_POSE 与空中节点 origin_pose）**原本各自写默认值**
+# （`car.yaml` / `target.yaml` / `base.yaml` / air.yaml / C++ declare_parameter），四份值可漂移。
+# 现统一由本模块读一处、派生四处；未知/缺失键一律**拒绝运行**（不静默回退到某份旧默认值）。
+SPAWN_LAYOUT_FILE = 'spawn_layout.yaml'
+
+
+def load_spawn_layout(task_share, path=None):
+    """读出生布局真源；缺键 / 非数值 / **非有限值（NaN·±Inf）** → `RuntimeError`（拒绝运行）。
+
+    `path` 仅供测试注入（缺省即真源文件），避免测试为造非法值去改真源。
+
+    为什么必须查 `isfinite`：`float('nan')` / `float('inf')` 都能通过 `float()` 转换，但一旦注入
+    世界 `create` 或 `scenario_reset`，位姿校验的比较式（`< min` / `> max`）对 NaN **恒为假**，
+    于是"越界 / 净空不足"的拒绝分支**永远不会触发**，实体会被静默放到 NaN 位姿上。
+    YAML 里 `.nan` / `.inf` 是合法字面量 ⇒ 这不是假想输入。
+    """
+    path = path or os.path.join(task_share, 'config', SPAWN_LAYOUT_FILE)
+    with open(path) as f:
+        doc = yaml.safe_load(f) or {}
+    layout = doc.get('spawn_layout')
+    if not isinstance(layout, dict):
+        raise RuntimeError('出生布局真源 %s 缺少顶层 `spawn_layout` → 拒绝运行' % path)
+    out = {}
+    for entity, keys in (
+            ('car', ('x', 'y', 'yaw', 'world_z', 'reset_z')),
+            ('target', ('x', 'y', 'z', 'yaw')),
+            ('own_uav', ('x', 'y', 'z', 'yaw'))):
+        sec = layout.get(entity)
+        if not isinstance(sec, dict):
+            raise RuntimeError(
+                '出生布局真源 %s 缺少 `spawn_layout.%s` → 拒绝运行' % (path, entity))
+        vals = {}
+        for k in keys:
+            if k not in sec:
+                raise RuntimeError(
+                    '出生布局真源 %s 缺少 `spawn_layout.%s.%s` → 拒绝运行' % (path, entity, k))
+            raw = sec[k]
+            try:
+                val = float(raw)
+            except (TypeError, ValueError):
+                raise RuntimeError(
+                    '出生布局真源 %s 的 `spawn_layout.%s.%s`=%r 非数值 → 拒绝运行'
+                    % (path, entity, k, raw))
+            if not math.isfinite(val):
+                # NaN / ±Inf：比较式对 NaN 恒假 → 越界与净空拒绝分支失效（静默放行）。
+                raise RuntimeError(
+                    '出生布局真源 %s 的 `spawn_layout.%s.%s`=%r 非有限值（NaN/±Inf）→ 拒绝运行'
+                    % (path, entity, k, raw))
+            vals[k] = val
+        out[entity] = vals
+    # 固定任务目标的派生偏移（F1 round-2）：缺省 (−2.5, 0)。缺键时用缺省而不是拒绝——
+    # 它是"派生规则参数"，不是出生位本身；但一旦出现就必须是有限数值。
+    off = layout.get('goal_offset_m') or {}
+    if not isinstance(off, dict):
+        raise RuntimeError(
+            '出生布局真源 %s 的 `spawn_layout.goal_offset_m` 非映射 → 拒绝运行' % path)
+    goal_off = {}
+    for k, default in (('dx', -2.5), ('dy', 0.0)):
+        raw = off.get(k, default)
+        try:
+            val = float(raw)
+        except (TypeError, ValueError):
+            raise RuntimeError(
+                '出生布局真源 %s 的 `goal_offset_m.%s`=%r 非数值 → 拒绝运行' % (path, k, raw))
+        if not math.isfinite(val):
+            raise RuntimeError(
+                '出生布局真源 %s 的 `goal_offset_m.%s`=%r 非有限值 → 拒绝运行' % (path, k, raw))
+        goal_off[k] = val
+    out['goal_offset_m'] = goal_off
+    out['source'] = path
+    return out
+
+
+def spawn_layout_sha256(task_share):
+    """出生布局真源文件的 sha256（布局版本身份；写入 manifest，便于审查核对）。"""
+    path = os.path.join(task_share, 'config', SPAWN_LAYOUT_FILE)
+    with open(path, 'rb') as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+
+def own_uav_pose_string(layout, override=None):
+    """己方机 spawn 位姿字符串（`x,y,z,roll,pitch,yaw`）——PX4_GZ_MODEL_POSE 与 origin_pose
+    **共用同一字符串**（同一 launch 参数），故"起飞参考"与"净空校验坐标"不可能不一致。
+
+    `override` 非空（launch 显式 `px4_own_pose:=…`）时**原样返回**，不再从 layout 拼——
+    证据与距离必须用这个真实生效的字符串，而不是 layout 的缺省值（否则会造出
+    "manifest 说 own=(−11,1)、实际飞在别处"的自洽假象）。
+    """
+    if override:
+        return override.strip()
+    own = layout['own_uav']
+    return '%g,%g,%g,0,0,%g' % (own['x'], own['y'], own['z'], own['yaw'])
+
+
+def parse_own_pose(pose_string, layout=None):
+    """解析己方机位姿字符串 → `{x, y, z, yaw, source}`；非法 / 非有限值 → `RuntimeError`。
+
+    `source` ∈ `'override'`（launch 显式给出）| `'layout'`（取自出生布局真源）。
+    非法值**拒绝运行**而不是 WARN 后按布局兜底：兜底会让"声明的位置"与"实际飞的位置"
+    悄悄分叉，正是本轮要消灭的那类证据失真。
+    """
+    parts = [p.strip() for p in str(pose_string).split(',')]
+    if len(parts) < 6:
+        raise RuntimeError(
+            '己方机位姿 %r 需要 6 个分量（x,y,z,roll,pitch,yaw）→ 拒绝运行' % (pose_string,))
+    try:
+        vals = [float(p) for p in parts[:6]]
+    except ValueError:
+        raise RuntimeError('己方机位姿 %r 含非数值分量 → 拒绝运行' % (pose_string,))
+    if not all(math.isfinite(v) for v in vals):
+        raise RuntimeError('己方机位姿 %r 含非有限值（NaN/±Inf）→ 拒绝运行' % (pose_string,))
+    is_layout = bool(layout) and pose_string.strip() == own_uav_pose_string(layout)
+    return {'x': vals[0], 'y': vals[1], 'z': vals[2], 'yaw': vals[5],
+            'source': 'layout' if is_layout else 'override'}
+
+
+def spawn_layout_distances(layout):
+    """三组设计距离（车↔目标 / 己方机↔目标 / 车↔己方机）。
+
+    `layout` 可为**实际生效**的位姿字典（`{'car':…, 'target':…, 'own_uav':…}`）——默认场景下
+    即 `{'car': effective.car, 'target': effective.target, 'own_uav': 实际生效 own}`。
+    传入 layout 真源与传入生效值得到**不同**结果，这正是"距离必须跟实际生效位一致"的落点。
+    """
+    car, tgt, own = layout['car'], layout['target'], layout['own_uav']
+    return {
+        'car_target_m': math.hypot(car['x'] - tgt['x'], car['y'] - tgt['y']),
+        'own_uav_target_m': math.hypot(own['x'] - tgt['x'], own['y'] - tgt['y']),
+        'car_own_uav_m': math.hypot(car['x'] - own['x'], car['y'] - own['y']),
+    }
+
+
+def apply_spawn_layout(merged, layout, sc=None):
+    """把出生布局注入合并参数，返回**实际生效**的出生位（世界 spawn 与复位同值）。
+
+    优先级（三级，从高到低）：**场景层显式覆盖 > 出生布局真源 > base / 节点缺省**。
+
+    * 为什么场景覆盖仍可生效：部分场景的"出生位"本身承载**场景语义**，不是"默认出生点"——
+      例如 `s11` 的"车被立柱阻隔"、`s10` 的"目标置远 → 必然超时"。用布局真源盖掉它们等于
+      改掉这些场景的验收口径（不在本单范围）。故布局真源只提供**缺省**，场景可覆盖。
+    * 为什么这不破坏"三者一致"：世界 spawn 取的是**本函数的返回值**（`w6.launch.py` 用它喂
+      `world_bringup` 的 `car_x/target_x…`），而复位参数也是同一份 `merged`。二者同源，
+      所以"世界 spawn == 复位位置"对**任何**场景都成立，而不只是默认场景。
+    * `z` 分两种口径：世界 spawn 的车 z = **轮触地**（布局 `world_z`，模型几何属性，不随场景变），
+      复位车 z = 布局 `reset_z`（`scenario_reset` 既有口径 0.010）。
+
+    返回 `{'car': {x,y,yaw,world_z,reset_z}, 'target': {x,y,z,yaw}, 'source': 'scene'|'layout'}`；
+    `source` 记明该 run 的出生位来自布局真源还是场景覆盖，写入 manifest 供审查区分。
+    """
+    car, tgt = layout['car'], layout['target']
+    sr = merged.setdefault('scenario_reset', {})
+    scene_sr = ((sc or {}).get('params') or {}).get('scenario_reset') or {}
+    use_scene = bool(scene_sr)
+    eff_car = {
+        'x': float(scene_sr.get('car_x', car['x'])),
+        'y': float(scene_sr.get('car_y', car['y'])),
+        'yaw': float(scene_sr.get('car_yaw', car['yaw'])),
+        # 轮触地高度是模型几何属性，不随出生点变；场景若显式给 car_z，那只是复位口径。
+        'world_z': car['world_z'],
+        'reset_z': float(scene_sr.get('car_z', car['reset_z'])),
+    }
+    eff_tgt = {
+        'x': float(scene_sr.get('target_x', tgt['x'])),
+        'y': float(scene_sr.get('target_y', tgt['y'])),
+        'z': float(scene_sr.get('target_z', tgt['z'])),
+        'yaw': float(scene_sr.get('target_yaw', tgt['yaw'])),
+    }
+    sr['car_x'] = eff_car['x']
+    sr['car_y'] = eff_car['y']
+    sr['car_z'] = eff_car['reset_z']
+    sr['car_yaw'] = eff_car['yaw']
+    sr['target_x'] = eff_tgt['x']
+    sr['target_y'] = eff_tgt['y']
+    sr['target_z'] = eff_tgt['z']
+    sr['target_yaw'] = eff_tgt['yaw']
+
+    # ---- 固定任务目标：默认场景由「目标出生位 + goal_offset_m」派生（F1 round-2）----
+    # 触发条件（三条同时成立才派生）：
+    #   ① 场景**未**显式给 `task_manager.goal_x/goal_y`（显式值属场景语义，如 s08/s11 的配套目标）；
+    #   ② `goal_follow_target` 为假（为真时任务目标由感知目标实时决定，固定点无意义）；
+    #   ③ 场景**未**显式给 `scenario_reset.target_*`——否则该场景的目标位是"置远/被阻隔"等
+    #      语义设定，派生一个 2.5 m 邻域目标会把 s10 的"必然超时"改成"可达"（改验收口径）。
+    tm = merged.setdefault('task_manager', {})
+    scene_tm = ((sc or {}).get('params') or {}).get('task_manager') or {}
+    follow = bool(tm.get('goal_follow_target', False))
+    explicit_goal = ('goal_x' in scene_tm) or ('goal_y' in scene_tm)
+    explicit_target = any(k in scene_sr for k in ('target_x', 'target_y'))
+    goal_src = 'scene' if explicit_goal else ('derived' if not follow and not explicit_target
+                                             else 'base')
+    if not explicit_goal and not follow and not explicit_target:
+        off = layout.get('goal_offset_m') or {'dx': -2.5, 'dy': 0.0}
+        tm['goal_x'] = eff_tgt['x'] + float(off['dx'])
+        tm['goal_y'] = eff_tgt['y'] + float(off['dy'])
+    return {'car': eff_car, 'target': eff_tgt, 'source': 'scene' if use_scene else 'layout',
+            'goal_source': goal_src,
+            # 实际生效的固定任务目标（供 manifest / 断言同源比对）。
+            'goal_x': float(tm.get('goal_x', 0.0)), 'goal_y': float(tm.get('goal_y', 0.0))}
+
+
 def obstacle_shape(ob, sim_share=None):
     """实体形状（schema 缺省 = box；ADR-0062 向后兼容——老配置不写 shape 仍可运行）。"""
     return world_map_module(sim_share).obstacle_shape(ob)
@@ -134,7 +336,7 @@ def obstacle_bbox_size(ob, sim_share=None):
 
     `map_adapter` / `air_perception` 的障碍模型是 OBB（只有 sx/sy/sz + yaw），无法表达圆柱 /
     球 / 多图元复合体；故一律降级为包络矩形（保守外扩，不缩小实体）。该降级为成文约定，
-    见 `docs/plan/p1-1-地图与场景资产.md#p1-1-goal`（P1-1 规格「派生点需同步改」）。
+    见 `docs/archive/completion-20261031/p1-1-地图与场景资产.md#p1-1-goal`（P1-1 规格「派生点需同步改」）。
     """
     return world_map_module(sim_share).obstacle_bbox_size(ob)
 
@@ -425,8 +627,20 @@ def apply_air_geometry(air_merged, geometry, sim_share=None):
     return air_merged
 
 
-def assertions(scene, merged, info, air_merged=None, sim_share=None):
-    """R-026 + S-06 断言：实际生效参数 == 声明轴、**派生几何 == 真源**；任一失败 → 拒绝运行。"""
+def assertions(scene, merged, info, air_merged=None, sim_share=None, layout=None,
+               effective_spawn=None, effective_own=None):
+    """R-026 + S-06 + F1 断言：实际生效参数 == 声明轴、**派生几何 == 真源**、
+    **生效出生位 == 喂给世界的那一组**；任一失败 → 拒绝运行。
+
+    F1（2026-10-31）：`effective_spawn` 为 `apply_spawn_layout()` 的返回值（该 run 实际生效的
+    车 / 目标位，也是 `w6.launch.py` 喂给 `world_bringup` 的值）。断言
+    「`scenario_reset` 参数 == `effective_spawn`」= 「复位位置 == 世界 spawn」在**启动前**可判定。
+
+    `effective_own`（`parse_own_pose()` 结果）：己方机位姿可被 launch 显式覆盖，故
+    ① `scenario_reset.own_uav_x/y` 必须等于**实际生效** own（而非 layout 缺省）；
+    ② 设计距离必须按实际生效 own 算——否则"覆盖过的 run"会被 layout 的距离误判为通过
+       （round-1 审查第 5 条）。
+    """
     axes = info['axes']
     entries = info['entries']
     geometry = info['geometry']
@@ -457,6 +671,52 @@ def assertions(scene, merged, info, air_merged=None, sim_share=None):
         'derived_obstacles_match_axis':
             (obs_ids == gids) if info['world_obstacles'] == 'static' else (obs_ids == []),
     }
+    if effective_spawn is not None:
+        car, tgt = effective_spawn['car'], effective_spawn['target']
+        # 「复位位置 == 世界 spawn」：世界 spawn 用的就是这组 eff_*，故这里是同一判据的两侧。
+        res['scenario_reset_spawn_equals_world_spawn'] = (
+            abs(float(sr.get('car_x', 1e9)) - car['x']) < 1e-9
+            and abs(float(sr.get('car_y', 1e9)) - car['y']) < 1e-9
+            and abs(float(sr.get('car_z', 1e9)) - car['reset_z']) < 1e-9
+            and abs(float(sr.get('target_x', 1e9)) - tgt['x']) < 1e-9
+            and abs(float(sr.get('target_y', 1e9)) - tgt['y']) < 1e-9
+            and abs(float(sr.get('target_z', 1e9)) - tgt['z']) < 1e-9)
+    if layout is not None:
+        # C7（ADR-0023）不变量：车↔目标出生距离不得低于标定下限（本任务只许拉大，不许削弱）。
+        car = effective_spawn['car'] if effective_spawn is not None else layout['car']
+        tgt = effective_spawn['target'] if effective_spawn is not None else layout['target']
+        # own 用**实际生效**值：显式覆盖时不得拿 layout 的 own 算距离（那会造出自洽假象）。
+        own = effective_own if effective_own is not None else layout['own_uav']
+        dists = spawn_layout_distances({'car': car, 'target': tgt, 'own_uav': own})
+        clearance_min = float(sr.get('spawn_clearance_min_m', 6.0))
+        res['spawn_car_target_meets_c7'] = dists['car_target_m'] >= clearance_min
+        if effective_own is not None:
+            # 己方机出生净空校验坐标 == 实际生效 own（覆盖后仍须一致）。
+            # 仅当**本 run 声明己方机在场**时判：`backend:=lightweight` 不起空中链路，
+            # `own_uav_present=False`、`own_uav_x/y` 保持 base 的 0.0 占位（不是"出生位"），
+            # 拿它去比布局真源会误判——那是"该字段不适用"，不是"配置不一致"。
+            if bool(sr.get('own_uav_present', False)):
+                res['own_uav_reference_equals_effective_own'] = (
+                    abs(float(sr.get('own_uav_x', 1e9)) - own['x']) < 1e-9
+                    and abs(float(sr.get('own_uav_y', 1e9)) - own['y']) < 1e-9)
+        # F1 设计目标（派工单）：车/目标 ≥30 m、己方机/目标 ≥25 m、己方车机 3–8 m。
+        # 仅对**默认出生布局**（source=layout）判；场景自定义出生位（s10/s11…）属场景语义，
+        # 不按本任务设计目标约束（否则等于改那些场景的验收口径）。
+        # 己方机被显式覆盖时**同样判**——设计目标是对"本 run 实际几何"的约束，不因覆盖而豁免。
+        if effective_spawn is None or effective_spawn.get('source') == 'layout':
+            res['spawn_design_goals_met'] = (
+                dists['car_target_m'] >= 30.0
+                and dists['own_uav_target_m'] >= 25.0
+                and 3.0 <= dists['car_own_uav_m'] <= 8.0)
+        # F1 round-2（审查第 6 条）：**派生**的目标位必须落在 `d_track` 可达范围内。
+        # 只判 `goal_source == 'derived'`——场景显式给目标位的（s10/s11）其"不可达"是设计意图，
+        # 不能拿本规则误判它们为配置错误。这一条把"改了 target、忘了 goal"挡在启动前。
+        if (effective_spawn or {}).get('goal_source') == 'derived':
+            gx = float((effective_spawn or {}).get('goal_x', 1e9))
+            gy = float((effective_spawn or {}).get('goal_y', 1e9))
+            d_track = float((merged.get('task_manager') or {}).get('d_track_m', 3.0))
+            res['derived_goal_within_track_range'] = (
+                math.hypot(gx - tgt['x'], gy - tgt['y']) <= d_track)
     # ADR-0076 不变量：**已授权射击**的场景必须关闭「跟踪里程碑即终态」——
     #   否则 `capture_adjudicator` 的交火窗口（`task_state == GROUND_APPROACH`）会在
     #   `TRACKING_SUCCESS` 锁存时被提前关闭，捕获（`INTERCEPT_CONFIRMED/CAPTURE_NET`）**永不发生**
@@ -483,10 +743,17 @@ def assertions(scene, merged, info, air_merged=None, sim_share=None):
     return res
 
 
-def build_manifest(backend, info, merged, assertions_result, sim_share=None):
+def build_manifest(backend, info, merged, assertions_result, sim_share=None,
+                   layout=None, layout_sha256=None, own_pose=None, effective_spawn=None,
+                   effective_own=None):
     """产出 manifest dict（身份与入口名一致 + 完整展开节点 + 生效参数）。
 
     `launch` == `LAUNCH`（入口名）；`backend` = 实际 backend；`nodes` 由 backend 能力表派生。
+    F1（2026-10-31）：传 `layout` 时追加 `spawn_layout` 块——出生布局真源路径 / sha256 /
+    **实际生效**的车 / 目标位 / 己方机起飞参考字符串 / 三组距离，使"世界 spawn、复位位置、
+    己方机起飞参考"三者在**同一份 run 证据**里可逐项比对（不靠配置自述）。
+    `effective_own`（`parse_own_pose()` 结果）用于让距离与生效 own pose 同源，见
+    `spawn_layout_block`。
     """
     scene = info['scene']
     seed = info['seed']
@@ -590,7 +857,66 @@ def build_manifest(backend, info, merged, assertions_result, sim_share=None):
             'world_geometry_file': info['geometry_source'],
         },
         'geometry': geometry_block,
+        'spawn_layout': spawn_layout_block(layout, layout_sha256, own_pose, effective_spawn,
+                                           effective_own),
         'assertions': assertions_result,
+    }
+
+
+def spawn_layout_block(layout, layout_sha256=None, own_pose=None, effective_spawn=None,
+                       effective_own=None):
+    """出生布局证据块（F1）：真源身份 + **实际生效**位姿 + 三组距离 + 己方机起飞参考。
+
+    `layout=None`（未注入出生布局的调用方，如历史单测）→ 返回 `None`，不改既有行为。
+    `spawn` 是**消费者实际拿到的值**：车给出 `world_z`（世界 spawn，轮触地）与 `reset_z`
+    （复位口径）；`spawn_source` 记该 run 的出生位来自布局真源（`layout`）还是场景覆盖（`scene`）。
+
+    `effective_own`（`parse_own_pose()` 的结果）**优先**于 layout 的 own_uav：
+    己方机位姿可被 launch 显式覆盖，若距离仍按 layout 算，manifest 就会自洽地"证明"一个
+    并没有发生过的布局（round-1 审查第 5 条）。此处把关：`distances` 与 `own_uav` 用同一个值，
+    并额外记录 `layout_own_uav` + `own_pose_source`，让"覆盖过"这件事本身可见。
+    """
+    if layout is None:
+        return None
+    own = layout['own_uav']
+    if effective_spawn is not None:
+        car, tgt = effective_spawn['car'], effective_spawn['target']
+        src = effective_spawn.get('source')
+    else:
+        car, tgt, src = layout['car'], layout['target'], 'layout'
+    own_eff = own
+    own_src = 'layout'
+    if effective_own is not None:
+        own_eff = effective_own
+        own_src = effective_own.get('source', 'override')
+    pose_string = own_pose or own_uav_pose_string(layout, override=None if own_src == 'layout' else
+                                                  '%g,%g,%g,0,0,%g' % (own_eff['x'], own_eff['y'],
+                                                                        own_eff['z'], own_eff['yaw']))
+    return {
+        'source': layout.get('source'),
+        'sha256': layout_sha256,
+        'spawn_source': src,
+        'own_pose_source': own_src,
+        'spawn': {
+            'car': {'x': car['x'], 'y': car['y'], 'yaw': car['yaw'],
+                    'world_z': car['world_z'], 'reset_z': car['reset_z']},
+            'target': {'x': tgt['x'], 'y': tgt['y'], 'z': tgt['z'], 'yaw': tgt['yaw']},
+            'own_uav': {'x': own_eff['x'], 'y': own_eff['y'], 'z': own_eff['z'],
+                        'yaw': own_eff['yaw'], 'pose_string': pose_string},
+            # layout 真源里的 own 位（便于审查一眼看出"被覆盖了"）——不参与距离。
+            'layout_own_uav': {'x': own['x'], 'y': own['y'], 'z': own['z'], 'yaw': own['yaw']},
+        },
+        # 距离一律按**实际生效**位算（own 用 own_eff）。
+        'distances': spawn_layout_distances(
+            {'car': car, 'target': tgt, 'own_uav': own_eff}),
+        # F1 round-2：固定任务目标与其来源（`derived`=由目标出生位+偏移派生）。
+        # 审查可据此核对"改了出生布局，goal 是否跟着走"，不必再去翻合并后的临时参数。
+        'goal': {'x': (effective_spawn or {}).get('goal_x'),
+                 'y': (effective_spawn or {}).get('goal_y'),
+                 'source': (effective_spawn or {}).get('goal_source'),
+                 'offset_m': layout.get('goal_offset_m')},
+        'design_goals': {'car_target_min_m': 30.0, 'own_uav_target_min_m': 25.0,
+                         'car_own_uav_range_m': [3.0, 8.0]},
     }
 
 

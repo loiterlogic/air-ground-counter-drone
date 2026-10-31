@@ -19,6 +19,7 @@
     gz_args:="-s -r -v 3 <world>"
 """
 
+import math
 import os
 import shutil
 import sys
@@ -51,12 +52,17 @@ if _LAUNCH_DIR not in sys.path:
 from w6_composition import (  # noqa: E402
     BACKENDS,
     apply_air_geometry,
+    apply_spawn_layout,
     assertions,
     build_manifest,
     compose_params,
     derive_px4_sim_seed,
     load_scene,
+    load_spawn_layout,
     new_run_token,
+    own_uav_pose_string,
+    parse_own_pose,
+    spawn_layout_sha256,
     write_manifest,
     write_temp_params,
 )
@@ -126,20 +132,59 @@ def _compose(context, *args, **kwargs):
 
     info = load_scene(task_share, perc_share, sim_share, scene, seed, world_map=world_map)
 
+    # ---------------- F1：出生布局**单一真源**（2026-10-31） ----------------
+    # 车 / 目标 / 己方机的出生位只从 `config/spawn_layout.yaml` 取一次，再派生四处：
+    #   ① 世界 spawn（world_bringup 的 car_x/car_y/target_x/target_y —— 覆盖 car.yaml/target.yaml 缺省）；
+    #   ② 复位位置（scenario_reset 的同一组参数——由下方 apply_spawn_layout 显式覆盖）；
+    #   ③ 己方机起飞参考（`own_uav_pose_string(layout)`，同一字符串既作 PX4_GZ_MODEL_POSE 又作 origin_pose）；
+    #   ④ 出生净空校验坐标（scenario_reset.own_uav_x/y 由 ③ 派生，见 compose_params）。
+    # 显式 launch 参数（px4_own_pose）仍可覆盖 ③（保留旧的覆盖能力），但**不再默默取默认值 0,0,0.2**。
+    layout = load_spawn_layout(task_share)
+    layout_sha256 = spawn_layout_sha256(task_share)
+    own_pose_override = (LaunchConfiguration('px4_own_pose').perform(context) or '').strip()
+    own_pose = own_uav_pose_string(layout, override=own_pose_override)
+    # 实际生效的己方机位姿（**解析一次**，供净空校验 / manifest / 断言三处共用）。
+    # 非法或非有限值 → 拒绝运行（不再 WARN 后按 layout 兜底：兜底会让"声明"与"实际"悄悄分叉）。
+    effective_own = parse_own_pose(own_pose, layout)
+    print('[w6] spawn_layout=%s sha256=%s car=(%g,%g) target=(%g,%g) own=(%s) [%s]'
+          % (layout['source'], layout_sha256[:16], layout['car']['x'], layout['car']['y'],
+             layout['target']['x'], layout['target']['y'], own_pose,
+             effective_own['source']))
+
+    def _spawn_args(effective):
+        """世界 spawn 的 launch 参数 —— **取自 `apply_spawn_layout()` 的返回值**。
+
+        这样"世界 spawn == 复位位置"对**每个场景**都成立（场景覆盖出生位时，两侧一起变），
+        而不是只对默认场景成立。`car_z` 用**轮触地**口径（模型几何属性，与复位口径不同）。
+        """
+        car, tgt = effective['car'], effective['target']
+        return {
+            'car_x': str(car['x']), 'car_y': str(car['y']),
+            'car_z': str(car['world_z']), 'car_yaw': str(car['yaw']),
+            'target_x': str(tgt['x']), 'target_y': str(tgt['y']),
+            'target_z': str(tgt['z']), 'target_yaw': str(tgt['yaw']),
+        }
+
     # ---------------- backend:=lightweight ----------------
     if backend == 'lightweight':
         merged = compose_params(info['base'], info['sc'], backend, seed,
                                 geometry=info['geometry'], spawn_randomize=spawn_randomize, goal_follow_target=goal_follow_target)
+        # F1：出生位注入（场景覆盖优先；否则用布局真源），返回值即世界 spawn 的唯一来源。
+        effective_spawn = apply_spawn_layout(merged, layout, info['sc'])
+        spawn_args = _spawn_args(effective_spawn)
         tmp = write_temp_params(merged, backend, scene, seed)
-        asserts = assertions(scene, merged, info, sim_share=sim_share)
+        asserts = assertions(scene, merged, info, sim_share=sim_share, layout=layout,
+                             effective_spawn=effective_spawn, effective_own=effective_own)
         manifest_path = write_manifest(
-            build_manifest(backend, info, merged, asserts, sim_share=sim_share),
+            build_manifest(backend, info, merged, asserts, sim_share=sim_share,
+                           layout=layout, layout_sha256=layout_sha256, own_pose=own_pose,
+                           effective_spawn=effective_spawn, effective_own=effective_own),
             backend, scene, seed)
         return [
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     os.path.join(task_share, 'launch', 'm0_skeleton.launch.py')),
-                launch_arguments={
+                launch_arguments=dict({
                     'params_file': tmp,
                     'gz_args': gz_args,
                     'use_sim_time': use_sim_time,
@@ -160,7 +205,7 @@ def _compose(context, *args, **kwargs):
                     # 「不发布 /agc/targets」→ 任务无目标 → TIMEOUT（实测轻量栈回归）。
                     'target_source': target_source,
                     'seed': LaunchConfiguration('seed'),
-                }.items(),
+                }, **spawn_args).items(),
             ),
             # W6 拦截裁决（地面侧，无需 PX4）：发射式网捕获裁决器 + 行为级干扰注入
             Node(package='agc_task', executable='capture_adjudicator',
@@ -177,14 +222,11 @@ def _compose(context, *args, **kwargs):
     # 不再由包 share 目录深度上溯推断；ROS 资产仍经 ament index（get_package_share_directory）。
     agc_root = Path(LaunchConfiguration('agc_root').perform(context))
 
-    own_pose = LaunchConfiguration('px4_own_pose').perform(context)
-    # R-014：己方机 spawn 位（world ENU）透传给 scenario_reset 做出生净空校验
-    try:
-        own_parts = [float(v) for v in own_pose.split(',')]
-        own_uav_x, own_uav_y = own_parts[0], own_parts[1]
-    except (ValueError, IndexError):
-        print('WARN: w6 px4_own_pose 解析失败 %r → 按 (0,0) 处理' % (own_pose,))
-        own_uav_x, own_uav_y = 0.0, 0.0
+    # F1：己方机 spawn 位**已在上方按出生布局真源解析**（`own_pose` = 覆盖值或布局派生值）。
+    # R-014：该坐标透传给 scenario_reset 做出生净空校验——与 PX4_GZ_MODEL_POSE / origin_pose
+    # 是**同一个字符串**，故"起飞参考"与"净空校验坐标"不可能不一致。
+    # 用 `effective_own`（已解析且已校验）而不是再 `float()` 一次：两处解析口径必须同一。
+    own_uav_x, own_uav_y = effective_own['x'], effective_own['y']
     agent0_port = LaunchConfiguration('agent0_port').perform(context)
     agent1_port = LaunchConfiguration('agent1_port').perform(context)
     # ADR-0094（uXRCE 预热，可选）：own agent 的**首个** DDS participant 在发现图繁忙时可达
@@ -199,6 +241,9 @@ def _compose(context, *args, **kwargs):
 
     merged = compose_params(info['base'], info['sc'], backend, seed, (own_uav_x, own_uav_y),
                             geometry=info['geometry'], spawn_randomize=spawn_randomize, goal_follow_target=goal_follow_target)
+    # F1：出生位注入（场景覆盖优先；否则用布局真源），返回值即世界 spawn 的唯一来源。
+    effective_spawn = apply_spawn_layout(merged, layout, info['sc'])
+    spawn_args = _spawn_args(effective_spawn)
     tmp = write_temp_params(merged, backend, scene, seed)
 
     # R-026：空中链路节点参数 = air.yaml 基参 + scenarios.yaml 场景覆盖**合并后注入**
@@ -220,6 +265,29 @@ def _compose(context, *args, **kwargs):
     if LaunchConfiguration('air_tracking_ref').perform(context) == 'off':
         air_merged.setdefault('trajectory_tracker', {})['tracking_ref_topic'] = \
             '/agc/air/tracking_ref__inactive_p1_fixed_traj'
+    # F1 round-3（2026-10-31）：`standoff_follower.safe_max` 的**临时隔离覆盖口**。
+    # 为什么需要它：safe_max 与感知量程 / 安全层下限的兼容性必须**先用临时覆盖验证**，
+    # 证据支持后才写 `air.yaml` 真源（Leader 裁定：先临时隔离、后写真源）。
+    # 缺省 **空串** = 用 `air.yaml` 的值 → 默认行为逐字不变；非空必须是**有限正数**且
+    # `> safe_min`（否则站距带非法：带下沿大于带上沿会让 follower 逻辑自相矛盾）。
+    _smax = (LaunchConfiguration('standoff_safe_max').perform(context) or '').strip()
+    if _smax:
+        try:
+            _smax_v = float(_smax)
+        except ValueError:
+            raise RuntimeError(
+                'standoff_safe_max=%r 非数值（可用：空（用 air.yaml）| 有限正数）→ 拒绝运行'
+                % (_smax,))
+        if not math.isfinite(_smax_v) or _smax_v <= 0.0:
+            raise RuntimeError(
+                'standoff_safe_max=%r 非有限正数（NaN/±Inf/≤0）→ 拒绝运行' % (_smax,))
+        _smin_v = float(air_merged['standoff_follower'].get('safe_min', 8.0))
+        if _smax_v <= _smin_v:
+            raise RuntimeError(
+                'standoff_safe_max=%g 必须 > safe_min=%g（否则站距带非法）→ 拒绝运行'
+                % (_smax_v, _smin_v))
+        air_merged.setdefault('standoff_follower', {})['safe_max'] = _smax_v
+        print('[w6] standoff_follower.safe_max OVERRIDE = %g (air.yaml 值被本 run 临时覆盖)' % _smax_v)
     # S-06：静态障碍几何由**真源**注入空中安全列表（obstacle_names/x/y；半径 / margin 仍来自 air.yaml）。
     apply_air_geometry(air_merged, info['geometry'], sim_share=sim_share)
     air_doc = {n: {'ros__parameters': p} for n, p in air_merged.items()}
@@ -229,9 +297,13 @@ def _compose(context, *args, **kwargs):
         yaml.safe_dump(air_doc, f, allow_unicode=True, sort_keys=True)
 
     # R-026 + S-06 断言（含空中安全列表 == 真源）在 air 合并后做；不符即拒绝运行。
-    asserts = assertions(scene, merged, info, air_merged, sim_share=sim_share)
+    # F1：同时断言「复位位置 == 世界 spawn」（两侧同源于 effective_spawn）。
+    asserts = assertions(scene, merged, info, air_merged, sim_share=sim_share, layout=layout,
+                         effective_spawn=effective_spawn, effective_own=effective_own)
     manifest_path = write_manifest(
-        build_manifest(backend, info, merged, asserts, sim_share=sim_share),
+        build_manifest(backend, info, merged, asserts, sim_share=sim_share,
+                       layout=layout, layout_sha256=layout_sha256, own_pose=own_pose,
+                       effective_spawn=effective_spawn, effective_own=effective_own),
         backend, scene, seed)
 
     px4_dir = str(agc_root / 'toolchain' / 'PX4-Autopilot')
@@ -325,7 +397,7 @@ def _compose(context, *args, **kwargs):
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 os.path.join(sim_share, 'launch', 'world_bringup.launch.py')),
-            launch_arguments={
+            launch_arguments=dict({
                 'gz_args': gz_args, 'use_sim_time': use_sim_time,
                 'target_controlled': 'true',
                 # W8 / ADR-0096：GUI 渲染后端由单一 launch 参数下发（auto | d3d12 | software）。
@@ -334,7 +406,7 @@ def _compose(context, *args, **kwargs):
                 'world_obstacles': info['world_obstacles'],
                 # P1-1：按地图选择几何真源（minimal | yard | open_field）
                 'world_map': info['world_map'],
-            }.items()),
+            }, **spawn_args).items()),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 os.path.join(perc_share, 'launch', 'perception_bringup.launch.py')),
@@ -571,6 +643,12 @@ def generate_launch_description():
         'air_tracking_ref', default_value='on',
         description='W7-b P1：空中机**是否使用目标跟踪参考**（on=协同臂：空中机跟随目标；'
                     'off=固定航迹臂：仅飞基础图-8，不订阅 /agc/air/tracking_ref）'))
+    # F1 round-3：standoff 站距带上沿的**临时隔离覆盖口**（缺省空 = 用 air.yaml，行为不变）。
+    ld.add_action(DeclareLaunchArgument(
+        'standoff_safe_max', default_value='',
+        description='F1：临时覆盖 standoff_follower.safe_max（空=用 air.yaml 值；'
+                    '非空须为有限正数且 > safe_min）。用于"先验证、后写真源"的隔离实验，'
+                    '不改 air.yaml 真源本身'))
     # W7-b P2 v3（ADR-0083）：任务目标是否跟随感知目标；空=沿用场景值（不改既有场景语义）。
     ld.add_action(DeclareLaunchArgument(
         'goal_follow_target', default_value='',
@@ -589,8 +667,11 @@ def generate_launch_description():
         description='GUI 渲染后端：auto（WSL2 + /dev/dxg + X11 自动 D3D12）| d3d12 | software；'
                     'headless（gz -s）忽略'))
     ld.add_action(DeclareLaunchArgument(
-        'px4_own_pose', default_value='0,0,0.2,0,0,0',
-        description='己方机 spawn 位（world ENU；仅 backend:=full 生效）'))
+        'px4_own_pose', default_value='',
+        description='己方机 spawn 位（world ENU，逗号分隔；**空 = 取自出生布局真源** '
+                    'config/spawn_layout.yaml 的 own_uav 段）。该字符串同时用作 '
+                    'PX4_GZ_MODEL_POSE 与空中节点 origin_pose（局部系原点），故"起飞参考"与'
+                    '"净空校验坐标"不可能不一致。仅 backend:=full 生效。'))
     ld.add_action(DeclareLaunchArgument(
         'agent0_port', default_value='8888', description='uXRCE-DDS Agent 端口（仅 backend:=full）'))
     ld.add_action(DeclareLaunchArgument(

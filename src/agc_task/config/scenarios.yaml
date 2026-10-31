@@ -49,7 +49,9 @@ scenes:
     # P1-1：主场景跑在演示主地图 `yard` 上（出生位 / 期望终态不动，仅几何真源换图）。
     world_map: yard
     params:
-      scenario_reset: {car_x: -4.0, car_y: -3.0, target_x: 6.5, target_y: 2.5}
+      # F1（2026-10-31）：**不再覆盖出生位**——本场景是默认演示场景，出生位取自
+      # `config/spawn_layout.yaml`（世界 spawn / 复位 / 己方机起飞参考的单一真源）。
+      # 保留旧坐标的覆盖会把主场景钉死在旧布局，且让"改了布局、演示还是旧位"静默通过。
       run_logger: {scenario: "s04_static_static_obs_track"}
       intruder_driver: {motion: static}
 

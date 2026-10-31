@@ -13,6 +13,7 @@
   * 全部经 launch 单一设置（契约 #params），节点不得覆写。
 """
 
+import math
 import os
 import sys
 import tempfile
@@ -234,16 +235,77 @@ def generate_launch_description():
     tgt_m = target['model']
     tgt_s = target['spawn']
 
+    # F1（2026-10-31）：spawn 位可被上层（`w6.launch.py` 由出生布局真源派生）显式覆盖；
+    # 缺省 **'auto'** = 用本文件读到的 car.yaml / target.yaml 值 → standalone 行为逐字不变。
+    # 为什么需要这个口：世界 spawn 与 `/agc/scenario/reset` 的复位位置必须**同一组坐标**，
+    # 否则复位会把实体从出生点"挪走"（实测口径见 w6_composition.apply_spawn_layout）。
+    def _spawn_arg(name, default):
+        return DeclareLaunchArgument(
+            name, default_value=str(default),
+            description='spawn %s（world ENU；auto=用 config 里的缺省值）' % name)
+
+    spawn_args = [
+        _spawn_arg('car_x', car_s['x']), _spawn_arg('car_y', car_s['y']),
+        _spawn_arg('car_z', car_s['z']), _spawn_arg('car_yaw', car_s['yaw']),
+        _spawn_arg('target_x', tgt_s['x']), _spawn_arg('target_y', tgt_s['y']),
+        _spawn_arg('target_z', tgt_s['z']), _spawn_arg('target_yaw', tgt_s['yaw']),
+    ]
+
+    def _spawn_value(context, name, default):
+        """`auto`/空 → 用 config 缺省；否则解析为**有限**数值（非法 / NaN / ±Inf → 拒绝运行）。
+
+        `auto` 分支同样校验：config 缺省值来自 `car.yaml` / `target.yaml`，若被改成 `.nan`
+        也必须在启动前挡住——否则实体被静默放到 NaN 位姿上（`gz create` 不报错）。
+        """
+        raw = (LaunchConfiguration(name).perform(context) or '').strip()
+        src = 'config 缺省'
+        if raw not in ('', 'auto'):
+            src = 'launch 参数'
+        else:
+            raw = str(default)
+        try:
+            val = float(raw)
+        except ValueError:
+            raise RuntimeError(
+                'spawn 参数 %s=%r（来源：%s）非数值（可用：有限数值 | auto）→ 拒绝运行'
+                % (name, raw, src))
+        if not math.isfinite(val):
+            # NaN 会让一切区间比较恒假；±Inf 会让 create/物理出现非有限位姿。
+            raise RuntimeError(
+                'spawn 参数 %s=%r（来源：%s）非有限值（NaN/±Inf）→ 拒绝运行' % (name, raw, src))
+        return raw
+
+    def _spawn_kwargs(context):
+        return {
+            'car_x': _spawn_value(context, 'car_x', car_s['x']),
+            'car_y': _spawn_value(context, 'car_y', car_s['y']),
+            'car_z': _spawn_value(context, 'car_z', car_s['z']),
+            'car_yaw': _spawn_value(context, 'car_yaw', car_s['yaw']),
+            'target_x': _spawn_value(context, 'target_x', tgt_s['x']),
+            'target_y': _spawn_value(context, 'target_y', tgt_s['y']),
+            'target_z': _spawn_value(context, 'target_z', tgt_s['z']),
+            'target_yaw': _spawn_value(context, 'target_yaw', tgt_s['yaw']),
+        }
+
+    def _spawn_kwargs(context):
+        return {
+            'car_x': _spawn_value(context, 'car_x', car_s['x']),
+            'car_y': _spawn_value(context, 'car_y', car_s['y']),
+            'car_z': _spawn_value(context, 'car_z', car_s['z']),
+            'car_yaw': _spawn_value(context, 'car_yaw', car_s['yaw']),
+            'target_x': _spawn_value(context, 'target_x', tgt_s['x']),
+            'target_y': _spawn_value(context, 'target_y', tgt_s['y']),
+            'target_z': _spawn_value(context, 'target_z', tgt_s['z']),
+            'target_yaw': _spawn_value(context, 'target_yaw', tgt_s['yaw']),
+        }
+
     declared = [
         DeclareLaunchArgument(
             'gz_args', default_value=['-r -v 3 ', world_file],
             description='Arguments passed to gz sim（更 -s 可无头）'),
         DeclareLaunchArgument('use_sim_time', default_value='true'),
-        # 车
-        DeclareLaunchArgument('car_x', default_value=str(car_s['x'])),
-        DeclareLaunchArgument('car_y', default_value=str(car_s['y'])),
-        DeclareLaunchArgument('car_z', default_value=str(car_s['z'])),
-        DeclareLaunchArgument('car_yaw', default_value=str(car_s['yaw'])),
+        # 车（F1：spawn 位可被上层显式覆盖；`auto` = 用 config 缺省）
+        *spawn_args[:4],
         DeclareLaunchArgument('car_wheel_separation', default_value=str(car_m['wheel_separation'])),
         DeclareLaunchArgument('car_wheel_radius', default_value=str(car_m['wheel_radius'])),
         DeclareLaunchArgument('car_wheel_width', default_value=str(car_m['wheel_width'])),
@@ -258,11 +320,8 @@ def generate_launch_description():
         DeclareLaunchArgument('car_capture_net_radius', default_value=str(car_m['capture_net_radius'])),
         DeclareLaunchArgument('car_payload_mass', default_value=str(car_m['payload_mass'])),
         DeclareLaunchArgument('car_cmd_deadman_timeout_s', default_value=str(car_m['cmd_deadman_timeout_s'])),
-        # 目标
-        DeclareLaunchArgument('target_x', default_value=str(tgt_s['x'])),
-        DeclareLaunchArgument('target_y', default_value=str(tgt_s['y'])),
-        DeclareLaunchArgument('target_z', default_value=str(tgt_s['z'])),
-        DeclareLaunchArgument('target_yaw', default_value=str(tgt_s['yaw'])),
+        # 目标（F1：spawn 位同样可覆盖；`auto` = 用 config 缺省）
+        *spawn_args[4:],
         DeclareLaunchArgument('target_body_length', default_value=str(tgt_m['body_length'])),
         DeclareLaunchArgument('target_body_width', default_value=str(tgt_m['body_width'])),
         DeclareLaunchArgument('target_body_height', default_value=str(tgt_m['body_height'])),
@@ -334,18 +393,31 @@ def generate_launch_description():
         ' payload_mass:=', LaunchConfiguration('car_payload_mass'),
         ' cmd_deadman_timeout_s:=', LaunchConfiguration('car_cmd_deadman_timeout_s'),
     ])
-    spawn_car = Node(
-        package='ros_gz_sim', executable='create', output='screen',
-        arguments=[
-            '-world', 'agc_world', '-name', 'agc_car', '-string', car_desc,
-            '-x', LaunchConfiguration('car_x'),
-            '-y', LaunchConfiguration('car_y'),
-            '-z', LaunchConfiguration('car_z'),
-            '-Y', LaunchConfiguration('car_yaw'),
-        ],
-    )
+    # spawn 车 / 目标（F1：坐标在 OpaqueFunction 内**解析后**注入——`auto` 落到 config 缺省，
+    # 显式值时逐值使用；同时把生效值打印出来，便于与复位日志逐项比对）。
+    def _spawn_actions(context, *args, **kwargs):
+        kw = _spawn_kwargs(context)
+        print('[world_bringup] spawn car=(%s,%s,%s,%s) target=(%s,%s,%s,%s)'
+              % (kw['car_x'], kw['car_y'], kw['car_z'], kw['car_yaw'],
+                 kw['target_x'], kw['target_y'], kw['target_z'], kw['target_yaw']))
+        car_node = Node(
+            package='ros_gz_sim', executable='create', output='screen',
+            arguments=[
+                '-world', 'agc_world', '-name', 'agc_car', '-string', car_desc,
+                '-x', kw['car_x'], '-y', kw['car_y'], '-z', kw['car_z'], '-Y', kw['car_yaw'],
+            ],
+        )
+        target_node = Node(
+            package='ros_gz_sim', executable='create', output='screen',
+            arguments=[
+                '-world', 'agc_world', '-name', 'intruder_uav', '-string', target_desc,
+                '-x', kw['target_x'], '-y', kw['target_y'], '-z', kw['target_z'],
+                '-Y', kw['target_yaw'],
+            ],
+        )
+        return [TimerAction(period=3.0, actions=[car_node, target_node])]
 
-    # spawn 目标
+    # spawn 目标（与车同一条 OpaqueFunction，见上；此处只构造模型描述串）
     target_desc = Command([
         FindExecutable(name='xacro'), ' ', target_xacro,
         ' controlled:=', LaunchConfiguration('target_controlled'),
@@ -354,16 +426,6 @@ def generate_launch_description():
         ' body_height:=', LaunchConfiguration('target_body_height'),
         ' body_mass:=', LaunchConfiguration('target_body_mass'),
     ])
-    spawn_target = Node(
-        package='ros_gz_sim', executable='create', output='screen',
-        arguments=[
-            '-world', 'agc_world', '-name', 'intruder_uav', '-string', target_desc,
-            '-x', LaunchConfiguration('target_x'),
-            '-y', LaunchConfiguration('target_y'),
-            '-z', LaunchConfiguration('target_z'),
-            '-Y', LaunchConfiguration('target_yaw'),
-        ],
-    )
 
     ld = LaunchDescription()
     for a in declared:
@@ -384,5 +446,6 @@ def generate_launch_description():
     ld.add_action(gz_sim)
     ld.add_action(bridge)
     ld.add_action(set_pose_bridge)
-    ld.add_action(TimerAction(period=3.0, actions=[spawn_car, spawn_target]))
+    # F1：spawn 动作在 OpaqueFunction 内按**解析后**坐标生成（`auto` → config 缺省）。
+    ld.add_action(OpaqueFunction(function=_spawn_actions))
     return ld
