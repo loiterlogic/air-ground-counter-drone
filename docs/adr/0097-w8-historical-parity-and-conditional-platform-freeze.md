@@ -88,3 +88,7 @@ W8-E1 原要求“ROS1 / ROS2 同场景、同 seed 行为对照，随后平台�
 - 旧树（只读）：[`reference/old_ros1/docs/ROS2迁移交接文档.md`](../../reference/old_ros1/docs/ROS2迁移交接文档.md)、[`reference/old_ros1/docs/项目指导书/下一阶段任务清单.md`](../../reference/old_ros1/docs/项目指导书/下一阶段任务清单.md)、[`reference/old_ros1/docs/论文指导书/publication_plan_v2_archived.md`](../../reference/old_ros1/docs/论文指导书/publication_plan_v2_archived.md)
 - 评审：[F-12](../reviews/agc-review-2026-10-14/30-未来.md)
 - 前序：[ADR-0001](0001-greenfield-ros2-rewrite.md)、[ADR-0096](0096-w8-gui-headless-equivalence-design-bounds-and-gate.md)
+
+## 追加记录：旧树归档退役（2026-10-31）
+
+本 ADR「背景」「参考」节所引的 `reference/old_ros1/` 路径已随旧树归档**整体退役删除**（[ADR-0107](./0107-retire-old-tree-paused-switch-and-legacy-backlog.md#top)），上述链接**不再可解析**。正文按"只追加、不改写"保留原样，作为当时事实的记录；若日后须重做 W8 对照，须先从用户备份恢复旧树。

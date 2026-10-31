@@ -15,7 +15,7 @@
 
 ## 统计
 
-- 合计 **106** 篇：`accepted` 103 篇、`deferred` 3 篇
+- 合计 **107** 篇：`accepted` 104 篇、`deferred` 3 篇
 
 ## 索引表
 
@@ -127,6 +127,7 @@
 | [0104](./0104-batch-authorization-and-stall-circuit-breaker.md) | 批次授权：以唤醒次数为成本单元替代逐轮审查 | accepted（2026-10-29，来源：用户裁定——"leader 的 tokens 消耗负担不起，worker 的消耗再多也无所谓，主要是 worker 权限和自由度太低"；2026-10-29 P0-5 追加修订，见文末"修订（P0-5 实测后）"，不改前文正文） | *成本单元从"轮次"改为"唤醒次数"**，具体四改： |
 | [0105](./0105-retire-trae-and-relocate-specs-skills.md) | 退役 Trae：规格迁入 `docs/archive/specs/`、技能迁入 `.agents/skills/` | accepted（2026-10-29，来源：用户裁定——"完成 P0-3；以后不再用 Trae"，并明确要求把 specs 迁出、把 4 个技能迁到 `.agents/skills` 并适配当前 Harness） | ### (a) 规格整体迁到 `docs/archive/specs/`，仍然不发布 |
 | [0106](./0106-work-area-100x100-and-yard-layout-paradigm.md) | 作业区放大到 100×100 与场站式布局范式 | accepted（2026-10-29，来源：用户裁定——"我考虑到在空地协同反无人机中 80\*80 可能不太够，改成 100\*100，然后重新布局障碍物分布和数量以及样式，样式要考虑现实世界中正常情况下是怎么分布的"；并明确要求"先学习别人是怎么做的，然后设计，一定是设计好大致分布再动手"） | P1-1 首版 `yard`（80×80 作业区、19 实体）由用户 2026-10-29 两轮反馈逐步修正（删双柱、中央加内容、 引入 `sphere` 与复合 `parts`）。用户随后提出**作业区尺度不足**，并要求**按现实分布重做**。 |
+| [0107](./0107-retire-old-tree-paused-switch-and-legacy-backlog.md) | 收尾清理批次：退役旧树归档、暂停开关与旧候选清单 | accepted（2026-10-31，来源：用户裁定——"删除 `.trae`、`.vscode`、`reference`，他们都没有用了"；并就逐项确认回选"确认作废 `PAUSED.md`"、"旧候选清单只留 git 历史、不再维护"、"`reference/` 直接删除，我另有备份"） | ### (a) 退役旧树归档 `reference/` |
 
 ## 相关
 

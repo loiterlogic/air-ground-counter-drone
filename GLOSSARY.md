@@ -86,6 +86,6 @@ _Avoid_: 执行入口、执行口（迁移已暂停，Runbook 不再是任一任
 本项目的独立可验收工作单元，每个 workstream 对应一份 spec/tasks/checklist 三件套；迁移期规格已随 Trae 退役归档到 [`docs/archive/specs/`](./docs/archive/specs/README.md#specs-index)，现由 [当前方向](./docs/plan/README.md#plan-index) 索引候选工作，历史批次已结档归档。
 _Avoid_: 阶段、phase、P0–P6（P0–P2 是**收尾阶段**，不是 workstream）
 
-**只读旧树边界（Read-Only Archive Boundary）**:
-对归档旧树的读取纪律：只可读以对齐**行为 / 契约事实**，禁止作为格式、命名、目录、任务粒度的来源，禁止复制其代码。
+**只读旧树边界（Read-Only Archive Boundary，已退役）**:
+**历史**：旧树归档 `reference/` 已于 2026-10-31 退役删除（[ADR-0107](docs/adr/0107-retire-old-tree-paused-switch-and-legacy-backlog.md#top)），本机已无旧树可读，该读取纪律随之失效；保留本条只为读懂历史文档。**继承其意**：任何决定**不得**再以旧树为依据，禁止复制旧代码或沿用其格式、命名、目录、任务粒度。
 _Avoid_: 参考旧项目、沿用旧实现

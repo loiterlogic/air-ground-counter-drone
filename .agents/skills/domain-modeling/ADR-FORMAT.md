@@ -49,9 +49,9 @@ accepted（{日期}，来源：用户裁定——"{原话}"）   <!-- 需要时�
 
 注意：
 
-- 状态写在 `## Status` **节里**，不是 YAML frontmatter（`--` 分隔的头部）——本仓库 105 篇 ADR 都是节形式。
+- 状态写在 `## Status` **节里**，不是 YAML frontmatter（`--` 分隔的头部）——本仓库全部 ADR 都是节形式。
 - **不要替别人猜状态**：不确定就写 `deferred` 并写明未决点，不要默认写成 `accepted`。
-- **暂停 ≠ 废止**：被暂停的路线其 ADR 仍是 `accepted`（决策曾经有效），暂停事实记在 plan 的开关文件里。
+- **暂停 ≠ 废止**：被暂停的路线其 ADR 仍是 `accepted`（决策曾经有效），暂停事实记在 plan 的方向索引里。
 - 修订历史：不改旧 ADR 的结论，新增"适用关系"节或直接新开一篇并标明 `superseded by`（[ADR-0066](../../../docs/adr/0066-decision-applicability-and-reference-discipline.md)）。
 
 ## 编号

@@ -4,7 +4,7 @@
 > **不承载**：路线图、重构步骤、风险与排期 —— 路线见 [项目完成路线](plan/README.md#plan-index)；编排史见 [归档 Runbook](archive/ROS2迁移步骤.md#top)；规格见 [规格归档索引](archive/specs/README.md#specs-index)。
 > **历史分离**：原附录 A（ROS1 基线盘点）已移入 [归档](archive/ros1-baseline.md#appendix-a-archived)，不在本真源内（[ADR-0105](adr/0105-retire-trae-and-relocate-specs-skills.md)）。
 > **引用约定**：跨文档引用一律用**稳定锚点**（`<文件>#<锚点>`），**禁止** §章节号（见 [ADR-0002](adr/0002-docs-source-of-truth-layering.md)）。
-> **基线**：ROS1(Noetic) 参考实现已冻结为只读归档（`reference/old_ros1/`），仅供 W8 行为对照，**不作代码来源**（见 [ADR-0001](adr/0001-greenfield-ros2-rewrite.md)）。
+> **基线**：ROS1(Noetic) 参考实现曾冻结为只读归档（`reference/old_ros1/`），该归档已于 **2026-10-31 退役删除**（[ADR-0107](adr/0107-retire-old-tree-paused-switch-and-legacy-backlog.md#top)）；本仓**无**旧树可用，**不作代码来源**（见 [ADR-0001](adr/0001-greenfield-ros2-rewrite.md)）。
 
 ---
 

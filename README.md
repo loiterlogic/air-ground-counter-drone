@@ -143,7 +143,7 @@ PX4 SITL + uXRCE-DDS Agent               /agc/ground/cmd_vel（唯一执行口�
 | [`scripts/`](scripts/README.md#top-tools) | 长期工程工具（批量实验、证据归档、索引核对） |
 | [`tests/`](tests/README.md) | 验收核查（按风险项编号，多数需整链环境） |
 | [`docs/plan/`](docs/plan/README.md#plan-index) | **当前方向**：候选后续索引 + 历史批次归档导航 |
-| [`docs/adr/`](docs/adr/README.md#adr-index) | 106 篇决策记录（编号 / 标题 / 结论索引） |
+| [`docs/adr/`](docs/adr/README.md#adr-index) | 决策记录（编号 / 标题 / 结论索引） |
 | [`docs/conventions/`](docs/conventions/包边界.md) | 工程规范：包边界、目录命名、排障速查 |
 
 ## 冒烟测试
@@ -199,7 +199,7 @@ PX4 SITL + uXRCE-DDS Agent               /agc/ground/cmd_vel（唯一执行口�
 |---|---|
 | [当前方向](docs/plan/README.md#plan-index) | **当前方向**：候选后续索引（进度真源） |
 | [契约真源](docs/ROS2迁移交接文档.md#hard-constraints) | 不可变约束、坐标系、终态语义、接口语义（**唯一**约束来源） |
-| [ADR 索引](docs/adr/README.md#adr-index) | 106 篇决策的编号 / 标题 / 状态 / 结论 |
+| [ADR 索引](docs/adr/README.md#adr-index) | 全部决策的编号 / 标题 / 状态 / 结论 |
 | [包边界](docs/conventions/包边界.md) | 8 包职责与四类依赖方向 |
 | [FAQ](docs/faq.md#top) | 新人高频 8 条症状与处置 |
 | [整链排障速查](docs/conventions/整链排障速查.md#preflight) | 故障判别顺序与处置（面向开发者） |

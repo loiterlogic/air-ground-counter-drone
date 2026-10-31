@@ -1,7 +1,7 @@
 <a id="research"></a>
 # scripts/research/ 索引
 
-> **语义**：**暂停但未废弃**的研究期工具。它们为 W7 / W8 的判定、诊断、取证与复跑服务；迁移推进与论文优先已暂停（[PAUSED](../../docs/plan/PAUSED.md#paused)），当前阶段不调用，但**脚本可复跑、可复核，一个都不删**（研究脚本是证据链的一部分）。
+> **语义**：**暂停但未废弃**的研究期工具。它们为 W7 / W8 的判定、诊断、取证与复跑服务；迁移推进与论文优先已暂停（暂停事实见 [当前方向](../../docs/plan/README.md#plan-index)；原 `PAUSED.md` 开关已于 2026-10-31 退役，[ADR-0107](../../docs/adr/0107-retire-old-tree-paused-switch-and-legacy-backlog.md#top)），当前阶段不调用，但**脚本可复跑、可复核，一个都不删**（研究脚本是证据链的一部分）。
 > **与 [archive/](../archive/README.md#archive) 的区别**：`archive/` 是"一次性、证据归档后冻结"；本目录是"研究暂停、仍可重跑"。混在一起会稀释 archive 的冻结语义。
 > 顶层长期工具见 [scripts/README.md](../README.md#top-tools)；规则见 [目录与命名规范](../../docs/conventions/目录与命名规范.md#10-产物分类与生命周期)。
 > **本表由 [`scripts/tests/test_scripts_index.py`](../tests/test_scripts_index.py) 自动核对**：目录中多一个或少一个脚本都会让测试失败。

@@ -19,6 +19,7 @@
 # ===== Python 缓存 =====
 __pycache__/
 *.py[cod]
+.pytest_cache/
 
 # ===== 过程草稿：只放临时物，不入库（家见 docs/conventions/目录与命名规范.md）=====
 /docs/temp/

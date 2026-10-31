@@ -20,7 +20,7 @@ python3 tests/run_all.py --all --timeout 600   # 全跑（带超时）
 | 脚本 | 断言 | 用法 |
 |---|---|---|
 | [`docs_link_check.py`](./docs_link_check.py) | 活跃范围 markdown 的**本地链接可解析、锚点存在**（显式 `<a id>` / 标题 slug / `#L<n>` / `.md:<line>`） | `python3 tests/docs_link_check.py`；`--include GLOB` 追加范围；`--strict-history` 把历史断链也算失败 |
-| [`../scripts/adr_index.py`](../scripts/adr_index.py) | `docs/adr/README.md` 与 105 篇 ADR 的**编号/标题/Status/结论一致** | `python3 scripts/adr_index.py --check` |
+| [`../scripts/adr_index.py`](../scripts/adr_index.py) | `docs/adr/README.md` 与 `docs/adr/*.md` 的**编号/标题/Status/结论一致** | `python3 scripts/adr_index.py --check` |
 | [`docs_tooling_check.py`](./docs_tooling_check.py) | 上面两个工具**自身的口径**（断链/锚点/代码块排除/历史范围/索引幂等/漂移检测） | `python3 tests/docs_tooling_check.py`；不碰真实仓库，临时目录造最小项目 |
 
 `docs_link_check.py` 的排除边界是**刻意的**，不是忽略：
@@ -31,6 +31,7 @@ python3 tests/run_all.py --all --timeout 600   # 全跑（带超时）
 - **指向本机保留路径的链接**（`docs/archive/specs/`、`experiments/`、`reference/`、`toolchain/` 等被 `.gitignore` 排除的目标）：
   本地完整检出里可解析，公开 clone 中必然缺失。单独统计为"本地可解析 N 条 / 本地也缺失 M 条"，
   **既不计入通过、也不计入断链**；`M > 0` 时逐条列出（那才是真断链）。
+  （`reference/` 旧树已于 2026-10-31 退役删除，见 [ADR-0107](../docs/adr/0107-retire-old-tree-paused-switch-and-legacy-backlog.md#top)；排除项**保留**，以备用户从备份恢复后仍适用。）
 - 扫描范围含 `.agents/**/*.md`（技能资源自身）与 `scripts/archive`、`docs/**` 下的 README 索引，
   因此"别人指向技能"和"技能内部链接"都会被检查。
 

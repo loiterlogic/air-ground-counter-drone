@@ -1,6 +1,6 @@
 # spec 三件套模板
 
-> **状态**：本模板描述的是**迁移期 workstream 规格**的格式，用于读懂 [历史规格归档](../archive/specs/README.md#specs-index)。迁移已暂停（[开关](../plan/PAUSED.md#paused)），**当前阶段不再新建** workstream 规格目录，收尾任务按 [项目完成路线](../plan/README.md#plan-index) 组织。
+> **状态**：本模板描述的是**迁移期 workstream 规格**的格式，用于读懂 [历史规格归档](../archive/specs/README.md#specs-index)。迁移已暂停（[当前方向](../plan/README.md#plan-index)；原开关文件 `PAUSED.md` 已于 2026-10-31 退役，见 [ADR-0107](../adr/0107-retire-old-tree-paused-switch-and-legacy-backlog.md#top)），**当前阶段不再新建** workstream 规格目录，收尾任务按 [项目完成路线](../plan/README.md#plan-index) 组织。
 > 真源分层见 [ADR-0002](../adr/0002-docs-source-of-truth-layering.md)：约束只引用契约真源，不复述。
 > **进度真源**：历史规格**不是**进度真源；三件套**不**维护第二状态表——需要标注执行进度时，一律**引用**当时的编排记录并注明历史，**不**凭推断改写完成状态（[ADR-0066](../adr/0066-decision-applicability-and-reference-discipline.md)）。
 > **引用纪律**：跨文档一律用**稳定锚点**可点击链接（`<文件>#<锚点>`），**禁** `§` 章节号；历史规格现位于 `docs/archive/specs/<ws>/`，其指向项目根的相对层级为 `../../../../`。
@@ -48,10 +48,11 @@
 并标注每项来源：`全新重写` / `对齐旧树行为语义（附稳定锚点）` / `直接复用 Nav2 组件`。
 未采纳的范式须写明理由。>
 
-## 只读旧树边界   <!-- 强制节：非空 -->
-- **允许读**：旧树（`reference/`）以对齐**行为 / 契约事实**（WHAT）。
-- **禁止**：复制旧代码；继承其格式、命名、目录、任务粒度（HOW）。
-- **不变量**：读旧码对齐行为是**硬性要求**，不是可选项；产出代码一律用新范式重写。
+## 只读旧树边界   <!-- 历史节：2026-10-31 起不再强制 -->
+> 旧树归档 `reference/` 已于 2026-10-31 退役删除（[ADR-0107](../adr/0107-retire-old-tree-paused-switch-and-legacy-backlog.md#top)）；当前不再新建规格，本节仅作历史格式说明。**继承其意**：任何决定不得以旧树为依据，不得复制旧代码或沿用其格式、命名、目录、任务粒度。
+- **当时允许读**：旧树（`reference/`）以对齐**行为 / 契约事实**（WHAT）。
+- **当时禁止**：复制旧代码；继承其格式、命名、目录、任务粒度（HOW）。
+- **当时不变量**：读旧码对齐行为是**硬性要求**，不是可选项；产出代码一律用新范式重写。
 
 ## 非目标
 <本 workstream 明确不做什么>
