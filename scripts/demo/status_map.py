@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """状态语义映射——**全项目唯一**的"开发词汇 → 观众人话"实现（P1-3）。
 
-真源：[P1-3 状态语义映射](../../docs/plan/p1-3-任务可观测与演示呈现.md#p1-3-goal)。
+真源：[P1-3 状态语义映射](../../docs/archive/completion-20261031/p1-3-任务可观测与演示呈现.md#p1-3-goal)。
 输入是 [`AgcTaskState.msg`](../../src/agc_msgs/msg/AgcTaskState.msg) 的 `state` 枚举与
 `reason_code` 字符串；本模块**只翻译、不判定**——不改状态机、不改终态判据、不新增字段。
 

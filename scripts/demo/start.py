@@ -4,7 +4,7 @@
 **薄封装**：不复制任何 launch 编排，参数一律透传给
 [`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)（[ADR-0061](../../docs/adr/0061-w6-runtime-topology-backend-identity-and-single-parameterized-entry.md) 的唯一参数化入口）。
 
-对外只映射 5 个参数（[P1-2 参数收敛](../../docs/plan/p1-2-一键演示入口.md#p1-2-goal)）：
+对外只映射 5 个参数（[P1-2 参数收敛](../../docs/archive/completion-20261031/p1-2-一键演示入口.md#p1-2-goal)）：
 
   | 对外 | 内部 launch 参数 | 默认 |
   |---|---|---|
@@ -20,7 +20,7 @@
 ⚠ `observe_yaw_mode:=target` 是 **P1-1 round-7 已验收的显式 oracle 指向臂**（机头对准真值方位），
 不是默认 `velocity`，也不代表真实视觉识别。启动横幅必须显式打出这一行。
 
-**P1-3 呈现层**（[可观测与演示呈现](../../docs/plan/p1-3-任务可观测与演示呈现.md#p1-3-goal)）：
+**P1-3 呈现层**（[可观测与演示呈现](../../docs/archive/completion-20261031/p1-3-任务可观测与演示呈现.md#p1-3-goal)）：
 
   | 产物 | 谁写 | 内容 |
   |---|---|---|
@@ -87,7 +87,7 @@ def gz_args(headless):
 def viz_enabled(headless):
     """RViz 叠加层是否该起：**只有 GUI 形态需要**。
 
-    依据 [P1-2 §3 状态呈现](../../docs/plan/p1-2-一键演示入口.md#p1-2-goal)：
+    依据 [P1-2 §3 状态呈现](../../docs/archive/completion-20261031/p1-2-一键演示入口.md#p1-2-goal)：
     "脚本用 `ros2 topic echo --once` 或轻量 Python 订阅（**不要**起 RViz 才能看状态）"。
     headless 用于经济快跑 / 服务器，本来就没有窗口可看，再起 `viz_markers` + `rviz2` +
     `static_tf`（[`w6.launch.py::_viz_actions`](../../src/agc_task/launch/w6.launch.py)）
@@ -227,7 +227,7 @@ def launch_log_path(run_dir):
 class TaskMonitor:
     """轻量订阅：`/agc/task/state` + 就绪所需的新鲜度信号 + `/clock`。
 
-    数据源全部是**既有**话题（[P1-2 状态呈现数据源](../../docs/plan/p1-2-一键演示入口.md#p1-2-goal)）：
+    数据源全部是**既有**话题（[P1-2 状态呈现数据源](../../docs/archive/completion-20261031/p1-2-一键演示入口.md#p1-2-goal)）：
     `/agc/task/state`（`AgcTaskState`）、`/clock`、真值旁路、`/agc/ground/cmd_vel`、
     `/agc/ground/odom_valid`、`/agc/air/odom`。**不**用 `ros2 topic echo` 起子进程（省一次 DDS 发现）。
     """

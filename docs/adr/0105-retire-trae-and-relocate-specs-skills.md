@@ -16,7 +16,7 @@ accepted（2026-10-29，来源：用户裁定——"完成 P0-3；以后不再�
 
 用户已不再使用 Trae 作为执行宿主。现行宿主是 DSH，其 skill 扫描根之一是 `<projectRoot>/.agents/skills`（`@deepseek-ai/dsh-skill-filesystem` 的默认 rank 200），只发现**直属** `<name>/SKILL.md`（或平铺 `<name>.md`），frontmatter 必填 `name` / `description`。技能正文里原本写的是 Trae 专用工具名（`Agent` / `Explore` / `AskUserQuestion`）和"以 `.trae/` 定根"，在 DSH 下这些名字不存在，照抄会调用失败或让 Agent 去猜。
 
-同时 [P0-3](../plan/p0-3-文档瘦身与入口重构.md#p0-3-goal) 要把"每次必读"压到最小：迁移 Runbook 与契约附录 A 是历史，不该继续占据真源与入口。
+同时 [P0-3](../archive/completion-20261031/p0-3-文档瘦身与入口重构.md#p0-3-goal) 要把"每次必读"压到最小：迁移 Runbook 与契约附录 A 是历史，不该继续占据真源与入口。
 
 ## 决策
 

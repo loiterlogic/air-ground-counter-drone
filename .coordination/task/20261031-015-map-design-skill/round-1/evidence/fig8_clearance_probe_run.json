@@ -1,0 +1,36 @@
+{
+  "cmd": "python3 <evidence>/fig8_clearance_probe.py --json <evidence>/fig8_clearance_probe.json",
+  "rc": 0,
+  "wall_s": 20.32,
+  "at": "2026-10-31T15:16:40+0800",
+  "samples": 20000,
+  "traj": {
+    "center": [
+      0.0,
+      0.0
+    ],
+    "rx": 15.0,
+    "ry": 9.0
+  },
+  "result": {
+    "minimal": {
+      "disk_clearance_m": -2.708,
+      "disk_nearest": "pole_2",
+      "footprint_clearance_m": 2.086,
+      "footprint_nearest": "pole_2"
+    },
+    "open_field": {
+      "disk_clearance_m": 4.198,
+      "disk_nearest": "cyl_1",
+      "footprint_clearance_m": 6.198,
+      "footprint_nearest": "cyl_1"
+    },
+    "yard": {
+      "disk_clearance_m": 1.305,
+      "disk_nearest": "sign_a",
+      "footprint_clearance_m": 1.811,
+      "footprint_nearest": "wall_e"
+    }
+  },
+  "note": "只读离线（T0）：复用 tests/w6_geometry_check.py 的函数，不起进程树、不碰共享状态"
+}

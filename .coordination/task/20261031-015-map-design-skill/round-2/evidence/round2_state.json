@@ -1,0 +1,47 @@
+{
+  "head": "cedbc0e6c1e0e23aaf5b0effbf42ed9bf405def6",
+  "status_scope": " M .agents/README.md\n D MAP_DESIGN_PLAYBOOK.md\n?? .agents/skills/map-design/\n?? docs/plan/f4-map-design-skill.md\n",
+  "at": "2026-10-31T15:22:41+0800",
+  "session": "d5924bc2-305d-4bd5-b6af-f6bb998381da",
+  "files": {
+    "SKILL.md": {
+      "bytes": 7250,
+      "lines": 97,
+      "sha256": "b77af03c870ad8e1540bae0ce39e94be8b109b98d2c7e3816d1865b1181adb03"
+    },
+    "GATES.md": {
+      "bytes": 10520,
+      "lines": 195,
+      "sha256": "c198c52deea5891cd4127ba685e1f2ffc15c7cc401783788d851ebf29141dcc3"
+    },
+    "SCHEMA-AND-DERIVATION.md": {
+      "bytes": 9940,
+      "lines": 187,
+      "sha256": "ca8699c3de31a96d355943f97dd00045a0c5b1055485cde4da40004f19e4aed5"
+    },
+    "EVIDENCE.md": {
+      "bytes": 9981,
+      "lines": 156,
+      "sha256": "dbd3129a09f7517f64402fb409f5ae6dfa4d3e72bc40941f4ddc5cf52c913f40"
+    },
+    "references/MAP_DESIGN_PLAYBOOK.md": {
+      "bytes": 45779,
+      "lines": 786,
+      "sha256": "ad0695959b5aa0b37359c2fcc164d3166eb79b1bfddfae649e5d702d7cf1adc1"
+    }
+  },
+  "verification": {
+    "docs_link_check": {
+      "rc": 0,
+      "summary": [
+        "扫描文件：434",
+        "本地链接：5407（锚点校验 2363；外部 37；证据绝对路径 298；模板占位跳过 0）"
+      ],
+      "active_broken_zero": true
+    },
+    "report_lines": 129,
+    "report_sha256": "0900a464e0f2f6d1359938e2d589a2e3192105009d2dc8a800aa80e8230300c9",
+    "plan_file_sha256": "4e465aa499d16228db65f18a98cbf6ff4956dda70791f5d09765443fb179e7ab",
+    "at": "2026-10-31T15:23:44+0800"
+  }
+}

@@ -178,9 +178,22 @@ def test_c8_guard_actually_fires():
 
 
 def test_c8_wording_table_matches_plan_document():
-    """文案表与 P1-3 计划第 1 节逐行一致（防止代码与文档各说各话）。"""
-    doc = open(os.path.join(ROOT, 'docs', 'plan', 'p1-3-任务可观测与演示呈现.md'),
-               encoding='utf-8').read()
+    """文案表与 P1-3 计划第 1 节逐行一致（防止代码与文档各说各话）。
+
+    计划文件位置：2026-10-31 批次已把旧计划从 `docs/plan/` **归档**到
+    `docs/archive/completion-20261031/`。本测试原先硬编码 `docs/plan/…`，归档后
+    直接 FileNotFoundError——那是**路径漂移**，不是文案不一致。
+    现按「归档位置 → 现役位置」顺序解析：归档是既成事实，但若该计划日后重新启用，
+    本测试也仍能工作，不把某个路径写死成唯一真相。
+    """
+    candidates = [
+        os.path.join(ROOT, 'docs', 'archive', 'completion-20261031',
+                     'p1-3-任务可观测与演示呈现.md'),
+        os.path.join(ROOT, 'docs', 'plan', 'p1-3-任务可观测与演示呈现.md'),
+    ]
+    path = next((p for p in candidates if os.path.exists(p)), None)
+    assert path is not None, '找不到 P1-3 计划文档（已查：%s）' % candidates
+    doc = open(path, encoding='utf-8').read()
     for _n, name, text, _audience in status_map.STATE_ROWS:
         assert '`%s`' % name in doc or name in doc, 'P1-3 文档缺状态 %s' % name
         assert text in doc, 'P1-3 文档与代码文案不一致：%r 不在文档里' % text

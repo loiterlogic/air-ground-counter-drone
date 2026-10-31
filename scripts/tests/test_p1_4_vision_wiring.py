@@ -24,7 +24,14 @@ REPO = Path(__file__).resolve().parents[2]
 W6 = REPO / 'src' / 'agc_task' / 'launch' / 'w6.launch.py'
 RUN_LOGGER = REPO / 'src' / 'agc_task' / 'src' / 'run_logger.cpp'
 CONTRACT = REPO / 'docs' / 'ROS2迁移交接文档.md'
-PLAN = REPO / 'docs' / 'plan' / 'p1-4-视觉算法接入.md'
+# P1-4 计划：2026-10-31 批次已从 `docs/plan/` **归档**到 `docs/archive/completion-20261031/`。
+# 原硬编码 `docs/plan/…` 在归档后直接 FileNotFoundError（路径漂移，非内容缺失）。
+# 按「归档位置 → 现役位置」解析，避免把某个路径写死成唯一真相。
+_PLAN_CANDIDATES = [
+    REPO / 'docs' / 'archive' / 'completion-20261031' / 'p1-4-视觉算法接入.md',
+    REPO / 'docs' / 'plan' / 'p1-4-视觉算法接入.md',
+]
+PLAN = next((p for p in _PLAN_CANDIDATES if p.exists()), _PLAN_CANDIDATES[0])
 VISION_TESTS = REPO / 'scripts' / 'tests' / 'test_p1_4_vision_contract.py'
 
 FROZEN_9 = {

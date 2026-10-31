@@ -116,7 +116,7 @@ def _generate(context, *args, **kwargs):
         # P1-4：机型改由 launch 参数**单一设置**；默认 `gz_x500` = 既有行为**逐字不变**。
         #   可选 `gz_x500_mono_cam`（airframe 4010：只把 PX4_SIM_MODEL 指向 merge 了
         #   `mono_cam` 的机型，旋翼/参数集与 4001 完全相同）——相机口径与验收见
-        #   docs/plan/p1-4-视觉算法接入.md#p1-4-goal 与 experiments/p1-4/round-1/preregistration/。
+        #   docs/archive/completion-20261031/p1-4-视觉算法接入.md#p1-4-goal 与 experiments/p1-4/round-1/preregistration/。
         #   实体名规则（GZBridge.cpp：无 -n 且给 -i → `<model_sim>_<instance>`）：
         #   gz_x500 → x500_0；gz_x500_mono_cam → x500_mono_cam_0。
         'PX4_SIM_MODEL': LaunchConfiguration('px4_sim_model'),

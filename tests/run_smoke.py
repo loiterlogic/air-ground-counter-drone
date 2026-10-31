@@ -16,7 +16,7 @@
 | `offline` | `scripts/tests/` 全部离线单测（不启 ROS 节点 / 不启仿真） | 演示入口、视觉接线、视觉高亮等回归 |
 
 **不是**要求 57 个核查全绿——那需要整链环境，语义是"验收"而非"冒烟"
-（见 [P2-1 plan](../../docs/plan/p2-1-项目交付物.md#p2-1-goal) 第 5 项与
+（见 [P2-1 plan](../../docs/archive/completion-20261031/p2-1-项目交付物.md#p2-1-goal) 第 5 项与
 [tests/README](../../tests/README.md)）。
 
 ## 用法

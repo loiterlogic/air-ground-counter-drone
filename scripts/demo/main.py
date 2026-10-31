@@ -12,7 +12,7 @@
 
 为什么 shell + Python 分工：预检要 source ROS 环境、管进程组、调 `colcon`，shell 最直接；
 预检项与状态轮询逻辑复杂，拆 Python 模块由 shell 调用
-（[P1-2 plan](../../docs/plan/p1-2-一键演示入口.md#p1-2-goal) 的设计原则 1）。
+（[P1-2 plan](../../docs/archive/completion-20261031/p1-2-一键演示入口.md#p1-2-goal) 的设计原则 1）。
 """
 
 import argparse

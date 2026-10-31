@@ -1,0 +1,25 @@
+{
+  "docs_link_check": {
+    "rc": 0,
+    "summary": [
+      "扫描文件：434",
+      "本地链接：5403（锚点校验 2358；外部 37；证据绝对路径 298；模板占位跳过 0）"
+    ],
+    "active_broken_count": 0,
+    "tail": "PASS：活跃文档范围内无断链（本地完整检出口径；本机保留路径单列）"
+  },
+  "docs_tooling_check": {
+    "rc": 0,
+    "tail": "PASS：全部用例通过"
+  },
+  "adr_index_check": {
+    "rc": 0,
+    "tail": "PASS：ADR 索引与 106 篇 ADR 一致"
+  },
+  "report": {
+    "sha256": "8fc9676aaa568958c5db8b00681663433bfb9f45829220e5e8493a4f635a5791",
+    "lines": 185
+  },
+  "at": "2026-10-31T15:17:59+0800",
+  "final_at": "2026-10-31T15:18:35+0800"
+}

@@ -146,7 +146,7 @@ python3 scripts/demo/gui_capture.py snap --out /tmp/shot.png
 另外两个口径也要一起说清，否则结论会被误读：
 
 - 默认 `observe_yaw_mode=target` 是**显式 oracle 指向臂**（机头对准真值方位），
-  **不代表**真实视觉识别（[P1-2 观测指向臂](plan/p1-2-一键演示入口.md#p1-2-oracle-arm)）；
+  **不代表**真实视觉识别（[P1-2 观测指向臂](archive/completion-20261031/p1-2-一键演示入口.md#p1-2-oracle-arm)）；
 - 默认 `perception_path=truth`，感知是**真值派生**，不是从像素识别出来的
   （[ADR-0020](adr/0020-perception-as-truth-derived-simulation.md)）。
 

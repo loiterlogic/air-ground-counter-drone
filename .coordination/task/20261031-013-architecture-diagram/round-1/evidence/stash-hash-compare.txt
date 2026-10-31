@@ -1,0 +1,22 @@
+# pre-stash worktree snapshot id: 25958c905f3ac93c2df0e4836096b92068a87b85
+# tracked paths in snapshot: 952
+# columns: status  blob_sha1_in_snapshot  path
+DIFF     61319f642384 -> e185b8610b67  .coordination/CURRENT.md
+DIFF     5b08e7994604 -> 596ddadc2003  .coordination/README.md
+DIFF     6a443a1d5125 -> 50d7bd6e5afa  README.md
+DIFF     730c4dd3d67f -> 1bb46d0a2c19  docs/conventions/包边界.md
+DIFF     cfd122ddce13 -> 39291b309633  docs/conventions/系统结构图.md
+DIFF     bbf9ce95283e -> 1016bba1105f  docs/plan/assets/system-structure.svg
+DIFF     105b1fb2001c -> 5a787f53ddb6  scripts/demo/render_structure_svg.py
+DIFF     5130b93c41f9 -> a3e0514adeaa  scripts/tests/test_structure_diagram.py
+DIFF     d731126f6bc0 -> 8b777d2779a9  src/agc_sim/launch/world_bringup.launch.py
+DIFF     00a1ed9ddd36 -> 9be27d62fb05  src/agc_task/config/scenarios.yaml
+DIFF     45d2791ea419 -> 4e5a461c2964  src/agc_task/config/w6_base.yaml
+DIFF     ddbf85d47e34 -> ae9e3f69918a  src/agc_task/launch/m0_skeleton.launch.py
+DIFF     3ad6e2b12569 -> 5615b77dc9b0  src/agc_task/launch/w6.launch.py
+DIFF     ddb2f6453291 -> cc7b8a9f3e5c  src/agc_task/launch/w6_composition.py
+DIFF     77b1fb476924 -> 7965217742fd  src/agc_task/test/test_scene_config_invariants.py
+DIFF     543d61235858 -> 54dbe763fed6  tests/w6_geometry_check.py
+DIFF     1b38c86235c2 -> 6cb3d87e9222  tests/w6_r014_check.py
+
+# SUMMARY same=935 diff=17 missing=0 total=952

@@ -1,0 +1,42 @@
+{
+  "git_status_scope": {
+    "rc": 0,
+    "out": "M .agents/README.md\n D MAP_DESIGN_PLAYBOOK.md\n?? .agents/skills/map-design/\n?? .coordination/task/20261031-015-map-design-skill/\n?? docs/plan/f4-map-design-skill.md"
+  },
+  "skill_files": {
+    "SKILL.md": {
+      "bytes": 6410,
+      "sha256": "21abd9416d3e94b0a5a447cc92b4edf1bf9ef91a6e901c69d03f07e047dcdc5f",
+      "lines": 91
+    },
+    "GATES.md": {
+      "bytes": 9633,
+      "sha256": "5a5b18544243325260d79e82a2493f46912d7c4347016066bf5280ffe539fe17",
+      "lines": 181
+    },
+    "SCHEMA-AND-DERIVATION.md": {
+      "bytes": 9054,
+      "sha256": "78f4f76ccb901c24602df53788f6bc88740b79404914649027916a8d49793d5c",
+      "lines": 176
+    },
+    "EVIDENCE.md": {
+      "bytes": 8433,
+      "sha256": "98b6ea4923f6b904f2c94edd13346bb468241c277c703b2eed5a517fb6da4e1a",
+      "lines": 144
+    },
+    "references/MAP_DESIGN_PLAYBOOK.md": {
+      "bytes": 45779,
+      "sha256": "ad0695959b5aa0b37359c2fcc164d3166eb79b1bfddfae649e5d702d7cf1adc1",
+      "lines": 786
+    }
+  },
+  "agents_readme": {
+    "sha256": "1d4a043d742e175b7436c0e1beda655fd7de2b1abca4d6fefc51fb6a6076a647"
+  },
+  "plan_file": {
+    "sha256": "fd9244816126b31a23f17d72bfd7d4f409b27e54dc1f9d39c45446d86b4eba42"
+  },
+  "root_playbook_exists": false,
+  "migration_source_sha256": "343ee368586d5d5ee96987337947293171c70c8aca91af598601c4566f6240f5",
+  "migration_source_blob_at_head": "22c94abbab36c08dcc980871ecdcb07270054ae5"
+}
