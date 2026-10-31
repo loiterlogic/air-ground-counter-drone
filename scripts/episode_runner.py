@@ -83,14 +83,20 @@ def _num_str(v):
     """R-031：数值 / not_applicable（None 或字符串）统一格式化，避免 %.3f 对 None 抛异常。"""
     return ('%.3f' % v) if isinstance(v, (int, float)) else 'n/a'
 
-# R-025：本 runner 固定轻量后端（无 PX4 / 空中链路）。
+# R-025：缺省轻量后端；实际标注一律取 episode / CLI 的 backend，不能用该常量冒充 full 链。
 BACKEND = 'lightweight'
 LAUNCH = 'w6.launch.py'
 
-# R-025：Runbook #status 保留为进度事实；本报告只如实标注 backend/mode，**不**改契约 C3 文字，
-# **不**把「期望终态匹配」自动等价为整链 / C3 GUI 验收。轻量 PASS ≠ 整链 / GUI 验收。
-FULL_CHAIN_NOTE = ('本报告 backend=lightweight（w6.launch.py 轻量栈：m0_skeleton+capture_adjudicator+jammer，无 PX4/空中链路）；'
-                   'pass 仅绑定本报告的明确命题，**不代表**整链（w6.launch.py backend:=full）/ C3 GUI 验收。')
+# R-025：PASS 只绑定 episode 的明确命题；轻量 PASS ≠ 整链 / GUI 验收。
+def full_chain_note(backend):
+    if backend == 'full':
+        return ('本报告 backend=full（w6.launch.py 双 PX4 整链）；pass 仅绑定本报告的明确命题，'
+                'headless 结果**不代表** C3 GUI 验收。')
+    return ('本报告 backend=lightweight（w6.launch.py 轻量栈：m0_skeleton+capture_adjudicator+jammer，'
+            '无 PX4/空中链路）；pass 仅绑定本报告的明确命题，**不代表**整链 / C3 GUI 验收。')
+
+
+FULL_CHAIN_NOTE = full_chain_note(BACKEND)
 
 
 def build_proposition(backend, mode, scene, expected_terminal, expected_reason):
@@ -107,21 +113,28 @@ def build_proposition(backend, mode, scene, expected_terminal, expected_reason):
     return '%s在 %s 达 %s%s' % (head, scene, term, tail)
 
 
-def build_coverage(mode, episodes):
+def build_coverage(mode, episodes, backend=None):
     """R-025：coverage 汇总块——逐轴给 value + evidence（出处）。未覆盖轴如实标注。"""
     started = [e for e in episodes if e.get('started')]
     motions = sorted({e.get('target_motion') for e in episodes if e.get('target_motion')})
     terminals = sorted({e.get('terminal_state') for e in episodes if e.get('terminal_state')})
+    if backend is None:
+        backends = sorted({e.get('backend') for e in episodes if e.get('backend')})
+        if len(backends) != 1:
+            raise ValueError('混合 backend campaign 须显式逐臂分组，不得合并成单一覆盖标注')
+        backend = backends[0]
+    full = backend == 'full'
     return {
-        'backend': {'value': BACKEND,
-                    'evidence': 'episode_runner 起 w6.launch.py backend:=lightweight'
-                                '（m0_skeleton+capture_adjudicator+jammer；无 PX4/空中链路）'},
+        'backend': {'value': backend,
+                    'evidence': 'episode_runner 起 w6.launch.py backend:=%s（%s）' % (
+                        backend, '双 PX4 / 空中链路' if full else 'm0_skeleton+capture_adjudicator+jammer；无 PX4/空中链路')},
         'gui': {'value': mode, 'evidence': '--mode（headless / gui）'},
         'task_start': {'value': '%d/%d episodes started' % (len(started), len(episodes)),
                        'evidence': '每 episode /agc/task/start Trigger 响应（started + start_message）'},
-        'own_takeover': {'value': 'not_applicable',
-                         'evidence': '轻量栈不含空中链路：无 takeoff_controller / '
-                                     '/agc/air/release_control（本轴 N/A，未覆盖）'},
+        'own_takeover': {'value': 'covered' if full else 'not_applicable',
+                         'evidence': ('整链含 takeoff_controller / /agc/air/release_control'
+                                      if full else '轻量栈不含空中链路：无 takeoff_controller / '
+                                      '/agc/air/release_control（本轴 N/A，未覆盖）')},
         'target_motion': {'value': motions,
                           'evidence': 'scenarios.yaml 场景登记轴 axes.target_motion'},
         'real_terminal': {'value': terminals,
@@ -181,10 +194,10 @@ def axis_coverage(scene, registry, carriers, backend=BACKEND):
     return support_status, ledger
 
 
-def skipped_result(scene, seed, registry, carriers):
+def skipped_result(scene, seed, registry, carriers, backend=BACKEND):
     """R-026：unsupported 场景**拒绝运行**并如实记账（不启动 launch、不产出可用评价）。"""
     sc = registry.get(scene, {})
-    support_status, ledger = axis_coverage(scene, registry, carriers)
+    support_status, ledger = axis_coverage(scene, registry, carriers, backend)
     return {
         'scene': scene, 'seed': seed,
         'scenario': (sc.get('params') or {}).get('run_logger', {}).get('scenario', scene),
@@ -195,7 +208,7 @@ def skipped_result(scene, seed, registry, carriers):
         'support_status': support_status, 'axis_coverage': ledger,
         'outcome_class': 'unsupported', 'classification': 'unsupported',
         'budget_kind': None, 'counted_as_success': False, 'expected_match': False,
-        'backend': BACKEND, 'launch': LAUNCH,
+        'backend': backend, 'launch': LAUNCH,
         'target_motion': (sc.get('axes') or {}).get('target_motion'),
         # R-031：unsupported 回合不产出可用评价——三层全 false（未运行，无完整性 / 命题 / 指标）
         'layer_integrity': False, 'layer_proposition': False, 'layer_metrics': False,
@@ -778,7 +791,7 @@ def main():
             if str(support_status).startswith('unsupported'):
                 print('=== episode: %s seed=%d [SKIP unsupported=%s] ===' % (
                     scene, seed, support_status))
-                episodes.append(skipped_result(scene, seed, registry, carriers))
+                episodes.append(skipped_result(scene, seed, registry, carriers, args.backend))
                 continue
             print('=== episode: %s seed=%d [command_source=%s] ===' % (
                 scene, seed, args.command_source))
@@ -804,8 +817,8 @@ def main():
     rtfs = [e['rtf'] for e in episodes if e.get('rtf') is not None]
     report = {
         'run_id': run_id, 'campaign': args.campaign, 'mode': args.mode,
-        # R-025：后端 / launch 标注（本 runner 恒为轻量后端；不冒充整链 / GUI 验收）
-        'backend': BACKEND, 'launch': LAUNCH,
+        # R-025：后端 / launch 标注取实际 CLI 参数，不把 full 链冒充 lightweight。
+        'backend': args.backend, 'launch': LAUNCH,
         # W7-a（R5）：命令源（rl | baseline）——baseline = Navfn + 自研 LQR 离线对照基线。
         'command_source': args.command_source,
         # W7-b（T1/E1）：安全层开关（true=有 shield / false=无 shield 对照臂）
@@ -828,8 +841,8 @@ def main():
                                     if c.get('status') == 'not_carried'}),
         'time_budgets': TIME_BUDGETS,
         # R-025：coverage 汇总（逐轴 value + evidence；未覆盖轴如实标注）
-        'coverage': build_coverage(args.mode, episodes),
-        'full_chain_note': FULL_CHAIN_NOTE,
+        'coverage': build_coverage(args.mode, episodes, args.backend),
+        'full_chain_note': full_chain_note(args.backend),
         'rtf_mean': (sum(rtfs) / len(rtfs)) if rtfs else None,
         'wall_watchdog_s': wall_watchdog_s,
         'episodes': episodes,

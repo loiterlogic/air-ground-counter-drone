@@ -37,7 +37,10 @@
       <direction>-0.5 0.1 -0.9</direction>
     </light>
 
-    <!-- 地面（内联平面） -->
+    <!-- 地面（内联平面）——**场区基层**：冷灰混凝土，标量 PBR（metalness 0 / roughness 0.95）。
+         2026-10-29 用户裁定「建筑和地面精细度不高」→ 地面分为「基层 + 道路 + 场坪」三层
+         （见下），基层提亮以与沥青路面形成对比。**纯视觉**：碰撞仍是同一张 200×200 平面，
+         不参与障碍真源 / 空中安全层 / 占位栅格。 -->
     <model name="ground_plane">
       <static>true</static>
       <link name="link">
@@ -57,10 +60,472 @@
             </plane>
           </geometry>
           <material>
-            <ambient>0.6 0.6 0.6 1</ambient>
-            <diffuse>0.6 0.6 0.6 1</diffuse>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>0.06 0.06 0.06 1</specular>
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.95</roughness>
+                <albedo_map>/home/chen/AGC/install/agc_sim/share/agc_sim/materials/albedo/concrete_ground.png</albedo_map>
+              </metal>
+            </pbr>
           </material>
         </visual>
+      </link>
+    </model>
+
+    <!-- ===== 地面分层（2026-10-29）：沥青道路 + 混凝土场坪 =====
+         设计与纪律（用户要求「地面精细度」；先学后做 → 本机 sdformat 1.11 material.sdf 确认
+         `<pbr><metal><metalness>|<roughness>` 是**标量**字段，无需贴图 → 不引入外部资产）：
+           * 三者都是**地面**，不是静态障碍：**不进**几何真源 `obstacles`、不进空中安全层、
+             不进感知占位栅格；仅在 `agc_world.sdf` 内联，与 `ground_plane` 同类。
+           * 视觉与碰撞同源（每个几何片段同时注入 collision 与 visual），**不做**装饰性无碰撞块。
+           * 厚度 3–4 mm、抬升 2–6 mm：避免与基层共面 z-fighting；对车（轮半径 0.178 m）
+             与物理无实质影响。
+           * 布局：一圈**环形主路**（东西各一条 + 南北各一条）+ 南门支路 + 北侧支路 + 中央
+             混凝土作业坪 + 两处场坪（维修区 / 配送库前）。道路从建筑之间穿过，即现实场站的
+             内部道路网格（先学后做：Nav2 warehouse 世界的通道式布局同理）。 -->
+    <model name="road_ring_w">
+      <static>true</static>
+      <pose>-30 0 0.002 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>9 58 0.004</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>9 58 0.004</size></box></geometry>
+          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse>
+            <specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.95</roughness>
+                <albedo_map>/home/chen/AGC/install/agc_sim/share/agc_sim/materials/albedo/asphalt.png</albedo_map></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="road_ring_e">
+      <static>true</static>
+      <pose>25 0 0.002 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>9 58 0.004</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>9 58 0.004</size></box></geometry>
+          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse>
+            <specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.95</roughness>
+                <albedo_map>/home/chen/AGC/install/agc_sim/share/agc_sim/materials/albedo/asphalt.png</albedo_map></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="road_ring_n">
+      <static>true</static>
+      <pose>-2 20 0.002 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>66 9 0.004</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>66 9 0.004</size></box></geometry>
+          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse>
+            <specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.95</roughness>
+                <albedo_map>/home/chen/AGC/install/agc_sim/share/agc_sim/materials/albedo/asphalt.png</albedo_map></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="road_ring_s">
+      <static>true</static>
+      <pose>-2 -24 0.002 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>66 9 0.004</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>66 9 0.004</size></box></geometry>
+          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse>
+            <specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.95</roughness>
+                <albedo_map>/home/chen/AGC/install/agc_sim/share/agc_sim/materials/albedo/asphalt.png</albedo_map></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="road_spur_gate">
+      <static>true</static>
+      <pose>6 -35 0.002 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>9 22 0.004</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>9 22 0.004</size></box></geometry>
+          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse>
+            <specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.95</roughness>
+                <albedo_map>/home/chen/AGC/install/agc_sim/share/agc_sim/materials/albedo/asphalt.png</albedo_map></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="road_spur_north">
+      <static>true</static>
+      <pose>-4 31 0.002 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>7 18 0.004</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>7 18 0.004</size></box></geometry>
+          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse>
+            <specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.95</roughness>
+                <albedo_map>/home/chen/AGC/install/agc_sim/share/agc_sim/materials/albedo/asphalt.png</albedo_map></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="apron_center">
+      <static>true</static>
+      <pose>0 0 0.0045 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>40 20 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>40 20 0.003</size></box></geometry>
+          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse>
+            <specular>0.10 0.10 0.10 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.90</roughness>
+                <albedo_map>/home/chen/AGC/install/agc_sim/share/agc_sim/materials/albedo/apron_concrete.png</albedo_map></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="apron_west">
+      <static>true</static>
+      <pose>-37 -3 0.0045 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>12 9 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>12 9 0.003</size></box></geometry>
+          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse>
+            <specular>0.10 0.10 0.10 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.90</roughness>
+                <albedo_map>/home/chen/AGC/install/agc_sim/share/agc_sim/materials/albedo/apron_concrete.png</albedo_map></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="apron_east">
+      <static>true</static>
+      <pose>36 -28 0.0045 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>14 7 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>14 7 0.003</size></box></geometry>
+          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse>
+            <specular>0.10 0.10 0.10 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.90</roughness>
+                <albedo_map>/home/chen/AGC/install/agc_sim/share/agc_sim/materials/albedo/apron_concrete.png</albedo_map></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+
+
+    <!-- ===== 地面语义层（R6，2026-10-30）= 路缘石 / 停车位线 / 排水沟 / 碎石带 / 绿化带 =====
+         纪律与既有地面分层相同：**都是地面**，不进几何真源 `obstacles`、不进空中安全层、
+         不进感知占位栅格；带 collision（视觉与碰撞同源）；抬升 4–6 mm 避免 z-fighting。
+         目的：正俯视下用"弱于障碍、强于纯色"的细线把场地分区读出来。 -->
+    <model name="curb_w_o">
+      <static>true</static>
+      <pose>-34.3 0 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.35 58.0 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.35 58.0 0.003</size></box></geometry>
+          <material><ambient>0.6 0.59 0.57 1</ambient><diffuse>0.6 0.59 0.57 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="curb_w_i">
+      <static>true</static>
+      <pose>-25.7 0 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.35 58.0 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.35 58.0 0.003</size></box></geometry>
+          <material><ambient>0.6 0.59 0.57 1</ambient><diffuse>0.6 0.59 0.57 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="curb_e_o">
+      <static>true</static>
+      <pose>29.3 0 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.35 58.0 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.35 58.0 0.003</size></box></geometry>
+          <material><ambient>0.6 0.59 0.57 1</ambient><diffuse>0.6 0.59 0.57 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="curb_e_i">
+      <static>true</static>
+      <pose>20.7 0 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.35 58.0 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.35 58.0 0.003</size></box></geometry>
+          <material><ambient>0.6 0.59 0.57 1</ambient><diffuse>0.6 0.59 0.57 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="curb_n_o">
+      <static>true</static>
+      <pose>-2 24.3 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>60.0 0.35 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>60.0 0.35 0.003</size></box></geometry>
+          <material><ambient>0.6 0.59 0.57 1</ambient><diffuse>0.6 0.59 0.57 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="curb_n_i">
+      <static>true</static>
+      <pose>-2 15.7 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>60.0 0.35 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>60.0 0.35 0.003</size></box></geometry>
+          <material><ambient>0.6 0.59 0.57 1</ambient><diffuse>0.6 0.59 0.57 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="curb_s_o">
+      <static>true</static>
+      <pose>-2 -28.3 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>60.0 0.35 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>60.0 0.35 0.003</size></box></geometry>
+          <material><ambient>0.6 0.59 0.57 1</ambient><diffuse>0.6 0.59 0.57 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="curb_s_i">
+      <static>true</static>
+      <pose>-2 -19.7 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>60.0 0.35 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>60.0 0.35 0.003</size></box></geometry>
+          <material><ambient>0.6 0.59 0.57 1</ambient><diffuse>0.6 0.59 0.57 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="bay_w_0">
+      <static>true</static>
+      <pose>-41.8 -3 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.12 8.4 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.12 8.4 0.003</size></box></geometry>
+          <material><ambient>0.7 0.7 0.68 1</ambient><diffuse>0.7 0.7 0.68 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="bay_w_1">
+      <static>true</static>
+      <pose>-39.4 -3 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.12 8.4 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.12 8.4 0.003</size></box></geometry>
+          <material><ambient>0.7 0.7 0.68 1</ambient><diffuse>0.7 0.7 0.68 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="bay_w_2">
+      <static>true</static>
+      <pose>-37.0 -3 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.12 8.4 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.12 8.4 0.003</size></box></geometry>
+          <material><ambient>0.7 0.7 0.68 1</ambient><diffuse>0.7 0.7 0.68 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="bay_w_3">
+      <static>true</static>
+      <pose>-34.6 -3 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.12 8.4 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.12 8.4 0.003</size></box></geometry>
+          <material><ambient>0.7 0.7 0.68 1</ambient><diffuse>0.7 0.7 0.68 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="bay_w_4">
+      <static>true</static>
+      <pose>-32.2 -3 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.12 8.4 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.12 8.4 0.003</size></box></geometry>
+          <material><ambient>0.7 0.7 0.68 1</ambient><diffuse>0.7 0.7 0.68 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="bay_e_0">
+      <static>true</static>
+      <pose>29.6 -28 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.12 6.6 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.12 6.6 0.003</size></box></geometry>
+          <material><ambient>0.7 0.7 0.68 1</ambient><diffuse>0.7 0.7 0.68 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="bay_e_1">
+      <static>true</static>
+      <pose>31.7 -28 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.12 6.6 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.12 6.6 0.003</size></box></geometry>
+          <material><ambient>0.7 0.7 0.68 1</ambient><diffuse>0.7 0.7 0.68 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="bay_e_2">
+      <static>true</static>
+      <pose>33.8 -28 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.12 6.6 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.12 6.6 0.003</size></box></geometry>
+          <material><ambient>0.7 0.7 0.68 1</ambient><diffuse>0.7 0.7 0.68 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="bay_e_3">
+      <static>true</static>
+      <pose>35.9 -28 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.12 6.6 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.12 6.6 0.003</size></box></geometry>
+          <material><ambient>0.7 0.7 0.68 1</ambient><diffuse>0.7 0.7 0.68 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="bay_e_4">
+      <static>true</static>
+      <pose>38.0 -28 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.12 6.6 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.12 6.6 0.003</size></box></geometry>
+          <material><ambient>0.7 0.7 0.68 1</ambient><diffuse>0.7 0.7 0.68 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="bay_e_5">
+      <static>true</static>
+      <pose>40.1 -28 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.12 6.6 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.12 6.6 0.003</size></box></geometry>
+          <material><ambient>0.7 0.7 0.68 1</ambient><diffuse>0.7 0.7 0.68 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="drain_n">
+      <static>true</static>
+      <pose>0 9.7 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>39.4 0.3 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>39.4 0.3 0.003</size></box></geometry>
+          <material><ambient>0.24 0.25 0.26 1</ambient><diffuse>0.24 0.25 0.26 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="drain_s">
+      <static>true</static>
+      <pose>0 -9.7 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>39.4 0.3 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>39.4 0.3 0.003</size></box></geometry>
+          <material><ambient>0.24 0.25 0.26 1</ambient><diffuse>0.24 0.25 0.26 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="drain_w">
+      <static>true</static>
+      <pose>-19.7 0 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.3 19.4 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.3 19.4 0.003</size></box></geometry>
+          <material><ambient>0.24 0.25 0.26 1</ambient><diffuse>0.24 0.25 0.26 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="drain_e">
+      <static>true</static>
+      <pose>19.7 0 0.006 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.3 19.4 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.3 19.4 0.003</size></box></geometry>
+          <material><ambient>0.24 0.25 0.26 1</ambient><diffuse>0.24 0.25 0.26 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="gravel_hall_north">
+      <static>true</static>
+      <pose>-26 30 0.0042 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>16.9 11.9 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>16.9 11.9 0.003</size></box></geometry>
+          <material><ambient>0.34 0.335 0.32 1</ambient><diffuse>0.34 0.335 0.32 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="gravel_warehouse_south">
+      <static>true</static>
+      <pose>-36 -36 0.0042 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>14.9 10.4 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>14.9 10.4 0.003</size></box></geometry>
+          <material><ambient>0.34 0.335 0.32 1</ambient><diffuse>0.34 0.335 0.32 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="gravel_workshop_w">
+      <static>true</static>
+      <pose>-40 -8 0.0042 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>14.4 10.4 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>14.4 10.4 0.003</size></box></geometry>
+          <material><ambient>0.34 0.335 0.32 1</ambient><diffuse>0.34 0.335 0.32 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="gravel_admin_block">
+      <static>true</static>
+      <pose>30 36 0.0042 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>11.4 9.4 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>11.4 9.4 0.003</size></box></geometry>
+          <material><ambient>0.34 0.335 0.32 1</ambient><diffuse>0.34 0.335 0.32 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="green_w1">
+      <static>true</static>
+      <pose>-40.5 6.0 0.0048 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>7.0 2.2 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>7.0 2.2 0.003</size></box></geometry>
+          <material><ambient>0.26 0.38 0.24 1</ambient><diffuse>0.26 0.38 0.24 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
+      </link>
+    </model>
+    <model name="green_s1">
+      <static>true</static>
+      <pose>-14.0 -40.0 0.0048 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>16.0 2.0 0.003</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>16.0 2.0 0.003</size></box></geometry>
+          <material><ambient>0.26 0.38 0.24 1</ambient><diffuse>0.26 0.38 0.24 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal><metalness>0.0</metalness><roughness>0.92</roughness></metal></pbr>
+          </material></visual>
       </link>
     </model>
 
@@ -89,6 +554,66 @@
     <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
       <render_engine>ogre2</render_engine>
     </plugin>
+
+    <!-- 视觉：**关闭默认地面网格**（P1-1；来源：用户 2026-10-29 15:39 「GUI 地图中间的网格不需要」）。
+         Gazebo 的地面网格来自 world 的 `<scene><grid>`（SDF 缺省 true），**不是** `ground_plane`
+         的几何——它由 GUI 按 cell 大小绘制，不参与碰撞 / 物理 / 任何真源几何。
+         故此处**只**在视觉层关闭它：`<grid>false</grid>`。物理（`<physics>`）、地面碰撞
+         （`ground_plane` 的 `<collision>`）与静态障碍真源（`config/world_geometry.yaml` /
+         `config/maps/*.yaml`）**全部不动**。核查见 `tests/w6_geometry_check.py` 断言 (n)。 -->
+    <scene>
+      <grid>false</grid>
+    </scene>
+
+    <!-- 视觉：GUI **相机预设**（P1-1；来源：用户 2026-10-29「地图是斜的 / 截图取证」问题）。
+         官方可复现写法取自 PX4 官方世界 `Tools/simulation/gz/worlds/baylands.sdf` 的
+         `<gui><plugin MinimalScene><camera_pose>`（同为 GZ Sim 8）。此前靠在 GUI 里累积
+         `/gui/move_to/pose` 拖视角，**不可复现**、每次截图朝向都不同（用户看到的就是斜的）。
+         此处固定为**正俯视平面图**：相机 (0,0,118)、roll=0、pitch=+π/2、**yaw=+π/2** →
+         视线铅直向下、画面 **+y（北）朝上、+x（东）朝右**（标准平面图朝向）；高度 118 m
+         使 100×100 作业区带边距完整入画。
+         yaw 为何是 +π/2：GZ 相机前向 = 局部 +x、画面向上 = 局部 +z；pitch=+π/2 使前向朝下后，
+         局部 +z 落到世界 +x（即"东朝上"）。2026-10-29 用同姿态相机传感器**实测**：
+         yaw=0 → 东朝上；yaw=+π/2 → 北朝上（对渲染图与几何投影做 IoU 拟合，命中标准朝向）。
+         纯视觉：不改物理、光照、传感器系统、spherical_coordinates，也不改几何真源。
+         核查断言 (n) 只关 `<scene><grid>` 与 `ground_plane`/`physics`，本块不影响它。 -->
+    <gui fullscreen="false">
+      <plugin filename="MinimalScene" name="3D View">
+        <gz-gui>
+          <title>3D View</title>
+          <property type="bool" key="showTitleBar">false</property>
+          <property type="string" key="state">docked</property>
+        </gz-gui>
+        <engine>ogre2</engine>
+        <scene>scene</scene>
+        <ambient_light>0.45 0.45 0.45</ambient_light>
+        <background_color>0.78 0.82 0.86</background_color>
+        <camera_pose>0 0 118 0 1.5708 1.5708</camera_pose>
+        <camera_clip>
+          <near>0.25</near>
+          <far>25000</far>
+        </camera_clip>
+      </plugin>
+      <plugin filename="GzSceneManager" name="Scene Manager"/>
+      <plugin filename="InteractiveViewControl" name="Interactive view control"/>
+      <plugin filename="CameraTracking" name="Camera Tracking"/>
+      <plugin filename="MarkerManager" name="Marker manager"/>
+      <plugin filename="SelectEntities" name="Select Entities"/>
+      <plugin filename="VisualizationCapabilities" name="Visualization Capabilities"/>
+      <plugin filename="Spawn" name="Spawn Entities"/>
+      <plugin filename="EntityContextMenuPlugin" name="Entity context menu"/>
+      <plugin name="World control" filename="WorldControl">
+        <play_pause>1</play_pause>
+        <step>1</step>
+        <start_paused>0</start_paused>
+      </plugin>
+      <plugin name="World stats" filename="WorldStats">
+        <sim_time>1</sim_time>
+        <real_time>1</real_time>
+        <real_time_factor>1</real_time_factor>
+        <iterations>1</iterations>
+      </plugin>
+    </gui>
 
     <!-- 静态障碍 pole_1 / pole_2 **不**在本 base world 内：几何真源见 config/world_geometry.yaml，
          由 world_bringup.launch.py 生成运行期世界时按 world_obstacles 注入（S-06；ADR-0062）。 -->

@@ -143,8 +143,12 @@ trajectory_tracker:
       reaction_time_s: 0.2              # R-033：反应时间余量（s）
       max_speed_mps: 2.0                # R-033：反应时间内可达到的水平速度（m/s）
       reachability_margin: 0.3          # R-033：可达性（制动 / 加速度受限）余量（m）
-      # obstacle_names / obstacle_x / obstacle_y —— 由真源派生注入（见上）；此处不再硬编码。
-      obstacle_safety_radius: [2.0, 2.0]
+      # obstacle_names / obstacle_x / obstacle_y / obstacle_safety_radius —— 四者**全部**由
+      #   几何真源逐障碍派生注入（`w6_composition.apply_air_geometry` / `air_bringup` 的
+      #   `safety_geometry`）；本文件**不**再保留任何与障碍数相关的几何或半径列表
+      #   （旧的 `[2.0, 2.0]` 定长列表已消除——P1-1 / ADR-0062 未决项②）。
+      #   缺省值仅作**脱机单测**兜底（`safety_shield.hpp` 的 StaticObstacle.safety_radius=2.0）；
+      #   误配成不同长度时 `SafetyShield::configure_parameters` 在启动期**拒绝**（R-038）。
 
 standoff_follower:
   ros__parameters:

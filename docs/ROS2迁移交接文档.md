@@ -28,7 +28,18 @@
 
 由 launch **单一设置**，节点**不得覆写**：
 
-`/agc/target/source`、`/agc/obstacles/source`、`/agc/perception/sensors_file`、`/agc/air/takeoff_altitude_m`、`/agc/air/follow/*`、`/agc/scenario/dynamic_obstacles`、`/agc/world_file`、`/agc/log/seed`
+`/agc/target/source`、`/agc/obstacles/source`、`/agc/perception/sensors_file`、`/agc/air/takeoff_altitude_m`、`/agc/air/follow/*`、`/agc/scenario/dynamic_obstacles`、`/agc/world_file`、`/agc/log/seed`、`/agc/perception/path`
+
+<a id="perception-path"></a>
+**`/agc/perception/path`（新增，[ADR-0103](../docs/adr/0103-vision-perception-decision-path.md#top)）**：感知路径的**互斥**选择，取值 `truth` | `vision`，**默认 `truth`**（既有真值派生链，[ADR-0020](adr/0020-perception-as-truth-derived-simulation.md)）。
+
+- 两条路径**互斥**：同一 run 内不得混跑，也不得由一个路径静默改用另一路径的输入；
+- `vision` 路径**不得**用真值坐标补齐检测；**无模型**时必须**显式降级**（输出空检测并标注），
+  不得静默回退 `truth`；
+- 该参数由 launch 单一设置并透传至 [统一入口](adr/0061-w6-runtime-topology-backend-identity-and-single-parameterized-entry.md)，
+  节点不得覆写；产物（`summary.json`）须记录 `perception_path` 与视觉模型标识，否则不得用于
+  两条路径的比较或论文结论。
+- **本轮不改变**既有 9 消息 ABI（[#messages](#messages)）与唯一执行口（[#execution-port](#execution-port)）。
 
 <a id="task-gating"></a>
 ## 4. 任务门控与场景复位

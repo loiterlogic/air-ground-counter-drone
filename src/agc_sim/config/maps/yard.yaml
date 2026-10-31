@@ -1,0 +1,2432 @@
+# AGC 场景几何真源 · 地图 `yard`（P1-1 演示主地图）
+#
+# 本文件受 `world_geometry.yaml` 头部 schema 与纪律约束（唯一真源 / 按域派生 / 障碍族边界）；
+# 此处只记**本图专属**布局意图与实测边界，schema 定义不在此复述。
+#
+# ---- 为什么是这张图（来源：用户）----
+# 2026-10-29 原话：「当前地图太过空旷简单，只有两个生成的障碍物。缺少合适的地图。」
+# 同日 15:39：「① 删除 yard 的 pole_1/pole_2；② 中央大块空区重做布局，增加尺寸 / 形状 /
+#   **朝向**多样性，中央要有可见内容，且保留地面与空中可行通道、C7 净空、碰撞/视觉一致；
+#   ③ 关闭 GUI 网格」。
+# 同日 17:00：「不够精致，障碍物大部分都是一大块一大块的，缺少小型障碍物…能不能再精致一点」
+#   → 引入 **sphere 图元**与**复合模型**（`parts`）。
+# 同日 18:44：「80*80 可能不太够，改成 100*100，然后重新布局障碍物分布和数量以及样式，
+#   样式要考虑现实世界中正常情况下是怎么分布的，先学习别人怎么做，**一定是设计好大致分布再动手**」
+#   → 作业区 80×80 → **100×100**；yard 重做为**现实工业物流场站**（分区 + 正交对齐 + 道路留白
+#   + 尺寸长尾 + 中央空场保留）。取证来源：本机同版本可运行实现
+#   `nav2_minimal_tb4_sim/worlds/warehouse.sdf`（货架成排对齐 / 隔离墩成列 / 小件成组）
+#   与 PX4 官方世界 `baylands.sdf`（GUI 相机预设写法）。
+# 同日 21:00 **再次裁定（本轮）**：「建筑和地面精细度不高，能不能优化，比如材质改变，颜色分配
+#   优化。二是小型物体（路牌这种）现在有点少，略微增加不要过分密集。网页看不了就不看了，
+#   学习本地能看的就行，依旧设计好了再动手」
+#   → 引入**材质档 `finish`**（标量 PBR）+ **按功能分族的配色** + **建筑细部构件** +
+#     **地面分层**（道路 / 场坪，在 `worlds/agc_world.sdf`）+ **+7 个小型件**。
+#
+# ---- 材质档 `finish`（本轮新增 schema；标量 PBR，**不需要贴图**）----
+#   依据：本机 **sdformat 1.11** `material.sdf` 中 `<pbr><metal>` 的 `<metalness>` / `<roughness>`
+#   是**标量**字段（默认 0.5），无需任何贴图 → 不违反"不引入外部资产"（world_geometry.yaml 纪律）。
+#   合法值（非法值**拒绝运行**，见 `world_map.FINISHES`）：concrete / steel / paint / glass /
+#   rust / asphalt / rubber / **roofpanel**（R6 新增）。**缺省不写 = 旧行为**（无 `<pbr>` 块，
+#   保证 minimal / open_field 与历史证据不漂移）。逐 part 可覆盖实体级 `finish`。
+#   | finish | metalness | roughness | 语义 |
+#   |---|---|---|---|
+#   | concrete | 0.00 | 0.90 | 混凝土（墙 / 勒脚 / 檐口 / 基础 / 围墙） |
+#   | steel    | **0.35** | **0.42** | 结构钢 / 罐体 / 管廊 / 灯杆 / 法兰（R6 由 0.75/0.35 下调） |
+#   | paint    | 0.15 | 0.45 | 涂装金属（集装箱 / 卷帘门 / 配电箱 / 标牌 / 岗亭） |
+#   | glass    | 0.05 | 0.08 | 玻璃（窗带 / 门厅 / 天窗），diffuse 压暗到 0.72 出深色玻璃感 |
+#   | rust     | 0.10 | 0.95 | 锈蚀件（预留） |
+#   | asphalt  | 0.00 | 0.95 | 沥青（场地道路，在 `agc_world.sdf`） |
+#   | rubber   | 0.00 | 0.80 | 橡胶 / 塑料（锥桶、灌木球等） |
+#   | **roofpanel** | 0.06 | 0.40 | **金属屋面板**（R6 新增；低金属度 → 无环境贴图时仍读作浅色板） |
+#
+# ---- 明度带（R6，2026-10-30 用户裁定「建筑与地面区分度低」）----
+#   判据（断言 (q)）：**屋面 albedo L − 基层地面 albedo L ≥ 0.30**。
+#   | 层 | 目标 L | 实值 |
+#   |---|---|---|
+#   | 基层地面 | 0.42–0.48 | **0.396**（`agc_world.sdf` 非贴图段以 paper 白 + 贴图承载颜色） |
+#   | 沥青道路 | 0.20–0.24 | 0.208 |
+#   | 混凝土场坪 | 0.55–0.60 | 0.575 |
+#   | 屋面 | 0.78–0.86+ | **0.877**（roofpanel） |
+#   | 檐口 / 女儿墙 | 0.55–0.62 | 0.553 |
+#
+#   **R6 实测的关键教训（不写下来会重踩）**：`metalness` 才是渲染亮度的杠杆。无环境贴图时
+#   高金属度几乎不给漫反射分量 —— 原 `steel`(0.75) 屋面在 118 m 俯视渲染里只有 **83/255**，
+#   而旁边 `concrete`(0.00) 檐口是 **161/255**。也就是说：**给金属件提亮 albedo 是无效的**。
+#
+# ---- 配色分族（V2：按功能分族、族内一致）----
+#   * 生产仓储：混凝土冷灰墙 + **银灰蓝**金属屋面 + 深灰女儿墙压顶；
+#   * 办公：暖灰墙 + **深蓝绿玻璃窗带**（逐层）；
+#   * 罐区：银白钢罐，**仅一台标识罐**用暖橙；管廊中灰 + 深灰法兰；变电站钢灰 + 灰绿配电柜；
+#   * 集装箱：**同一排同色**（现实按批号 / 船公司成排堆）——锈红排 / 蓝排 / 绿排 / 土黄排，
+#     第五个箱位留空（真实堆场不是满格）；
+#   * 维修：混凝土墙 + 深钢卷帘门框 + **亮蓝灰**卷帘门；
+#   * 路缘家具：锥桶橙、石墩浅混凝土、花坛绿、标牌黄、灯杆深钢、消防栓红、垃圾箱墨绿、
+#     配电箱灰绿、岗亭白墙蓝顶。
+#
+# ---- 建筑细部（V3：让"建筑"像建筑）----
+#   每栋大体量建筑：**勒脚**（底部外扩防撞带）+ **女儿墙压顶** + **金属屋面板** +
+#   逐层**窗带**（微凸出墙面的真几何，不是贴图）+ **卷帘门 / 玻璃门厅** + **台阶** +
+#   **屋顶设备** + **雨棚 / 月台 / 门廊柱**。塔罐加**基础环**与**爬梯**，管廊加**法兰**。
+#
+# ---- 地面分层（V4，在 `worlds/agc_world.sdf`，**不是**障碍）----
+#   基层混凝土 `ground_plane`（200×200）+ 一圈**沥青环形主路**（东西各一条 / 南北各一条）
+#   + 南门与北侧支路 + 中央**混凝土作业坪** + 两处场坪（维修区 / 配送库前）。
+#   三者都是地面：**不进**本文件 `obstacles`、不进空中安全层、不进感知占位栅格；
+#   视觉与碰撞同源（不做装饰性无碰撞块）；抬升 2–6 mm 避免与基层共面 z-fighting。
+#
+# ---- 分区（世界 ENU，m；作业区 [−50,50]²）----
+#   北外环 y 26..40   ：主厂房 hall_north / 仓库 hall_northeast / 办公楼 admin_block / 配电房 power_house
+#   东区   x 26..46   ：罐区 tank_farm_e（含防火堤 / 基础环）/ 管廊 pipe_rack_e / 变电站 substation_e
+#   南外环 y −44..−26 ：集装箱堆场 container_yard_a / 库房 warehouse_south / 配送库 depot_east
+#   西区   x −46..−26 ：维修车间 workshop_w / 办公楼 office_w
+#   中央南带 y −13..−22：集装箱堆场 container_yard_b / 薄板堆 slab_s / 筒仓 silo_s / 工具房 hut_s /
+#                        隔离墩列 jersey_row / 锥桶列 cone_row / 石墩列 bollard_row / 花坛列 planter_row
+#   中央北带 y  9..13  ：监控塔 tower_n / 双罐 tank_pair_n / 指路牌 sign_a
+#   南门 / 环路沿线    ：岗亭 guard_booth / 道闸 boom_gate / 大门标牌 sign_gate / 指路牌 sign_b /
+#                        消防栓 hydrant_a / 配电箱列 cabinet_row / 垃圾箱列 dumpster_row（本轮新增）
+#   周界              ：围墙 wall_n / wall_s / wall_w / wall_e（30–34 m 分段长墙 + 压顶，段间即门洞）
+#
+# ---- 实测边界（`python3 tests/w6_geometry_check.py` 断言 (o)(p) + 本图离线核验，2026-10-29）----
+#   * 实体 **36** 个；图元 **186** 个；形状 **3** 类（box / cylinder / sphere）；小型件 **19** 个；
+#     复合模型 **34** 个；材质档本图用到 **5 类**（concrete / steel / paint / glass / rubber；`asphalt` 用于地面，见 `agc_world.sdf`；`rust` 预留）；yaw 种类 **12** 种（含正交主向）。
+#   * 障碍外接矩形 **X −46.2..+46.2（92.4 m）/ Y −45.4..+45.4（90.9 m）**——占 100×100 作业区约 84%。
+#   * **并集**投影覆盖 **10.89%**（判据 5%–12%，断言 (o) `coverage_union_in_5_12`）；图元和 28.5%
+#     （图元和含复合体堆叠的重复计数，只作参考，**不作判据**）。
+#   * 中央（原点 15 m 内）**4** 个实体；**8 字轨迹净空 +1.31 m**（最紧 sign_a）；**待机环带**
+#     可行 **81.53%**、最长连续可行弧 **293.5°**；**C7 出生净空** 车 +8.67 / 目标 +6.49 / 己方机 +9.04 m；
+#     **实体互不重叠**（逐图元 SAT 判定）。
+#
+# ---- 覆盖口径（成文）----
+#   判据用 **并集**投影面积 / 作业区面积（同一实体多图元堆叠只计一次）。
+#   旧记录里的 `7.36%` 既不是并集也不是图元和，来源不可复现，**已作废**；断言 (o) 新增并集覆盖
+#   检查，使"5%–12%"第一次可自动判定。
+#
+# ---- 障碍族边界（ADR-0052）----
+#   所有图元在 z=0.48（地面激光扫描面）处均有水平截面 → 对地面激光可见（逐图元判定）；
+#   本图**无**悬空结构 / 薄片：窗带、勒脚、压顶、屋面设备、雨棚均附着在"自身在 z=0.48 处已有
+#   截面的本体"上，属整体足迹的一部分。视觉与碰撞同源（同一 `<geometry>` 片段注入 collision 与 visual）。
+#
+# ---- 已知限制（如实登记，不假装能力）----
+#   * 空中安全层是**二维静态圆盘**（ADR-0052）：圆盘半径 = 实体**水平外接圆半径**（含安全余量）。
+#     细长实体的外接圆半径 ≈ 半长，故**不能**用一根 100 m 通长围墙闭合场站；本图用 30–34 m
+#     **分段长墙 + 段间门洞**（既贴现实，又使每段圆盘远离 8 字空域）。
+#   * 无贴图 / 无 mesh（不引入外部资产）→ 材质只有**标量 PBR + 纯色**，出不了纹理细节；
+#     再往上要贴图就必须走 ADR-0068 的 provenance / 许可 / 哈希登记。
+#
+# ---- 派生约定（`w6_composition` / `world_map` 单一实现）----
+#   `safety_radius` = 实体**全部 part** 的水平外接圆半径（未写则自动推导，见 world_map.py）；
+#   感知先验把复合体 / cylinder / sphere **降级为水平轴对齐包络矩形**（保守外扩，不缩小实体）。
+#   `finish` 只进物理世界的 `<material>`，**不进**感知先验 / 占位栅格（材质不是几何）。
+map: yard
+
+work_area:
+  resolution: 0.5
+  size_x: 100.0
+  size_y: 100.0
+  origin_x: -50.0
+  origin_y: -50.0
+
+obstacles:
+  - id: hall_north
+    x: -26
+    y: 30
+    z: 0
+    yaw: 0.05
+    color: [0.63, 0.62, 0.6]
+    parts:
+        - shape: box
+          x: 0
+          y: 0
+          z: 3.75
+          yaw: 0
+          size: [14.5, 9.5, 7.5]
+          color: [0.63, 0.62, 0.6]
+          finish: concrete
+          id: hall_north_part0
+        - shape: box
+          x: 0
+          y: 0
+          z: 0.35
+          yaw: 0
+          size: [14.86, 9.86, 0.7]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+          id: hall_north_part3
+        - shape: box
+          x: 0
+          y: 4.8
+          z: 2.1
+          yaw: 0
+          size: [12.47, 0.12, 1.3]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: hall_north_part4
+        - shape: box
+          x: 0
+          y: -4.8
+          z: 2.1
+          yaw: 0
+          size: [12.47, 0.12, 1.3]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: hall_north_part5
+        - shape: box
+          x: 0
+          y: 4.8
+          z: 5.3
+          yaw: 0
+          size: [12.47, 0.12, 1.3]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: hall_north_part6
+        - shape: box
+          x: 0
+          y: -4.8
+          z: 5.3
+          yaw: 0
+          size: [12.47, 0.12, 1.3]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: hall_north_part7
+        - shape: box
+          x: 6.1
+          y: 3.6
+          z: 2
+          yaw: 0
+          size: [4.2, 4.2, 4]
+          color: [0.74, 0.73, 0.7]
+          finish: concrete
+          id: hall_north_part8
+        - shape: box
+          x: 0
+          y: -4.95
+          z: 1.7
+          yaw: 0
+          size: [4, 0.28, 3.4]
+          color: [0.24, 0.38, 0.55]
+          finish: paint
+          id: hall_north_part9
+        - id: hall_north_rim
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 7.675
+          yaw: 0.0
+          size: [15.1, 10.1, 0.35]
+          color: [0.56, 0.55, 0.53]
+          finish: concrete
+        - id: hall_north_roof
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 8.1
+          yaw: 0.0
+          size: [13.9, 8.9, 0.5]
+          color: [0.86, 0.88, 0.9]
+          finish: roofpanel
+        - id: hall_north_ridge
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 8.425
+          yaw: 0.0
+          size: [12.51, 0.3, 0.15]
+          color: [0.74, 0.77, 0.8]
+          finish: steel
+        - id: hall_north_sky0
+          shape: box
+          x: -3.058
+          y: 0.0
+          z: 8.41
+          yaw: 0.0
+          size: [1.3, 1.8, 0.12]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+        - id: hall_north_sky1
+          shape: box
+          x: 3.058
+          y: 0.0
+          z: 8.41
+          yaw: 0.0
+          size: [1.3, 1.8, 0.12]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+        - id: hall_north_ac
+          shape: box
+          x: 0.0
+          y: -2.67
+          z: 8.7
+          yaw: 0.0
+          size: [1.6, 1.2, 0.7]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+  - id: hall_northeast
+    x: 8
+    y: 29
+    z: 0
+    yaw: -0.03
+    color: [0.63, 0.62, 0.6]
+    parts:
+        - shape: box
+          x: 0
+          y: 0
+          z: 3.25
+          yaw: 0
+          size: [12.5, 8.5, 6.5]
+          color: [0.63, 0.62, 0.6]
+          finish: concrete
+          id: hall_northeast_part0
+        - shape: box
+          x: 0
+          y: 0
+          z: 0.35
+          yaw: 0
+          size: [12.86, 8.86, 0.7]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+          id: hall_northeast_part3
+        - shape: box
+          x: 0
+          y: 4.3
+          z: 4.7
+          yaw: 0
+          size: [10.75, 0.12, 1.2]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: hall_northeast_part4
+        - shape: box
+          x: 0
+          y: -4.3
+          z: 4.7
+          yaw: 0
+          size: [10.75, 0.12, 1.2]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: hall_northeast_part5
+        - shape: box
+          x: -3.2
+          y: -5.75
+          z: 3.3
+          yaw: 0
+          size: [7, 3.4, 0.35]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+          id: hall_northeast_part6
+        - shape: box
+          x: -5.6
+          y: -5.75
+          z: 1.65
+          yaw: 0
+          size: [0.28, 0.28, 3.3]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+          id: hall_northeast_part7
+        - shape: box
+          x: -0.8
+          y: -5.75
+          z: 1.65
+          yaw: 0
+          size: [0.28, 0.28, 3.3]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+          id: hall_northeast_part8
+        - shape: box
+          x: -3.2
+          y: -5.15
+          z: 0.55
+          yaw: 0
+          size: [7, 1.4, 1.1]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+          id: hall_northeast_part9
+        - id: hall_northeast_rim
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 6.675
+          yaw: 0.0
+          size: [13.1, 9.1, 0.35]
+          color: [0.56, 0.55, 0.53]
+          finish: concrete
+        - id: hall_northeast_roof
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 7.1
+          yaw: 0.0
+          size: [11.9, 7.9, 0.5]
+          color: [0.86, 0.88, 0.9]
+          finish: roofpanel
+        - id: hall_northeast_ridge
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 7.425
+          yaw: 0.0
+          size: [10.71, 0.3, 0.15]
+          color: [0.74, 0.77, 0.8]
+          finish: steel
+        - id: hall_northeast_sky0
+          shape: box
+          x: -2.618
+          y: 0.0
+          z: 7.41
+          yaw: 0.0
+          size: [1.3, 1.8, 0.12]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+        - id: hall_northeast_sky1
+          shape: box
+          x: 2.618
+          y: 0.0
+          z: 7.41
+          yaw: 0.0
+          size: [1.3, 1.8, 0.12]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+        - id: hall_northeast_ac
+          shape: box
+          x: 0.0
+          y: -2.37
+          z: 7.7
+          yaw: 0.0
+          size: [1.6, 1.2, 0.7]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+  - id: admin_block
+    x: 28
+    y: 36
+    z: 0
+    yaw: 0
+    color: [0.74, 0.73, 0.7]
+    parts:
+        - shape: box
+          x: 0
+          y: 0
+          z: 4.5
+          yaw: 0
+          size: [9, 7, 9]
+          color: [0.74, 0.73, 0.7]
+          finish: concrete
+          id: admin_block_part0
+        - shape: box
+          x: 0
+          y: 0
+          z: 0.3
+          yaw: 0
+          size: [9.36, 7.36, 0.6]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+          id: admin_block_part2
+        - shape: box
+          x: 0
+          y: 3.55
+          z: 2.6
+          yaw: 0
+          size: [7.74, 0.12, 1.5]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: admin_block_part3
+        - shape: box
+          x: 0
+          y: -3.55
+          z: 2.6
+          yaw: 0
+          size: [7.74, 0.12, 1.5]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: admin_block_part4
+        - shape: box
+          x: 0
+          y: 3.55
+          z: 5.6
+          yaw: 0
+          size: [7.74, 0.12, 1.5]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: admin_block_part5
+        - shape: box
+          x: 0
+          y: -3.55
+          z: 5.6
+          yaw: 0
+          size: [7.74, 0.12, 1.5]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: admin_block_part6
+        - shape: box
+          x: 0
+          y: 3.55
+          z: 8
+          yaw: 0
+          size: [7.74, 0.12, 1.2]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: admin_block_part7
+        - shape: box
+          x: 0
+          y: -3.55
+          z: 8
+          yaw: 0
+          size: [7.74, 0.12, 1.2]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: admin_block_part8
+        - shape: box
+          x: 0
+          y: -4.4
+          z: 1.9
+          yaw: 0
+          size: [3.2, 2.2, 3.8]
+          color: [0.74, 0.73, 0.7]
+          finish: concrete
+          id: admin_block_part9
+        - shape: box
+          x: 0
+          y: -5.52
+          z: 1.6
+          yaw: 0
+          size: [2.6, 0.16, 3]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: admin_block_part10
+        - shape: box
+          x: 0
+          y: -6.2
+          z: 0.15
+          yaw: 0
+          size: [3.6, 1.2, 0.3]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+          id: admin_block_part11
+        - id: admin_block_rim
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 9.175
+          yaw: 0.0
+          size: [9.4, 7.4, 0.35]
+          color: [0.56, 0.55, 0.53]
+          finish: concrete
+        - id: admin_block_roof
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 9.6
+          yaw: 0.0
+          size: [8.2, 6.2, 0.5]
+          color: [0.86, 0.88, 0.9]
+          finish: roofpanel
+        - id: admin_block_ridge
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 9.925
+          yaw: 0.0
+          size: [7.38, 0.3, 0.15]
+          color: [0.74, 0.77, 0.8]
+          finish: steel
+        - id: admin_block_sky0
+          shape: box
+          x: -1.804
+          y: 0.0
+          z: 9.91
+          yaw: 0.0
+          size: [1.3, 1.8, 0.12]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+        - id: admin_block_sky1
+          shape: box
+          x: 1.804
+          y: 0.0
+          z: 9.91
+          yaw: 0.0
+          size: [1.3, 1.8, 0.12]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+        - id: admin_block_ac
+          shape: box
+          x: 0.0
+          y: -1.86
+          z: 10.2
+          yaw: 0.0
+          size: [1.6, 1.2, 0.7]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+  - id: power_house
+    x: 41
+    y: 27
+    z: 0
+    yaw: 0
+    color: [0.63, 0.62, 0.6]
+    parts:
+        - shape: box
+          x: 0
+          y: 0
+          z: 1.9
+          yaw: 0
+          size: [6, 5, 3.8]
+          color: [0.63, 0.62, 0.6]
+          finish: concrete
+          id: power_house_part0
+        - shape: box
+          x: 0
+          y: 0
+          z: 0.25
+          yaw: 0
+          size: [6.3, 5.3, 0.5]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+          id: power_house_part2
+        - shape: box
+          x: 0
+          y: -2.6
+          z: 1.1
+          yaw: 0
+          size: [1.2, 0.2, 2.2]
+          color: [0.24, 0.38, 0.55]
+          finish: paint
+          id: power_house_part5
+        - id: power_house_rim
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 3.975
+          yaw: 0.0
+          size: [6.3, 5.3, 0.35]
+          color: [0.56, 0.55, 0.53]
+          finish: concrete
+        - id: power_house_roof
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 4.4
+          yaw: 0.0
+          size: [5.1, 4.1, 0.5]
+          color: [0.86, 0.88, 0.9]
+          finish: roofpanel
+        - id: power_house_ridge
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 4.725
+          yaw: 0.0
+          size: [4.59, 0.3, 0.15]
+          color: [0.74, 0.77, 0.8]
+          finish: steel
+        - id: power_house_sky0
+          shape: box
+          x: -1.122
+          y: 0.0
+          z: 4.71
+          yaw: 0.0
+          size: [1.3, 1.8, 0.12]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+        - id: power_house_sky1
+          shape: box
+          x: 1.122
+          y: 0.0
+          z: 4.71
+          yaw: 0.0
+          size: [1.3, 1.8, 0.12]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+        - id: power_house_ac
+          shape: box
+          x: 0.0
+          y: -1.23
+          z: 5.0
+          yaw: 0.0
+          size: [1.6, 1.2, 0.7]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+  - id: tank_farm_e
+    x: 36
+    y: 6
+    z: 0
+    yaw: 0.12
+    color: [0.76, 0.77, 0.75]
+    parts:
+        - shape: cylinder
+          x: -3.4
+          y: -2.2
+          z: 3.5
+          yaw: 0
+          size: [1.8, 1.8, 7]
+          color: [0.76, 0.77, 0.75]
+          finish: steel
+        - shape: cylinder
+          x: 0.6
+          y: -2.2
+          z: 3.1
+          yaw: 0
+          size: [1.5, 1.5, 6.2]
+          color: [0.72, 0.47, 0.22]
+          finish: steel
+        - shape: cylinder
+          x: -3.4
+          y: 2.6
+          z: 2.7
+          yaw: 0
+          size: [1.3, 1.3, 5.4]
+          color: [0.76, 0.77, 0.75]
+          finish: steel
+        - shape: cylinder
+          x: 1.4
+          y: 3
+          z: 3.9
+          yaw: 0
+          size: [1.9, 1.9, 7.8]
+          color: [0.76, 0.77, 0.75]
+          finish: steel
+        - shape: cylinder
+          x: -3.4
+          y: -2.2
+          z: 7.1
+          yaw: 0
+          size: [1.86, 1.86, 0.15]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+        - shape: cylinder
+          x: 1.4
+          y: 3
+          z: 7.9
+          yaw: 0
+          size: [1.96, 1.96, 0.15]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+        - shape: cylinder
+          x: -3.4
+          y: -2.2
+          z: 0.25
+          yaw: 0
+          size: [1.88, 1.88, 0.5]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+        - shape: cylinder
+          x: 1.4
+          y: 3
+          z: 0.25
+          yaw: 0
+          size: [1.98, 1.98, 0.5]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+        - shape: box
+          x: -1.4
+          y: 0.2
+          z: 0.55
+          yaw: 0
+          size: [7.6, 0.35, 1.1]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+        - shape: box
+          x: -1.4
+          y: 5.2
+          z: 0.55
+          yaw: 0
+          size: [7.6, 0.35, 1.1]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+        - shape: box
+          x: 2
+          y: -1.2
+          z: 3.2
+          yaw: 0
+          size: [0.12, 0.12, 6.4]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+  - id: pipe_rack_e
+    x: 28
+    y: -9
+    z: 0
+    yaw: 1.5708
+    color: [0.55, 0.58, 0.62]
+    parts:
+        - shape: box
+          x: 0
+          y: 0
+          z: 1.35
+          yaw: 0
+          size: [10, 0.42, 0.42]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+        - shape: box
+          x: 0
+          y: 0
+          z: 1.95
+          yaw: 0
+          size: [10, 0.3, 0.3]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+        - shape: box
+          x: -3.6
+          y: 0
+          z: 0.6
+          yaw: 0
+          size: [0.5, 0.9, 1.2]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+        - shape: box
+          x: 0
+          y: 0
+          z: 0.6
+          yaw: 0
+          size: [0.5, 0.9, 1.2]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+        - shape: box
+          x: 3.6
+          y: 0
+          z: 0.6
+          yaw: 0
+          size: [0.5, 0.9, 1.2]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+        - shape: cylinder
+          x: -4.6
+          y: 0
+          z: 1.35
+          yaw: 1.5708
+          size: [0.32, 0.32, 0.5]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+        - shape: cylinder
+          x: 4.6
+          y: 0
+          z: 1.35
+          yaw: 1.5708
+          size: [0.32, 0.32, 0.5]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+  - id: substation_e
+    x: 42
+    y: -14
+    z: 0
+    yaw: 0
+    color: [0.55, 0.58, 0.62]
+    parts:
+        - shape: box
+          x: -1.6
+          y: 0
+          z: 1.2
+          yaw: 0
+          size: [2.6, 2, 2.4]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+        - shape: box
+          x: 1.6
+          y: 0
+          z: 1.2
+          yaw: 0
+          size: [2.6, 2, 2.4]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+        - shape: box
+          x: 0
+          y: 0
+          z: 0.62
+          yaw: 0
+          size: [8.4, 0.25, 1.24]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+        - shape: box
+          x: 0
+          y: 3.2
+          z: 0.62
+          yaw: 0
+          size: [8.4, 0.25, 1.24]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+        - shape: box
+          x: 0
+          y: -2.2
+          z: 0.8
+          yaw: 0
+          size: [1, 0.6, 1.6]
+          color: [0.4, 0.46, 0.4]
+          finish: paint
+  - id: container_yard_a
+    x: -20
+    y: -30
+    z: 0
+    yaw: 0
+    color: [0.62, 0.32, 0.26]
+    parts:
+        - shape: box
+          x: -7
+          y: -2
+          z: 1.3
+          yaw: 0
+          size: [6.06, 2.44, 2.59]
+          color: [0.62, 0.32, 0.26]
+          finish: paint
+        - shape: box
+          x: 0
+          y: -2
+          z: 1.3
+          yaw: 0
+          size: [6.06, 2.44, 2.59]
+          color: [0.62, 0.32, 0.26]
+          finish: paint
+        - shape: box
+          x: 7
+          y: -2
+          z: 1.3
+          yaw: 0
+          size: [6.06, 2.44, 2.59]
+          color: [0.62, 0.32, 0.26]
+          finish: paint
+        - shape: box
+          x: -7
+          y: 2
+          z: 1.3
+          yaw: 0
+          size: [6.06, 2.44, 2.59]
+          color: [0.24, 0.38, 0.55]
+          finish: paint
+        - shape: box
+          x: 0
+          y: 2
+          z: 1.3
+          yaw: 0
+          size: [6.06, 2.44, 2.59]
+          color: [0.24, 0.38, 0.55]
+          finish: paint
+  - id: container_yard_b
+    x: 14
+    y: -20
+    z: 0
+    yaw: 0.06
+    color: [0.24, 0.42, 0.33]
+    parts:
+        - shape: box
+          x: -3.1
+          y: -2
+          z: 1.3
+          yaw: 0
+          size: [6.06, 2.44, 2.59]
+          color: [0.24, 0.42, 0.33]
+          finish: paint
+        - shape: box
+          x: 3.1
+          y: -2
+          z: 1.3
+          yaw: 0
+          size: [6.06, 2.44, 2.59]
+          color: [0.24, 0.42, 0.33]
+          finish: paint
+        - shape: box
+          x: -3.1
+          y: 2
+          z: 1.3
+          yaw: 0
+          size: [6.06, 2.44, 2.59]
+          color: [0.6, 0.56, 0.42]
+          finish: paint
+  - id: warehouse_south
+    x: -38
+    y: -38
+    z: 0
+    yaw: 0
+    color: [0.63, 0.62, 0.6]
+    parts:
+        - shape: box
+          x: 0
+          y: 0
+          z: 3
+          yaw: 0
+          size: [12.5, 8, 6]
+          color: [0.63, 0.62, 0.6]
+          finish: concrete
+          id: warehouse_south_part0
+        - shape: box
+          x: 0
+          y: 0
+          z: 0.35
+          yaw: 0
+          size: [12.86, 8.36, 0.7]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+          id: warehouse_south_part2
+        - shape: box
+          x: 0
+          y: 4.05
+          z: 4.4
+          yaw: 0
+          size: [10.75, 0.12, 1.1]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: warehouse_south_part3
+        - shape: box
+          x: 0
+          y: -4.05
+          z: 4.4
+          yaw: 0
+          size: [10.75, 0.12, 1.1]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: warehouse_south_part4
+        - shape: box
+          x: 3.6
+          y: 4.7
+          z: 1.6
+          yaw: 0
+          size: [2.2, 2.2, 3.2]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+          id: warehouse_south_part5
+        - shape: box
+          x: 3.6
+          y: 4.85
+          z: 1.7
+          yaw: 0
+          size: [2, 0.2, 3]
+          color: [0.24, 0.38, 0.55]
+          finish: paint
+          id: warehouse_south_part6
+        - id: warehouse_south_rim
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 6.175
+          yaw: 0.0
+          size: [13.1, 8.6, 0.35]
+          color: [0.56, 0.55, 0.53]
+          finish: concrete
+        - id: warehouse_south_roof
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 6.6
+          yaw: 0.0
+          size: [11.9, 7.4, 0.5]
+          color: [0.86, 0.88, 0.9]
+          finish: roofpanel
+        - id: warehouse_south_ridge
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 6.925
+          yaw: 0.0
+          size: [10.71, 0.3, 0.15]
+          color: [0.74, 0.77, 0.8]
+          finish: steel
+        - id: warehouse_south_sky0
+          shape: box
+          x: -2.618
+          y: 0.0
+          z: 6.91
+          yaw: 0.0
+          size: [1.3, 1.8, 0.12]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+        - id: warehouse_south_sky1
+          shape: box
+          x: 2.618
+          y: 0.0
+          z: 6.91
+          yaw: 0.0
+          size: [1.3, 1.8, 0.12]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+        - id: warehouse_south_ac
+          shape: box
+          x: 0.0
+          y: -2.22
+          z: 7.2
+          yaw: 0.0
+          size: [1.6, 1.2, 0.7]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+  - id: depot_east
+    x: 36
+    y: -36
+    z: 0
+    yaw: -0.04
+    color: [0.63, 0.62, 0.6]
+    parts:
+        - shape: box
+          x: 0
+          y: 0
+          z: 2.6
+          yaw: 0
+          size: [8.5, 6, 5.2]
+          color: [0.63, 0.62, 0.6]
+          finish: concrete
+          id: depot_east_part0
+        - shape: box
+          x: 0
+          y: 0
+          z: 0.3
+          yaw: 0
+          size: [8.86, 6.36, 0.6]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+          id: depot_east_part2
+        - shape: box
+          x: 0
+          y: 3.05
+          z: 3.9
+          yaw: 0
+          size: [7.31, 0.12, 1]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: depot_east_part3
+        - shape: box
+          x: 0
+          y: -3.05
+          z: 3.9
+          yaw: 0
+          size: [7.31, 0.12, 1]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: depot_east_part4
+        - shape: box
+          x: -3.6
+          y: 4
+          z: 1.8
+          yaw: 0
+          size: [0.3, 0.3, 3.6]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+          id: depot_east_part5
+        - shape: box
+          x: -1.4
+          y: 4
+          z: 1.8
+          yaw: 0
+          size: [0.3, 0.3, 3.6]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+          id: depot_east_part6
+        - shape: box
+          x: -2.5
+          y: 4.2
+          z: 3.7
+          yaw: 0
+          size: [3.2, 1.6, 0.25]
+          color: [0.72, 0.74, 0.76]
+          finish: steel
+          id: depot_east_part7
+        - id: depot_east_rim
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 5.375
+          yaw: 0.0
+          size: [9.0, 6.5, 0.35]
+          color: [0.56, 0.55, 0.53]
+          finish: concrete
+        - id: depot_east_roof
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 5.8
+          yaw: 0.0
+          size: [7.8, 5.3, 0.5]
+          color: [0.86, 0.88, 0.9]
+          finish: roofpanel
+        - id: depot_east_ridge
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 6.125
+          yaw: 0.0
+          size: [7.02, 0.3, 0.15]
+          color: [0.74, 0.77, 0.8]
+          finish: steel
+        - id: depot_east_sky0
+          shape: box
+          x: -1.716
+          y: 0.0
+          z: 6.11
+          yaw: 0.0
+          size: [1.3, 1.8, 0.12]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+        - id: depot_east_sky1
+          shape: box
+          x: 1.716
+          y: 0.0
+          z: 6.11
+          yaw: 0.0
+          size: [1.3, 1.8, 0.12]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+        - id: depot_east_ac
+          shape: box
+          x: 0.0
+          y: -1.59
+          z: 6.4
+          yaw: 0.0
+          size: [1.6, 1.2, 0.7]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+  - id: workshop_w
+    x: -38
+    y: 6
+    z: 0
+    yaw: 0
+    color: [0.63, 0.62, 0.6]
+    parts:
+        - shape: box
+          x: 0
+          y: 0
+          z: 3
+          yaw: 0
+          size: [12, 8, 6]
+          color: [0.63, 0.62, 0.6]
+          finish: concrete
+          id: workshop_w_part0
+        - shape: box
+          x: 0
+          y: 0
+          z: 0.3
+          yaw: 0
+          size: [12.36, 8.36, 0.6]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+          id: workshop_w_part2
+        - shape: box
+          x: 0
+          y: 4.05
+          z: 4.6
+          yaw: 0
+          size: [8.4, 0.12, 1]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: workshop_w_part3
+        - shape: box
+          x: 0
+          y: -4.05
+          z: 4.6
+          yaw: 0
+          size: [8.4, 0.12, 1]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: workshop_w_part4
+        - shape: box
+          x: -3
+          y: 4.5
+          z: 1.6
+          yaw: 0
+          size: [3, 0.4, 3.2]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+          id: workshop_w_part5
+        - shape: box
+          x: -3
+          y: 4.6
+          z: 1.55
+          yaw: 0
+          size: [2.8, 0.2, 3]
+          color: [0.24, 0.38, 0.55]
+          finish: paint
+          id: workshop_w_part6
+        - shape: box
+          x: 3
+          y: 4.5
+          z: 1.6
+          yaw: 0
+          size: [1.8, 0.3, 2.6]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+          id: workshop_w_part7
+        - id: workshop_w_rim
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 6.175
+          yaw: 0.0
+          size: [12.5, 8.5, 0.35]
+          color: [0.56, 0.55, 0.53]
+          finish: concrete
+        - id: workshop_w_roof
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 6.6
+          yaw: 0.0
+          size: [11.3, 7.3, 0.5]
+          color: [0.86, 0.88, 0.9]
+          finish: roofpanel
+        - id: workshop_w_ridge
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 6.925
+          yaw: 0.0
+          size: [10.17, 0.3, 0.15]
+          color: [0.74, 0.77, 0.8]
+          finish: steel
+        - id: workshop_w_sky0
+          shape: box
+          x: -2.486
+          y: 0.0
+          z: 6.91
+          yaw: 0.0
+          size: [1.3, 1.8, 0.12]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+        - id: workshop_w_sky1
+          shape: box
+          x: 2.486
+          y: 0.0
+          z: 6.91
+          yaw: 0.0
+          size: [1.3, 1.8, 0.12]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+        - id: workshop_w_ac
+          shape: box
+          x: 0.0
+          y: -2.19
+          z: 7.2
+          yaw: 0.0
+          size: [1.6, 1.2, 0.7]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+  - id: office_w
+    x: -42
+    y: 24
+    z: 0
+    yaw: 0
+    color: [0.74, 0.73, 0.7]
+    parts:
+        - shape: box
+          x: 0
+          y: 0
+          z: 4
+          yaw: 0
+          size: [8, 6, 8]
+          color: [0.74, 0.73, 0.7]
+          finish: concrete
+          id: office_w_part0
+        - shape: box
+          x: 0
+          y: 0
+          z: 0.25
+          yaw: 0
+          size: [8.3, 6.3, 0.5]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+          id: office_w_part2
+        - shape: box
+          x: 0
+          y: 3.05
+          z: 2.4
+          yaw: 0
+          size: [6.88, 0.12, 1.4]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: office_w_part3
+        - shape: box
+          x: 0
+          y: -3.05
+          z: 2.4
+          yaw: 0
+          size: [6.88, 0.12, 1.4]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: office_w_part4
+        - shape: box
+          x: 0
+          y: 3.05
+          z: 5.6
+          yaw: 0
+          size: [6.88, 0.12, 1.4]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: office_w_part5
+        - shape: box
+          x: 0
+          y: -3.05
+          z: 5.6
+          yaw: 0
+          size: [6.88, 0.12, 1.4]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: office_w_part6
+        - shape: box
+          x: 2.6
+          y: -3.6
+          z: 1.9
+          yaw: 0
+          size: [2.4, 2, 3.8]
+          color: [0.74, 0.73, 0.7]
+          finish: concrete
+          id: office_w_part7
+        - shape: box
+          x: 2.6
+          y: -4.62
+          z: 1.6
+          yaw: 0
+          size: [2, 0.16, 2.8]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+          id: office_w_part8
+        - id: office_w_rim
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 8.175
+          yaw: 0.0
+          size: [8.3, 6.3, 0.35]
+          color: [0.56, 0.55, 0.53]
+          finish: concrete
+        - id: office_w_roof
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 8.6
+          yaw: 0.0
+          size: [7.1, 5.1, 0.5]
+          color: [0.86, 0.88, 0.9]
+          finish: roofpanel
+        - id: office_w_ridge
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 8.925
+          yaw: 0.0
+          size: [6.39, 0.3, 0.15]
+          color: [0.74, 0.77, 0.8]
+          finish: steel
+        - id: office_w_sky0
+          shape: box
+          x: -1.562
+          y: 0.0
+          z: 8.91
+          yaw: 0.0
+          size: [1.3, 1.8, 0.12]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+        - id: office_w_sky1
+          shape: box
+          x: 1.562
+          y: 0.0
+          z: 8.91
+          yaw: 0.0
+          size: [1.3, 1.8, 0.12]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+        - id: office_w_ac
+          shape: box
+          x: 0.0
+          y: -1.53
+          z: 9.2
+          yaw: 0.0
+          size: [1.6, 1.2, 0.7]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+  - id: tower_n
+    x: -6
+    y: 11.5
+    z: 0
+    yaw: 0
+    color: [0.76, 0.77, 0.75]
+    parts:
+        - shape: cylinder
+          x: 0
+          y: 0
+          z: 3.6
+          yaw: 0
+          size: [1.1, 1.1, 7.2]
+          color: [0.76, 0.77, 0.75]
+          finish: steel
+        - shape: cylinder
+          x: 0
+          y: 0
+          z: 7.35
+          yaw: 0
+          size: [1.95, 1.95, 0.3]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+        - shape: box
+          x: 1.22
+          y: 0
+          z: 3.6
+          yaw: 0
+          size: [0.14, 0.14, 6.4]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+        - shape: sphere
+          x: 0
+          y: 0
+          z: 7.85
+          yaw: 0
+          size: [0.28, 0.28, 0.28]
+          color: [0.7, 0.22, 0.18]
+          finish: paint
+  - id: tank_pair_n
+    x: 5
+    y: 12.5
+    z: 0
+    yaw: 0.16
+    color: [0.76, 0.77, 0.75]
+    parts:
+        - shape: cylinder
+          x: -1.5
+          y: 0
+          z: 1.9
+          yaw: 0
+          size: [1.05, 1.05, 3.8]
+          color: [0.76, 0.77, 0.75]
+          finish: steel
+        - shape: cylinder
+          x: 1.3
+          y: 0
+          z: 1.5
+          yaw: 0
+          size: [0.85, 0.85, 3]
+          color: [0.72, 0.47, 0.22]
+          finish: steel
+        - shape: cylinder
+          x: -1.5
+          y: 0
+          z: 3.87
+          yaw: 0
+          size: [1.11, 1.11, 0.13]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+        - shape: cylinder
+          x: 1.3
+          y: 0
+          z: 3.07
+          yaw: 0
+          size: [0.91, 0.91, 0.13]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+        - shape: cylinder
+          x: 0
+          y: 0
+          z: 1.15
+          yaw: 0
+          size: [0.3, 0.3, 2.4]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+  - id: sign_a
+    x: -11
+    y: 9.5
+    z: 0
+    yaw: 0.28
+    color: [0.82, 0.74, 0.26]
+    parts:
+        - shape: cylinder
+          x: 0
+          y: 0
+          z: 1.1
+          yaw: 0
+          size: [0.06, 0.06, 2.2]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+        - shape: box
+          x: 0
+          y: 0
+          z: 2.05
+          yaw: 0
+          size: [1, 0.08, 0.62]
+          color: [0.82, 0.74, 0.26]
+          finish: paint
+  - id: slab_s
+    x: -10.5
+    y: -14.5
+    z: 1.3
+    yaw: 3
+    color: [0.5, 0.49, 0.47]
+    finish: concrete
+    shape: box
+    size: [6.5, 0.9, 2.6]
+  - id: silo_s
+    x: 1.5
+    y: -14.5
+    z: 1.7
+    yaw: 0
+    color: [0.72, 0.47, 0.22]
+    finish: steel
+    shape: cylinder
+    size: [1.05, 1.05, 3.4]
+  - id: hut_s
+    x: 10.5
+    y: -14
+    z: 0
+    yaw: -0.35
+    color: [0.74, 0.73, 0.7]
+    parts:
+        - shape: box
+          x: 0
+          y: 0
+          z: 1.05
+          yaw: 0
+          size: [3, 2.2, 2.1]
+          color: [0.74, 0.73, 0.7]
+          finish: concrete
+        - shape: box
+          x: 0.45
+          y: 0.25
+          z: 2.33
+          yaw: 0
+          size: [0.9, 0.7, 0.45]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+        - shape: box
+          x: 0
+          y: -1.15
+          z: 1
+          yaw: 0
+          size: [1, 0.12, 1.9]
+          color: [0.24, 0.38, 0.55]
+          finish: paint
+  - id: cone_row
+    x: -17
+    y: -11.5
+    z: 0
+    yaw: 0
+    color: [0.86, 0.45, 0.14]
+    parts:
+        - shape: cylinder
+          x: 0
+          y: -0.75
+          z: 0.24
+          yaw: 0
+          size: [0.2, 0.2, 0.48]
+          color: [0.86, 0.45, 0.14]
+          finish: rubber
+        - shape: cylinder
+          x: 0
+          y: 0
+          z: 0.24
+          yaw: 0
+          size: [0.2, 0.2, 0.48]
+          color: [0.86, 0.45, 0.14]
+          finish: rubber
+        - shape: cylinder
+          x: 0
+          y: 0.75
+          z: 0.24
+          yaw: 0
+          size: [0.2, 0.2, 0.48]
+          color: [0.86, 0.45, 0.14]
+          finish: rubber
+  - id: bollard_row
+    x: -21
+    y: -11
+    z: 0
+    yaw: 0
+    color: [0.74, 0.73, 0.7]
+    parts:
+        - shape: sphere
+          x: 0
+          y: -1.3
+          z: 0.32
+          yaw: 0
+          size: [0.32, 0.32, 0.32]
+          color: [0.74, 0.73, 0.7]
+          finish: concrete
+        - shape: sphere
+          x: 0
+          y: 0
+          z: 0.32
+          yaw: 0
+          size: [0.32, 0.32, 0.32]
+          color: [0.74, 0.73, 0.7]
+          finish: concrete
+        - shape: sphere
+          x: 0
+          y: 1.3
+          z: 0.32
+          yaw: 0
+          size: [0.32, 0.32, 0.32]
+          color: [0.74, 0.73, 0.7]
+          finish: concrete
+  - id: planter_row
+    x: 17
+    y: -13
+    z: 0
+    yaw: 0
+    color: [0.3, 0.45, 0.28]
+    parts:
+        - shape: box
+          x: -1
+          y: 0
+          z: 0.21
+          yaw: 0
+          size: [1.3, 1.3, 0.42]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+        - shape: cylinder
+          x: -1
+          y: 0
+          z: 0.5
+          yaw: 0
+          size: [0.32, 0.32, 0.46]
+          color: [0.3, 0.45, 0.28]
+          finish: rubber
+        - shape: box
+          x: 1.1
+          y: 0
+          z: 0.21
+          yaw: 0
+          size: [1.3, 1.3, 0.42]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+        - shape: cylinder
+          x: 1.1
+          y: 0
+          z: 0.5
+          yaw: 0
+          size: [0.32, 0.32, 0.46]
+          color: [0.3, 0.45, 0.28]
+          finish: rubber
+  - id: jersey_row
+    x: 0
+    y: -21
+    z: 0
+    yaw: 0.05
+    color: [0.74, 0.73, 0.7]
+    parts:
+        - shape: box
+          x: -1.7
+          y: 0
+          z: 0.45
+          yaw: 0
+          size: [1.5, 0.55, 0.9]
+          color: [0.74, 0.73, 0.7]
+          finish: concrete
+        - shape: box
+          x: 0
+          y: 0
+          z: 0.45
+          yaw: 0
+          size: [1.5, 0.55, 0.9]
+          color: [0.74, 0.73, 0.7]
+          finish: concrete
+        - shape: box
+          x: 1.7
+          y: 0
+          z: 0.45
+          yaw: 0
+          size: [1.5, 0.55, 0.9]
+          color: [0.74, 0.73, 0.7]
+          finish: concrete
+  - id: lamp_a
+    x: -24
+    y: 15
+    z: 0
+    yaw: 0
+    color: [0.36, 0.38, 0.41]
+    parts:
+        - shape: cylinder
+          x: 0
+          y: 0
+          z: 4.5
+          yaw: 0
+          size: [0.12, 0.12, 9]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+        - shape: box
+          x: 0.55
+          y: 0
+          z: 8.9
+          yaw: 0
+          size: [0.95, 0.42, 0.24]
+          color: [0.76, 0.77, 0.75]
+          finish: steel
+  - id: lamp_b
+    x: 24
+    y: 15
+    z: 0
+    yaw: 0
+    color: [0.36, 0.38, 0.41]
+    parts:
+        - shape: cylinder
+          x: 0
+          y: 0
+          z: 4.5
+          yaw: 0
+          size: [0.12, 0.12, 9]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+        - shape: box
+          x: -0.55
+          y: 0
+          z: 8.9
+          yaw: 0
+          size: [0.95, 0.42, 0.24]
+          color: [0.76, 0.77, 0.75]
+          finish: steel
+  - id: guard_booth
+    x: -2
+    y: -43
+    z: 0
+    yaw: 0
+    color: [0.78, 0.78, 0.75]
+    parts:
+        - shape: box
+          x: 0
+          y: 0
+          z: 1.3
+          yaw: 0
+          size: [1.8, 1.8, 2.6]
+          color: [0.78, 0.78, 0.75]
+          finish: paint
+        - shape: box
+          x: 0
+          y: 0
+          z: 2.72
+          yaw: 0
+          size: [2, 2, 0.24]
+          color: [0.24, 0.38, 0.55]
+          finish: paint
+        - shape: box
+          x: 0
+          y: -0.95
+          z: 1.75
+          yaw: 0
+          size: [1.3, 0.12, 0.8]
+          color: [0.15, 0.22, 0.26]
+          finish: glass
+        - shape: box
+          x: 0.6
+          y: 0
+          z: 0.1
+          yaw: 0
+          size: [2.2, 1.2, 0.2]
+          color: [0.5, 0.49, 0.47]
+          finish: concrete
+  - id: boom_gate
+    x: 1.5
+    y: -42
+    z: 0
+    yaw: 0
+    color: [0.24, 0.38, 0.55]
+    parts:
+        - shape: box
+          x: 0
+          y: 0
+          z: 0.6
+          yaw: 0
+          size: [0.34, 0.34, 1.2]
+          color: [0.55, 0.58, 0.62]
+          finish: steel
+        - shape: box
+          x: 4
+          y: 0
+          z: 0.95
+          yaw: 0
+          size: [8, 0.12, 0.12]
+          color: [0.24, 0.38, 0.55]
+          finish: paint
+        - shape: box
+          x: -0.5
+          y: 0
+          z: 0.6
+          yaw: 0
+          size: [0.5, 0.4, 0.7]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+  - id: sign_gate
+    x: -7
+    y: -43.5
+    z: 0
+    yaw: 0
+    color: [0.24, 0.38, 0.55]
+    parts:
+        - shape: box
+          x: -1.1
+          y: 0
+          z: 1.2
+          yaw: 0
+          size: [0.18, 0.18, 2.4]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+        - shape: box
+          x: 1.1
+          y: 0
+          z: 1.2
+          yaw: 0
+          size: [0.18, 0.18, 2.4]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+        - shape: box
+          x: 0
+          y: 0
+          z: 2.1
+          yaw: 0
+          size: [2.6, 0.14, 0.9]
+          color: [0.24, 0.38, 0.55]
+          finish: paint
+  - id: sign_b
+    x: 31
+    y: -2
+    z: 0
+    yaw: 0.35
+    color: [0.82, 0.74, 0.26]
+    parts:
+        - shape: cylinder
+          x: 0
+          y: 0
+          z: 1.2
+          yaw: 0
+          size: [0.06, 0.06, 2.4]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+        - shape: box
+          x: 0
+          y: 0
+          z: 2.2
+          yaw: 0
+          size: [1.1, 0.08, 0.7]
+          color: [0.82, 0.74, 0.26]
+          finish: paint
+  - id: hydrant_a
+    x: -24
+    y: 3
+    z: 0
+    yaw: 0
+    color: [0.7, 0.22, 0.18]
+    parts:
+        - shape: cylinder
+          x: 0
+          y: 0
+          z: 0.45
+          yaw: 0
+          size: [0.16, 0.16, 0.9]
+          color: [0.7, 0.22, 0.18]
+          finish: paint
+        - shape: cylinder
+          x: 0
+          y: 0
+          z: 0.95
+          yaw: 0
+          size: [0.1, 0.1, 0.2]
+          color: [0.7, 0.22, 0.18]
+          finish: paint
+        - shape: box
+          x: 0.22
+          y: 0
+          z: 0.6
+          yaw: 0
+          size: [0.3, 0.12, 0.12]
+          color: [0.7, 0.22, 0.18]
+          finish: paint
+  - id: cabinet_row
+    x: 20
+    y: 26
+    z: 0
+    yaw: 0
+    color: [0.4, 0.46, 0.4]
+    parts:
+        - shape: box
+          x: -1.6
+          y: 0
+          z: 0.75
+          yaw: 0
+          size: [1.1, 0.7, 1.5]
+          color: [0.4, 0.46, 0.4]
+          finish: paint
+        - shape: box
+          x: 0
+          y: 0
+          z: 0.75
+          yaw: 0
+          size: [1.1, 0.7, 1.5]
+          color: [0.4, 0.46, 0.4]
+          finish: paint
+        - shape: box
+          x: 1.6
+          y: 0
+          z: 0.75
+          yaw: 0
+          size: [1.1, 0.7, 1.5]
+          color: [0.4, 0.46, 0.4]
+          finish: paint
+  - id: dumpster_row
+    x: -36
+    y: -24
+    z: 0
+    yaw: 0
+    color: [0.24, 0.42, 0.33]
+    parts:
+        - shape: box
+          x: -0.9
+          y: 0
+          z: 0.55
+          yaw: 0
+          size: [1.2, 1, 1.1]
+          color: [0.24, 0.42, 0.33]
+          finish: paint
+        - shape: box
+          x: 0.5
+          y: 0
+          z: 0.55
+          yaw: 0
+          size: [1.2, 1, 1.1]
+          color: [0.24, 0.42, 0.33]
+          finish: paint
+        - shape: box
+          x: -0.2
+          y: 0
+          z: 1.14
+          yaw: 0
+          size: [2.8, 1.1, 0.08]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+  - id: wall_n
+    x: -20
+    y: 45
+    z: 0
+    yaw: 0
+    color: [0.7, 0.69, 0.66]
+    parts:
+        - shape: box
+          x: 0
+          y: 0
+          z: 1.1
+          yaw: 0
+          size: [34, 0.5, 2.2]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_n_part0
+        - shape: box
+          x: 0
+          y: 0
+          z: 2.28
+          yaw: 0
+          size: [34, 0.62, 0.16]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_n_part1
+        - shape: box
+          x: -16.1
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_n_part2
+        - shape: box
+          x: -8.05
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_n_part3
+        - shape: box
+          x: 0
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_n_part4
+        - shape: box
+          x: 8.05
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_n_part5
+        - shape: box
+          x: 16.1
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_n_part6
+  - id: wall_s
+    x: 10
+    y: -45
+    z: 0
+    yaw: 0
+    color: [0.7, 0.69, 0.66]
+    parts:
+        - shape: box
+          x: 0
+          y: 0
+          z: 1.1
+          yaw: 0
+          size: [30, 0.5, 2.2]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_s_part0
+        - shape: box
+          x: 0
+          y: 0
+          z: 2.28
+          yaw: 0
+          size: [30, 0.62, 0.16]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_s_part1
+        - shape: box
+          x: -14.1
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_s_part2
+        - shape: box
+          x: -7.05
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_s_part3
+        - shape: box
+          x: 0
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_s_part4
+        - shape: box
+          x: 7.05
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_s_part5
+        - shape: box
+          x: 14.1
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_s_part6
+  - id: wall_w
+    x: -45
+    y: -10
+    z: 0
+    yaw: 1.5708
+    color: [0.7, 0.69, 0.66]
+    parts:
+        - shape: box
+          x: 0
+          y: 0
+          z: 1.1
+          yaw: 0
+          size: [30, 0.5, 2.2]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_w_part0
+        - shape: box
+          x: 0
+          y: 0
+          z: 2.28
+          yaw: 0
+          size: [30, 0.62, 0.16]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_w_part1
+        - shape: box
+          x: -14.1
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_w_part2
+        - shape: box
+          x: -7.05
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_w_part3
+        - shape: box
+          x: 0
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_w_part4
+        - shape: box
+          x: 7.05
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_w_part5
+        - shape: box
+          x: 14.1
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_w_part6
+  - id: wall_e
+    x: 45
+    y: 8
+    z: 0
+    yaw: 1.5708
+    color: [0.7, 0.69, 0.66]
+    parts:
+        - shape: box
+          x: 0
+          y: 0
+          z: 1.1
+          yaw: 0
+          size: [30, 0.5, 2.2]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_e_part0
+        - shape: box
+          x: 0
+          y: 0
+          z: 2.28
+          yaw: 0
+          size: [30, 0.62, 0.16]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_e_part1
+        - shape: box
+          x: -14.1
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_e_part2
+        - shape: box
+          x: -7.05
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_e_part3
+        - shape: box
+          x: 0
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_e_part4
+        - shape: box
+          x: 7.05
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_e_part5
+        - shape: box
+          x: 14.1
+          y: 0
+          z: 1.28
+          yaw: 0
+          size: [0.85, 0.85, 2.56]
+          color: [0.64, 0.63, 0.61]
+          finish: concrete
+          id: wall_e_part6
+  - id: truck_loading
+    x: 24.0
+    y: -33.0
+    z: 0.0
+    yaw: 0.0
+    color: [0.8, 0.8, 0.78]
+    parts:
+        - id: truck_loading_cab
+          shape: box
+          x: -2.9
+          y: 0.0
+          z: 1.45
+          yaw: 0.0
+          size: [2.2, 2.3, 2.9]
+          color: [0.24, 0.38, 0.55]
+          finish: paint
+        - id: truck_loading_body
+          shape: box
+          x: 1.3
+          y: 0.0
+          z: 1.85
+          yaw: 0.0
+          size: [5.6, 2.4, 2.6]
+          color: [0.8, 0.8, 0.78]
+          finish: paint
+        - id: truck_loading_wheel
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 0.35
+          yaw: 0.0
+          size: [7.6, 2.5, 0.7]
+          color: [0.36, 0.38, 0.41]
+          finish: rubber
+  - id: forklift_a
+    x: -24.0
+    y: -40.0
+    z: 0.0
+    yaw: 0.12
+    color: [0.86, 0.45, 0.14]
+    parts:
+        - id: forklift_a_body
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 0.75
+          yaw: 0.0
+          size: [2.2, 1.3, 1.5]
+          color: [0.86, 0.45, 0.14]
+          finish: paint
+        - id: forklift_a_mast
+          shape: box
+          x: 1.0
+          y: 0.0
+          z: 1.35
+          yaw: 0.0
+          size: [0.3, 1.2, 2.7]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+        - id: forklift_a_fork
+          shape: box
+          x: 1.6
+          y: 0.0
+          z: 0.16
+          yaw: 0.0
+          size: [1.2, 1.1, 0.12]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+  - id: forklift_b
+    x: -19.5
+    y: -40.0
+    z: 0.0
+    yaw: -0.06
+    color: [0.86, 0.45, 0.14]
+    parts:
+        - id: forklift_b_body
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 0.75
+          yaw: 0.0
+          size: [2.2, 1.3, 1.5]
+          color: [0.86, 0.45, 0.14]
+          finish: paint
+        - id: forklift_b_mast
+          shape: box
+          x: 1.0
+          y: 0.0
+          z: 1.35
+          yaw: 0.0
+          size: [0.3, 1.2, 2.7]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+        - id: forklift_b_fork
+          shape: box
+          x: 1.6
+          y: 0.0
+          z: 0.16
+          yaw: 0.0
+          size: [1.2, 1.1, 0.12]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+  - id: pallet_a
+    x: 28.5
+    y: -30.0
+    z: 0.0
+    yaw: 0.0
+    color: [0.62, 0.5, 0.34]
+    parts:
+        - id: pallet_a_base
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 0.08
+          yaw: 0.0
+          size: [1.2, 1.0, 0.16]
+          color: [0.62, 0.5, 0.34]
+          finish: rubber
+        - id: pallet_a_load
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 0.62
+          yaw: 0.0
+          size: [1.1, 0.9, 1.0]
+          color: [0.7, 0.68, 0.62]
+          finish: paint
+  - id: pallet_b
+    x: 30.3
+    y: -30.0
+    z: 0.0
+    yaw: 0.0
+    color: [0.62, 0.5, 0.34]
+    parts:
+        - id: pallet_b_base
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 0.08
+          yaw: 0.0
+          size: [1.2, 1.0, 0.16]
+          color: [0.62, 0.5, 0.34]
+          finish: rubber
+        - id: pallet_b_load
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 0.62
+          yaw: 0.0
+          size: [1.1, 0.9, 1.0]
+          color: [0.66, 0.64, 0.58]
+          finish: paint
+  - id: trailer_a
+    x: -8.0
+    y: -40.0
+    z: 0.0
+    yaw: 0.0
+    color: [0.58, 0.26, 0.22]
+    parts:
+        - id: trailer_a_chassis
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 0.55
+          yaw: 0.0
+          size: [12.0, 2.4, 0.9]
+          color: [0.36, 0.38, 0.41]
+          finish: steel
+        - id: trailer_a_box
+          shape: box
+          x: 0.0
+          y: 0.0
+          z: 2.1
+          yaw: 0.0
+          size: [11.6, 2.35, 2.6]
+          color: [0.58, 0.26, 0.22]
+          finish: paint

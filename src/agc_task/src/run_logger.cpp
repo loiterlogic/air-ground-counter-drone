@@ -107,6 +107,17 @@ public:
     // 该臂**无** collision_monitor → 安全层相关的 action 新鲜度门**不适用**（不误判为无效样本）。
     // launch 传入的 'true'/'false' 由 launch_ros 归一为 **bool**，故此处按 bool 声明。
     shield_layer_enabled_ = declare_parameter<bool>("shield_layer_enabled", true);
+    // —— P1-4（ADR-0103）：感知路径与视觉模型标识 ——
+    // **新增键，不改既有字段语义**。ADR-0103「证据必须可区分」：没有这个字段的实验产物
+    // 不得用于 truth / vision 的比较或论文结论。默认 truth / none = 既有行为不变。
+    //   perception_path     —— truth（真值派生链，ADR-0020，默认）| vision（视觉驱动）
+    //   vision_model_id     —— 识别模型标识；`none` = 无模型（该臂为显式降级，不得冒充有模型）
+    //   vision_model_name / _version / _sha256 —— 名称 / 版本 / 权重哈希（可空 = 未提供）
+    perception_path_ = declare_parameter<std::string>("perception_path", "truth");
+    vision_model_id_ = declare_parameter<std::string>("vision_model_id", "none");
+    vision_model_name_ = declare_parameter<std::string>("vision_model_name", "");
+    vision_model_version_ = declare_parameter<std::string>("vision_model_version", "");
+    vision_model_sha256_ = declare_parameter<std::string>("vision_model_sha256", "");
     // —— W7-b（T3 / E3，F-10）：可见性度量口径（按 episode active 窗口切分）——
     const auto target_topic = declare_parameter<std::string>("target_topic", "/agc/targets");
     envelope_topic_ = declare_parameter<std::string>("envelope_topic", "/agc/task/envelope_in");
@@ -365,6 +376,12 @@ public:
         << "  \"cmd_vel_rate_hz\": " << rate << ",\n"
         << "  \"reset_retries\": " << reset_retries_ << ",\n"
         << "  \"reset_failed\": " << (reset_failed_ ? "true" : "false") << ",\n"
+        // === P1-4（ADR-0103）新增：感知路径与视觉模型标识（**只增不改**语义）===
+        // 缺这个块的产物不得用于 truth / vision 比较（ADR-0103「证据必须可区分」）。
+        << "  \"perception_path\": \"" << perception_path_ << "\",\n"
+        << "  \"vision_model\": {\"id\": \"" << vision_model_id_ << "\", \"name\": \""
+        << vision_model_name_ << "\", \"version\": \"" << vision_model_version_
+        << "\", \"sha256\": \"" << vision_model_sha256_ << "\"},\n"
         // === 历史口径 proxy_v1（**保留不动**，仅加定义版本标注）===
         << "  \"shield_infeasible_rate\": " << shield_rate << ",\n"
         << "  \"reset_failure_rate\": " << reset_rate << ",\n"
@@ -1358,6 +1375,9 @@ private:
   std::string cmd_raw_topic_;
   double cmd_max_age_s_{0.5}, attr_delta_epsilon_{1e-3}, attr_max_gap_s_{1.0};
   bool shield_layer_enabled_{true};
+  // P1-4（ADR-0103）：感知路径与视觉模型标识（新键；默认 = truth / none，既有行为不变）
+  std::string perception_path_, vision_model_id_, vision_model_name_,
+    vision_model_version_, vision_model_sha256_;
   double raw_v_{0.0}, raw_w_{0.0}, raw_stamp_{0.0}, raw_rx_s_{0.0};
   double eff_v_{0.0}, eff_w_{0.0}, eff_stamp_{0.0}, eff_rx_s_{0.0};
   bool have_raw_{false}, have_eff_{false};

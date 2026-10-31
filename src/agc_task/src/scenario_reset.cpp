@@ -68,10 +68,11 @@ public:
     // S-06（ADR-0062）：作业区边界（map_*）与静态障碍清单（obstacle_*）的**几何真源**为
     //   `agc_sim/config/world_geometry.yaml`，由 w6_composition 派生注入；此处默认值
     //   **仅**为 standalone 回退，不构成第二份几何真源（修改几何只改真源文件）。
-    map_x_min_ = declare_parameter<double>("map_x_min", -40.0);
-    map_x_max_ = declare_parameter<double>("map_x_max", 40.0);
-    map_y_min_ = declare_parameter<double>("map_y_min", -40.0);
-    map_y_max_ = declare_parameter<double>("map_y_max", 40.0);
+    // 2026-10-29 用户裁定作业区 80×80 → **100×100（origin −50,−50）**，回退默认值随之同步。
+    map_x_min_ = declare_parameter<double>("map_x_min", -50.0);
+    map_x_max_ = declare_parameter<double>("map_x_max", 50.0);
+    map_y_min_ = declare_parameter<double>("map_y_min", -50.0);
+    map_y_max_ = declare_parameter<double>("map_y_max", 50.0);
     // 显式运行模式（同 R-001 air_present 原则：不得由实体缺席推定）
     own_uav_present_ = declare_parameter<bool>("own_uav_present", false);
     own_uav_x_ = declare_parameter<double>("own_uav_x", 0.0);
@@ -486,7 +487,7 @@ private:
   double clearance_radius_obstacle_m_{0.15};
   double clearance_min_car_own_uav_m_{-1.0}, clearance_min_target_own_uav_m_{-1.0};
   double clearance_min_car_obstacle_m_{-1.0}, clearance_min_target_obstacle_m_{-1.0};
-  double map_x_min_{-40.0}, map_x_max_{40.0}, map_y_min_{-40.0}, map_y_max_{40.0};
+  double map_x_min_{-50.0}, map_x_max_{50.0}, map_y_min_{-50.0}, map_y_max_{50.0};
   bool own_uav_present_{false};
   double own_uav_x_{0.0}, own_uav_y_{0.0};
   std::vector<std::string> obstacle_names_;

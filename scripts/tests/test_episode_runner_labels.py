@@ -49,6 +49,35 @@ def test_proposition_labels_lightweight():
     assert '轻量栈' in p and '非整链' in p
 
 
+def test_campaign_metadata_uses_actual_backend():
+    full = er.build_coverage('headless', [{'backend': 'full', 'started': True}], 'full')
+    assert full['backend']['value'] == 'full'
+    assert '双 PX4' in full['backend']['evidence']
+    assert full['own_takeover']['value'] == 'covered'
+    assert 'backend=full' in er.full_chain_note('full')
+    assert 'headless 结果**不代表** C3 GUI 验收' in er.full_chain_note('full')
+
+    light = er.build_coverage('headless', [{'backend': 'lightweight', 'started': True}], 'lightweight')
+    assert light['backend']['value'] == 'lightweight'
+    assert light['own_takeover']['value'] == 'not_applicable'
+    assert 'backend=lightweight' in er.full_chain_note('lightweight')
+
+
+def test_skipped_result_preserves_requested_backend():
+    reg = {'s': {'support_status': 'unsupported:test', 'axes': {}, 'params': {}}}
+    assert er.skipped_result('s', 0, reg, {}, 'full')['backend'] == 'full'
+    assert er.skipped_result('s', 0, reg, {})['backend'] == 'lightweight'
+
+
+def test_mixed_backend_coverage_is_rejected():
+    try:
+        er.build_coverage('headless', [{'backend': 'full'}, {'backend': 'lightweight'}])
+    except ValueError as exc:
+        assert '混合 backend' in str(exc)
+    else:
+        raise AssertionError('混合 backend 不得合并成单一覆盖标注')
+
+
 # ---------------- 2. 轴账本按实际 backend ----------------
 
 def test_axis_coverage_air_axes_covered_on_full():

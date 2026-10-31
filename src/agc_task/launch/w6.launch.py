@@ -92,17 +92,49 @@ def _compose(context, *args, **kwargs):
             '未知 backend: %s（可用：%s）→ 拒绝运行' % (backend, list(BACKENDS)))
     scene = LaunchConfiguration('scene').perform(context)
     seed = int(LaunchConfiguration('seed').perform(context))
+    # P1-1：地图（几何真源选择）——minimal（核查基线）| yard（演示主地图）| open_field。
+    # 解析**两级**且只在 `load_scene` 一处实现（launch 显式非空 > 场景登记 > 缺省 minimal）；
+    # 未知值在 `resolve_world_map` 内拒绝运行（不静默回退）。此处**不**先行解析空串。
+    world_map = LaunchConfiguration('world_map').perform(context).strip()
 
-    info = load_scene(task_share, perc_share, sim_share, scene, seed)
+    # ---- P1-4（ADR-0103）：感知路径 + 己方机型——**单一设置**，默认行为逐字不变 ----
+    # `perception_path` ∈ {truth, vision}：truth = 既有真值派生链（ADR-0020，默认）；
+    #   vision = 新增视觉路径（相机 → 识别 → 检测）。两条路径**互斥**，不得同一 run 内混跑。
+    #   本入口只做**透传与合法性校验**：不改任务编排、终态、安全参数；不改 9 消息 ABI。
+    perception_path = (LaunchConfiguration('perception_path').perform(context) or '').strip()
+    if perception_path not in ('truth', 'vision'):
+        raise RuntimeError(
+            '未知 perception_path=%r（可用：truth | vision）→ 拒绝运行'
+            '（空串不作默认猜测，见 ADR-0103）' % (perception_path,))
+    # truth 路径**不得**接视觉识别节点：显式拒绝，避免"以为互斥、其实两路都在跑"。
+    # vision 路径下真值派生链（gt_bypass/air_perception/air_fusion）保持不变（目标源仍按场景/backend 决定），
+    # 区别只在于**决策输入**由识别结果承担——本轮 vision 不接管决策（见 round-2 报告口径）。
+    _vd = LaunchConfiguration('vision_detector').perform(context)
+    vision_detector_on = (str(_vd).strip().lower() in ('1', 'true', 'yes'))
+    if perception_path == 'truth' and vision_detector_on:
+        raise RuntimeError(
+            'perception_path=truth 时不得启用 vision_detector:=true → 拒绝运行'
+            '（truth / vision 互斥，ADR-0103）')
+    if perception_path == 'vision' and not vision_detector_on:
+        raise RuntimeError(
+            'perception_path=vision 时必须显式 vision_detector:=true → 拒绝运行'
+            '（不静默降级为 truth）')
+    # 己方 PX4 gz 机型（P1-4）：默认 gz_x500 = 既有行为逐字不变；gz_x500_mono_cam = 挂机载相机。
+    px4_sim_model = (LaunchConfiguration('px4_sim_model').perform(context) or '').strip()
+    if not px4_sim_model:
+        raise RuntimeError('px4_sim_model 不得为空（默认 gz_x500）→ 拒绝运行')
+
+    info = load_scene(task_share, perc_share, sim_share, scene, seed, world_map=world_map)
 
     # ---------------- backend:=lightweight ----------------
     if backend == 'lightweight':
         merged = compose_params(info['base'], info['sc'], backend, seed,
                                 geometry=info['geometry'], spawn_randomize=spawn_randomize, goal_follow_target=goal_follow_target)
         tmp = write_temp_params(merged, backend, scene, seed)
-        asserts = assertions(scene, merged, info)
-        manifest_path = write_manifest(build_manifest(backend, info, merged, asserts),
-                                       backend, scene, seed)
+        asserts = assertions(scene, merged, info, sim_share=sim_share)
+        manifest_path = write_manifest(
+            build_manifest(backend, info, merged, asserts, sim_share=sim_share),
+            backend, scene, seed)
         return [
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
@@ -112,6 +144,7 @@ def _compose(context, *args, **kwargs):
                     'gz_args': gz_args,
                     'use_sim_time': use_sim_time,
                     'world_obstacles': info['world_obstacles'],
+                    'world_map': info['world_map'],
                     'sensors_file': info['sensors_file'],
                     # S-06：障碍先验 / 地图几何由**真源派生**（不再读 agc_perception 包内副本）
                     'obstacles_file': info['obstacles_file'],
@@ -188,7 +221,7 @@ def _compose(context, *args, **kwargs):
         air_merged.setdefault('trajectory_tracker', {})['tracking_ref_topic'] = \
             '/agc/air/tracking_ref__inactive_p1_fixed_traj'
     # S-06：静态障碍几何由**真源**注入空中安全列表（obstacle_names/x/y；半径 / margin 仍来自 air.yaml）。
-    apply_air_geometry(air_merged, info['geometry'])
+    apply_air_geometry(air_merged, info['geometry'], sim_share=sim_share)
     air_doc = {n: {'ros__parameters': p} for n, p in air_merged.items()}
     air_tmp = os.path.join(tempfile.gettempdir(),
                            'w6_%s_air_%s_%d_%s.yaml' % (backend, scene, seed, new_run_token()))
@@ -196,9 +229,10 @@ def _compose(context, *args, **kwargs):
         yaml.safe_dump(air_doc, f, allow_unicode=True, sort_keys=True)
 
     # R-026 + S-06 断言（含空中安全列表 == 真源）在 air 合并后做；不符即拒绝运行。
-    asserts = assertions(scene, merged, info, air_merged)
-    manifest_path = write_manifest(build_manifest(backend, info, merged, asserts),
-                                   backend, scene, seed)
+    asserts = assertions(scene, merged, info, air_merged, sim_share=sim_share)
+    manifest_path = write_manifest(
+        build_manifest(backend, info, merged, asserts, sim_share=sim_share),
+        backend, scene, seed)
 
     px4_dir = str(agc_root / 'toolchain' / 'PX4-Autopilot')
     px4_build = os.path.join(px4_dir, 'build', 'px4_sitl_default')
@@ -296,8 +330,10 @@ def _compose(context, *args, **kwargs):
                 'target_controlled': 'true',
                 # W8 / ADR-0096：GUI 渲染后端由单一 launch 参数下发（auto | d3d12 | software）。
                 'gui_render_backend': gui_render_backend,
-                # R-026：按障碍轴选择世界（none 生成不含 pole_* 的世界）
+                # R-026：按障碍轴选择世界（none 生成不含任何障碍的世界）
                 'world_obstacles': info['world_obstacles'],
+                # P1-1：按地图选择几何真源（minimal | yard | open_field）
+                'world_map': info['world_map'],
             }.items()),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
@@ -334,7 +370,9 @@ def _compose(context, *args, **kwargs):
             additional_env={
                 'GZ_SIM_RESOURCE_PATH': gz_models + ':' + gz_worlds,
                 'PX4_GZ_STANDALONE': '1', 'PX4_GZ_WORLD': 'agc_world',
-                'PX4_SIM_MODEL': 'gz_x500', 'PX4_GZ_MODEL_POSE': own_pose,
+                # P1-4：己方机型由 launch 参数单一设置（默认 gz_x500 = 既有行为逐字不变）。
+                #   入侵者（实例 1，attach）仍固定 gz_x500——它不参与视觉链路。
+                'PX4_SIM_MODEL': px4_sim_model, 'PX4_GZ_MODEL_POSE': own_pose,
                 # 己方实例绑 agent0 端口（显式，与入侵者的 agent1 端口对称，单一来源）
                 'PX4_UXRCE_DDS_PORT': agent0_port,
                 'AGC_PX4_SIM_SEED': str(derive_px4_sim_seed(seed, 0)),
@@ -359,10 +397,33 @@ def _compose(context, *args, **kwargs):
         output='screen')
     # ADR-0080：manager 启动前预热 lifecycle 服务连接（只读 get_state），避免其阻塞式
     # `change_state` 在 DDS 发现预热期永久挂起（实测停在 `Configuring takeoff_controller`）。
+    #
+    # P1-4 baseline closure（2026-10-30）：**加硬超时**。原实现只有
+    # `RegisterEventHandler(OnProcessExit(target_action=prewarm, on_exit=[lifecycle_manager]))`
+    # 这一条**单事件依赖**——若预热进程因 rclpy 收尾竞态挂住不退出（实测：四个节点都打印
+    # `ok (attempt 1)` 之后**没有**打印 `done ok=`，进程一直活着直到 SIGINT 才被强杀），
+    # `OnProcessExit` 永不触发 → `lifecycle_manager_air` **从不启动** → 空中节点停在 inactive
+    # → `/agc/air/odom` 无发布者 → 整链就绪超时（run_demo 报 `air_odom_fresh` 未就绪）。
+    #
+    # 修复只做**一件事**：用 `timeout` 给预热进程一个确定的上界，使 `OnProcessExit` 必定触发。
+    # 预热本身仍是 best-effort（ADR-0080 的语义不变：它只是让 manager 的首次服务调用落在
+    # 已建立的连接上；预热没跑满也不改变任何节点状态）。超时值 45 s < run_demo 的 180 s 就绪门，
+    # 且远大于正常预热耗时（实测 T-A 全程数秒）。
+    #
+    # **必须带 `-k`**：GNU `timeout` 在只给一个时长时，到点只发 SIGTERM 然后**无限期等待**子进程；
+    # 若子进程忽略 / 卡住不响应 SIGTERM，`timeout` 自己**永不返回** → `OnProcessExit` 依旧不触发
+    # （修复等于没做）。round-5 T-B 的失败形态正是"SIGINT 5 s 不退、SIGTERM 10 s 不退、只能 SIGKILL"，
+    # 故单靠 `timeout N` 不成立。`-k KILL_AFTER` 使到点后 `KILL_AFTER` 秒强杀，保证进程一定退出。
+    # T1 实测（本任务 round-2）：`timeout 3` 对忽略 TERM 的子进程**永不返回**；`timeout -k 2 3` 在 4.3 s
+    # 以 rc=137 退出。故 `prewarm_timeout_s + prewarm_kill_after_s` 才是真正的上界（45 + 5 = 50 s
+    # < 180 s 就绪门）。
+    prewarm_timeout_s = 45
+    prewarm_kill_after_s = 5
     prewarm_bin = os.path.join(
         get_package_prefix('agc_air'), 'lib', 'agc_air', 'air_lifecycle_prewarm')
     prewarm = ExecuteProcess(
-        cmd=[prewarm_bin, 'px4_adapter', 'takeoff_controller', 'trajectory_tracker',
+        cmd=['timeout', '-k', str(prewarm_kill_after_s), str(prewarm_timeout_s), prewarm_bin,
+             'px4_adapter', 'takeoff_controller', 'trajectory_tracker',
              'standoff_follower'],
         output='screen')
     actions.append(prewarm)
@@ -376,6 +437,19 @@ def _compose(context, *args, **kwargs):
         # W7-b（T1/E1）：安全层开关（字符串承载→节点内解析）
         if exe == 'run_logger':
             extra = extra + [{'shield_layer_enabled': LaunchConfiguration('shield')}]
+            # P1-4（ADR-0103）：感知路径 + 视觉模型标识——**新增键**，既有字段语义不变。
+            #   summary.json 据此可区分 truth / vision 产物（ADR-0103「证据必须可区分」）。
+            _vm = LaunchConfiguration('vision_model_id').perform(context)
+            extra = extra + [{
+                'perception_path': perception_path,
+                'vision_model_id': str(_vm or 'none'),
+                'vision_model_name': str(
+                    LaunchConfiguration('vision_model_name').perform(context) or ''),
+                'vision_model_version': str(
+                    LaunchConfiguration('vision_model_version').perform(context) or ''),
+                'vision_model_sha256': str(
+                    LaunchConfiguration('vision_model_sha256').perform(context) or ''),
+            }]
             # ADR-0077：W7-c 并行时 run_logger 的默认 run_id 只到秒 + 随机后缀，
             #   同秒启动的两个 worker 会撞同一 run 目录（实测 20261025...-091552-6372）。
             #   episode_runner 在 worker 模式下注入含 worker id 的唯一 override。
@@ -393,7 +467,49 @@ def _compose(context, *args, **kwargs):
             Node(package='agc_task', executable='intruder_driver', name='intruder_driver',
                  parameters=common, output='screen')])))
 
+    # P1-4（ADR-0103）：视觉识别节点**不在本入口编排内**（见 round-2 派工单的白名单口径——
+    #   本入口只做 `px4_sim_model` / `perception_path` 的**透传与互斥校验**，不改任务编排）。
+    #   识别进程按工具域独立起（`scripts/vision/vision_detector.py`），经话题交互；
+    #   `vision_detector:=true` 只是**声明**"本次 run 的 vision 路径由外部识别进程承担"，
+    #   其与 `perception_path` 的一致性由上面的互斥校验保证（truth + true → 拒绝运行）。
+
+    # R6 演示叠加层（viz:=true）**不在此处注册** —— 唯一注册点在
+    # `generate_launch_description` 末尾的顶层 `OpaqueFunction(lambda c: _viz_actions(c, sim_share))`。
+    # 两处同时注册会使 `backend:=full` 把 static_tf / viz_markers / rviz2 **各起两份**
+    # （lightweight 因提前 return 只命中顶层一处，故该缺陷只在 full 链显形；P1-2 round-1 实测
+    # full+viz 三节点各 2 份、lightweight+viz 各 1 份）。回归见
+    # `scripts/tests/test_w6_viz_registration.py`。
     return actions
+
+
+def _viz_actions(context, sim_share):
+    """R6（2026-10-30）演示叠加层：**GUI 纯场景 + RViz 语义层**（用户裁定）。
+
+    `viz:=true` 时起 `viz_markers`（把 targets/obstacles/安全圆盘/8 字参考转成
+    `visualization_msgs/MarkerArray`）+ `rviz2`（用 `config/agc_demo.rviz` 固定布局）。
+    缺省 false → 既有时序与行为**完全不变**。
+
+    为什么不在 Gazebo GUI 里叠加：本机 `ros_gz_bridge` 不映射 `visualization_msgs`，
+    叠加只能静态内联或自写桥（不可复现），而 RViz 原生支持 OccupancyGrid / Path /
+    LaserScan / MarkerArray。
+    """
+    if (LaunchConfiguration('viz').perform(context) or '').strip().lower() not in ('true', '1'):
+        return []
+    from ament_index_python.packages import get_package_share_directory
+    rviz_cfg = os.path.join(get_package_share_directory('agc_task'), 'config', 'agc_demo.rviz')
+    # RViz 的 Fixed Frame 必须是 TF 里**存在**的帧。本项目所有话题都在 `world` 系，但
+    # TF 里没有 `world` 这个帧（实测 `tf2_echo world map` 报 frame does not exist），
+    # 于是 RViz 什么都不画。→ 发一条 map→world 的恒等静态变换，Fixed Frame 用 `map`。
+    tf = Node(package='tf2_ros', executable='static_transform_publisher', name='world_frame_tf',
+              arguments=['0', '0', '0', '0', '0', '0', 'map', 'world'], output='log')
+    return [
+        tf,
+        Node(package='agc_task', executable='viz_markers', name='viz_markers',
+             parameters=[{'use_sim_time': True,
+                          'world_map': LaunchConfiguration('world_map')}], output='screen'),
+        Node(package='rviz2', executable='rviz2', name='rviz2', arguments=['-d', rviz_cfg],
+             parameters=[{'use_sim_time': True}], output='screen'),
+    ]
 
 
 def generate_launch_description():
@@ -409,6 +525,13 @@ def generate_launch_description():
         description='场景 id（见 config/scenarios.yaml）'))
     ld.add_action(DeclareLaunchArgument('seed', default_value='0',
                                         description='episode 种子（run_logger 记录 + spawn 生成）'))
+    # P1-1：地图覆盖（几何真源选择）。**缺省空** = 按场景登记解析：
+    #   `scenarios.yaml` 的 `world_map:` 键（s04 = yard，其余 = minimal）；显式给出
+    #   （minimal | yard | open_field）则强制该地图。未知值在 _compose 内拒绝运行。
+    ld.add_action(DeclareLaunchArgument(
+        'world_map', default_value='',
+        description='地图覆盖（几何真源选择）：空=按场景登记（s04→yard，其余→minimal）；'
+                    '显式 minimal | yard | open_field 则强制该地图'))
     ld.add_action(DeclareLaunchArgument(
         'run_id_override', default_value='',
         description='ADR-0077：run_logger run_id 覆盖（W7-c worker 唯一性；空=默认生成）'))
@@ -446,6 +569,10 @@ def generate_launch_description():
         'gz_args', default_value=['-r -v 3 ', world_file],
         description='gz sim 参数（加 -s 可无头）'))
     ld.add_action(DeclareLaunchArgument(
+        'viz', default_value='false',
+        description='R6 演示叠加层：true = 起 viz_markers + rviz2（GUI 保持纯场景；'
+                    '缺省 false，既有时序不变）'))
+    ld.add_action(DeclareLaunchArgument(
         'gui_render_backend', default_value='auto',
         description='GUI 渲染后端：auto（WSL2 + /dev/dxg + X11 自动 D3D12）| d3d12 | software；'
                     'headless（gz -s）忽略'))
@@ -477,5 +604,26 @@ def generate_launch_description():
     ld.add_action(DeclareLaunchArgument(
         'agc_root', default_value='/home/chen/AGC',
         description='固定项目根（AGENTS.md；colcon 根即项目根）；工具链在其下 toolchain/'))
+    # ---- P1-4（ADR-0103）：感知路径与己方机型——默认 = 既有行为，逐字不变 ----
+    ld.add_action(DeclareLaunchArgument(
+        'perception_path', default_value='truth',
+        description='感知路径（互斥，ADR-0103）：truth（默认，真值派生链）| vision（相机→识别→检测）'))
+    ld.add_action(DeclareLaunchArgument(
+        'vision_detector', default_value='false',
+        description='P1-4：本次 run 的 vision 路径是否由外部识别进程承担；'
+                    'true 时要求 perception_path=vision（truth+true → 拒绝运行，防静默混用）'))
+    ld.add_action(DeclareLaunchArgument(
+        'vision_model_id', default_value='none',
+        description='P1-4：识别模型标识（none = 无模型 → 显式降级空检测）；写入 summary.json'))
+    ld.add_action(DeclareLaunchArgument(
+        'vision_model_name', default_value='', description='P1-4：识别模型名称（写入 summary）'))
+    ld.add_action(DeclareLaunchArgument(
+        'vision_model_version', default_value='', description='P1-4：识别模型版本（写入 summary）'))
+    ld.add_action(DeclareLaunchArgument(
+        'vision_model_sha256', default_value='', description='P1-4：识别模型权重哈希（写入 summary）'))
+    ld.add_action(DeclareLaunchArgument(
+        'px4_sim_model', default_value='gz_x500',
+        description='P1-4：己方 PX4 机型（默认 gz_x500 无相机；gz_x500_mono_cam 挂机载前视相机）'))
     ld.add_action(OpaqueFunction(function=_compose))
+    ld.add_action(OpaqueFunction(function=lambda c: _viz_actions(c, sim_share)))
     return ld

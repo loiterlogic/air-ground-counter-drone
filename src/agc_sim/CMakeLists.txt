@@ -24,7 +24,9 @@ target_link_libraries(agc_cmd_deadman
 install(TARGETS agc_cmd_deadman DESTINATION lib)
 
 # 世界 / 模型 / 桥配置 / launch 的安装（W2）
-install(DIRECTORY worlds models config launch
+# R6：自产程序化贴图（materials/albedo/*.png + manifest.json）随包安装。
+#   gz 渲染器经 SDF 里的绝对/资源路径读取，见 materials/README.md 的路径说明。
+install(DIRECTORY worlds models config launch materials
   DESTINATION share/${PROJECT_NAME})
 
 ament_package()

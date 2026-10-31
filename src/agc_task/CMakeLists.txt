@@ -40,6 +40,9 @@ install(TARGETS task_manager scenario_reset run_logger capture_adjudicator
 # W6 前置 P / 拦截裁决：Python 节点（入侵者驱动 + 干扰注入）
 install(PROGRAMS scripts/intruder_driver.py DESTINATION lib/${PROJECT_NAME} RENAME intruder_driver)
 install(PROGRAMS scripts/jammer.py DESTINATION lib/${PROJECT_NAME} RENAME jammer)
+# R6：演示叠加层（RViz marker 层）。GUI 保持纯场景，语义层单独一个节点。
+install(PROGRAMS scripts/viz_markers.py DESTINATION lib/${PROJECT_NAME} RENAME viz_markers)
+install(FILES config/agc_demo.rviz DESTINATION share/${PROJECT_NAME}/config)
 
 install(DIRECTORY launch config DESTINATION share/${PROJECT_NAME})
 

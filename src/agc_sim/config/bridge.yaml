@@ -55,6 +55,37 @@
   gz_type_name: "gz.msgs.Contacts"
   direction: GZ_TO_ROS
 
+# 机载相机图像（GZ → ROS；P1-4 / ADR-0103）。**仅当**己方机型为 `gz_x500_mono_cam` 时存在——
+# launch 参数 `px4_sim_model`；用默认 `gz_x500` 时 gz 侧无这两条话题，桥条目会等话题而不影响其它条目。
+#
+# **实测**（2026-10-30，`gz topic -l`，机型 gz_x500_mono_cam、实例 0、实体 x500_mono_cam_0）：
+#   /camera        ← 相机图像（gz.msgs.Image），-f 实测 ~33 Hz
+#   /camera_info   ← 相机内参（gz.msgs.CameraInfo），与上同源
+# 即 gz-sim8 的 CameraSensor **取 SDF `<topic>` 值**（mono_cam 的 `<topic>camera</topic>`），
+# 与 contact sensor（取作用域名）**不同**——两者都把实测值写在这里，避免下次再猜。
+# 也**不是** `/world/agc_world/model/.../sensor/imager/image` 形式的作用域名（实测无该话题）。
+#
+# ⚠ **只出现话题名 ≠ 有相机**（P1-4 round-2 实测）：`gz topic -l` 会列出**只有订阅者**的话题，
+#   而本文件正是以订阅方式桥接 /camera —— 用缺省 `gz_x500`（无相机）时话题名照样出现，但没有帧。
+#   判「相机是否真的在发布」必须用 `gz topic -f -t /camera`，或 ROS 侧真实的帧频率 / 像素证据；
+#   不得只看 `gz topic -l` 或 `ros2 topic list`。
+
+#
+# QoS 必须 SENSOR_DATA（best-effort）：图像是高带宽流，reliable 队列积压会引入秒级延迟。
+- ros_topic_name: "/agc/air/camera/image_raw"
+  gz_topic_name: "/camera"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+
+- ros_topic_name: "/agc/air/camera/camera_info"
+  gz_topic_name: "/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+
 # 地面车速度命令（ROS→GZ；由 M0 的执行中继发布）
 # R-009（ADR-0025）：ROS 侧话题名**不变**（/model/agc_car/cmd_vel，中继与验收脚本照旧），
 # 但 gz 侧改桥到「意图」话题 /agc/sim/cmd_intent；GZ 侧的 agc_cmd_deadman 插件订阅该意图，

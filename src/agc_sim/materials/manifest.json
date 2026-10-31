@@ -1,0 +1,48 @@
+{
+  "generator": "gen_textures.py",
+  "seed": 20261030,
+  "size": 512,
+  "license": "self-generated (project-owned)",
+  "textures": {
+    "concrete_ground": {
+      "file": "albedo/concrete_ground.png",
+      "sha256": "e7c557bc7969026ea8fad3ecfb74790b5536316cd09dc028d7a3175d0f31e9bf",
+      "base_srgb": [
+        0.4,
+        0.395,
+        0.39
+      ],
+      "bytes": 139862
+    },
+    "asphalt": {
+      "file": "albedo/asphalt.png",
+      "sha256": "cfaa5fc4138a853894ad4887d2749f46e0e7891b528e7525cdc60de216e00fb4",
+      "base_srgb": [
+        0.2,
+        0.21,
+        0.23
+      ],
+      "bytes": 201896
+    },
+    "apron_concrete": {
+      "file": "albedo/apron_concrete.png",
+      "sha256": "6f0c6c0734b7af1e755656fa7cd0f2935f3ea4c6a76a601e8ed71245eca60a1e",
+      "base_srgb": [
+        0.52,
+        0.515,
+        0.5
+      ],
+      "bytes": 197479
+    },
+    "gravel": {
+      "file": "albedo/gravel.png",
+      "sha256": "a11c9b9d65cd68e5fd45459804b7b8188729a1051c23b66e0637943ff15ae6e9",
+      "base_srgb": [
+        0.34,
+        0.335,
+        0.32
+      ],
+      "bytes": 219104
+    }
+  }
+}

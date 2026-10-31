@@ -9,6 +9,11 @@
 #   * 感知注入（dropout / fov）与障碍（none / static）的**承载者**见 config/scenario_carriers.yaml；
 #     launch 启动时校验声明轴值必有承载者，无承载者（obstacle=dynamic）显式拒绝运行。
 #   * `support_status`：supported = 全部声明轴有承载者；unsupported:<axis> = 该轴无承载者（拒绝运行）。
+#   * `world_map`（P1-1，**场景级**、位于 `axes` 之外）：该场景默认使用的**地图 / 几何真源**。
+#       minimal（缺省）| yard | open_field —— 见 agc_sim/launch/world_map.py（单一清单）。
+#       launch `world_map:=<name>` 可强制覆盖（优先级：launch > 场景 > 缺省 minimal）。
+#       地图是**几何真源的选择**，不是场景轴：它不改变声明轴 / 期望终态 / 判据；
+#       s04 指向 yard，正是「主场景在演示主地图上跑」的落地（P1-1 派工范围决定 1）。
 scenes:
   s01_static_none_nominal_track:
     axes: {target_motion: static, obstacle: none, perception: nominal, outcome: tracking}
@@ -41,6 +46,8 @@ scenes:
     axes: {target_motion: static, obstacle: static, perception: nominal, outcome: tracking}
     support_status: supported
     expected_terminal: TRACKING_SUCCESS
+    # P1-1：主场景跑在演示主地图 `yard` 上（出生位 / 期望终态不动，仅几何真源换图）。
+    world_map: yard
     params:
       scenario_reset: {car_x: -4.0, car_y: -3.0, target_x: 6.5, target_y: 2.5}
       run_logger: {scenario: "s04_static_static_obs_track"}
@@ -116,6 +123,9 @@ scenes:
     support_status: supported
     expected_terminal: MISSION_FAILED
     expected_reason: TIMEOUT
+    # P1-1：保持 minimal——该场景的"被立柱阻隔"语义依赖 pole_1 与 (0,-1)/(0,-9) 的相对几何，
+    #   换图会改变构造成立条件（属回归语义，不在本单范围）。
+    world_map: minimal
     params:
       # goal 置于立柱另一侧（车被静态障碍阻隔）；当前以超时结算（规划不可达属后续）
       scenario_reset: {car_x: 0.0, car_y: -1.0, car_yaw: -1.5707963267948966, target_x: 20.0, target_y: 20.0}

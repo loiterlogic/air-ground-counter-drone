@@ -2,7 +2,8 @@
 """air_bringup —— W3 空中链路一键启动（spec R1）。
 
 一条 `ros2 launch` 起：agc_world（唯一 gz server，经 agc_sim/world_bringup）+ uXRCE-DDS Agent
-+ PX4 SITL（`PX4_GZ_STANDALONE=1`、`PX4_GZ_WORLD=agc_world`、`PX4_SIM_MODEL=gz_x500`，
++ PX4 SITL（`PX4_GZ_STANDALONE=1`、`PX4_GZ_WORLD=agc_world`、`PX4_SIM_MODEL=gz_x500`（launch 参数
+`px4_sim_model` 可换 `gz_x500_mono_cam` 挂机载相机，P1-4），
 由 PX4 自身 gz_bridge 向 `/world/agc_world/create` spawn 机型）+ 空中链路节点。
 
 参数单一来源：`config/air.yaml`（契约 [参数入口]）。链路连接层（agent 地址 / 端口 / PX4 目录）
@@ -10,6 +11,7 @@
 """
 
 import os
+import sys
 from pathlib import Path
 
 import yaml
@@ -42,14 +44,25 @@ def _generate(context, *args, **kwargs):
     agc_root = Path(LaunchConfiguration('agc_root').perform(context))
 
     params_file = os.path.join(share, 'config', 'air.yaml')
-    # S-06（ADR-0062）：静态障碍几何来自**单一真源** `agc_sim/config/world_geometry.yaml`，
-    # 注入空中安全列表（`trajectory_tracker.safety.obstacle_*`）；air.yaml 不再硬编码几何。
-    geometry = yaml.safe_load(open(os.path.join(sim_share, 'config', 'world_geometry.yaml')))
+    # S-06（ADR-0062）：静态障碍几何来自**单一真源**，注入空中安全列表
+    # （`trajectory_tracker.safety.obstacle_*`）；air.yaml 不再硬编码几何。
+    # P1-1：真源按**地图**分文件——`world_map`（minimal | yard | open_field）选文件；
+    # 清单与形状规范化在 `agc_sim/launch/world_map.py`（**单一实现**，本文件不复制表）。
+    sys.path.insert(0, os.path.join(sim_share, 'launch'))
+    import world_map as agc_world_map  # noqa: E402  （与 world_bringup 同目录安装）
+    map_name, geom_path = agc_world_map.geometry_path(
+        sim_share, LaunchConfiguration('world_map').perform(context))
+    geometry = yaml.safe_load(open(geom_path))
+    # P1-1：安全半径亦按障碍派生（消除旧的定长列表）；四数组等长由 SafetyShield 启动期校验。
     safety_geometry = {
         'safety.obstacle_names': [o['id'] for o in geometry['obstacles']],
         'safety.obstacle_x': [float(o['x']) for o in geometry['obstacles']],
         'safety.obstacle_y': [float(o['y']) for o in geometry['obstacles']],
+        'safety.obstacle_safety_radius': [
+            agc_world_map.obstacle_safety_radius(o) for o in geometry['obstacles']],
     }
+    print('[air_bringup] world_map=%s geometry=%s obstacles=%d'
+          % (map_name, geom_path, len(geometry['obstacles'])))
 
     # ---- 链路连接层（唯一可替换处，spec R11）----
     px4_dir = str(agc_root / 'toolchain' / 'PX4-Autopilot')
@@ -73,6 +86,8 @@ def _generate(context, *args, **kwargs):
         launch_arguments={
             'gz_args': LaunchConfiguration('gz_args'),
             'use_sim_time': LaunchConfiguration('use_sim_time'),
+            # P1-1：按地图选择几何真源（世界生成与安全列表同源）
+            'world_map': LaunchConfiguration('world_map'),
         }.items(),
     )
 
@@ -98,7 +113,13 @@ def _generate(context, *args, **kwargs):
         'GZ_SIM_RESOURCE_PATH': gz_models + ':' + gz_worlds,
         'PX4_GZ_STANDALONE': '1',
         'PX4_GZ_WORLD': 'agc_world',
-        'PX4_SIM_MODEL': 'gz_x500',
+        # P1-4：机型改由 launch 参数**单一设置**；默认 `gz_x500` = 既有行为**逐字不变**。
+        #   可选 `gz_x500_mono_cam`（airframe 4010：只把 PX4_SIM_MODEL 指向 merge 了
+        #   `mono_cam` 的机型，旋翼/参数集与 4001 完全相同）——相机口径与验收见
+        #   docs/plan/p1-4-视觉算法接入.md#p1-4-goal 与 experiments/p1-4/round-1/preregistration/。
+        #   实体名规则（GZBridge.cpp：无 -n 且给 -i → `<model_sim>_<instance>`）：
+        #   gz_x500 → x500_0；gz_x500_mono_cam → x500_mono_cam_0。
+        'PX4_SIM_MODEL': LaunchConfiguration('px4_sim_model'),
         'PX4_GZ_MODEL_POSE': LaunchConfiguration('px4_gz_model_pose'),
         'AGC_PX4_SIM_SEED': seed,
     }
@@ -181,6 +202,12 @@ def generate_launch_description():
                               description='gz sim 参数（加 -s 可无头）'),
         DeclareLaunchArgument('px4_gz_model_pose', default_value='0,0,0.2,0,0,0',
                               description='己方无人机 spawn 位姿（world 系 ENU，逗号分隔）'),
+        # P1-4：己方机型。**默认 gz_x500 = 既有行为不变**（无相机）；gz_x500_mono_cam 用于
+        #   视觉链路（PX4 官方 merge 机型，挂前视单目相机）。未知值由 PX4 rcS 报
+        #   `Unknown model` 并拒启（airframes 目录按名匹配），不在本文件另立白名单。
+        DeclareLaunchArgument('px4_sim_model', default_value='gz_x500',
+                              description='己方 PX4 gz 机型：gz_x500（默认，无相机）| '
+                                          'gz_x500_mono_cam（机载前视单目相机，P1-4）'),
         DeclareLaunchArgument('agent_port', default_value='8888'),
         DeclareLaunchArgument('autostart', default_value='true',
                               description='是否自动 configure/activate 空中节点'),
@@ -189,6 +216,9 @@ def generate_launch_description():
                                           'gt_adapter | air_fusion | none（none 用于单独录制 C1 八字轨迹）'),
         DeclareLaunchArgument('seed', default_value='0',
                               description='实验随机种子（注入 air_perception 与 PX4 GPS 仿真）'),
+        # P1-1：地图（几何真源选择）；缺省 minimal = 既有行为（几何逐值不变）。
+        DeclareLaunchArgument('world_map', default_value='minimal',
+                              description='地图（几何真源选择）：minimal（默认）| yard | open_field'),
     ]
 
     ld = LaunchDescription()

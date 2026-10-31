@@ -38,8 +38,10 @@ def generate_launch_description():
         launch_arguments={
             'gz_args': LaunchConfiguration('gz_args'),
             'use_sim_time': LaunchConfiguration('use_sim_time'),
-            # R-026：按障碍轴选择世界（none 生成不含 pole_* 的世界）
+            # R-026：按障碍轴选择世界（none 生成不含任何障碍的世界）
             'world_obstacles': LaunchConfiguration('world_obstacles'),
+            # P1-1：按地图选择几何真源（minimal | yard | open_field）
+            'world_map': LaunchConfiguration('world_map'),
         }.items(),
     )
 
@@ -125,6 +127,10 @@ def generate_launch_description():
     ld.add_action(DeclareLaunchArgument(
         'world_obstacles', default_value='static',
         description='障碍轴世界生成：static | none（由上层按场景轴传入）'))
+    # P1-1：地图（几何真源选择）；缺省 minimal = 既有行为。
+    ld.add_action(DeclareLaunchArgument(
+        'world_map', default_value='minimal',
+        description='地图（几何真源选择）：minimal（默认）| yard | open_field（由上层传入）'))
     ld.add_action(DeclareLaunchArgument(
         'sensors_file',
         default_value=os.path.join(perception_share, 'config', 'perception_sensors.yaml'),

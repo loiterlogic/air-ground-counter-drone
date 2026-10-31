@@ -38,6 +38,46 @@ LAUNCH = 'w6.launch.py'
 # S-06：静态障碍 + 作业区几何的**单一真源**（位于 agc_sim share 的 config/ 下）。
 GEOMETRY_FILE = 'world_geometry.yaml'
 
+# P1-1：真源按**地图**分文件。**单一清单**在 `agc_sim/launch/world_map.py`（随包安装到
+# `share/agc_sim/launch`，与 `world_bringup.launch.py` 同目录）。本模块经 `sim_share` 解析后
+# import 该模块，**不再自持第二份文件名表**——两份表漂移会让不同域读到不同真源，
+# 正是 ADR-0062 要消灭的病灶。
+DEFAULT_WORLD_MAP = 'minimal'
+
+# 源码树定位（未 source 安装环境时的回退）：本文件位于 `src/agc_task/launch/`，
+# 同级 `src/agc_sim/launch/world_map.py` 即源码副本（与安装副本同一符号链接目标）。
+_SRC_SIM_LAUNCH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    'agc_sim', 'launch')
+
+_WORLD_MAP_CACHE = {}
+
+
+def world_map_module(sim_share=None):
+    """加载 `agc_sim` 的 `world_map` 清单模块（共享模块边界的**唯一实现**）。
+
+    优先从**安装后的 share**（`<sim_share>/launch/world_map.py`）导入，与 `world_bringup`
+    读到同一份清单；未提供 / 不存在时回退到源码树路径。按路径缓存，避免重复 exec。
+    """
+    import importlib.util
+    candidates = []
+    if sim_share:
+        candidates.append(os.path.join(sim_share, 'launch', 'world_map.py'))
+    candidates.append(os.path.join(_SRC_SIM_LAUNCH, 'world_map.py'))
+    for path in candidates:
+        if not os.path.exists(path):
+            continue
+        cache_key = os.path.realpath(path)
+        if cache_key in _WORLD_MAP_CACHE:
+            return _WORLD_MAP_CACHE[cache_key]
+        spec = importlib.util.spec_from_file_location('agc_world_map', path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _WORLD_MAP_CACHE[cache_key] = mod
+        return mod
+    raise RuntimeError(
+        '找不到几何真源地图清单 world_map.py（尝试：%s）→ 拒绝运行' % ', '.join(candidates))
+
 
 def new_run_token():
     """S-07（ADR-0063）：每次调用生成唯一 token（时刻 + 进程 + 随机），供临时文件命名避免并发 / 重复覆盖。"""
@@ -45,16 +85,68 @@ def new_run_token():
                               os.getpid(), random.randint(0, 9999))
 
 
-def load_geometry(sim_share):
-    """读**单一几何真源** `agc_sim/config/world_geometry.yaml`（S-06；ADR-0062）。"""
-    with open(os.path.join(sim_share, 'config', GEOMETRY_FILE)) as f:
+def resolve_world_map(world_map, sim_share=None):
+    """校验并规范化 `world_map`；未知值**拒绝运行**（不静默回退 minimal）。"""
+    return world_map_module(sim_share).resolve(world_map)
+
+
+def geometry_path(sim_share, world_map=DEFAULT_WORLD_MAP):
+    """按地图解析真源绝对路径（P1-1）。`minimal` → `config/world_geometry.yaml`。"""
+    return world_map_module(sim_share).geometry_path(sim_share, world_map)
+
+
+def load_geometry(sim_share, world_map=DEFAULT_WORLD_MAP):
+    """读**单一几何真源**（S-06；ADR-0062）；P1-1 起按 `world_map` 选文件。"""
+    _, path = geometry_path(sim_share, world_map)
+    with open(path) as f:
         return yaml.safe_load(f)
 
 
-def geometry_sha256(sim_share):
-    """真源文件**字节**的 sha256（几何版本身份；写入 manifest）。"""
-    with open(os.path.join(sim_share, 'config', GEOMETRY_FILE), 'rb') as f:
+def geometry_sha256(sim_share, world_map=DEFAULT_WORLD_MAP):
+    """真源文件**字节**的 sha256（几何版本身份；写入 manifest）。P1-1：按地图区分。"""
+    _, path = geometry_path(sim_share, world_map)
+    with open(path, 'rb') as f:
         return hashlib.sha256(f.read()).hexdigest()
+
+
+def obstacle_shape(ob, sim_share=None):
+    """实体形状（schema 缺省 = box；ADR-0062 向后兼容——老配置不写 shape 仍可运行）。"""
+    return world_map_module(sim_share).obstacle_shape(ob)
+
+
+def obstacle_safety_radius(ob, sim_share=None):
+    """实体水平面**外接圆半径**（空中安全层为二维圆盘模型，须覆盖实体几何）。
+
+    `safety_radius` 缺省 2.0 = 历史 pole 标定值；P1-1 起由真源**逐障碍**给出，
+    消除旧的「与障碍数对齐的定长列表」（ADR-0062 未决项②）。
+    """
+    return world_map_module(sim_share).obstacle_safety_radius(ob)
+
+
+def geometry_safety_radii(geometry, sim_share=None):
+    """按障碍派生的安全半径列表（与 `geometry_ids` 同序；`apply_air_geometry` 使用）。"""
+    return [obstacle_safety_radius(ob, sim_share)
+            for ob in (geometry.get('obstacles') or [])]
+
+
+def obstacle_bbox_size(ob, sim_share=None):
+    """感知先验 / 地图栅格的障碍尺寸（**降级为水平轴对齐包络**）。
+
+    `map_adapter` / `air_perception` 的障碍模型是 OBB（只有 sx/sy/sz + yaw），无法表达圆柱 /
+    球 / 多图元复合体；故一律降级为包络矩形（保守外扩，不缩小实体）。该降级为成文约定，
+    见 `docs/plan/p1-1-地图与场景资产.md#p1-1-goal`（P1-1 规格「派生点需同步改」）。
+    """
+    return world_map_module(sim_share).obstacle_bbox_size(ob)
+
+
+def obstacle_is_composite(ob, sim_share=None):
+    """复合模型判定（`parts` 非空）；供 manifest / 核查区分单图元与复合体。"""
+    return world_map_module(sim_share).is_composite(ob)
+
+
+def obstacle_footprint_radius(ob, sim_share=None):
+    """实体（含复合）水平外接圆半径（覆盖全部 part）。"""
+    return world_map_module(sim_share).obstacle_footprint_radius(ob)
 
 
 def geometry_ids(geometry):
@@ -158,17 +250,22 @@ def coverage_status(entry, backend):
     return 'covered', ''
 
 
-def write_derived_obstacles(geometry, mode, scene, seed, token=None):
+def write_derived_obstacles(geometry, mode, scene, seed, token=None, sim_share=None):
     """S-06：由真源派生**感知障碍先验文件**（`obstacles.yaml` 形态），返回 (路径, id 列表)。
 
-    `static` → 真源障碍实体（`id/x/y/z/yaw/size`）；`none` → 空数组（与「无 pole_* 世界」一致）。
+    `static` → 真源障碍实体（`id/x/y/z/yaw/size`）；`none` → 空数组（与「无障碍世界」一致）。
     w6 路径**不再**读 agc_perception 包内副本（副本仅作 standalone 回退）。
+    P1-1：`size` 取**感知可表达尺寸**——box 原值、cylinder 降级为外接矩形
+    （`obstacle_bbox_size`；感知障碍模型是 OBB，无圆柱分支，降级为保守外扩）。
     """
     token = token or new_run_token()
     if mode == 'static':
         obstacles = [{
             'id': ob['id'], 'x': float(ob['x']), 'y': float(ob['y']), 'z': float(ob['z']),
-            'yaw': float(ob.get('yaw', 0.0)), 'size': [float(s) for s in ob['size']],
+            'yaw': float(ob.get('yaw', 0.0)), 'size': obstacle_bbox_size(ob, sim_share),
+            # P1-1：形状透传（消费方当前只吃 box 尺寸，此处如实登记源形状以便审计；
+            #   不新增感知语义、不改既有字段顺序）
+            'shape': obstacle_shape(ob, sim_share),
         } for ob in (geometry.get('obstacles') or [])]
     elif mode == 'none':
         obstacles = []
@@ -193,12 +290,18 @@ def write_derived_map(geometry, scene, seed, token=None):
     return path
 
 
-def load_scene(task_share, perc_share, sim_share, scene, seed, token=None):
+def load_scene(task_share, perc_share, sim_share, scene, seed, token=None,
+               world_map=None):
     """加载场景配置：base / registry / carriers，校验 scene 存在与 support_status，逐轴取承载者。
 
     返回结构化 dict（含 base / sc / axes / support_status / entries 与按轴选择的文件路径）；
     S-06：额外返回几何真源（`geometry` / `geometry_sha256`）与**按域派生文件**
     （`derived_obstacles_file` / `derived_map_file`）。
+    P1-1：地图解析**两级**（优先级从高到低）：
+      1. `world_map` 参数**显式非空** → 用它（launch `world_map:=` 覆盖；未知值拒绝运行）；
+      2. 否则用**场景登记**的 `sc.world_map`（`scenarios.yaml` 的 `world_map:` 键）；
+      3. 都没有 → `DEFAULT_WORLD_MAP`（minimal）。
+    返回的 `world_map_source` 记明来源（`launch` / `scene` / `default`），供 manifest 审计。
     """
     token = token or new_run_token()
     base = yaml.safe_load(open(os.path.join(task_share, 'config', 'w6_base.yaml')))
@@ -211,6 +314,15 @@ def load_scene(task_share, perc_share, sim_share, scene, seed, token=None):
     sc = scenes[scene] or {}
     axes = sc.get('axes') or {}
     support_status = sc.get('support_status', 'supported')
+
+    # P1-1：地图选择（launch 覆盖 > 场景登记 > 缺省）；未知值一律拒绝运行。
+    requested = (world_map or '').strip()
+    if requested:
+        map_name, map_source = resolve_world_map(requested, sim_share), 'launch'
+    elif (sc.get('world_map') or '').strip():
+        map_name, map_source = resolve_world_map(sc['world_map'], sim_share), 'scene'
+    else:
+        map_name, map_source = DEFAULT_WORLD_MAP, 'default'
 
     # R-026 启动时校验：每个声明轴值必须有承载者（obstacle=dynamic → 拒绝运行）
     entries = {ax: carrier_entry(carriers, ax, val, scene) for ax, val in axes.items()}
@@ -225,11 +337,12 @@ def load_scene(task_share, perc_share, sim_share, scene, seed, token=None):
     sensors_file = os.path.join(perc_share, 'config', sensors_file_name)
 
     # S-06：几何真源 + 按域派生（感知障碍先验 / 感知地图）。障碍文件改由真源派生，
-    #   不再读 agc_perception 包内副本。
-    geometry = load_geometry(sim_share)
-    geometry_hash = geometry_sha256(sim_share)
+    #   不再读 agc_perception 包内副本。P1-1：真源文件由 `world_map` 决定。
+    _, geom_source = geometry_path(sim_share, map_name)
+    geometry = load_geometry(sim_share, map_name)
+    geometry_hash = geometry_sha256(sim_share, map_name)
     derived_obstacles_file, derived_obstacles_ids = write_derived_obstacles(
-        geometry, world_obstacles, scene, seed, token)
+        geometry, world_obstacles, scene, seed, token, sim_share=sim_share)
     derived_map_file = write_derived_map(geometry, scene, seed, token)
     world_file = os.path.join(sim_share, 'worlds', 'agc_world.sdf')
 
@@ -239,13 +352,15 @@ def load_scene(task_share, perc_share, sim_share, scene, seed, token=None):
         'support_status': support_status, 'entries': entries,
         'sensors_file_name': sensors_file_name, 'obstacles_file_name': obstacles_file_name,
         'world_obstacles': world_obstacles,
+        'world_map': map_name,
+        'world_map_source': map_source,
         'sensors_file': sensors_file,
         'obstacles_file': derived_obstacles_file,          # S-06：派生路径（非包内副本）
         'derived_obstacles_file': derived_obstacles_file,
         'derived_obstacles_ids': derived_obstacles_ids,
         'derived_map_file': derived_map_file,
         'geometry': geometry,
-        'geometry_source': os.path.join(sim_share, 'config', GEOMETRY_FILE),
+        'geometry_source': geom_source,
         'geometry_sha256': geometry_hash,
         'world_file': world_file,
     }
@@ -292,20 +407,25 @@ def compose_params(base, sc, backend, seed, own_uav=(0.0, 0.0), geometry=None,
     return merged
 
 
-def apply_air_geometry(air_merged, geometry):
+def apply_air_geometry(air_merged, geometry, sim_share=None):
     """S-06：把真源静态障碍几何注入空中安全列表（`trajectory_tracker.safety`）。
 
-    `obstacle_names/x/y` 由真源派生；`obstacle_safety_radius` / margin 等**安全余量**仍来自
-    `air.yaml`（安全参数，非几何）。原地修改并返回 `air_merged`。
+    `obstacle_names/x/y` 由真源派生；**P1-1：`obstacle_safety_radius` 亦按障碍派生**
+    （`safety_radius` 逐障碍取值，缺省 2.0），消除旧的「与障碍数对齐的定长列表」——
+    该列表加到 N 个障碍却不同步扩展时会导致 `safety_shield` 索引错位或越界
+    （ADR-0062 未决项②；R-038 的四数组等长校验仍在启动期拒绝不一致）。原地修改并返回。
+    `obstacle_margin` / `target_margin` / 反应时间 / 可达性等**安全余量**仍来自 `air.yaml`
+    （安全参数，非几何）。
     """
     safety = air_merged.setdefault('trajectory_tracker', {}).setdefault('safety', {})
     safety['obstacle_names'] = geometry_ids(geometry)
     safety['obstacle_x'] = geometry_xs(geometry)
     safety['obstacle_y'] = geometry_ys(geometry)
+    safety['obstacle_safety_radius'] = geometry_safety_radii(geometry, sim_share)
     return air_merged
 
 
-def assertions(scene, merged, info, air_merged=None):
+def assertions(scene, merged, info, air_merged=None, sim_share=None):
     """R-026 + S-06 断言：实际生效参数 == 声明轴、**派生几何 == 真源**；任一失败 → 拒绝运行。"""
     axes = info['axes']
     entries = info['entries']
@@ -351,6 +471,10 @@ def assertions(scene, merged, info, air_merged=None):
             list(safety.get('obstacle_names', [])) == gids
             and [float(v) for v in safety.get('obstacle_x', [])] == gxs
             and [float(v) for v in safety.get('obstacle_y', [])] == gys)
+        # P1-1：安全半径**按障碍派生**（不再来自 air.yaml 的定长列表）。
+        res['air_safety_radii_match_geometry'] = (
+            [float(v) for v in safety.get('obstacle_safety_radius', [])]
+            == geometry_safety_radii(geometry, sim_share))
     bad = [k for k, v in res.items() if not v]
     if bad:
         raise RuntimeError(
@@ -359,7 +483,7 @@ def assertions(scene, merged, info, air_merged=None):
     return res
 
 
-def build_manifest(backend, info, merged, assertions_result):
+def build_manifest(backend, info, merged, assertions_result, sim_share=None):
     """产出 manifest dict（身份与入口名一致 + 完整展开节点 + 生效参数）。
 
     `launch` == `LAUNCH`（入口名）；`backend` = 实际 backend；`nodes` 由 backend 能力表派生。
@@ -384,22 +508,40 @@ def build_manifest(backend, info, merged, assertions_result):
         'warmup': derive_px4_sim_seed(seed, 3),
     }
 
-    # 实际障碍集：从**真源派生** obstacles_file 读取 id（none → []；static → pole_1/pole_2）
+    # 实际障碍集：从**真源派生** obstacles_file 读取 id（none → []；static → 真源全量）
     _obs_doc = yaml.safe_load(open(obstacles_file)) or {}
     obstacle_ids = [o.get('id') for o in (_obs_doc.get('obstacles') or [])]
 
     # S-06：几何版本身份——真源路径 + 内容 sha256 + work_area + 障碍（id/pose/size）。
+    # P1-1：新增 `map` / `shape` / `safety_radius`——三张地图的几何身份可在 manifest 直接区分
+    #   （D6 判据：「两次 run 的 geometry.sha256 不同」）；`shape` 为源形状，`size` 为**源尺寸**
+    #   （cylinder 为 [r, r, h]），感知侧的外接矩形降级只在派生 obstacles 文件里出现。
     geometry = info['geometry']
     geometry_block = {
         'source': info['geometry_source'],
+        'map': info.get('world_map', DEFAULT_WORLD_MAP),
         'sha256': info['geometry_sha256'],
         'work_area': geometry.get('work_area'),
         'obstacles': [
             {
                 'id': ob['id'],
+                # 复合模型：顶层无 shape/size（由 parts 描述）；单图元照旧
+                'composite': obstacle_is_composite(ob, sim_share),
+                'shape': (None if obstacle_is_composite(ob, sim_share)
+                          else obstacle_shape(ob, sim_share)),
                 'pose': [float(ob['x']), float(ob['y']), float(ob['z']), 0.0, 0.0,
                          float(ob.get('yaw', 0.0))],
-                'size': [float(s) for s in ob['size']],
+                # 单图元 = 源尺寸；复合 = 水平包络盒（与感知降级口径一致）
+                'size': ([float(s) for s in ob['size']] if not obstacle_is_composite(ob, sim_share)
+                         else obstacle_bbox_size(ob, sim_share)),
+                'safety_radius': obstacle_safety_radius(ob, sim_share),
+                'footprint_radius': obstacle_footprint_radius(ob, sim_share),
+                'parts': ([{'id': pt['id'], 'shape': obstacle_shape(pt, sim_share),
+                            'pose': [float(pt['x']), float(pt['y']), float(pt['z']), 0.0, 0.0,
+                                     float(pt.get('yaw', 0.0))],
+                            'size': [float(v) for v in pt['size']]}
+                           for pt in world_map_module(sim_share).obstacle_parts(ob)]
+                          if obstacle_is_composite(ob, sim_share) else []),
             }
             for ob in (geometry.get('obstacles') or [])
         ],
@@ -412,7 +554,7 @@ def build_manifest(backend, info, merged, assertions_result):
         eff = {}
         if ax == 'obstacle':
             eff = {'world_obstacles': world_obstacles, 'obstacles_file': obstacles_file_name,
-                   'obstacle_ids': obstacle_ids}
+                   'obstacle_ids': obstacle_ids, 'world_map': info.get('world_map', DEFAULT_WORLD_MAP)}
         elif ax == 'perception':
             eff = {'sensors_file': sensors_file_name, 'target_source': target_source}
         elif ax == 'target_motion':
@@ -442,6 +584,10 @@ def build_manifest(backend, info, merged, assertions_result):
             },
             'sensors_file': sensors_file, 'obstacles_file': obstacles_file,
             'world_obstacles': world_obstacles, 'world_file': world_file,
+            # P1-1：地图（几何真源选择）与实际世界生成路径——`static` 时世界是
+            #   `/tmp/agc_world_static_obstacles[_<map>].sdf`，与真源一一对应。
+            'world_map': info.get('world_map', DEFAULT_WORLD_MAP),
+            'world_geometry_file': info['geometry_source'],
         },
         'geometry': geometry_block,
         'assertions': assertions_result,

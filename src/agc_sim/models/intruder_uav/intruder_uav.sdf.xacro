@@ -59,6 +59,58 @@
       <include merge="true">
         <uri>model://x500</uri>
       </include>
+
+      <!-- ===== P1-3 演示视觉高亮（**纯视觉**，不碰物理）=====
+           观众在 Gazebo 里要能一眼认出"目标"：x500 原厂是白机身 + 碳纤维臂，
+           100×100 m 场站俯视下只有 3~4 px，**不可辨识**（P1-3 round-1 判据 5 未达成的原因）。
+
+           **为什么是"子 link + fixed joint"而不是往 base_link 里塞 visual**
+           （2026-10-30 用本机 `gz sdf -p` 实测四种写法，结论如下）：
+             * `<include merge="true">` 的子元素**只**允许 `uri/pose/plugin/name/static/placement_frame`
+               （sdformat14 的 model.sdf spec）；塞 `<link>` 进去会被**静默丢弃**（展开后 hl=0，
+               只留一条 `XML Element[link], child of element[include], not defined in SDF` 警告）；
+             * 在 include 之后**再写一个同名 `<link name="base_link">`** 会硬失败
+               `Error Code 2: Msg: link with name[base_link] already exists.`（合并不按名字并 link）；
+             * 因此**唯一**可行的纯视觉注入点是"新增独立 link + fixed joint"。
+           这正是本仓 `agc_car` 已有的装饰写法（`car/capture_net`、`car/jammer`：
+           自带 inertial、无 collision、fixed joint 挂到 `car/base_link`），不是新范式。
+
+           **物理影响为零**（被回归逐项锁死）：
+             * `base_link` 等 x500 原有 link 的 inertial / collision / 全部 16 个 visual
+               在展开式里与改动前**逐字节相同**；
+             * 高亮 link **无 `<collision>`** → 不参与任何接触/测距/物理求解；
+             * 质量 1e-6 kg（不是 0：dartsim 对零质量 body 行为未定义）挂 fixed joint，
+               x500 总质量 2.0 + 4×0.016 的量级不受影响；
+             * 不改任何 plugin / 话题 / pose / 关节，PX4 attach 的模型名仍是 `intruder_uav`。
+
+           **视觉参数**（与 RViz `viz_markers` 的目标球同口径，GUI 两种呈现一致）：
+             直径 1.2 m 半透明橙色球 + 自发光，不遮挡机架本身、也不受场景光照明暗影响。 -->
+      <link name="target_highlight">
+        <inertial>
+          <mass>0.000001</mass>
+          <inertia>
+            <ixx>1e-9</ixx><iyy>1e-9</iyy><izz>1e-9</izz>
+          </inertia>
+        </inertial>
+        <visual name="target_highlight_visual">
+          <cast_shadows>false</cast_shadows>
+          <transparency>0.45</transparency>
+          <geometry>
+            <sphere>
+              <radius>0.6</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>1.0 0.45 0.05 1</ambient>
+            <diffuse>1.0 0.50 0.05 1</diffuse>
+            <emissive>0.55 0.16 0.02 1</emissive>
+          </material>
+        </visual>
+      </link>
+      <joint name="target_highlight_joint" type="fixed">
+        <parent>base_link</parent>
+        <child>target_highlight</child>
+      </joint>
     </xacro:if>
   </model>
 </sdf>
