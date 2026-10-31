@@ -43,8 +43,17 @@
 ./run_demo.sh stop      # ③ 停止（另一个终端也可；幂等）
 ```
 
-前提：ROS 2 Jazzy 已装、本仓已 `colcon build`、`toolchain/` 已备（PX4 + MicroXRCEAgent）。
-缺哪一项 `doctor` 会直接说明，**不会**先起仿真再失败。
+前提（三条，缺一不可）：
+
+1. **ROS 2 Jazzy** 已安装（`/opt/ros/jazzy/setup.bash` 存在）；
+2. **工作区已构建**：`colcon build --symlink-install`（首次约 5–6 分钟，9 个包）；
+3. **`toolchain/` 已备**：PX4 SITL + uXRCE-DDS Agent。该目录**不纳入版本控制**（`.gitignore` 只放行
+   `toolchain/README.md`），新 clone 里是空的——按 [toolchain/README](toolchain/README.md) 的
+   pin 清单与构建配方自行构建。
+
+> ⚠ **本仓脚本假定项目位于 `/home/chen/AGC`**：`run_demo.sh` 与 `scripts/demo/` 使用该绝对路径
+> 定位工作区与产物目录。**在别的目录 clone 后直接跑会操作原仓库路径**（`doctor` 也可能误报通过）。
+> 当前版本请**在 `/home/chen/AGC` 下使用**；路径可移植性见「已知边界」第 7 条。
 
 > **默认演示要等 45–60 秒才开始动**：`backend:=full` 有 PX4 己方 25 s / 入侵者 35 s 错峰
 > （[ADR-0094](docs/adr/0094-uxrce-participant-warmup-and-px4-stagger.md)）。脚本分段打印进度，
@@ -90,8 +99,10 @@
 </p>
 
 > 三张取自同一次运行的不同时刻（t≈43 s / 55 s / 60 s），**同一尺寸**（831×952），
-> 视角一致（skyband 均为 **0.00**，即正俯视）。俯视下车辆位移只有几个像素，
-> 细节可放大查看；终端面板（`panel.txt` / `timeline.txt`）给出逐秒状态。
+> 视角一致（skyband 均为 **0.00**，即正俯视）。
+> **这些图是 Gazebo 3D 视图**（自然运行、正俯视 85 m）；**状态面板在终端**（2 Hz 面板 +
+> `timeline.txt` / `panel.txt`），完整演示视频由用户录制——图里看不到状态，不代表系统没在报状态。
+> 俯视下车辆位移只有几个像素，细节可放大查看。
 
 ## 系统结构
 
@@ -177,6 +188,10 @@ PX4 SITL + uXRCE-DDS Agent               /agc/ground/cmd_vel（唯一执行口�
 6. **演示用显式 oracle 指向臂**：默认 `observe_yaw_mode=target` 让机头对准**真值方位**，
    是为隔离"指向问题"而设的**显式 oracle 臂**，不是默认 `velocity`，**也不代表**真实视觉识别。
    引用本仓结果时须同时标注该臂（[P1-2 观测指向臂](docs/plan/p1-2-一键演示入口.md#p1-2-oracle-arm)）。
+7. **脚本路径不可移植（`/home/chen/AGC` 硬编码）**：`run_demo.sh` 与 `scripts/demo/` 用绝对路径
+   定位工作区；在别的目录 clone 后直接跑会**操作原仓库**，且 `doctor` 可能**误报通过**（它查的是
+   该绝对路径下的 `install/`）。当前版本**只保证在 `/home/chen/AGC` 下可用**；改路径需统一替换
+   （已知 68 处，其中交付路径约 10 处）。
 
 ## 文档
 

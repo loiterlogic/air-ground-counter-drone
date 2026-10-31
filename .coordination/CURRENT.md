@@ -2,8 +2,11 @@
 # 当前交接
 
 - 任务 ID：**20261031-011-p2-1-deliverables**
-- 轮次：**round-5 完成（N=6 已用 5，余 1 / K=4）**
-- 状态：**执行中**（round-5 完成：85 m 重取三图 + 统一尺寸 + GIF 十进制口径达标）
+- 轮次：**round-6 完成（批次最后一轮；N=6 用满 / K=4）**
+- 状态：**执行中**（**批次末停下报告**：干净环境验证成功，但发现路径硬编码阻塞，待裁定 A/B/C/D）
+- round-5 结论（Leader 复核）：三图统一 831×952、md5 一致、skyband 全 0.0000、GIF 2,661,003 B 且单位写死、崩溃已修且有回归、提交 `c3895ef` 合规。
+  **两条局限记档**：① 85 m 下三图两两差异仅 0.022%–0.041%，"三阶段"靠时刻与 `timeline.txt` 区分（未伪造差异）；
+  ② 三图是 Gazebo 3D 视图、**不含 P1-3 状态面板**（面板在终端，Wayland 截不了整窗）→ 该要求由**用户自录视频**承担，README 图注须写明。
 - 当前派工：[round-1 request](task/20261031-011-p2-1-deliverables/round-1/request.md#p2-1-r1-request)（Leader）
   · round-2…round-5 request 由 Worker 自写（round-5 继承 [round-4 审查](task/20261031-011-p2-1-deliverables/round-4/review.md#p2-1-r4-review) 第 4 节）
 - 回报：[round-1](task/20261031-011-p2-1-deliverables/round-1/report.md#p2-1-r1-report) · [round-2](task/20261031-011-p2-1-deliverables/round-2/report.md#p2-1-r2-report) · [round-3](task/20261031-011-p2-1-deliverables/round-3/report.md#p2-1-r3-report) · [round-4](task/20261031-011-p2-1-deliverables/round-4/report.md#p2-1-r4-report)
@@ -25,10 +28,22 @@
   报告：[round-5](task/20261031-011-p2-1-deliverables/round-5/report.md#p2-1-r5-report)
 - **追加自查更正**：round-1…4 报告把 Worker 子会话 ID 与父会话 ID 写成同一值；真实 Worker =
   `7eb40b67-31c3-4a50-b313-e084cf01bdd7`，父 = `session-c1423390…`（仅记录层，未误投）。
-- **剩余计划**：round-6 = **干净环境验证**（清 `build/install/log` → `colcon build` → 照 README 走通 ≥1 轮，
-  记耗时/卡点/回改），T2 ≤2（累计 9/12 余 3）；视频等用户自录文件。
+- **当前派工（round-6，最后一轮）**：干净环境验证（清 `build/install/log` → `colcon build` → 照 README 从零走通 ≥1 轮，
+  记耗时/卡点、回改 README、README 图注补"状态面板在终端/演示视频"）→ 勾选 P2-1 出口判据（**视频项不勾**，注明待用户录制）。
+  T2 ≤2（累计 9/12 余 3）；**若轮次或预算不够 → 必须唤醒 Leader**，不得自行开轮。
+- **剩余计划**：round-6 通过后 → 等用户视频文件 → 全项验收并归档（下一任务或 CURRENT 置空闲）。
+- **round-6 结果（批次末）**：干净环境验证**成功**——清 `build/install/log` → `colcon build`
+  **9 包 / 308.41 s / exit 0** → `doctor` **14/14 PASS / 0.02 s** → 默认演示 **`TRACKING_SUCCESS`**；
+  **清理→终态 6.5 分钟**（build 5.4 + 演示 1.1）。README 已回改 3 处卡点（toolchain 怎么备 /
+  构建耗时 / 路径硬编码）；P2-1 判据**勾选 9/10**（完整演示视频如实未勾，用户自录待路径）。
+  报告：[round-6](task/20261031-011-p2-1-deliverables/round-6/report.md#p2-1-r6-report)
+- **⚠ 阻塞待裁定（H-M）**：`run_demo.sh` / `scripts/demo/common.py` 硬编码 `ROOT='/home/chen/AGC'`
+  （全仓 **68 处**、交付路径约 10 处）。实测在 `/tmp` 克隆后：`doctor` **误报 PASS 14/14**、
+  产物落**原仓库**。修法 A（自定位，白名单内 2 处）/ B（全仓 68 处）/ C（不改、只写 README）/
+  D（A + 回归断言）。**建议 A + D**；最小追加授权 **1 轮 / T2 0 次**（纯离线）。
+- **剩余待办**：完整演示视频（用户自录，路径待提供，不占轮次/T2）。
 - 上一任务（已结档）：[20261030-010 P1-4 baseline closure](archive/20261030-010-p1-4-baseline-closure/round-3/review.md#p1-4-baseline-final-review)，结论 **PASS_WITH_NOTE**；P1-4 缺口已在 README「已知边界」登记。
-- **基线事实**：HEAD `bf115f9`；P1-1…P1-4 全部产物已入库（`07eda37`）。
+- **基线事实**：HEAD `c3895ef`；P1-1…P1-4 全部产物已入库（`07eda37`）。
 - **演示口径**：`full + yard + s04 + observe_yaw_mode=target`；target 是显式 oracle 指向臂，不等于真实视觉识别。
 
 **迁移 workstream 暂停，W8 不再接单**（[PAUSED](../docs/plan/PAUSED.md#paused)）。
