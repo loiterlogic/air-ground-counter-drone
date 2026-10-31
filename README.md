@@ -51,9 +51,8 @@
    `toolchain/README.md`），新 clone 里是空的——按 [toolchain/README](toolchain/README.md) 的
    pin 清单与构建配方自行构建。
 
-> ⚠ **本仓脚本假定项目位于 `/home/chen/AGC`**：`run_demo.sh` 与 `scripts/demo/` 使用该绝对路径
-> 定位工作区与产物目录。**在别的目录 clone 后直接跑会操作原仓库路径**（`doctor` 也可能误报通过）。
-> 当前版本请**在 `/home/chen/AGC` 下使用**；路径可移植性见「已知边界」第 7 条。
+> 演示入口按自身位置定位工作区，仓库可放在任意路径；评测产物与 Git 身份也跟随当前仓库。
+> 已实测克隆到 `/tmp/agc-r10-clone` 后从零构建并跑到终态。`toolchain/` 仍需按上条单独准备。
 
 > **默认演示要等 45–60 秒才开始动**：`backend:=full` 有 PX4 己方 25 s / 入侵者 35 s 错峰
 > （[ADR-0094](docs/adr/0094-uxrce-participant-warmup-and-px4-stagger.md)）。脚本分段打印进度，
@@ -188,10 +187,9 @@ PX4 SITL + uXRCE-DDS Agent               /agc/ground/cmd_vel（唯一执行口�
 6. **演示用显式 oracle 指向臂**：默认 `observe_yaw_mode=target` 让机头对准**真值方位**，
    是为隔离"指向问题"而设的**显式 oracle 臂**，不是默认 `velocity`，**也不代表**真实视觉识别。
    引用本仓结果时须同时标注该臂（[P1-2 观测指向臂](docs/plan/p1-2-一键演示入口.md#p1-2-oracle-arm)）。
-7. **脚本路径不可移植（`/home/chen/AGC` 硬编码）**：`run_demo.sh` 与 `scripts/demo/` 用绝对路径
-   定位工作区；在别的目录 clone 后直接跑会**操作原仓库**，且 `doctor` 可能**误报通过**（它查的是
-   该绝对路径下的 `install/`）。当前版本**只保证在 `/home/chen/AGC` 下可用**；改路径需统一替换
-   （已知 68 处，其中交付路径约 10 处）。
+7. **可移植性验证有明确边界**：演示入口、评测产物与 Git 身份已实测支持克隆到任意路径；
+   `toolchain/` 不入库，仍须按 `toolchain/README` 单独构建，克隆复验中借用了主仓已构建工具链，
+   因此不能把该次耗时当作全新机器的完整部署耗时。研究 / 历史脚本不在本次可移植性保证范围内。
 
 ## 文档
 
