@@ -3,7 +3,7 @@
 
 - 任务 ID：**20261031-011-p2-1-deliverables**
 - 轮次：**round-7（**新批次 N=4 / K=4**；上一批次 N=6 已用满并审查完毕）**
-- 状态：**执行中**（round-6 已审：干净环境验证**通过**，但"陌生人照 README 能跑"因**路径硬编码**实质不成立 → 裁 **A+D**，范围扩到交付/验证路径。见 [round-6 审查](task/20261031-011-p2-1-deliverables/round-6/review.md#p2-1-r6-review)）
+- 状态：**执行中**（round-7 完成：A + D 落地；`doctor` 误报已修并**实测取证**——`/tmp` 克隆 `doctor` 由"误报 PASS 14/14"变为 **exit=1 + 报克隆自己的路径**）
 - round-5 结论（Leader 复核）：三图统一 831×952、md5 一致、skyband 全 0.0000、GIF 2,661,003 B 且单位写死、崩溃已修且有回归、提交 `c3895ef` 合规。
   **两条局限记档**：① 85 m 下三图两两差异仅 0.022%–0.041%，"三阶段"靠时刻与 `timeline.txt` 区分（未伪造差异）；
   ② 三图是 Gazebo 3D 视图、**不含 P1-3 状态面板**（面板在终端，Wayland 截不了整窗）→ 该要求由**用户自录视频**承担，README 图注须写明。
@@ -49,9 +49,22 @@
      ⑤ 预算 **T2 +3 / +1800 s**（累计上限 **15 次 / 9000 s**）。
   我复核补充：`tests/run_smoke.py` **已**自定位；`scripts/demo/start.py:114` 已把 `agc_root:=<common.ROOT>` 传给 launch
   → **修 `common.py` 即可让整链用克隆自己的根**；冒烟 5 组里仅 `w6_geometry_check.py` 带 1 处硬编码。
+- **round-7 结果**：4 处运行期解析类位置自定位（`run_demo.sh` 用 `BASH_SOURCE`；
+  `common.py` / `tests/w6_geometry_check.py` / `scripts/tests/test_w6_viz_registration.py` 用 `__file__`）；
+  新增 `scripts/tests/test_root_self_location.py`（**10 用例**，白名单逐条理由，**反向对照 4 failed**）；
+  **契约默认值未动**（`air_bringup` 的 `agc_root` + `toolchain_root_check` 校验仍在）。
+  `scripts/tests` **276 passed**、冒烟 **5/5**、断链 0。提交 `7fe7814`。
+  分类表见 [round-7 报告](task/20261031-011-p2-1-deliverables/round-7/report.md#p2-1-r7-classification)：
+  **不做** `research/`(19) / `archive/`(64) / `docs/`(30) / `.coordination/`(21) / 冒烟未调用的 `tests/**`
+  → 忠实登记为"开发/历史工具不可移植"。
+- **口径更正**：Leader 转述"`scripts/tests/**` 21 个文件"是**含 `.pyc` 的宽口径**；
+  实际 `*.py` **18 个**，其中 **17 个本就自定位**，仅 **1 个**需修。
 - **剩余待办**：完整演示视频（用户自录，路径待提供，不占轮次/T2）。
+- **下一轮**：round-7 = A+D 落地 + `doctor` 误报修复 + 归因分类表（**T2 0**）；round-8 = 克隆实测（**T2 ≤2**）；
+  round-9 = 用户视频接入 + 判据全勾 + 结档准备（**T2 0**，等用户文件）。
+  **停止条件**：round-7/8 两轮内克隆仍不能"`doctor` 真实 + 跑到终态" → 判不可达成，停止交台账。
 - 上一任务（已结档）：[20261030-010 P1-4 baseline closure](archive/20261030-010-p1-4-baseline-closure/round-3/review.md#p1-4-baseline-final-review)，结论 **PASS_WITH_NOTE**；P1-4 缺口已在 README「已知边界」登记。
-- **基线事实**：HEAD `c3895ef`；P1-1…P1-4 全部产物已入库（`07eda37`）。
+- **基线事实**：HEAD `32c35f2`；P1-1…P1-4 全部产物已入库（`07eda37`）。
 - **演示口径**：`full + yard + s04 + observe_yaw_mode=target`；target 是显式 oracle 指向臂，不等于真实视觉识别。
 
 **迁移 workstream 暂停，W8 不再接单**（[PAUSED](../docs/plan/PAUSED.md#paused)）。
