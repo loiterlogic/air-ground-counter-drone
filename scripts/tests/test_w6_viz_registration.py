@@ -26,7 +26,8 @@ import os
 
 import pytest
 
-ROOT = '/home/chen/AGC'
+# 项目根**自定位**（2026-10-31 P2-1 round-7，裁定 A）：本文件在 `<ROOT>/scripts/tests/`，上溯三级即根。
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 LAUNCH_DIR = os.path.join(ROOT, 'src', 'agc_task', 'launch')
 W6 = os.path.join(LAUNCH_DIR, 'w6.launch.py')
 

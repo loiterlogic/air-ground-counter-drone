@@ -2,8 +2,8 @@
 # 当前交接
 
 - 任务 ID：**20261031-011-p2-1-deliverables**
-- 轮次：**round-6 完成（批次最后一轮；N=6 用满 / K=4）**
-- 状态：**执行中**（**批次末停下报告**：干净环境验证成功，但发现路径硬编码阻塞，待裁定 A/B/C/D）
+- 轮次：**round-7（**新批次 N=4 / K=4**；上一批次 N=6 已用满并审查完毕）**
+- 状态：**执行中**（round-6 已审：干净环境验证**通过**，但"陌生人照 README 能跑"因**路径硬编码**实质不成立 → 裁 **A+D**，范围扩到交付/验证路径。见 [round-6 审查](task/20261031-011-p2-1-deliverables/round-6/review.md#p2-1-r6-review)）
 - round-5 结论（Leader 复核）：三图统一 831×952、md5 一致、skyband 全 0.0000、GIF 2,661,003 B 且单位写死、崩溃已修且有回归、提交 `c3895ef` 合规。
   **两条局限记档**：① 85 m 下三图两两差异仅 0.022%–0.041%，"三阶段"靠时刻与 `timeline.txt` 区分（未伪造差异）；
   ② 三图是 Gazebo 3D 视图、**不含 P1-3 状态面板**（面板在终端，Wayland 截不了整窗）→ 该要求由**用户自录视频**承担，README 图注须写明。
@@ -37,10 +37,18 @@
   **清理→终态 6.5 分钟**（build 5.4 + 演示 1.1）。README 已回改 3 处卡点（toolchain 怎么备 /
   构建耗时 / 路径硬编码）；P2-1 判据**勾选 9/10**（完整演示视频如实未勾，用户自录待路径）。
   报告：[round-6](task/20261031-011-p2-1-deliverables/round-6/report.md#p2-1-r6-report)
-- **⚠ 阻塞待裁定（H-M）**：`run_demo.sh` / `scripts/demo/common.py` 硬编码 `ROOT='/home/chen/AGC'`
-  （全仓 **68 处**、交付路径约 10 处）。实测在 `/tmp` 克隆后：`doctor` **误报 PASS 14/14**、
-  产物落**原仓库**。修法 A（自定位，白名单内 2 处）/ B（全仓 68 处）/ C（不改、只写 README）/
-  D（A + 回归断言）。**建议 A + D**；最小追加授权 **1 轮 / T2 0 次**（纯离线）。
+- **Leader 裁定（round-6 审查）→ 新批次 round-7…round-9**：
+  ① 干净环境验证通过（6.5 min）；② **路径硬编码是真阻塞** → **A + D**，范围按"是否用于运行期解析文件"判定：
+     纳入 `run_demo.sh` / `scripts/demo/**` / `tests/w6_geometry_check.py` / `scripts/tests/**`（21 个，逐个分类）/
+     `src/agc_task/launch/w6.launch.py`（3 处，逐个分类）+ 回归断言；
+     **不做** `scripts/research/**`、`scripts/archive/**`、`docs/**`、`.coordination/**`、冒烟未调用的 `tests/**`、
+     **契约默认值**（`air_bringup.launch.py` 的 `agc_root` 默认值是受 `toolchain_root_check.py` 保护的真源，不得改）；
+     ③ 顺带修 `doctor` 误报（克隆无 `install/` 必须 FAIL）；
+     ④ **round-8 克隆实测**：未构建先证 `doctor` FAIL（负向取证）→ 克隆内 `colcon build` → `doctor` PASS →
+     按 README 默认形态跑到终态，产物必须落**克隆自己的** `experiments/`；
+     ⑤ 预算 **T2 +3 / +1800 s**（累计上限 **15 次 / 9000 s**）。
+  我复核补充：`tests/run_smoke.py` **已**自定位；`scripts/demo/start.py:114` 已把 `agc_root:=<common.ROOT>` 传给 launch
+  → **修 `common.py` 即可让整链用克隆自己的根**；冒烟 5 组里仅 `w6_geometry_check.py` 带 1 处硬编码。
 - **剩余待办**：完整演示视频（用户自录，路径待提供，不占轮次/T2）。
 - 上一任务（已结档）：[20261030-010 P1-4 baseline closure](archive/20261030-010-p1-4-baseline-closure/round-3/review.md#p1-4-baseline-final-review)，结论 **PASS_WITH_NOTE**；P1-4 缺口已在 README「已知边界」登记。
 - **基线事实**：HEAD `c3895ef`；P1-1…P1-4 全部产物已入库（`07eda37`）。

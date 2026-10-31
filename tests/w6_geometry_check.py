@@ -47,7 +47,9 @@ import xml.etree.ElementTree as ET
 
 import yaml
 
-ROOT = '/home/chen/AGC'
+# 项目根**自定位**（2026-10-31 P2-1 round-7，裁定 A）：本文件在 `<ROOT>/tests/`，上溯两级即根。
+# 原来写死 `/home/chen/AGC`，使冒烟 `geometry` 组在别处 clone 时检的是**原仓库**。
+ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 # ADR-0052：地面激光扫描面高度（`car/lidar_link` z=0.48）。障碍在 z=0.48 处须有水平截面，
 # 否则「世界里看得见、安全层和 costmap 看不见」——必须在文档里标注，不得假装能避。

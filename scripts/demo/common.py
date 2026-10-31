@@ -25,7 +25,12 @@ import subprocess
 import time
 import uuid
 
-ROOT = '/home/chen/AGC'
+# 项目根**自定位**（2026-10-31 P2-1 round-7，裁定 A）：
+# 原来写死 `/home/chen/AGC` —— 在别处 clone 后跑 `run_demo.sh` 会操作**原仓库**
+# （实测：克隆目录 `doctor` 误报 PASS 14/14、产物落原仓库、启动的是原仓库的仿真）。
+# 本文件在 `<ROOT>/scripts/demo/common.py`，故上溯三级即为项目根。
+# `start.py` 已把 `agc_root:=common.ROOT` 显式透传给 launch → 修这一处，整链即用克隆自己的根。
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 DEMO_ROOT = os.path.join(ROOT, 'experiments', 'demo')
 STATE_DIR = os.path.join(DEMO_ROOT, '.run')
 CURRENT_JSON = os.path.join(STATE_DIR, 'current.json')

@@ -29,7 +29,11 @@ set -o pipefail
 # 原始命令行（写进证据，便于复现；在任何 shift 之前捕获）
 ORIG_ARGV="$0 $*"
 
-ROOT="/home/chen/AGC"
+# 项目根**自定位**（2026-10-31 P2-1 round-7，裁定 A）：
+# 原来写死 `/home/chen/AGC`，导致在别处 clone 后跑脚本会**操作原仓库**
+# （实测：克隆目录 `doctor` 误报 PASS、产物落原仓库）。改为取本脚本所在目录，
+# 这样"克隆到任意路径即可用"成立，也与 README 的"陌生人 10 分钟能跑起来"一致。
+ROOT="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 DEMO_PY="${ROOT}/scripts/demo"
 ROS_SETUP="/opt/ros/jazzy/setup.bash"
 WS_SETUP="${ROOT}/install/setup.bash"
