@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="839" viewBox="0 0 820 839" font-family="DejaVu Sans, Droid Sans Fallback, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="24" y="38" font-size="20" fill="#1f2933" font-weight="bold">AGC 系统结构（明细）：四类依赖的完整边清单</text>
+  <text x="24" y="62" font-size="12.5" fill="#64758a">与概览图同表生成（同一份 PACKAGE_EDGES / EXT_RELATIONS）；两图边集合由回归断言相等</text>
+  <rect x="24" y="62" width="772" height="761" rx="8" fill="#fcfcfd" stroke="#9db4cd" stroke-width="1.1"/>
+  <text x="38" y="109" font-size="14" fill="#1f2933" font-weight="bold">① 消息 / 接口依赖（5 条）</text>
+  <text x="38" y="126" font-size="12" fill="#3d4b59">跨域通信一律经 agc_msgs；它为叶依赖、无出边，不依赖任何兄弟包。</text>
+  <text x="54" y="143" font-size="12" fill="#3d4b59">agc_perception  →  agc_msgs</text>
+  <text x="54" y="160" font-size="12" fill="#3d4b59">agc_air  →  agc_msgs</text>
+  <text x="54" y="177" font-size="12" fill="#3d4b59">agc_ground  →  agc_msgs</text>
+  <text x="54" y="194" font-size="12" fill="#3d4b59">agc_rl  →  agc_msgs</text>
+  <text x="54" y="211" font-size="12" fill="#3d4b59">agc_task  →  agc_msgs</text>
+  <text x="54" y="228" font-size="12" fill="#3d4b59">不在此列（易错）：agc_sim 只经 ros_gz 桥发标准消息；agc_control 是纯实现库。</text>
+  <text x="38" y="260" font-size="14" fill="#1f2933" font-weight="bold">② 库链接依赖（2 条 · 唯一例外）</text>
+  <text x="38" y="277" font-size="12" fill="#3d4b59">编译期链接实现库：仅 agc_control 允许被 air / ground 链接同一实现（ADR-0018）；除此禁止业务库互链。</text>
+  <text x="54" y="294" font-size="12" fill="#3d4b59">agc_air  →  agc_control（INTERFACE 共享库 + pluginlib 插件）</text>
+  <text x="54" y="311" font-size="12" fill="#3d4b59">agc_ground  →  agc_control（INTERFACE 共享库 + pluginlib 插件）</text>
+  <text x="54" y="328" font-size="12" fill="#3d4b59">两侧 CMakeLists 均 find_package(agc_control)。</text>
+  <text x="38" y="360" font-size="14" fill="#1f2933" font-weight="bold">③ 运行组合依赖（6 条 · exec_depend）</text>
+  <text x="38" y="377" font-size="12" fill="#3d4b59">起进程 ≠ 链接库：只以 exec_depend 声明被起进程所属包，不据此链接其实现库。</text>
+  <text x="54" y="394" font-size="12" fill="#3d4b59">agc_task  →  agc_sim（起进程）</text>
+  <text x="54" y="411" font-size="12" fill="#3d4b59">agc_task  →  agc_perception（起进程）</text>
+  <text x="54" y="428" font-size="12" fill="#3d4b59">agc_task  →  agc_air（起进程）</text>
+  <text x="54" y="445" font-size="12" fill="#3d4b59">agc_task  →  agc_ground（起进程）</text>
+  <text x="54" y="462" font-size="12" fill="#3d4b59">agc_air  →  agc_sim（起进程）</text>
+  <text x="54" y="479" font-size="12" fill="#3d4b59">agc_ground  →  agc_rl（起进程）</text>
+  <text x="54" y="496" font-size="12" fill="#3d4b59">出界 ③（起 lifecycle_manager / collision_monitor / uXRCE Agent）见 ④ 段。</text>
+  <text x="38" y="528" font-size="14" fill="#1f2933" font-weight="bold">④ 外部设备 / 第三方边界（12 条关系）</text>
+  <text x="38" y="545" font-size="12" fill="#3d4b59">外部项按包边界原文归入 ④；「依赖 / 起进程」的区分同 ② / ③，不新造第五类。</text>
+  <text x="54" y="562" font-size="12" fill="#3d4b59">Gazebo Harmonic（gz-sim 8）  ←  agc_sim（起进程：起 gz server（ros_gz_sim）；链接 gz_* vendor 库）</text>
+  <text x="54" y="579" font-size="12" fill="#3d4b59">Gazebo Harmonic（gz-sim 8）  ←  agc_perception（依赖：gz_transport_vendor / gz_msgs_vendor 直读真值）</text>
+  <text x="54" y="596" font-size="12" fill="#3d4b59">PX4 SITL v1.15.4  ←  agc_air（依赖：uXRCE-DDS 链路（toolchain/ 外部依赖，pin v1.15.4））</text>
+  <text x="54" y="613" font-size="12" fill="#3d4b59">PX4 SITL v1.15.4  ←  agc_task（依赖：intruder_driver / jammer 发 px4_msgs/VehicleCommand）</text>
+  <text x="54" y="630" font-size="12" fill="#3d4b59">uXRCE-DDS Agent（MicroXRCEAgent）  ←  agc_air（起进程：起 MicroXRCEAgent（udp4 / agent_port））</text>
+  <text x="54" y="647" font-size="12" fill="#3d4b59">uXRCE-DDS Agent（MicroXRCEAgent）  ←  agc_task（起进程：起 2 个 Agent（own + intruder 端口，w6.launch））</text>
+  <text x="54" y="664" font-size="12" fill="#3d4b59">px4_msgs（内联第三方，不改造）  ←  agc_air（依赖：编译期 depend，pin a1045ec / release/1.15，不改造）</text>
+  <text x="54" y="681" font-size="12" fill="#3d4b59">px4_msgs（内联第三方，不改造）  ←  agc_task（依赖：exec_depend：jammer / intruder_driver 导入）</text>
+  <text x="54" y="698" font-size="12" fill="#3d4b59">Nav2 组件  ←  agc_ground（依赖：链接 nav2_core / nav2_costmap_2d / nav2_util）</text>
+  <text x="54" y="715" font-size="12" fill="#3d4b59">Nav2 组件  ←  agc_ground（起进程：起 collision_monitor / lifecycle_manager / navfn）</text>
+  <text x="54" y="732" font-size="12" fill="#3d4b59">Nav2 组件  ←  agc_air（起进程：起 lifecycle_manager（空中节点 configure→activate））</text>
+  <text x="54" y="749" font-size="12" fill="#3d4b59">Nav2 组件  ←  agc_task（起进程：exec_depend：lifecycle_manager 编排）</text>
+  <text x="54" y="766" font-size="12" fill="#3d4b59">uXRCE-DDS Agent ↔ PX4 SITL 是 XRCE-DDS ↔ uORB 桥接（外部↔外部），不构成包依赖。</text>
+</svg>

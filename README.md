@@ -85,7 +85,7 @@
 跑完在 `experiments/demo/<时间戳>/` 落：`timeline.txt`（事件流）、`panel.txt`（面板副本）、
 `terminal_explanation.txt`（**为什么成功/失败**——阈值取本 run 实际生效参数，指标只读
 `summary.json`）、`metrics/summary.json`（机器可读指标）。语义见
-[P1-3 可观测与演示呈现](docs/plan/p1-3-任务可观测与演示呈现.md#p1-3-goal)。
+[P1-3 可观测与演示呈现](docs/archive/completion-20261031/p1-3-任务可观测与演示呈现.md#p1-3-goal)。
 
 真实运行画面（`full + yard + s04 + observe_yaw_mode=target`，**自然运行**、正俯视）：
 
@@ -106,12 +106,14 @@
 ## 系统结构
 
 <p align="center">
-  <img src="docs/plan/assets/system-structure.svg" width="820" alt="8 包职责与四类依赖">
+  <img src="docs/plan/assets/system-structure.svg" width="820" alt="8 包职责与四类依赖（概览）">
 </p>
 
 8 个包按**职责域**切分（不是按进程），依赖按四类分别约束（消息 / 库链接 / 运行组合 / 外部设备）。
-完整职责表与依赖规则见 [包边界](docs/conventions/包边界.md)；图的可编辑源与 Mermaid 版本见
-[系统结构图](docs/conventions/系统结构图.md#top)。
+上图是**概览**（谁在哪一层、靠什么相连）；**每一类到底有哪几条边**见
+[明细图](docs/plan/assets/system-structure-detail.svg) 与
+[系统结构图#detail](docs/conventions/系统结构图.md#detail)。两张图由同一张声明式表生成，
+边集合由回归断言相等。完整职责表与依赖规则见 [包边界](docs/conventions/包边界.md)。
 
 ```text
 Gazebo（世界 + 车 + 目标 + 相机）
@@ -140,7 +142,7 @@ PX4 SITL + uXRCE-DDS Agent               /agc/ground/cmd_vel（唯一执行口�
 | [`run_demo.sh`](run_demo.sh) | 一键入口：`doctor` / 演示 / `stop` / `status` / `test` / `compare` |
 | [`scripts/`](scripts/README.md#top-tools) | 长期工程工具（批量实验、证据归档、索引核对） |
 | [`tests/`](tests/README.md) | 验收核查（按风险项编号，多数需整链环境） |
-| [`docs/plan/`](docs/plan/README.md#plan-index) | **当前方向**：项目收尾路线与各阶段出口判据 |
+| [`docs/plan/`](docs/plan/README.md#plan-index) | **当前方向**：候选后续索引 + 历史批次归档导航 |
 | [`docs/adr/`](docs/adr/README.md#adr-index) | 106 篇决策记录（编号 / 标题 / 结论索引） |
 | [`docs/conventions/`](docs/conventions/包边界.md) | 工程规范：包边界、目录命名、排障速查 |
 
@@ -183,10 +185,10 @@ PX4 SITL + uXRCE-DDS Agent               /agc/ground/cmd_vel（唯一执行口�
 5. **换用相机机型对跟踪动力学的量化影响未知**：相机内参 / 安装位变化会改变观测噪声与视场，
    进而可能影响跟踪误差分布；本项目只测了 `gz_x500_mono_cam` 一种机型，**未做**跨机型的
    跟踪动力学量化对比（P1-4 第 4 项以风险登记收口，见
-   [P1-4 结档裁定](docs/plan/p1-4-视觉算法接入.md#p1-4-closure)）。
+   [P1-4 结档裁定](docs/archive/completion-20261031/p1-4-视觉算法接入.md#p1-4-closure)）。
 6. **演示用显式 oracle 指向臂**：默认 `observe_yaw_mode=target` 让机头对准**真值方位**，
    是为隔离"指向问题"而设的**显式 oracle 臂**，不是默认 `velocity`，**也不代表**真实视觉识别。
-   引用本仓结果时须同时标注该臂（[P1-2 观测指向臂](docs/plan/p1-2-一键演示入口.md#p1-2-oracle-arm)）。
+   引用本仓结果时须同时标注该臂（[P1-2 观测指向臂](docs/archive/completion-20261031/p1-2-一键演示入口.md#p1-2-oracle-arm)）。
 7. **可移植性验证有明确边界**：演示入口、评测产物与 Git 身份已实测支持克隆到任意路径；
    `toolchain/` 不入库，仍须按 `toolchain/README` 单独构建，克隆复验中借用了主仓已构建工具链，
    因此不能把该次耗时当作全新机器的完整部署耗时。研究 / 历史脚本不在本次可移植性保证范围内。
@@ -195,7 +197,7 @@ PX4 SITL + uXRCE-DDS Agent               /agc/ground/cmd_vel（唯一执行口�
 
 | 入口 | 内容 |
 |---|---|
-| [项目完成路线](docs/plan/README.md#plan-index) | **当前方向**：P0→P2 优先级、各阶段出口判据（进度真源） |
+| [当前方向](docs/plan/README.md#plan-index) | **当前方向**：候选后续索引（进度真源） |
 | [契约真源](docs/ROS2迁移交接文档.md#hard-constraints) | 不可变约束、坐标系、终态语义、接口语义（**唯一**约束来源） |
 | [ADR 索引](docs/adr/README.md#adr-index) | 106 篇决策的编号 / 标题 / 状态 / 结论 |
 | [包边界](docs/conventions/包边界.md) | 8 包职责与四类依赖方向 |
