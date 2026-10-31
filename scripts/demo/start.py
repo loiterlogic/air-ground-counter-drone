@@ -71,9 +71,21 @@ def gz_args(headless):
     """`gz_args`：GUI = `-r -v 3 <world>`；headless = `-s -r -v 3 <world>`。
 
     `-s` 是 gz sim 的**服务端（无渲染客户端）**开关——这是 GUI / headless 的**唯一**结构性区别。
+
+    **可选 GUI 配置**（P2-1 截图取证）：环境变量 `AGC_GUI_CONFIG` 指向一份 gui-config 时，
+    GUI 形态追加 `--gui-config <path>`。用途只有一个——本仓世界 SDF 的 `<gui>` 块覆盖了发行版
+    默认 `gui.config`，**不含** `Screenshot` 插件；要让 `/gui/screenshot` 服务上线（从 3D 视图
+    相机取真实帧，见 [gui_capture.py](gui_capture.py) 的实测说明），必须显式给一份含该插件的配置。
+    **未设置时不改变任何行为**（默认仍用世界 SDF 里的 `<gui>` 块）。
+    headless 忽略该变量（`-s` 没有 GUI 客户端，配不配置都不会产生画面）。
     """
     prefix = '-s -r -v 3 ' if headless else '-r -v 3 '
-    return prefix + common.WORLD_SDF
+    args = prefix + common.WORLD_SDF
+    if not headless:
+        cfg = (os.environ.get('AGC_GUI_CONFIG') or '').strip()
+        if cfg:
+            args += ' --gui-config %s' % cfg
+    return args
 
 
 def viz_enabled(headless):

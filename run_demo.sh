@@ -9,6 +9,7 @@
 #   ./run_demo.sh stop            # 停掉本脚本起的全部进程（可在另一个终端执行）
 #   ./run_demo.sh status          # 看当前实例与残留（只读）
 #   ./run_demo.sh doctor          # 只做环境预检，不启动任何仿真
+#   ./run_demo.sh test            # 冒烟门槛（离线、只读、5 分钟内全绿）
 #   ./run_demo.sh compare <gui> <headless>   # GUI ↔ headless 等价核验
 #
 # 真源：docs/plan/p1-2-一键演示入口.md#p1-2-goal
@@ -46,7 +47,7 @@ fail() { # fail <标题> <第1行> [第2行…]
 }
 
 usage() {
-  sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 # ---------------------------- 解析参数 ----------------------------
@@ -62,7 +63,7 @@ ARGS_REST=()
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    stop|doctor|status|compare)
+    stop|doctor|status|test|compare)
       MODE="$1"; shift
       while [ $# -gt 0 ]; do ARGS_REST+=("$1"); shift; done
       break ;;
@@ -132,6 +133,10 @@ case "$MODE" in
     ;;
   compare)
     exec python3 "${DEMO_PY}/main.py" compare "${ARGS_REST[@]}"
+    ;;
+  test)
+    # 冒烟门槛（P2-1）：离线、只读、不启仿真；语义见 tests/run_smoke.py 文件头
+    exec python3 "${ROOT}/tests/run_smoke.py" ${ARGS_REST[@]+"${ARGS_REST[@]}"}
     ;;
 esac
 

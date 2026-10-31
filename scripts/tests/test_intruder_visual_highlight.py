@@ -10,8 +10,15 @@
 所以判定不看源码，而是把模型**真的展开成 SDF** 再逐项比对基线。
 
 基线怎么来（**不存第二份 SDF 副本**，避免基线本身漂移）：从 git 取改动前的
-`intruder_uav.sdf.xacro`（`HEAD` 版本）到临时目录展开，与工作区版本对比。
-`git show HEAD:<path>` 在模型未被 commit 时也可用（文件在 `HEAD` 里存在）。
+`intruder_uav.sdf.xacro` 到临时目录展开，与工作区版本对比。
+
+**基线提交是钉死的常量，不是 `HEAD`**（2026-10-31 P2-1 round-1 修正）：
+本文件写作时高亮尚未提交，`HEAD` 恰好等于"改动前"；但 P2-1 步骤 0 的基线卫生提交把高亮
+一起入库后，`HEAD` 就变成了"改动后"——拿 `HEAD` 当基线会退化成**自己跟自己比**，
+`test_only_highlight_differs_from_baseline` 恒真、`test_x500_core_links_keep_inertial_and_collision`
+反而恒假（joint 差从 +1 变 0）。这正是"守卫看似在跑、其实没在守"的典型形状，故改为常量
+`BASELINE_REV`（P1-3 round-2 之前的最后一次提交，即 P2-1 派工单登记的基线 `b627043`）。
+该 rev 取不到时**跳过并说明**，不静默通过。
 
 不启任何仿真进程；`xacro` + `gz sdf -p` 都是纯解析（秒级）。若无 ROS 环境则**跳过**并说明原因
 （不静默通过）。
@@ -32,6 +39,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__
 XACRO_PATH = os.path.join(ROOT, 'src', 'agc_sim', 'models', 'intruder_uav',
                           'intruder_uav.sdf.xacro')
 REL_PATH = 'src/agc_sim/models/intruder_uav/intruder_uav.sdf.xacro'
+# 改动前基线（P1-3 round-2 高亮入库前的最后一次提交；P2-1 round-1 基线卫生提交把高亮入库后
+# 若仍用 `HEAD`，比对会退化为"自己跟自己比"——见文件头「基线怎么来」）
+BASELINE_REV = 'b627043'
 PX4_MODELS = os.path.join(ROOT, 'toolchain', 'PX4-Autopilot', 'Tools', 'simulation', 'gz',
                           'models')
 PX4_WORLDS = os.path.join(ROOT, 'toolchain', 'PX4-Autopilot', 'Tools', 'simulation', 'gz',
@@ -90,9 +100,9 @@ def expanded(tmp_path_factory):
     """工作区版本 + `HEAD` 基线各展开一次（基线来自 git，不落第二份副本）。"""
     work = str(tmp_path_factory.mktemp('p13r2'))
     base_src = os.path.join(work, 'baseline_model.sdf.xacro')
-    r = _run('git -C %s show HEAD:%s > %s' % (ROOT, REL_PATH, base_src))
+    r = _run('git -C %s show %s:%s > %s' % (ROOT, BASELINE_REV, REL_PATH, base_src))
     if r.returncode != 0 or not os.path.getsize(base_src):
-        pytest.skip('git HEAD 里没有该模型（未提交过），无法取展开基线')
+        pytest.skip('git 里取不到基线 %s 的该模型，无法展开比对' % BASELINE_REV)
     return {
         'new': _expand(XACRO_PATH, work, 'new'),
         'base': _expand(base_src, work, 'base'),
@@ -172,7 +182,8 @@ def test_only_highlight_differs_from_baseline(expanded):
     if new != base:
         import difflib
         diff = '\n'.join(list(difflib.unified_diff(
-            base.splitlines(), new.splitlines(), 'baseline(HEAD)', 'working', lineterm=''))[:60])
+            base.splitlines(), new.splitlines(),
+            'baseline(%s)' % BASELINE_REV, 'working', lineterm=''))[:60])
         pytest.fail('除高亮外模型发生了变化（物理字段不得改动）：\n' + diff)
 
 

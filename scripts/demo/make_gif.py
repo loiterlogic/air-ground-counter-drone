@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+"""`make_gif.py` —— 把 `capture_run.py` 的连续帧序列合成 README 用的 GIF。
+
+## 规格（P2-1 出口判据 + P2-1 计划第 2 节）
+
+| 项 | 要求 | 本脚本怎么保证 |
+|---|---|---|
+| 宽度 | **800 px** | 等比缩放（不改长宽比，不裁切） |
+| 体积 | **≤ 5 MB** | 先按目标宽度渲染，再逐级降采样率/颜色数直到达标 |
+| 时长 | **10–15 s** | 由调用方给的帧数 × 帧间隔决定；本脚本**报告**实际时长，不悄悄改 |
+| 内容 | 真实画面 | 帧来自 Gazebo 3D 视图相机（`gui_capture.py`），本脚本**不合成**任何内容 |
+
+**降级顺序**（体积超限时，按此顺序且**只**动这三项）：帧率 → 调色板颜色数 → 宽度（不低于 640）。
+任何降级都写进 `gif-manifest.json`，README 与报告里如实引用——**不得**悄悄降级后仍宣称"800 px"。
+
+## 用法
+
+```bash
+python3 scripts/demo/make_gif.py --frames experiments/p2-1/round-2/frames \
+    --out docs/plan/assets/demo.gif --fps 8 --max-bytes 5242880
+```
+
+退出码：`0` 产出且满足全部规格；`1` 产出但**某项规格未满足**（报告写明）；`2` 用法错误。
+"""
+
+import argparse
+import json
+import os
+import sys
+
+from PIL import Image
+
+TARGET_WIDTH = 800
+MIN_WIDTH = 640
+MAX_BYTES = 5 * 1024 * 1024
+
+
+def _load_frames(frames_dir):
+    names = sorted(n for n in os.listdir(frames_dir) if n.lower().endswith('.png'))
+    return [os.path.join(frames_dir, n) for n in names]
+
+
+def _resize(path, width):
+    im = Image.open(path).convert('RGB')
+    if im.width == width:
+        return im
+    height = max(1, int(round(im.height * width / float(im.width))))
+    return im.resize((width, height), Image.LANCZOS)
+
+
+def make(frames, out_path, fps, width, colors, max_bytes, source_fps):
+    """抽帧 → 缩放 → 量化 → 存 GIF；返回 dict（含是否达标与降级记录）。"""
+    # 抽帧：从 source_fps 抽到 fps
+    stride = max(1, int(round(source_fps / float(fps))))
+    used = frames[::stride]
+    if len(used) < 2:
+        used = frames[:2] if len(frames) >= 2 else frames
+    images = [_resize(p, width) for p in used]
+    duration_ms = int(round(1000.0 / (source_fps / stride)))
+    images[0].save(out_path, save_all=True, append_images=images[1:],
+                   duration=duration_ms, loop=0, optimize=True,
+                   disposal=2)
+    size = os.path.getsize(out_path)
+    return {'frames_used': len(used), 'stride': stride, 'duration_ms': duration_ms,
+            'fps_effective': source_fps / stride, 'width': images[0].width,
+            'height': images[0].height, 'bytes': size, 'colors': colors,
+            'under_max': size <= max_bytes}
+
+
+def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    ap = argparse.ArgumentParser(add_help=True, description='帧序列 → README GIF')
+    ap.add_argument('--frames', required=True, help='帧目录（capture_run.py 的 frames/）')
+    ap.add_argument('--out', required=True, help='输出 GIF 路径')
+    ap.add_argument('--fps', type=float, default=8.0, help='目标帧率（默认 8）')
+    ap.add_argument('--source-fps', type=float, default=1.0,
+                    help='采集帧率（capture_run.py 的 --interval 的倒数，默认 1.0）')
+    ap.add_argument('--max-bytes', type=int, default=MAX_BYTES)
+    args = ap.parse_args(argv)
+
+    frames = _load_frames(args.frames)
+    if len(frames) < 2:
+        print('[gif] 帧数不足（%d）：%s' % (len(frames), args.frames), file=sys.stderr)
+        return 2
+
+    os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
+    attempts = []
+    ok = False
+    result = None
+    # 降级阶梯：只动 帧率 → 宽度；颜色数由 GIF 调色板自适应
+    ladder = [
+        (args.fps, TARGET_WIDTH),
+        (max(4.0, args.fps * 0.75), TARGET_WIDTH),
+        (max(4.0, args.fps * 0.5), TARGET_WIDTH),
+        (max(4.0, args.fps * 0.5), MIN_WIDTH),
+        (4.0, MIN_WIDTH),
+    ]
+    for fps, width in ladder:
+        result = make(frames, args.out, fps, width, 256, args.max_bytes, args.source_fps)
+        attempts.append({'fps': fps, 'width': width, **result})
+        if result['under_max']:
+            ok = True
+            break
+
+    duration_s = result['frames_used'] * (result['duration_ms'] / 1000.0)
+    spec_ok = {
+        'width_800': result['width'] == TARGET_WIDTH,
+        'under_5mb': result['under_max'],
+        'duration_10_15s': 10.0 <= duration_s <= 15.0,
+    }
+    manifest = {
+        'schema': 'p2-1-gif/1',
+        'out': os.path.abspath(args.out),
+        'source_frames': len(frames),
+        'source_fps': args.source_fps,
+        'final': result,
+        'duration_s': round(duration_s, 2),
+        'spec': spec_ok,
+        'attempts': attempts,
+    }
+    man_path = os.path.splitext(os.path.abspath(args.out))[0] + '-manifest.json'
+    with open(man_path, 'w', encoding='utf-8') as f:
+        json.dump(manifest, f, ensure_ascii=False, indent=2)
+
+    print('[gif] %s：%d 帧 → %dx%d，%.1f s，%d 字节'
+          % (args.out, result['frames_used'], result['width'], result['height'],
+             duration_s, result['bytes']))
+    for key, val in spec_ok.items():
+        print('[gif]   %-16s %s' % (key, 'OK' if val else '未满足'))
+    print('[gif] 清单：%s' % man_path)
+    if not ok:
+        print('[gif] 体积降级后仍超限', file=sys.stderr)
+    return 0 if all(spec_ok.values()) else 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())

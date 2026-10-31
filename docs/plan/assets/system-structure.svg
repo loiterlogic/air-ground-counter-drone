@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1844" height="980" viewBox="0 0 1844 980" font-family="DejaVu Sans, Droid Sans Fallback, Noto Sans CJK SC, sans-serif">
+  <rect width="100%" height="100%" fill="#fbfcfd"/>
+  <text x="60" y="46" font-size="26" font-weight="bold" fill="#1f2933">AGC 系统结构（8 包 + 四类依赖）</text>
+  <text x="60" y="76" font-size="14" fill="#52606d">真源：docs/conventions/包边界.md（图是它的投影，冲突以真源为准）</text>
+  <line x1="580" y1="40" x2="614" y2="40" stroke="#7a8fa6" stroke-width="2" stroke-dasharray="6,4"/>
+  <text x="620" y="45" font-size="13" fill="#3e4c59">① 消息</text>
+  <line x1="698" y1="40" x2="732" y2="40" stroke="#2f6f4e" stroke-width="2" stroke-dasharray=""/>
+  <text x="738" y="45" font-size="13" fill="#3e4c59">② 链接</text>
+  <line x1="816" y1="40" x2="850" y2="40" stroke="#8a6d3b" stroke-width="2" stroke-dasharray="10,3,2,3"/>
+  <text x="856" y="45" font-size="13" fill="#3e4c59">③ 运行组合</text>
+  <line x1="934" y1="40" x2="968" y2="40" stroke="#8a4b8a" stroke-width="2" stroke-dasharray="3,3"/>
+  <text x="974" y="45" font-size="13" fill="#3e4c59">④ 外部</text>
+  <line x1="210" y1="340" x2="566" y2="160" stroke="#7a8fa6" stroke-width="2" stroke-dasharray="6,4" opacity="0.85"/>
+  <line x1="566" y1="340" x2="566" y2="160" stroke="#7a8fa6" stroke-width="2" stroke-dasharray="6,4" opacity="0.85"/>
+  <line x1="210" y1="700" x2="566" y2="160" stroke="#7a8fa6" stroke-width="2" stroke-dasharray="6,4" opacity="0.85"/>
+  <line x1="922" y1="700" x2="566" y2="160" stroke="#7a8fa6" stroke-width="2" stroke-dasharray="6,4" opacity="0.85"/>
+  <line x1="1278" y1="700" x2="566" y2="160" stroke="#7a8fa6" stroke-width="2" stroke-dasharray="6,4" opacity="0.85"/>
+  <line x1="922" y1="340" x2="566" y2="160" stroke="#7a8fa6" stroke-width="2" stroke-dasharray="6,4" opacity="0.85"/>
+  <line x1="210" y1="700" x2="566" y2="520" stroke="#2f6f4e" stroke-width="2" stroke-dasharray="" opacity="0.85"/>
+  <line x1="922" y1="700" x2="566" y2="520" stroke="#2f6f4e" stroke-width="2" stroke-dasharray="" opacity="0.85"/>
+  <line x1="922" y1="340" x2="210" y2="340" stroke="#8a6d3b" stroke-width="2" stroke-dasharray="10,3,2,3" opacity="0.85"/>
+  <line x1="922" y1="340" x2="566" y2="340" stroke="#8a6d3b" stroke-width="2" stroke-dasharray="10,3,2,3" opacity="0.85"/>
+  <line x1="922" y1="340" x2="210" y2="700" stroke="#8a6d3b" stroke-width="2" stroke-dasharray="10,3,2,3" opacity="0.85"/>
+  <line x1="922" y1="340" x2="922" y2="700" stroke="#8a6d3b" stroke-width="2" stroke-dasharray="10,3,2,3" opacity="0.85"/>
+  <line x1="922" y1="340" x2="1634" y2="700" stroke="#8a6d3b" stroke-width="2" stroke-dasharray="10,3,2,3" opacity="0.85"/>
+  <line x1="210" y1="340" x2="1634" y2="520" stroke="#8a4b8a" stroke-width="2" stroke-dasharray="3,3" opacity="0.85"/>
+  <line x1="566" y1="340" x2="1634" y2="520" stroke="#8a4b8a" stroke-width="2" stroke-dasharray="3,3" opacity="0.85"/>
+  <line x1="210" y1="700" x2="1634" y2="340" stroke="#8a4b8a" stroke-width="2" stroke-dasharray="3,3" opacity="0.85"/>
+  <line x1="1634" y1="340" x2="1634" y2="160" stroke="#8a4b8a" stroke-width="2" stroke-dasharray="3,3" opacity="0.85"/>
+  <line x1="210" y1="700" x2="1634" y2="880" stroke="#8a4b8a" stroke-width="2" stroke-dasharray="3,3" opacity="0.85"/>
+  <line x1="922" y1="700" x2="1634" y2="700" stroke="#8a4b8a" stroke-width="2" stroke-dasharray="3,3" opacity="0.85"/>
+  <rect x="416" y="120" width="300" height="80" rx="8" fill="#eef4fb" stroke="#9db4cd" stroke-width="1.5"/>
+  <text x="428" y="144" font-size="17" font-weight="bold" fill="#1f2933">agc_msgs</text>
+  <text x="428" y="164" font-size="12" fill="#52606d">接口与消息 · ament_cmake + rosidl</text>
+  <text x="428" y="180" font-size="12" fill="#616e7c">9 条消息 / 服务定义（唯一公共接口、叶依赖）</text>
+  <rect x="60" y="300" width="300" height="80" rx="8" fill="#eef4fb" stroke="#9db4cd" stroke-width="1.5"/>
+  <text x="72" y="324" font-size="17" font-weight="bold" fill="#1f2933">agc_sim</text>
+  <text x="72" y="344" font-size="12" fill="#52606d">仿真世界与模型 · ament_cmake</text>
+  <text x="72" y="360" font-size="12" fill="#616e7c">世界 · 车/UAV/目标模型 · ros_gz 桥 · 传感器</text>
+  <text x="72" y="374" font-size="12" fill="#616e7c">链路</text>
+  <rect x="416" y="300" width="300" height="80" rx="8" fill="#eef4fb" stroke="#9db4cd" stroke-width="1.5"/>
+  <text x="428" y="324" font-size="17" font-weight="bold" fill="#1f2933">agc_perception</text>
+  <text x="428" y="344" font-size="12" fill="#52606d">感知与融合 · ament_cmake</text>
+  <text x="428" y="360" font-size="12" fill="#616e7c">odom / gt / perception / fusion / map 适配</text>
+  <rect x="772" y="300" width="300" height="80" rx="8" fill="#eef4fb" stroke="#9db4cd" stroke-width="1.5"/>
+  <text x="784" y="324" font-size="17" font-weight="bold" fill="#1f2933">agc_task</text>
+  <text x="784" y="344" font-size="12" fill="#52606d">任务与评估 · ament_cmake</text>
+  <text x="784" y="360" font-size="12" fill="#616e7c">task_manager · run_logger · 场景 · 捕获裁</text>
+  <text x="784" y="374" font-size="12" fill="#616e7c">决</text>
+  <rect x="416" y="480" width="300" height="80" rx="8" fill="#eaf5ee" stroke="#8cc0a0" stroke-width="1.5"/>
+  <text x="428" y="504" font-size="17" font-weight="bold" fill="#1f2933">agc_control</text>
+  <text x="428" y="524" font-size="12" fill="#52606d">通用控制层（共享库） · ament_cmake</text>
+  <text x="428" y="540" font-size="12" fill="#616e7c">pluginlib 轨迹生成 + LQR 插件（air/ground </text>
+  <text x="428" y="554" font-size="12" fill="#616e7c">共用）</text>
+  <rect x="60" y="660" width="300" height="80" rx="8" fill="#eef4fb" stroke="#9db4cd" stroke-width="1.5"/>
+  <text x="72" y="684" font-size="17" font-weight="bold" fill="#1f2933">agc_air</text>
+  <text x="72" y="704" font-size="12" fill="#52606d">空中链路 · ament_cmake</text>
+  <text x="72" y="720" font-size="12" fill="#616e7c">PX4 uXRCE-DDS · 起飞/悬停/LQR 跟踪</text>
+  <rect x="772" y="660" width="300" height="80" rx="8" fill="#eef4fb" stroke="#9db4cd" stroke-width="1.5"/>
+  <text x="784" y="684" font-size="17" font-weight="bold" fill="#1f2933">agc_ground</text>
+  <text x="784" y="704" font-size="12" fill="#52606d">地面导航与安全层 · ament_cmake</text>
+  <text x="784" y="720" font-size="12" fill="#616e7c">RL 主控 · Nav2 collision_monitor · 唯一执</text>
+  <text x="784" y="734" font-size="12" fill="#616e7c">行口上游</text>
+  <rect x="1128" y="660" width="300" height="80" rx="8" fill="#eef4fb" stroke="#9db4cd" stroke-width="1.5"/>
+  <text x="1140" y="684" font-size="17" font-weight="bold" fill="#1f2933">agc_rl</text>
+  <text x="1140" y="704" font-size="12" fill="#52606d">RL 平台 · ament_python</text>
+  <text x="1140" y="720" font-size="12" fill="#616e7c">obs/action 接口 · 策略加载与推理</text>
+  <rect x="1484" y="120" width="300" height="80" rx="8" fill="#f6f1f8" stroke="#c3a9cf" stroke-width="1.5"/>
+  <text x="1496" y="144" font-size="15" font-weight="bold" fill="#1f2933">PX4 SITL</text>
+  <text x="1496" y="164" font-size="12" fill="#616e7c">toolchain/ 外部依赖（pin v1.15.4）</text>
+  <rect x="1484" y="300" width="300" height="80" rx="8" fill="#f6f1f8" stroke="#c3a9cf" stroke-width="1.5"/>
+  <text x="1496" y="324" font-size="15" font-weight="bold" fill="#1f2933">uXRCE-DDS Agent</text>
+  <text x="1496" y="344" font-size="12" fill="#616e7c">MicroXRCEAgent（toolchain/bin）</text>
+  <rect x="1484" y="480" width="300" height="80" rx="8" fill="#f6f1f8" stroke="#c3a9cf" stroke-width="1.5"/>
+  <text x="1496" y="504" font-size="15" font-weight="bold" fill="#1f2933">Gazebo Harmonic</text>
+  <text x="1496" y="524" font-size="12" fill="#616e7c">gz-sim 8 + ros_gz 桥</text>
+  <rect x="1484" y="660" width="300" height="80" rx="8" fill="#f6f1f8" stroke="#c3a9cf" stroke-width="1.5"/>
+  <text x="1496" y="684" font-size="15" font-weight="bold" fill="#1f2933">Nav2 组件</text>
+  <text x="1496" y="704" font-size="12" fill="#616e7c">collision_monitor / lifecycle_manager</text>
+  <rect x="1484" y="840" width="300" height="80" rx="8" fill="#f6f1f8" stroke="#c3a9cf" stroke-width="1.5"/>
+  <text x="1496" y="864" font-size="15" font-weight="bold" fill="#1f2933">px4_msgs</text>
+  <text x="1496" y="884" font-size="12" fill="#616e7c">PX4 消息定义（内联 src/，pin a1045ec / rele</text>
+  <text x="1496" y="898" font-size="12" fill="#616e7c">ase/1.15，不改造）</text>
+  <text x="60" y="954" font-size="13" fill="#52606d">读图要点：agc_task 对其它域包是③运行组合（起进程，exec_depend），不是②库链接；agc_control 是②的唯一例外（ADR-0018）；px4_msgs 是内联第三方，不是第 9 个业务包。</text>
+</svg>
