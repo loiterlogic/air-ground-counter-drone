@@ -2,8 +2,8 @@
 # 当前交接
 
 - 任务 ID：**20261031-011-p2-1-deliverables**
-- 轮次：**round-9 完成（批次 N=4 已用 3，余 1 / K=4）**
-- 状态：**执行中**（α+ 整类修已落地：launch 派生 + YAML 删键 16 处 + C++ 默认值保留 + 守护扩容）
+- 轮次：**round-10 完成（批次 N=4 用满 / K=4）**
+- 状态：**待审查**（**里程碑达成**：克隆复验五项全过，修复已完整证明）
 - round-5 结论（Leader 复核）：三图统一 831×952、md5 一致、skyband 全 0.0000、GIF 2,661,003 B 且单位写死、崩溃已修且有回归、提交 `c3895ef` 合规。
   **两条局限记档**：① 85 m 下三图两两差异仅 0.022%–0.041%，"三阶段"靠时刻与 `timeline.txt` 区分（未伪造差异）；
   ② 三图是 Gazebo 3D 视图、**不含 P1-3 状态面板**（面板在终端，Wayland 截不了整窗）→ 该要求由**用户自录视频**承担，README 图注须写明。
@@ -85,7 +85,20 @@
 - **下一轮 round-10（T2 ≤2）**：重新克隆 → 构建 → doctor → 默认 GUI 演示；
   验证 summary/params.yaml 落克隆、git 身份指向克隆、终态解释正常、原仓库 demo 与
   w6-task-eval **零新增**。
-- **剩余待办**：完整演示视频（用户自录，路径待提供，不占轮次/T2）；round-10 后做全项验收与归档。
+- **round-10 结果（里程碑达成）**：克隆 `/tmp/agc-r10-clone`（HEAD `61374f7`，任意路径）
+  → 负向取证 `doctor` **exit=1** 报克隆自己的 install → 构建 **9 包 / 359.92 s / exit 0**
+  → `doctor` **PASS** → 默认 GUI 演示 **`TRACKING_SUCCESS`**。
+  **五项验证全过**：① 克隆自己的 `metrics/summary.json`（7916 B，49 键，`TRACKING_SUCCESS`）；
+  ② `config/params.yaml` 的 `experiments_root = /tmp/agc-r10-clone/experiments`；
+  ③ `fingerprint.git_head` = `git_head.txt` = 克隆 HEAD `61374f77…`；
+  ④ `terminal_explanation.txt` 正常读 summary/阈值/终态（**"未取得本轮 summary" 0 次**）；
+  ⑤ 主仓 `demo` **51→51**、`w6-task-eval` **1102→1102** 零新增。残留进程 **0**。
+  **偏离**：`toolchain/` 软链借用主仓 → 证明的是"写盘根与 Git 身份跟随克隆"，
+  **不是**"新机器 10 分钟可跑"（陌生人仍须按 `toolchain/README` 自建 PX4）。
+  证据 `experiments/p2-1/round-10/`；报告 [round-10](task/20261031-011-p2-1-deliverables/round-10/report.md#p2-1-r10-report)
+- **剩余待办**：完整演示视频（用户自录，路径待提供，不占轮次/T2）；**等 Leader 审查后**做全项验收与归档
+  （Worker 不自行归档）。
+
 - **停止条件**：round-10 后克隆仍不能"summary 落克隆 + 读数正常" → 判不可达成，停止交台账。
 - 偏离：`toolchain/` 用符号链接借用主仓（真实陌生人须自建，成本另计）。
 - 上一任务（已结档）：[20261030-010 P1-4 baseline closure](archive/20261030-010-p1-4-baseline-closure/round-3/review.md#p1-4-baseline-final-review)，结论 **PASS_WITH_NOTE**；P1-4 缺口已在 README「已知边界」登记。
