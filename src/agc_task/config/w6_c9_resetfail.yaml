@@ -32,8 +32,6 @@ scenario_reset:
 
 run_logger:
   ros__parameters:
-    experiments_root: "/home/chen/AGC/experiments"
-    git_root: "/home/chen/AGC"
     campaign: "w6-task-eval"
     scenario: "c9-resetfail"
     seed: 0

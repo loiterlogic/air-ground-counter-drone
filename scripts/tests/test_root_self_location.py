@@ -25,6 +25,24 @@
   3. **历史/开发工具**（`scripts/research/**`、`scripts/archive/**`、`docs/**`、`.coordination/**`）：
      不在交付/验证路径上，忠实登记为"不可移植"，不在本单范围。
 
+## round-9 扩展（裁定 α+ 整类修，2026-10-31）
+
+round-8 克隆实测暴露：**C++ `declare_parameter` 默认值**与 **YAML 字面量**同样在运行期决定
+写盘位置（`run_logger` 的 `experiments_root` / `git_root`），只修 Python/launch 不够。
+故守护范围扩到三类来源：
+
+| 来源 | 现状 | 守护 |
+|---|---|---|
+| Python / shell | 自定位 | 不得出现字面量（注释除外） |
+| **YAML `src/**/config/*.yaml`** | **已删键**（16 处） | 不得再出现绝对路径字面量 |
+| **C++ `declare_parameter` 默认值** | **保留**（契约式缺省） | 必须**仍在**（见下） |
+
+**为什么 C++ 默认值要"保留"而不是删**：YAML 删键后，`w6` 之外的独立启动
+（`m0_skeleton` / 研究 runner / 无 `agc_root` 的入口）仍会落到 C++ 默认值。
+若删 YAML 又删 C++ 默认值，等于把"写回主仓"的脚枪留在这些入口 —— 那是**更坏**的结局。
+正确做法：**C++ 默认值作为契约式缺省保留**，由**交付 launch 统一覆盖**；
+守护测试同时断言"默认值仍在" + "交付 launch 已覆盖"。
+
 ## 断言
 
 1. 交付入口 `run_demo.sh` 的 `ROOT=` 必须是自定位（`BASH_SOURCE`），不得是字面量；
@@ -57,6 +75,11 @@ ALLOWED = {
         '同上：`agc_root` 的 launch 默认值声明 + 两处报错提示文字（不参与路径解析）'),
     'scripts/toolchain_root_check.py': (
         '工具本身要**校验**这个默认值，故必须知道该字面量'),
+    'src/agc_task/src/run_logger.cpp': (
+        '**契约式缺省**：`experiments_root` / `git_root` 的 `declare_parameter` 默认值。'
+        'round-9 已删 YAML 字面量，若再删这里，`m0_skeleton` / 研究 runner 等不经交付 launch 的'
+        '入口会失去缺省；由 `w6.launch.py` 在交付路径统一覆盖。守护见 '
+        '`test_cpp_defaults_are_preserved`'),
 }
 
 # 必须自定位的文件（运行期解析类）
@@ -133,6 +156,56 @@ def test_allowed_entries_have_reason():
     for rel, reason in ALLOWED.items():
         assert reason and len(reason.strip()) >= 8, '白名单 %s 缺理由' % rel
         assert os.path.isfile(os.path.join(ROOT, rel)), '白名单文件不存在：%s' % rel
+
+
+def test_yaml_configs_have_no_absolute_root():
+    """`src/**/config/*.yaml` 里不得再有绝对路径字面量（round-9 已删 16 处）。
+
+    YAML 字面量会在**运行期**决定写盘位置（round-8 实测：克隆 run 的 summary 写回原仓库），
+    且它比 C++ 默认值更"隐蔽"——launch 不显式传参时它就生效。
+    """
+    config_dir = os.path.join(ROOT, 'src', 'agc_task', 'config')
+    offenders = []
+    for name in sorted(os.listdir(config_dir)):
+        if not name.endswith('.yaml'):
+            continue
+        with open(os.path.join(config_dir, name), encoding='utf-8') as f:
+            text = f.read()
+        if HARD in text:
+            offenders.append(name)
+    assert not offenders, (
+        'YAML 里仍有绝对路径字面量 %r —— 运行期会写回该路径（round-9 已清理，勿回退）'
+        % offenders)
+
+
+def test_cpp_defaults_are_preserved():
+    """C++ 的 `experiments_root` / `git_root` 默认声明**必须仍在**（契约式缺省）。
+
+    这是**反向**守护：round-9 删了 YAML 键，若有人"顺手"把 C++ 默认值也删了，
+    `m0_skeleton` / 研究 runner 等**不经交付 launch** 的入口会失去缺省 → 行为变成未定义。
+    """
+    src = _read('src/agc_task/src/run_logger.cpp')
+    assert 'declare_parameter<std::string>("experiments_root"' in src, (
+        'run_logger.cpp 的 experiments_root 默认声明被删除 —— 它是契约式缺省，不得删')
+    assert 'declare_parameter<std::string>("git_root"' in src, (
+        'run_logger.cpp 的 git_root 默认声明被删除 —— 它是契约式缺省，不得删')
+    # 且默认值必须是那个字面量（与 air_bringup 的 agc_root 同源）
+    assert HARD + '/experiments' in src, 'experiments_root 默认值被改成了别的路径'
+    assert '"git_root", "%s"' % HARD in src or '"git_root", "' + HARD + '"' in src, \
+        'git_root 默认值被改成了别的路径'
+
+
+def test_delivery_launch_overrides_both_keys():
+    """交付 launch（`w6.launch.py`）必须**显式覆盖**两个键（否则 C++ 默认值生效 → 写回主仓）。"""
+    src = _read('src/agc_task/launch/w6.launch.py')
+    assert "'experiments_root'" in src, (
+        'w6.launch.py 未显式传 experiments_root —— 克隆跑会把评测产物写回主仓')
+    assert "'git_root'" in src, (
+        'w6.launch.py 未显式传 git_root —— 克隆跑的 summary 里 git 身份仍读主仓')
+    # 且值必须由 agc_root 派生，而不是另一个字面量
+    assert "os.path.join(_agc_root, 'experiments')" in src, (
+        'experiments_root 不是由 agc_root 派生（可能又写成了字面量）')
+    assert "'git_root': _agc_root" in src, 'git_root 不是由 agc_root 派生'
 
 
 def test_doctor_reports_clone_path_not_hardcoded():

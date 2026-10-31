@@ -2,8 +2,8 @@
 # 当前交接
 
 - 任务 ID：**20261031-011-p2-1-deliverables**
-- 轮次：**round-8 完成（新批次 N=4 已用 2，余 2 / K=4）**
-- 状态：**执行中**（**停下报告**：克隆实测路径自定位成立，但暴露 `run_logger` 同类缺陷，待裁定 α/β/γ/δ）
+- 轮次：**round-9 完成（批次 N=4 已用 3，余 1 / K=4）**
+- 状态：**执行中**（α+ 整类修已落地：launch 派生 + YAML 删键 16 处 + C++ 默认值保留 + 守护扩容）
 - round-5 结论（Leader 复核）：三图统一 831×952、md5 一致、skyband 全 0.0000、GIF 2,661,003 B 且单位写死、崩溃已修且有回归、提交 `c3895ef` 合规。
   **两条局限记档**：① 85 m 下三图两两差异仅 0.022%–0.041%，"三阶段"靠时刻与 `timeline.txt` 区分（未伪造差异）；
   ② 三图是 Gazebo 3D 视图、**不含 P1-3 状态面板**（面板在终端，Wayland 截不了整窗）→ 该要求由**用户自录视频**承担，README 图注须写明。
@@ -67,15 +67,29 @@
   硬编码，`w6.launch.py` 从未设置该参数）；原仓库 `w6-task-eval/…-121023-3528/` 被克隆 run 写入（**未删除**）。
   **这是我 round-7 分类的误判**（只查了 Python/launch 层，漏了 C++ `declare_parameter` 默认值）。
   报告：[round-8](task/20261031-011-p2-1-deliverables/round-8/report.md#p2-1-r8-report)
-- **⚠ 待裁定（round-8 §2.4）**：α（`w6.launch.py` 传 `experiments_root`，**白名单内 1 处**，建议）/
-  β（改 `run_logger.cpp` 默认值，需扩白名单 + 重编）/ γ（两者）/ δ（不改，不可接受）。
-  偏离：`toolchain/` 用符号链接借用主仓（真实陌生人须自建，成本另计）。
-- **剩余待办**：完整演示视频（用户自录，路径待提供，不占轮次/T2）。
-- **下一轮**：round-7 = A+D 落地 + `doctor` 误报修复 + 归因分类表（**T2 0**）；round-8 = 克隆实测（**T2 ≤2**）；
-  round-9 = 用户视频接入 + 判据全勾 + 结档准备（**T2 0**，等用户文件）。
-  **停止条件**：round-7/8 两轮内克隆仍不能"`doctor` 真实 + 跑到终态" → 判不可达成，停止交台账。
+- **round-8 裁定（α+）**：交付 launch 统一派生 `experiments_root=<agc_root>/experiments` 与 `git_root=<agc_root>`；
+  清理相关 YAML 绝对字面量；**保留 C++ 默认声明**作为独立/研究入口缺省；回归守护扩至 C++/YAML 并做反向对照。
+  误写主仓的单个 run 目录经逐文件 md5 备份核对后授权迁移，不碰主仓同日其它 run。
+- **当前工作**：round-9 = α+ 落地 + 整类清扫 + 污染目录迁移（**T2 0**）；round-10 = 重新克隆复验
+  （**T2 ≤2**，累计上限 15，已用 11），须同时验证 summary/实验根/Git 身份全在克隆、终态解释正常、主仓零新增。
+- **round-9 结果（α+ 整类修）**：`w6.launch.py` 显式给 `run_logger` 传
+  `experiments_root=<agc_root>/experiments` 与 `git_root=<agc_root>`（**`git_root` 未漏**）；
+  **YAML 删键 16 处**（8 文件 × 两键，删键而非占位）；**C++ 默认值保留**（契约式缺省，
+  `m0_skeleton`/研究 runner 仍落它）；守护扩容 **10 → 13 用例**（YAML / C++ 默认值反向守护 /
+  交付 launch 覆盖），**三条反向对照全部生效**。
+  一处误报已修（`test_w6_fix_does_not_touch_task_params` 的纯文本守卫撞上我注释里的
+  `declare_parameter`）→ **保留守卫、改注释**，未删真正参数注入。
+  污染目录已迁移：13 文件 → `experiments/p2-1/round-8/relocated-eval-…/`（md5 全一致）→ 删原目录；
+  **11:44/11:46 合法 run 未触碰**。回归 **279 passed** / 冒烟 5/5 / 断链 0。
+  报告：[round-9](task/20261031-011-p2-1-deliverables/round-9/report.md#p2-1-r9-report)
+- **下一轮 round-10（T2 ≤2）**：重新克隆 → 构建 → doctor → 默认 GUI 演示；
+  验证 summary/params.yaml 落克隆、git 身份指向克隆、终态解释正常、原仓库 demo 与
+  w6-task-eval **零新增**。
+- **剩余待办**：完整演示视频（用户自录，路径待提供，不占轮次/T2）；round-10 后做全项验收与归档。
+- **停止条件**：round-10 后克隆仍不能"summary 落克隆 + 读数正常" → 判不可达成，停止交台账。
+- 偏离：`toolchain/` 用符号链接借用主仓（真实陌生人须自建，成本另计）。
 - 上一任务（已结档）：[20261030-010 P1-4 baseline closure](archive/20261030-010-p1-4-baseline-closure/round-3/review.md#p1-4-baseline-final-review)，结论 **PASS_WITH_NOTE**；P1-4 缺口已在 README「已知边界」登记。
-- **基线事实**：HEAD `32c35f2`；P1-1…P1-4 全部产物已入库（`07eda37`）。
+- **基线事实**：HEAD `4796262`；P1-1…P1-4 全部产物已入库（`07eda37`）。
 - **演示口径**：`full + yard + s04 + observe_yaw_mode=target`；target 是显式 oracle 指向臂，不等于真实视觉识别。
 
 **迁移 workstream 暂停，W8 不再接单**（[PAUSED](../docs/plan/PAUSED.md#paused)）。

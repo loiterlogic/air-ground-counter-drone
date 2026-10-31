@@ -437,6 +437,18 @@ def _compose(context, *args, **kwargs):
         # W7-b（T1/E1）：安全层开关（字符串承载→节点内解析）
         if exe == 'run_logger':
             extra = extra + [{'shield_layer_enabled': LaunchConfiguration('shield')}]
+            # P2-1 round-9（裁定 α+，2026-10-31）：**写盘根显式派生自 agc_root**。
+            # 原来这两个键在 `w6_base.yaml` 里写死 `/home/chen/AGC/...`，而 `run_logger.cpp` 的
+            # C++ 节点默认声明也是同一字面量 → 克隆到别处跑时评测产物**写回原仓库**
+            # （round-8 实测：summary 落 /home/chen/AGC/experiments/w6-task-eval/，克隆侧
+            #  terminal_explanation 报"未取得本轮 summary"）。
+            # launch 参数在 yaml 之后生效 → 这里的值**覆盖** yaml 与 C++ 默认值。
+            # `git_root` 也必须传：漏了它，summary 里的 git 身份仍读主仓。
+            _agc_root = LaunchConfiguration('agc_root').perform(context)
+            extra = extra + [{
+                'experiments_root': os.path.join(_agc_root, 'experiments'),
+                'git_root': _agc_root,
+            }]
             # P1-4（ADR-0103）：感知路径 + 视觉模型标识——**新增键**，既有字段语义不变。
             #   summary.json 据此可区分 truth / vision 产物（ADR-0103「证据必须可区分」）。
             _vm = LaunchConfiguration('vision_model_id').perform(context)
