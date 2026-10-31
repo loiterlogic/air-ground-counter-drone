@@ -41,6 +41,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -48,6 +49,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
 import gui_capture   # noqa: E402
+import skyband as skyband_mod   # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 TERMINALS = ('TRACKING_SUCCESS', 'INTERCEPT_CONFIRMED', 'MISSION_FAILED', 'ABORTED',
@@ -165,6 +167,114 @@ def pick_frames(frames, timeline):
             'notes': notes}
 
 
+def _skyband(path):
+    """对一帧算 skyband（预登记口径，见 skyband.py）；失败返回 None。"""
+    try:
+        import skyband as sb
+        return sb.measure(path)
+    except Exception as exc:      # noqa: BLE001
+        print('[capture] skyband 计算失败 %s：%s' % (path, exc), flush=True)
+        return None
+
+
+def gui_services():
+    """只读：列出当前 `/gui/*` 服务。返回 (全部服务列表, /gui/* 子列表, 原始输出)。"""
+    gz = shutil.which('gz')
+    if not gz:
+        return [], [], '找不到 gz 命令'
+    try:
+        proc = subprocess.run([gz, 'service', '-l'], capture_output=True, text=True,
+                              timeout=8)
+    except subprocess.TimeoutExpired:
+        return [], [], 'gz service -l 超时'
+    lines = [ln.strip() for ln in (proc.stdout or '').splitlines() if ln.strip()]
+    gui = [ln for ln in lines if ln.startswith('/gui/')]
+    return lines, gui, ((proc.stdout or '') + (proc.stderr or '')).strip()
+
+
+def probe_topdown(out_dir):
+    """**只读探针**：查 `/gui/*`，若 `/gui/move_to/pose` 在则强制正俯视位姿并取 2 帧。
+
+    时机要求：**终态之后、进程回收之前**（回收后服务消失，探针必失败）。
+    返回 dict（写进 manifest），不抛异常（探针失败不得掩盖主结论）。
+    """
+    import json as _json
+    result = {'at': time.time(), 'attempted': True}
+    all_svcs, gui_svcs, raw = gui_services()
+    result['service_count'] = len(all_svcs)
+    result['gui_services'] = gui_svcs
+    result['gui_service_raw_tail'] = '\n'.join(raw.splitlines()[-30:])
+    has_move = '/gui/move_to/pose' in all_svcs
+
+    if not has_move:
+        result['move_to_pose'] = {
+            'present': False,
+            'note': ('`/gui/move_to/pose` 不在服务清单里 → "预设俯视能否被强制"'
+                     '本机**无法判别**（不是"不能"，是没这个入口）'),
+        }
+        return result
+
+    gz = shutil.which('gz')
+    req = 'pose { position { x: 0 y: 0 z: 118 } orientation { x: 0 y: 0.7071068 w: 0.7071068 } }'
+    # 注意：gz.msgs.Pose 的四元数 (x,y,z,w)；pitch=+π/2 → (0, sin(45°)=0.7071068, 0, 0.7071068)
+    try:
+        proc = subprocess.run(
+            [gz, 'service', '-s', '/gui/move_to/pose',
+             '--reqtype', 'gz.msgs.Pose', '--reptype', 'gz.msgs.Boolean',
+             '--timeout', '8000', '--req', req],
+            capture_output=True, text=True, timeout=12)
+        call_out = ((proc.stdout or '') + (proc.stderr or '')).strip()
+        called = proc.returncode == 0
+    except subprocess.TimeoutExpired:
+        call_out, called = 'gz service 调用超时', False
+    result['move_to_pose'] = {'present': True, 'called': called, 'response': call_out[:400],
+                              'request': req}
+    if not called:
+        return result
+
+    # 等 3 s 让视图切换生效，再取 2 帧
+    time.sleep(3.0)
+    frames = []
+    for i in range(2):
+        path = os.path.join(out_dir, 'probe-topdown-%d.png' % i)
+        ok, detail = gui_capture.snap(path, timeout_ms=8000)
+        if ok:
+            sb = _skyband(path)
+            frames.append({'path': path, 'ok': True, 'detail': detail, 'skyband': sb})
+        else:
+            frames.append({'path': path, 'ok': False, 'detail': detail})
+        time.sleep(0.6)
+    result['move_to_pose']['frames'] = frames
+    values = [f['skyband']['skyband'] for f in frames
+              if f.get('ok') and f.get('skyband')]
+    result['move_to_pose']['skyband_after'] = values
+    if values:
+        result['move_to_pose']['forced_topdown'] = min(values) <= 0.05
+    return result
+
+
+def _current_timeline():
+    """找**本次运行**的 demo 目录并解析 timeline（取 mtime 最新的那个）。"""
+    demo_root = os.path.join(ROOT, 'experiments', 'demo')
+    try:
+        names = sorted(os.listdir(demo_root))
+    except OSError:
+        return []
+    for name in reversed(names):
+        path = os.path.join(demo_root, name, 'timeline.txt')
+        if os.path.isfile(path):
+            return parse_timeline(path)
+    return []
+
+
+def _has_terminal(timeline):
+    """时间线里是否已出现终态行（终态 = 回收前的探针窗口开始）。"""
+    for _t, text in timeline:
+        if _state_of(text) in TERMINALS:
+            return True
+    return False
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     ap = argparse.ArgumentParser(add_help=True, description='一次 GUI 运行取三图 + 连续帧')
@@ -176,6 +286,13 @@ def main(argv=None):
                     help='取帧总时长上限（防跑飞）')
     ap.add_argument('--start-delay', type=float, default=0.0,
                     help='启动后先等这么久再开始轮询服务（默认 0）')
+    ap.add_argument('--no-gui-config', action='store_true',
+                    help='**自然运行**：不设 AGC_GUI_CONFIG，让 gz sim 用它自己的配置'
+                         '（round-3 口径；本机 ~/.gz/sim/8/gui.config 恰好含 Screenshot 插件，'
+                         '这是**机器本地依赖**，不是可复现保证）')
+    ap.add_argument('--probe-topdown', action='store_true',
+                    help='终态后、回收前做只读探针：记 /gui/* 清单，若 /gui/move_to/pose'
+                         ' 在则强制正俯视并取 2 帧测 skyband')
     args = ap.parse_args(argv)
 
     out = os.path.abspath(args.out)
@@ -188,17 +305,35 @@ def main(argv=None):
         print('[capture] 工作区未构建：缺 %s' % world, file=sys.stderr)
         return 2
 
-    # 1. 派生 gui-config（含 Screenshot 插件）
-    cfg = os.path.join(out, 'gui.config')
-    ok, detail = gui_capture.derive_config(world, cfg)
-    if not ok:
-        print('[capture] gui-config 派生失败：%s' % detail, file=sys.stderr)
-        return 2
-    print('[capture] gui-config：%s（%s）' % (cfg, detail), flush=True)
+    # 1. gui-config：自然运行 vs 派生配置
+    if args.no_gui_config:
+        cfg = None
+        print('[capture] **自然运行**：不设 AGC_GUI_CONFIG，gz sim 用其自身配置', flush=True)
+        user_cfg = os.path.expanduser('~/.gz/sim/8/gui.config')
+        if os.path.isfile(user_cfg):
+            has_ss = 'filename="Screenshot"' in open(user_cfg, encoding='utf-8',
+                                                    errors='replace').read()
+            print('[capture]   本机用户配置 %s 存在，含 Screenshot 插件：%s'
+                  % (user_cfg, '是' if has_ss else '否'), flush=True)
+            print('[capture]   ⚠ 能取帧依赖该配置恰好含 Screenshot——这是**机器本地依赖**，'
+                  '不是可复现保证（干净机器需派生配置）', flush=True)
+        else:
+            print('[capture]   ⚠ 本机无用户配置 → 自然运行下 Screenshot 服务可能不出现',
+                  flush=True)
+    else:
+        cfg = os.path.join(out, 'gui.config')
+        ok, detail = gui_capture.derive_config(world, cfg)
+        if not ok:
+            print('[capture] gui-config 派生失败：%s' % detail, file=sys.stderr)
+            return 2
+        print('[capture] gui-config：%s（%s）' % (cfg, detail), flush=True)
 
     # 2. 起运行（子进程；进程组回收仍归 run_demo.sh）
     env = dict(os.environ)
-    env['AGC_GUI_CONFIG'] = cfg
+    if cfg:
+        env['AGC_GUI_CONFIG'] = cfg
+    else:
+        env.pop('AGC_GUI_CONFIG', None)
     log_path = os.path.join(out, 'run.log')
     with open(log_path, 'w', encoding='utf-8') as log:
         proc = subprocess.Popen(
@@ -234,6 +369,8 @@ def main(argv=None):
 
         # 4. 连续取帧（运行期间）
         frames = []
+        first_skyband = None
+        probe_result = None
         i = 0
         while True:
             if proc.poll() is not None:
@@ -251,7 +388,43 @@ def main(argv=None):
                     os.remove(path)
                 else:
                     frames.append((time.monotonic() - t0, path))
+                    if first_skyband is None:
+                        # 预登记：**取到的第一帧即算 skyband**（不挑好看的帧）
+                        first_skyband = _skyband(path)
+                        if first_skyband:
+                            print('[capture] 首帧 skyband=%.4f → %s（预登记判定）'
+                                  % (first_skyband['skyband'], first_skyband['verdict']),
+                                  flush=True)
+                        # 模糊区间（0.10–0.20）：等 ≥2 s 补 1 帧复核，两帧同侧才下结论
+                        if first_skyband and first_skyband['verdict'] == 'ambiguous':
+                            print('[capture] 首帧落在模糊区间，等 %.1f s 补 1 帧复核'
+                                  % skyband_mod.AMBIGUOUS_RECHECK_S, flush=True)
+                            time.sleep(skyband_mod.AMBIGUOUS_RECHECK_S)
+                            recheck = os.path.join(out, 'skyband-recheck.png')
+                            ok2, _d2 = gui_capture.snap(recheck, timeout_ms=8000)
+                            if ok2 and _frame_has_content(recheck):
+                                sb2 = _skyband(recheck)
+                                first_skyband['recheck'] = sb2
+                                if sb2:
+                                    verdict = skyband_mod.classify_pair(
+                                        first_skyband['skyband'], sb2['skyband'])
+                                    first_skyband['pair_verdict'] = verdict
+                                    print('[capture] 复核帧 skyband=%.4f；两帧联合判定 → %s'
+                                          % (sb2['skyband'], verdict), flush=True)
+                            else:
+                                first_skyband['recheck'] = {
+                                    'error': '复核帧取帧失败或为纯色（%s）' % (_d2,)}
             i += 1
+
+            # 终态探针：必须在**回收之前**。start.py 的 _phase_collect 先等 3 s 再回收，
+            # 窗口只有约 10 s → 用 timeline.txt 出现终态行即触发（不等循环结束）。
+            if args.probe_topdown and probe_result is None:
+                tl = _current_timeline()
+                if tl and _has_terminal(tl):
+                    print('[capture] 检测到终态（timeline），立即执行只读探针'
+                          '（回收前窗口）', flush=True)
+                    probe_result = probe_topdown(out)
+
             # 取帧本身耗时，用剩余时间凑间隔
             time.sleep(max(0.0, args.interval - 0.2))
         proc.wait(timeout=120)
@@ -277,7 +450,7 @@ def main(argv=None):
     picked = pick_frames(frames, timeline)
 
     manifest = {
-        'schema': 'p2-1-capture/1',
+        'schema': 'p2-1-capture/2',
         'out': out,
         'demo_dir': demo_dir,
         'frame_count': len(frames),
@@ -285,6 +458,12 @@ def main(argv=None):
         'picked': {},
         'notes': picked['notes'],
         'run_exit': proc.returncode,
+        'natural_run': bool(args.no_gui_config),
+        'natural_run_note': ('不设 AGC_GUI_CONFIG，gz sim 用其自身配置；本机能取帧依赖'
+                            ' ~/.gz/sim/8/gui.config 恰好含 Screenshot 插件（**机器本地依赖**，'
+                            '不是可复现保证）') if args.no_gui_config else None,
+        'first_frame_skyband': first_skyband,
+        'probe_topdown': probe_result,
     }
     ok_all = True
     for key in ('start', 'tracking', 'terminal'):
@@ -294,7 +473,6 @@ def main(argv=None):
             manifest['picked'][key] = None
             continue
         dst = os.path.join(out, 'demo-%s.png' % key)
-        import shutil
         shutil.copyfile(src, dst)
         manifest['picked'][key] = {'src': src, 'dst': dst,
                                    'bytes': os.path.getsize(dst)}
@@ -306,6 +484,20 @@ def main(argv=None):
         print('[capture] %-9s %s' % (key, item['dst'] if item else '缺（未取到对应帧）'))
     for note in picked['notes']:
         print('[capture] 备注：%s' % note)
+    if first_skyband:
+        print('[capture] 首帧 skyband=%.4f → %s（预登记：≤0.05 正俯视 / ≥0.15 斜视）'
+              % (first_skyband['skyband'], first_skyband['verdict']))
+    else:
+        print('[capture] 首帧 skyband：**未算出**（帧不足或读图失败）')
+    if probe_result:
+        mv = probe_result.get('move_to_pose') or {}
+        print('[capture] 探针：/gui/* 共 %d 条；/gui/move_to/pose 存在=%s'
+              % (len(probe_result.get('gui_services') or []), mv.get('present')))
+        if mv.get('present') and mv.get('skyband_after'):
+            print('[capture] 强制俯视后 skyband=%r → 生效=%s'
+                  % (mv['skyband_after'], mv.get('forced_topdown')))
+    elif args.probe_topdown:
+        print('[capture] 探针：**未执行**（未检测到终态行或运行提前结束）')
 
     return 0 if ok_all else 1
 
