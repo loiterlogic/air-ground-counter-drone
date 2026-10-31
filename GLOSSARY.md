@@ -79,11 +79,11 @@ _Avoid_: 出生间距（旧 `2.4 m` 口径）
 _Avoid_: 电磁武器、EMI 设备
 
 **Runbook（步骤文档）**:
-**历史**：迁移期唯一指导执行重构流程的入口文档，已归档为 [`docs/archive/ROS2迁移步骤.md`](./docs/archive/ROS2迁移步骤.md#top)；只编排"当时做什么、如何验收"，不承载约束。当前执行入口是 [项目完成路线](./docs/plan/README.md#plan-index)。
+**历史**：迁移期唯一指导执行重构流程的入口文档，已归档为 [`docs/archive/ROS2迁移步骤.md`](./docs/archive/ROS2迁移步骤.md#top)；只编排"当时做什么、如何验收"，不承载约束。当前执行入口是 [当前方向](./docs/plan/README.md#plan-index)。
 _Avoid_: 执行入口、执行口（迁移已暂停，Runbook 不再是任一任务的入口）
 
 **workstream**:
-本项目的独立可验收工作单元，每个 workstream 对应一份 spec/tasks/checklist 三件套；迁移期规格已随 Trae 退役归档到 [`docs/archive/specs/`](./docs/archive/specs/README.md#specs-index)，现由 [项目完成路线](./docs/plan/README.md#plan-index) 的 P0–P2 阶段组织收尾。
+本项目的独立可验收工作单元，每个 workstream 对应一份 spec/tasks/checklist 三件套；迁移期规格已随 Trae 退役归档到 [`docs/archive/specs/`](./docs/archive/specs/README.md#specs-index)，现由 [当前方向](./docs/plan/README.md#plan-index) 索引候选工作，历史批次已结档归档。
 _Avoid_: 阶段、phase、P0–P6（P0–P2 是**收尾阶段**，不是 workstream）
 
 **只读旧树边界（Read-Only Archive Boundary）**:
