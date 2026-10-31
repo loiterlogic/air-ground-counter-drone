@@ -2,8 +2,8 @@
 # 当前交接
 
 - 任务 ID：**20261031-011-p2-1-deliverables**
-- 轮次：**round-7（**新批次 N=4 / K=4**；上一批次 N=6 已用满并审查完毕）**
-- 状态：**执行中**（round-7 完成：A + D 落地；`doctor` 误报已修并**实测取证**——`/tmp` 克隆 `doctor` 由"误报 PASS 14/14"变为 **exit=1 + 报克隆自己的路径**）
+- 轮次：**round-8 完成（新批次 N=4 已用 2，余 2 / K=4）**
+- 状态：**执行中**（**停下报告**：克隆实测路径自定位成立，但暴露 `run_logger` 同类缺陷，待裁定 α/β/γ/δ）
 - round-5 结论（Leader 复核）：三图统一 831×952、md5 一致、skyband 全 0.0000、GIF 2,661,003 B 且单位写死、崩溃已修且有回归、提交 `c3895ef` 合规。
   **两条局限记档**：① 85 m 下三图两两差异仅 0.022%–0.041%，"三阶段"靠时刻与 `timeline.txt` 区分（未伪造差异）；
   ② 三图是 Gazebo 3D 视图、**不含 P1-3 状态面板**（面板在终端，Wayland 截不了整窗）→ 该要求由**用户自录视频**承担，README 图注须写明。
@@ -59,6 +59,17 @@
   → 忠实登记为"开发/历史工具不可移植"。
 - **口径更正**：Leader 转述"`scripts/tests/**` 21 个文件"是**含 `.pyc` 的宽口径**；
   实际 `*.py` **18 个**，其中 **17 个本就自定位**，仅 **1 个**需修。
+- **round-8 结果**：克隆到 `/tmp/agc-r8-clone`（任意路径）→ 构建 **9 包 / 308.25 s / exit 0**
+  → `doctor` **PASS**（报 `/tmp/agc-r8-clone/install/...`）→ **`TRACKING_SUCCESS`**，
+  产物落**克隆自己的** `experiments/demo/`，原仓库 `experiments/demo/` **未新增**（51→51）。
+  **负向取证**：构建前 `doctor` **exit=1**，报 `缺少 /tmp/agc-r8-clone/install/setup.bash`。
+  **但暴露缺陷**：`run_logger` 把 summary 写到**原仓库**（`run_logger.cpp:85` 的 `experiments_root`
+  硬编码，`w6.launch.py` 从未设置该参数）；原仓库 `w6-task-eval/…-121023-3528/` 被克隆 run 写入（**未删除**）。
+  **这是我 round-7 分类的误判**（只查了 Python/launch 层，漏了 C++ `declare_parameter` 默认值）。
+  报告：[round-8](task/20261031-011-p2-1-deliverables/round-8/report.md#p2-1-r8-report)
+- **⚠ 待裁定（round-8 §2.4）**：α（`w6.launch.py` 传 `experiments_root`，**白名单内 1 处**，建议）/
+  β（改 `run_logger.cpp` 默认值，需扩白名单 + 重编）/ γ（两者）/ δ（不改，不可接受）。
+  偏离：`toolchain/` 用符号链接借用主仓（真实陌生人须自建，成本另计）。
 - **剩余待办**：完整演示视频（用户自录，路径待提供，不占轮次/T2）。
 - **下一轮**：round-7 = A+D 落地 + `doctor` 误报修复 + 归因分类表（**T2 0**）；round-8 = 克隆实测（**T2 ≤2**）；
   round-9 = 用户视频接入 + 判据全勾 + 结档准备（**T2 0**，等用户文件）。
