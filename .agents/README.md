@@ -19,8 +19,11 @@
 | [`grilling`](./skills/grilling/SKILL.md) | 逐轮深度访谈（设计树） | 用户要求压力测试一个计划/想法 |
 | [`grill-me`](./skills/grill-me/SKILL.md) | 只访谈、不落文档 | 用户说 "grill me" |
 | [`grill-with-docs`](./skills/grill-with-docs/SKILL.md) | 访谈并同步写 ADR / 术语 | 用户要边访谈边记录决定 |
+| [`map-design`](./skills/map-design/SKILL.md) | 设计/修改场景地图：先设计后动手、几何闸门、材质与派生链、GUI 取证 | 新增或重做地图、加障碍、调布局材质、判断候选布局能否过核查 |
 
 `domain-modeling` 另带两个格式资源：[ADR-FORMAT.md](./skills/domain-modeling/ADR-FORMAT.md)（本仓库实际的 `## Status` 节写法、`scripts/adr_index.py` 的用法）、[GLOSSARY-FORMAT.md](./skills/domain-modeling/GLOSSARY-FORMAT.md)（单上下文术语表写法）。
+
+`map-design` 按需加载四个资源：[GATES.md](./skills/map-design/GATES.md)（几何可行性闸门的口径与公式）、[SCHEMA-AND-DERIVATION.md](./skills/map-design/SCHEMA-AND-DERIVATION.md)（yaml schema、材质、五条派生链）、[EVIDENCE.md](./skills/map-design/EVIDENCE.md)（取证、GUI、运行与内存陷阱）、[references/MAP_DESIGN_PLAYBOOK.md](./skills/map-design/references/MAP_DESIGN_PLAYBOOK.md)（**历史快照**：2026-10-31 从根目录迁入的原 Playbook，只用于追溯"为什么现在是这样"，其中数字会漂移，现行值以 `tests/w6_geometry_check.py` 为准）。
 
 ## 技能格式（Harness 要求）
 
@@ -41,3 +44,4 @@
 - **事实自查**：技能里要求"查事实"时，自己读文件/跑只读命令，不把可查的事实推给用户。
 - **不强制访谈**：`grilling` 系列只在用户明确要求设计访谈时触发；普通实现任务不应被访谈或"最终再确认"阻塞。
 - **技能不做真源**：技能里不复制约束、不复述规格；指回 [契约真源](../docs/ROS2迁移交接文档.md#hard-constraints)、[ADR 索引](../docs/adr/README.md#adr-index)、[项目完成路线](../docs/plan/README.md#plan-index)。
+- **技能里不钉死会漂移的事实**：易变的实测值（实体数、覆盖率、净空、内存占用）用"跑哪个命令读哪个产物"表达，历史数值只放**明确标注为历史快照**的资源里，且不再冒充现行约束。

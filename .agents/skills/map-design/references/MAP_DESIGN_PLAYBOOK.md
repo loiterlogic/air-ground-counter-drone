@@ -1,15 +1,29 @@
 # 地图设计与实现 · 技术流程参考（Playbook）
 
+<a id="migrated"></a>
+> **迁移说明（2026-10-31，任务 `20261031-015-map-design-skill`）**：本文件是仓库根目录
+> `MAP_DESIGN_PLAYBOOK.md` 的**内容快照**，已迁入 map-design 技能的按需资源，根目录不再保留副本。
+> 迁移时**只做两处改动**：① 相对链接前缀改为本文件所在深度（`../../../../`），目标文件不变；
+> ② 增加本段说明。**正文一字未改**，包括文中"本文暂放根目录…应迁走"的位置说明——
+> 那是迁移**之前**的状态，保留它是为了不伪造历史（[ADR-0066](../../../../docs/adr/0066-decision-applicability-and-reference-discipline.md)）。
+>
+> **它是历史快照，不是现行约束**：文中所有数字（实体数 / 覆盖率 / 净空 / 内存占用）都是
+> **当时**的实测值，会漂移；现行值一律跑 `python3 tests/w6_geometry_check.py` 读 JSON。
+> 现行流程见 [SKILL.md](../SKILL.md)，闸门口径见 [GATES.md](../GATES.md)，
+> schema 与派生链见 [SCHEMA-AND-DERIVATION.md](../SCHEMA-AND-DERIVATION.md)，
+> 取证纪律见 [EVIDENCE.md](../EVIDENCE.md)。
+> 约束仍只引用[契约真源](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。
+
 > **这是什么**：AGC 项目「场景地图」从零到当前形态的**完整技术流程**，含三轮演化的决策史、
 > 可复用的操作步骤、实测闸门数值、以及踩过的坑。**目的是被改写成技能**（`.agents/skills/<name>/SKILL.md`），
 > 不是约束、不是真源。
 >
-> **不是真源**：几何 schema 的唯一出口是 [`world_map.py`](src/agc_sim/launch/world_map.py)，
-> 派生链纪律见 [ADR-0062](docs/adr/0062-scene-geometry-single-source-and-derivation.md)，
-> 布局范式见 [ADR-0106](docs/adr/0106-work-area-100x100-and-yard-layout-paradigm.md)，
-> 进度口径见 [P1-1](docs/plan/p1-1-地图与场景资产.md)。本文**只引用不复述**约束。
+> **不是真源**：几何 schema 的唯一出口是 [`world_map.py`](../../../../src/agc_sim/launch/world_map.py)，
+> 派生链纪律见 [ADR-0062](../../../../docs/adr/0062-scene-geometry-single-source-and-derivation.md)，
+> 布局范式见 [ADR-0106](../../../../docs/adr/0106-work-area-100x100-and-yard-layout-paradigm.md)，
+> 进度口径见 [P1-1](../../../../docs/archive/completion-20261031/p1-1-地图与场景资产.md)。本文**只引用不复述**约束。
 >
-> **位置说明**：按 [目录与命名规范](docs/conventions/目录与命名规范.md#10-产物分类与生命周期)，
+> **位置说明**：按 [目录与命名规范](../../../../docs/conventions/目录与命名规范.md#10-产物分类与生命周期)，
 > 项目级可复用 Agent 资产的家是 `.agents/skills/<name>/SKILL.md`；本文暂放根目录是为了先成型，
 > **改写成技能后应迁走**，避免根目录出现第二个入口。
 
@@ -39,7 +53,7 @@
 <a id="arch"></a>
 ## 1. 一张图看懂架构
 
-几何**只有一个家**，其余全部派生（[ADR-0062](docs/adr/0062-scene-geometry-single-source-and-derivation.md)）：
+几何**只有一个家**，其余全部派生（[ADR-0062](../../../../docs/adr/0062-scene-geometry-single-source-and-derivation.md)）：
 
 ```text
 world_geometry.yaml        ← minimal（核查基线，pole 双柱，几何逐值不变）
@@ -68,7 +82,7 @@ maps/open_field.yaml       ← 能力对照 / 快跑（5 实体，故意稀疏�
 1. **改地图 = 改一份 yaml**；碰 SDF 就是错的（唯一例外：地面分层这类**非障碍**的纯视觉层）。
 2. **视觉与碰撞同源** —— 同一个 `<geometry>` 注入 collision 与 visual，禁止装饰性无碰撞块
    （否则出现"看着撞了却穿过去"的演示事故）。
-3. **每改一次真源，立刻跑核查**（[`tests/w6_geometry_check.py`](tests/w6_geometry_check.py)）。
+3. **每改一次真源，立刻跑核查**（[`tests/w6_geometry_check.py`](../../../../tests/w6_geometry_check.py)）。
 
 ---
 
@@ -143,7 +157,7 @@ maps/open_field.yaml       ← 能力对照 / 快跑（5 实体，故意稀疏�
 
 **做法**：写一个只读脚本，**复刻正式核查的口径**，对候选布局算全部闸门，迭代到全绿再写真源。
 
-复刻的口径清单（必须与 [`w6_geometry_check.py`](tests/w6_geometry_check.py) **逐项一致**，
+复刻的口径清单（必须与 [`w6_geometry_check.py`](../../../../tests/w6_geometry_check.py) **逐项一致**，
 否则你在假绿上做设计）：
 
 ```text
@@ -183,7 +197,7 @@ C7 出生净空  = 逐图元足迹距离（**不是**实体中心距离）
 ## 6. 第 3 步 · 布局范式
 
 现实工业场站的分布 = **功能分区 + 网格对齐 + 道路留白 + 尺寸长尾 + 中央留空**，
-不是均匀随机撒点（[ADR-0106](docs/adr/0106-work-area-100x100-and-yard-layout-paradigm.md)）。
+不是均匀随机撒点（[ADR-0106](../../../../docs/adr/0106-work-area-100x100-and-yard-layout-paradigm.md)）。
 
 ### 6.1 七个分区（yard，世界 ENU，作业区 [−50,50]²）
 
@@ -256,7 +270,7 @@ yard 现在 **10.89%**，上限 12% → 100×100 作业区里只剩 **111 m²** 
 <a id="schema"></a>
 ## 8. 第 5 步 · 表达同一份几何（schema）
 
-schema 的**唯一出口**是 [`world_map.py`](src/agc_sim/launch/world_map.py)。核心字段：
+schema 的**唯一出口**是 [`world_map.py`](../../../../src/agc_sim/launch/world_map.py)。核心字段：
 
 ```yaml
 map: yard
@@ -461,7 +475,7 @@ C7: car 8.67 / target 6.48 / own_uav 9.07 m    car↔target 11.85 m
 1. **空中安全层是二维静态圆盘**，半径 = 实体水平外接圆半径。
    细长实体的圆盘 ≈ 半长 → **不能用通长围墙**，必须分段（见 6.2）。
 2. **无贴图 / 无 mesh** → 材质只有标量 PBR + 纯色，出不了纹理细节。
-   再往上要贴图必须走 [ADR-0068](docs/adr/0068-third-party-asset-provenance-license-and-hash-manifest.md)
+   再往上要贴图必须走 [ADR-0068](../../../../docs/adr/0068-third-party-asset-provenance-license-and-hash-manifest.md)
    的 provenance / 许可 / 哈希登记。
 3. **地面激光是 z≈0.48 m 的单一水平面**。矮墙、悬空结构、薄片对它**不可见**，
    若加入必须在文档中如实标注"该障碍对地面激光不可见"，**不得假装能避**。
@@ -496,11 +510,11 @@ C7: car 8.67 / target 6.48 / own_uav 9.07 m    car↔target 11.85 m
 
 | # | 位置 | 漂移内容 | 实际 |
 |---|---|---|---|
-| 1 | [`world_geometry.yaml:11`](src/agc_sim/config/world_geometry.yaml) | 写 yard 是"29 实体 / 107 图元" | **36 / 186**（R5 已改，注释未跟上） |
-| 2 | [`world_geometry.yaml:13`](src/agc_sim/config/world_geometry.yaml) | 引用 `w6_composition.resolve_geometry_file` | 该函数**不存在**，实际是 `world_map.geometry_path` |
-| 3 | [`w6_geometry_check.py:8`](tests/w6_geometry_check.py) | docstring 写 `shape ∈ {box, cylinder}` | 代码用 `SHAPES`（**3 类**，含 sphere） |
-| 4 | [P1-1 文档](docs/plan/p1-1-地图与场景资产.md) C7 值 6.49 / 9.04 | 与实测 6.48 / 9.07 有 0.01–0.03 偏差 | 实测优先 |
-| 5 | [`world_bringup.launch.py:380`](src/agc_sim/launch/world_bringup.launch.py) | `plugin_dir` 算成 `install/agc_sim/share/lib`（**不存在**） | 真实插件在 `install/agc_sim/lib`；详见 [14.2](#run) |
+| 1 | [`world_geometry.yaml:11`](../../../../src/agc_sim/config/world_geometry.yaml) | 写 yard 是"29 实体 / 107 图元" | **36 / 186**（R5 已改，注释未跟上） |
+| 2 | [`world_geometry.yaml:13`](../../../../src/agc_sim/config/world_geometry.yaml) | 引用 `w6_composition.resolve_geometry_file` | 该函数**不存在**，实际是 `world_map.geometry_path` |
+| 3 | [`w6_geometry_check.py:8`](../../../../tests/w6_geometry_check.py) | docstring 写 `shape ∈ {box, cylinder}` | 代码用 `SHAPES`（**3 类**，含 sphere） |
+| 4 | [P1-1 文档](../../../../docs/archive/completion-20261031/p1-1-地图与场景资产.md) C7 值 6.49 / 9.04 | 与实测 6.48 / 9.07 有 0.01–0.03 偏差 | 实测优先 |
+| 5 | [`world_bringup.launch.py:380`](../../../../src/agc_sim/launch/world_bringup.launch.py) | `plugin_dir` 算成 `install/agc_sim/share/lib`（**不存在**） | 真实插件在 `install/agc_sim/lib`；详见 [14.2](#run) |
 
 **另有一处结构性风险（比上面 5 条严重）**：
 
@@ -547,7 +561,7 @@ ros2 launch agc_task w6.launch.py backend:=lightweight \
    做"追加"**（`[plugin_dir, ':', EnvironmentVariable(...)]`，见 380–383 行）。该变量在
    `install/setup.bash` 里**不存在**，而 launch 的 `EnvironmentVariable` 对未定义变量**抛错**
    （不像 `environ.get(..., default="")` 那样容忍）。历史脚本
-   [`run_w7_baseline.sh`](scripts/archive/run_w7_baseline.sh) 靠外部 `export` 绕过。
+   [`run_w7_baseline.sh`](../../../../scripts/archive/run_w7_baseline.sh) 靠外部 `export` 绕过。
 2. **`plugin_dir` 本身算错了**（实测确认）。`world_bringup.launch.py:380` 写的是
    `os.path.join(os.path.dirname(share), 'lib')`，而 `share` = `install/agc_sim/share/agc_sim`
    → 得到 `install/agc_sim/share/lib`，**该目录不存在**。真实插件在 `install/agc_sim/lib`。
