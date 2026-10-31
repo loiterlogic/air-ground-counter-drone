@@ -32,7 +32,10 @@ from PIL import Image
 
 TARGET_WIDTH = 800
 MIN_WIDTH = 640
-MAX_BYTES = 5 * 1024 * 1024
+# 口径写死：**十进制 5,000,000 字节**（不是 5 MiB）。
+# round-4 交付 5,095,380 B：按 MiB(5,242,880) 达标、按十进制 MB(5,000,000) **超出** ——
+# 模糊口径等于没口径，故统一到更严的十进制值，并在 manifest 明写单位。
+MAX_BYTES = 5 * 1000 * 1000
 
 
 def _load_frames(frames_dir):
@@ -81,12 +84,29 @@ def main(argv=None):
     ap.add_argument('--source-fps', type=float, default=1.0,
                     help='采集帧率（capture_run.py 的 --interval 的倒数，默认 1.0）')
     ap.add_argument('--max-bytes', type=int, default=MAX_BYTES)
+    ap.add_argument('--max-duration', type=float, default=15.0,
+                    help='时长上限秒（默认 15）；源帧时间跨度更长时**截取前一段**')
+    ap.add_argument('--min-duration', type=float, default=10.0,
+                    help='时长下限秒（默认 10）')
     args = ap.parse_args(argv)
 
     frames = _load_frames(args.frames)
     if len(frames) < 2:
         print('[gif] 帧数不足（%d）：%s' % (len(frames), args.frames), file=sys.stderr)
         return 2
+
+    # 时长硬门：源帧跨度可能超过上限（round-5 实测 22 帧 × 0.8 s = 17.6 s），
+    # 此时**截取前一段**而不是靠抽帧（抽帧会同比拉长每帧时长，总时长不变）。
+    # 每帧时长 = 1/source_fps；要落进 [min,max]，帧数取 max_duration 向下取整，
+    # 但**不得低于** min_duration（否则把"截取"做成了"截断到不合格"）。
+    max_frames = int(args.max_duration * args.source_fps) if args.source_fps > 0 else None
+    min_frames = int(-(-args.min_duration * args.source_fps // 1)) if args.source_fps > 0 else 0
+    if max_frames and len(frames) > max_frames:
+        keep = max(max_frames, min(min_frames, len(frames)))
+        print('[gif] 源帧跨度 %.1f s > 上限 %.1f s → 截取前 %d 帧（每帧 %.2f s）'
+              % (len(frames) * 1.0 / args.source_fps, args.max_duration, keep,
+                 1.0 / args.source_fps))
+        frames = frames[:keep]
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     attempts = []
@@ -117,7 +137,7 @@ def main(argv=None):
     spec_ok = {
         'width_800': result['width'] == TARGET_WIDTH,
         'under_5mb': result['under_max'],
-        'duration_10_15s': 10.0 <= duration_s <= 15.0,
+        'duration_10_15s': args.min_duration <= duration_s <= args.max_duration,
     }
     manifest = {
         'schema': 'p2-1-gif/1',
@@ -127,6 +147,10 @@ def main(argv=None):
         'final': result,
         'duration_s': round(duration_s, 2),
         'spec': spec_ok,
+        'size_unit': 'decimal_bytes',
+        'max_bytes_limit': args.max_bytes,
+        'max_bytes_note': ('上限按**十进制字节**计（%d B = %.3f MB），不是 MiB'
+                           % (args.max_bytes, args.max_bytes / 1e6)),
         'attempts': attempts,
     }
     man_path = os.path.splitext(os.path.abspath(args.out))[0] + '-manifest.json'

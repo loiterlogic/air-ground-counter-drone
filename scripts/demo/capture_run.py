@@ -167,7 +167,10 @@ def pick_frames(frames, timeline, prefer_size=None, stable_median=None, tol=0.02
     first_search = next((t for t, txt in timeline if _state_of(txt) == 'AIR_SEARCH'), None)
     start_frame = None
     if first_search is not None:
-        before = [f for f in frames if f[0] <= first_search]
+        # "启动"= 任务开始**之前**的画面（世界已起来、任务还没动）。
+        # 用**严格早于** first_search 的帧，避免与"跟踪中"选到同一帧
+        # （round-5 实测：<= 会把任务启动那一刻的帧同时当成启动图与跟踪图）。
+        before = [f for f in frames if f[0] < first_search - 0.5]
         if before:
             start_frame = before[-1][1]
         else:
@@ -184,8 +187,32 @@ def pick_frames(frames, timeline, prefer_size=None, stable_median=None, tol=0.02
     if approach:
         t_best = min(approach, key=lambda kv: kv[1])[0]
         track_frame = nearest(t_best)
+    # 若"跟踪中"离启动太近（<2 s），画面与启动图几乎相同（round-5 实测：仅差 7 个像素），
+    # 观众看不出"在动"。改取任务进行中**偏后**的帧（更接近终态、车已明显接近）。
+    if track_frame is not None and first_search is not None:
+        t_track = next((t for t, p in frames if p == track_frame), None)
+        if t_track is not None and abs(t_track - first_search) < 2.0:
+            terminal_t2 = next((t for t, txt in timeline if _state_of(txt) in TERMINALS),
+                               None)
+            if terminal_t2 is not None:
+                late = first_search + 0.75 * (terminal_t2 - first_search)
+                alt = nearest(late)
+                if alt is not None and alt != start_frame:
+                    track_frame = alt
+                    notes.append('跟踪中离启动太近（画面几乎相同）；改取任务进行中偏后的帧')
     else:
         notes.append('时间线里没有带距离的 GROUND_APPROACH 行')
+    # 兜底：若"跟踪中"与"启动"撞成同一帧（任务前无帧可取时会发生），
+    # 改取**任务进行中**（first_search 之后、终态之前）的中点帧，保证三图三时刻。
+    if track_frame is not None and start_frame is not None and track_frame == start_frame:
+        terminal_t_probe = next((t for t, txt in timeline if _state_of(txt) in TERMINALS),
+                                None)
+        if terminal_t_probe is not None and first_search is not None:
+            mid = (first_search + terminal_t_probe) / 2.0
+            alt = nearest(mid)
+            if alt is not None and alt != start_frame:
+                track_frame = alt
+                notes.append('跟踪中与启动撞帧；改取任务进行中点的帧')
 
     # 终态：首个终态之后的第 2 帧
     terminal_t = next((t for t, txt in timeline if _state_of(txt) in TERMINALS), None)
@@ -593,11 +620,13 @@ def main(argv=None):
         import os as _os
         frames = [(_os.path.getmtime(p) - run_t0_unix, p) for _t, p in frames]
 
-    prefer_size = tuple(stable_detail.get('main_size')) if stable_detail.get('main_size') else None
+    # 先算稳定帧统计（下面的挑帧要用它过滤"被拖动/缩放"的帧），**不能**放到后面。
+    stable_median, stable_detail = stable_skyband(frame_skybands)
+    main_size = stable_detail.get('main_size')
+    prefer_size = tuple(main_size) if main_size else None
+
     picked = pick_frames(frames, timeline, prefer_size=prefer_size,
                          stable_median=stable_median, frame_skybands=frame_skybands)
-
-    stable_median, stable_detail = stable_skyband(frame_skybands)
 
     manifest = {
         'schema': 'p2-1-capture/3',

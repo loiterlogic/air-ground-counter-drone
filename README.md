@@ -10,7 +10,7 @@
 
 <p align="center">
   <img src="docs/plan/assets/demo-terminal.png" width="640"
-       alt="终态：TRACKING_SUCCESS，地面车抵达目标附近（正俯视画面）">
+       alt="终态：TRACKING_SUCCESS（正俯视，橙色为目标、绿框为地面车）">
 </p>
 
 纯仿真项目：**ROS 2 Jazzy + Gazebo Harmonic (gz-sim 8) + PX4 SITL**，在 Ubuntu 24.04 / WSL2 上开发。
@@ -89,8 +89,9 @@
   <img src="docs/plan/assets/demo-terminal.png" width="560" alt="终态：TRACKING_SUCCESS，车已抵达目标附近">
 </p>
 
-> 三张取自同一次运行的不同时刻（t≈44 s / 46 s / 73 s）；终态图分辨率略高（窗口在终态后被放大），
-> 视角与另两张一致（skyband 均为 **0.00**，即正俯视）。
+> 三张取自同一次运行的不同时刻（t≈43 s / 55 s / 60 s），**同一尺寸**（831×952），
+> 视角一致（skyband 均为 **0.00**，即正俯视）。俯视下车辆位移只有几个像素，
+> 细节可放大查看；终端面板（`panel.txt` / `timeline.txt`）给出逐秒状态。
 
 ## 系统结构
 
