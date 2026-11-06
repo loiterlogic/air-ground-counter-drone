@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r019_check —— 评审 R-019（failsafe 因子分离 + 运行时参数锁定）自包含 ROS 级验收 harness。
+"""failsafe 因子分离 + 运行时参数锁定 —— 自包含 ROS 级验收。
 
 结构拷贝自 `tests/check_jam_behavior_confirm.py`：**本脚本不起 launch**（自包含），自己充当「假 PX4」与
 「task_manager 桩环境」，以 subprocess 直接起 `install/agc_task/lib/agc_task/jammer`
@@ -111,7 +111,7 @@ class R19Harness(Node):
         self.px4_sysid = 2
         self.cmd_t = None
         self.cmd_nav = 14
-        # R-019：offboard-loss 模拟（lost_failsafe）
+        # offboard-loss 模拟（lost_failsafe）
         self.com_of_loss_t = 1.0
         self.lost_expected_nav_state = 2
         self.lost_t = None
@@ -135,7 +135,7 @@ class R19Harness(Node):
     def _on_jam_state(self, m):
         d = m.data.strip().upper()
         self.jam_states.append((time.monotonic(), d))
-        # R-019 子检：模拟 offboard-loss —— 收到 JAM_LOST 授权后停 offboard
+        # 子检：模拟 offboard-loss —— 收到 JAM_LOST 授权后停 offboard
         if (self.px4_behavior == 'lost_failsafe' and d == 'JAM_LOST'
                 and self.lost_t is None):
             self.lost_t = time.monotonic()

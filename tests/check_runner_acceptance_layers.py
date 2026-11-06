@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r031_check —— R-031（runner 三层验收判定与完整性硬门）自包含核查。
+"""runner 三层验收判定与完整性硬门 —— 自包含核查。
 
 **起过 run_w6_r031.sh 后**读 experiments/w6-task-eval/<run_id>/ 下的**实跑 runner 报告** +
 **直接 import episode_runner 的判定 / 汇总纯函数**做逻辑核查，逐项判定 (a)…(g)；

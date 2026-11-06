@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r017_check —— 评审 R-017（干扰单一授权与已校验事件）自包含 ROS 级验收 harness。
+"""干扰单一授权与已校验事件 —— 自包含 ROS 级验收。
 
 结构拷贝自 `tests/check_intruder_episode_start.py`。轻量栈 `main.launch.py backend:=lightweight` **不启动** `intruder_driver`，
 且其自带 `scenario_reset` 会发 epoch 干扰；故本 check **自包含，无需起 launch**：自己充当「假 PX4」。
@@ -99,11 +99,11 @@ class FakePX4(Node):
         self.pub_status = self.create_publisher(VehicleStatus, f'{p}/out/vehicle_status', _qos())
         self.create_subscription(TrajectorySetpoint, f'{p}/in/trajectory_setpoint', self._on_sp, _qos())
         self.create_subscription(VehicleCommand, f'{p}/in/vehicle_command', self._on_cmd, _qos())
-        # R-017：原始命令注入（harness → jammer）
+        # 原始命令注入（harness → jammer）
         self.pub_jam_cmd = self.create_publisher(String, JAM_CMD_TOPIC, 10)
-        # R-017：作用包络（harness → jammer），可控 publishing / value
+        # 作用包络（harness → jammer），可控 publishing / value
         self.pub_env = self.create_publisher(Bool, ENV_TOPIC, 10)
-        # R-017：已校验授权事件观测（jammer → 下游）
+        # 已校验授权事件观测（jammer → 下游）
         self.create_subscription(String, JAM_STATE_TOPIC, self._on_jam_state, 10)
         self.epoch_pub = None
         self._new_epoch_pub()

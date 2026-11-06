@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r013_check —— 评审 R-013 起始异步事务与新鲜门禁验收。
+"""起始异步事务与新鲜门禁验收。
 
 在轻量栈（`agc_task main.launch.py backend:=lightweight`，无 PX4）运行中执行，校验 `/agc/task/start`：
   a. 正常启动通过：复位后有**复位后**新鲜样本（odom_valid / 地面 odom / cmd_vel 回环），

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r021_check —— 评审 R-021（捕获跨回合污染）自包含 ROS 级验收 harness。
+"""捕获跨回合污染 —— 自包含 ROS 级验收。
 
 结构拷贝自 `tests/check_envelope_and_altitude.py`（自包含：不起 launch，自己充当「假源」桩环境，以
 subprocess 直接起 `install/agc_task/lib/agc_task/{capture_adjudicator, task_manager}` + 临时参数
@@ -74,7 +74,7 @@ def _kv(s, key):
 
 
 def _epoch_qos():
-    """对齐 scenario_reset 发布端：depth=1 + RELIABLE + TRANSIENT_LOCAL（R-016 / R-021）。"""
+    """对齐 scenario_reset 发布端：depth=1 + RELIABLE + TRANSIENT_LOCAL（参见 ADR-0006 / ADR-0014）。"""
     return QoSProfile(depth=1, reliability=ReliabilityPolicy.RELIABLE,
                       durability=DurabilityPolicy.TRANSIENT_LOCAL)
 

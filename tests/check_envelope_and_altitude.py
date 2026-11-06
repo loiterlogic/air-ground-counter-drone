@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r020_check —— 评审 R-020（占位包络标注 + 高度含车体 + 独立干扰包络）自包含 ROS 级验收 harness。
+"""占位包络标注 + 高度含车体 + 独立干扰包络 —— 自包含 ROS 级验收。
 
 结构拷贝自 `tests/check_failsafe_factor_separation.py`：**本脚本不起 launch**（自包含），自己充当「假 odom /
 目标源」桩环境，以 subprocess 直接起 `install/agc_task/lib/agc_task/{capture_adjudicator,
@@ -61,7 +61,7 @@ JAM_CMD_TOPIC = '/agc/task/jam_cmd'
 JAM_STATE_TOPIC = '/agc/task/jam_state'
 JAM_CONFIRM_TOPIC = '/agc/task/jam_confirm'
 JAM_EVIDENCE_TOPIC = '/agc/task/jam_evidence'
-# R-021：capture_adjudicator 现要求有效任务窗口（GROUND_APPROACH）+ episode，故假源须补发
+# capture_adjudicator 现要求有效任务窗口（GROUND_APPROACH）+ episode，故假源须补发
 STATE_TOPIC = '/agc/task/state'
 EPOCH_TOPIC = '/agc/scenario/reset_epoch'
 DT = 0.05
@@ -81,7 +81,7 @@ class R20Harness(Node):
         self.pub_odom = self.create_publisher(Odometry, ODOM_TOPIC, 10)
         self.pub_targets = self.create_publisher(TargetTrackArray, TARGET_TOPIC, 10)
         self.pub_jam_cmd = self.create_publisher(String, JAM_CMD_TOPIC, 10)
-        # R-021：假源补发任务窗口状态（GROUND_APPROACH）与 episode（transient_local）
+        # 假源补发任务窗口状态（GROUND_APPROACH）与 episode（transient_local）
         self.pub_state = self.create_publisher(AgcTaskState, STATE_TOPIC, 10)
         self.pub_epoch = self.create_publisher(
             Int32, EPOCH_TOPIC,
@@ -153,7 +153,7 @@ class R20Harness(Node):
         arr.tracks = [t]
         self.pub_targets.publish(arr)
 
-        # R-021：任务窗口 = GROUND_APPROACH（旧行为恒可命中；现须显式任务窗口）
+        # 任务窗口 = GROUND_APPROACH（旧行为恒可命中；现须显式任务窗口）
         st = AgcTaskState()
         st.header.stamp = od.header.stamp
         st.header.frame_id = 'world'
@@ -378,7 +378,7 @@ def case_d(node, share, out_dir):
     launcher_h = float(cap.get('launcher_height_m', 0.0))
     vy = v0 * math.sin(theta)
     apex = (vy * vy) / (2.0 * g)                       # 解析顶点高度
-    # ADR-0011：上限不再是独立参数，由节点按同一式派生（此处复算即为真源）。
+    # ADR-0011：上限不再是独立参数，由节点按同一式派生（此处复算即为权威来源）。
     applicable_max = apex
     # 真实目标高度：场景默认 target_z（base scenario_reset），车体默认 z（car_z）
     scn = _base_params(share, 'scenario_reset')

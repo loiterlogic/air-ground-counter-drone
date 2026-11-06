@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_full_check —— W6 双 PX4 整链验收（R0 复核 / R4 机体层 / R8 注入）。
+"""双 PX4 整链验收（门禁复核 / 机体层 / 注入）。
 
 在 `main.launch.py backend:=full` 运行中执行：
  * 采样 `/agc/gt/intruder_uav`（世界真值）→ 机体层辨识目标运动（static/linear/maneuver）；

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r032_check —— R-032（C10 冻结下游封闭）自包含核查。
+"""目标新鲜度冻结下游封闭 —— 自包含核查。
 
 **起过 run_w6_r032.sh 后**读 `experiments/w6-task-eval/<run_id>/r032/bench.json`（Phase A
 **实跑逻辑台架**证据）+ 源码 / 配置 / ADR 静态核查，逐项判定 (a)…(h)；

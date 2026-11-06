@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r6_check —— W6-b R6（出生净空 / 复位重试，C7）命令化验收。
+"""出生净空 / 复位重试 —— 命令化验收。
 
 在链路就绪、状态 IDLE（可复位）时，连续调用 `/agc/scenario/reset` 两次，比较
 `/agc/scenario/car_start` —— 由 `scenario_reset` 以 `spawn_seed` 生成的 spawn：

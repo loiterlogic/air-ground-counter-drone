@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r030_check —— R-030（resetfail 证据矛盾登记与唯一新 run 重做）自包含核查。
+"""resetfail 证据矛盾登记与唯一新 run 重做 —— 自包含核查。
 
 **起过 run_w6_r030.sh 后**读 experiments/w6-task-eval/<run_id>/ 下各证据，逐项判定 (a)…(h)；
 输出 experiments/w6-task-eval/<run_id>/metrics/r030.json；overall_pass = (a)∧…∧(h)。

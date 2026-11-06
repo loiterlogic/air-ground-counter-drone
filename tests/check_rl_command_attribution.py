@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w7b_e1_check —— W7-b T1（E1 / F-06）验收：raw / effective 命令归因取证。
+"""raw / effective 命令归因取证。
 
 读 `episode_runner` campaign 报告（`experiments/w7-rl-b/<run_id>/metrics/report.json`）里每个
 episode 的 `summary_path` → 读该 run 的 `metrics/summary.json` 的 `command_attribution` 块，核查：
@@ -13,7 +13,7 @@ episode 的 `summary_path` → 读该 run 的 `metrics/summary.json` 的 `comman
     在 epsilon 量级（恒等透传：effective ≡ raw）。
 
 判据依据 [ADR-0022](docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)(d)（E1）与
-[F-06](docs/reviews/agc-review-2026-10-14/30-未来.md#f-06)。
+（见 ADR-0011）。
 
 用法：
   python3 tests/check_rl_command_attribution.py --report experiments/w7-rl-b/<run_id>/metrics/report.json

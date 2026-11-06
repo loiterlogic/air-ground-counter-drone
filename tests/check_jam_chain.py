@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_jam_check —— W6 R8 干扰链（作用包络门控 + 命令输出）轻量验收。
+"""干扰链（作用包络门控 + 命令输出）—— 轻量验收。
 
 不依赖 PX4：向 `capture_adjudicator` 提供车/目标位姿，令目标**进入作用包络**；随后
  * 先发 `jam_cmd`（包络外/未就绪时）→ `jammer` 应**拒绝**（`jam_state` 不置 JAM_*）；

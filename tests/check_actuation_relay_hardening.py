@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""w5_r009_check —— W5 R-009 执行中继硬化 + GZ 侧末端失效停车验收。
+"""执行中继硬化 + GZ 侧末端失效停车验收。
 
-背景（评审风险 R-009）：地面执行中继 `ground_drive_relay` 原以 ROS 时钟判接收年龄，而 GZ 的
+背景：地面执行中继 `ground_drive_relay` 原以 ROS 时钟判接收年龄，而 GZ 的
 DiffDrive 插件**没有**命令超时（已核验 libgz-sim8-diff-drive-system.so 参数清单无 timeout/deadman），
 故中继自身死亡或时钟异常时末端可能持续执行最后命令。
-契约真源：docs/ROS2迁移交接文档.md#execution-port（唯一执行口）、#params（参数单一注入）。
+契约：docs/ROS2迁移交接文档.md#execution-port（唯一执行口）、#params（参数单一注入）。
 
 本脚本三个场景（`--scenario`）：
   relay    —— 不依赖 GZ、独立进程拉起中继，验证「中继自身」鲁棒化（S1–S6）。见下。
@@ -26,7 +26,7 @@ DiffDrive 插件**没有**命令超时（已核验 libgz-sim8-diff-drive-system.
     * 失源盲行 d_blind = v_max · T = 1.5 × 0.3 = 0.45 m；
     * 制动距离 s_brake = v_max² / (2a) = 1.5² / (2 × 0.9) = 1.25 m；
     * 制动耗时 t_brake = v_max / a = 1.67 s。
-  K1 判据上界（**取保守口径**，与 R-008 同法）：
+  K1 判据上界（**取保守口径**，与失源停车核查同法）：
     * 停稳窗口上界 K_STOP_WINDOW_S = T + t_brake + 余量 0.5 = 2.5 s；
     * 残余位移上界 K_RESIDUAL_BOUND_M = d_blind + s_brake + 余量 0.3 = 2.0 m。
   （上界取整加余量、不刻意放宽；实测应显著小于上界，实测值一并落 JSON。）

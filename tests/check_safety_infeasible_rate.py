@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r027_check —— R-027（安全不可行率诚实口径与真实接触证据）自包含核查。
+"""安全不可行率诚实口径与真实接触证据 —— 自包含核查。
 
 **起过 Phase A/B 后**读两份 summary + 静态核验源文件，逐项判定：
   (a) summary 含 `definition_version`（三键齐全）+ `metrics_comparability`；

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r2_check —— W6-a R2（门禁与 episode 起始时序）命令化验收。
+"""门禁与 episode 起始时序 —— 命令化验收。
 
 在顶层 launch 运行中、**链路尚未就绪时尽早**介入：先观察 `/agc/task/start` 因门禁未过
 失败（odom / cmd 回环未就绪），再到链路就绪后成功；据此校验：

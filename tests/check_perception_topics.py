@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w4_perception_check —— W4 验收：话题频率（±容差）+ 帧名（spec R9）。
+"""感知话题频率（±容差）+ 帧名验收。
 
 用法：
   ros2 run（或 python3）tests/check_perception_topics.py --duration 8 --tol 0.10

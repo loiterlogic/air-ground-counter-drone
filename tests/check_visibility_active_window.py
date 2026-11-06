@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w7b_e3_check —— W7-b T3（E3 / F-10）验收：可见性度量**按 episode active 窗口**切分。
+"""可见性度量按 episode active 窗口切分。
 
 读 campaign 报告里各 episode 的 `summary.json`，核查 `visibility_metrics`：
   * 存在且 `definition_version == "window_active_v1"`；
@@ -10,7 +10,7 @@
   * `not_applicable.target_truth == false`（目标真值可得）；
   * `longest_outage_s` / `recovery_time_last_s` 为有限非负。
 
-判据依据 [F-10](docs/reviews/agc-review-2026-10-14/30-未来.md#f-10) 与 [ADR-0022](docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)(d)（E3）。
+判据依据 [ADR-0022](docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)(d)（E3）。
 
 用法：
   python3 tests/check_visibility_active_window.py --report experiments/w7-rl-b/<run_id>/metrics/report.json

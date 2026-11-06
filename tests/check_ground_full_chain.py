@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w5_fullchain_check —— W5-c 全链回归（spec R10）。
+"""地面全链回归。
 
 在顶层 launch（`agc_task skeleton.launch.py`，GUI 或 `-s` 无头）运行中执行，校验：
  * 门控：`/agc/task/start` 成功 → `GROUND_APPROACH`（ 门控不退化）；

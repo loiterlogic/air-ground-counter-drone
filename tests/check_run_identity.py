@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r029_check —— R-029（唯一运行身份与可复现证据）自包含核查。
+"""唯一运行身份与可复现证据 —— 自包含核查。
 
 **起过 run_w6_r029.sh 的 Phase A…E 后**读 experiments/w6-task-eval/<run_id>/ 下各证据，
 逐项判定 (a)…(f)；输出 experiments/w6-task-eval/<run_id>/metrics/r029.json；

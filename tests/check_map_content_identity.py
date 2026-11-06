@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r040_check —— R-040（地图内容身份与单调更新序号）自包含核查。
+"""地图内容身份与单调更新序号 —— 自包含核查。
 
 **起过 run_w6_r040.sh 后**读 `experiments/w6-task-eval/<run_id>/r040/bench.json`（真实节点台架）
 + 源码 / ADR 静态核查，逐项判定；输出 `.../<run_id>/r040/check.json`（含 `overall_pass`）与
@@ -11,7 +11,7 @@
   ② 同字节不同 origin → `version_hash` 不同、data-only hash 相同；
   ③ 跨边界 → raster 变化且 `update_seq` 递增（不欠包）；
   ④ 序号单调（同内容不变、实质变化严格 +1）；
-  ⑤ R-006 语义保持（valid 行为 + 三态存在 + info↔data 长度一致）。
+  ⑤ 知识时效语义保持（valid 行为 + 三态存在 + info↔data 长度一致）。
 """
 
 import argparse

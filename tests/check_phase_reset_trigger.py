@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_c5_check —— W6-a R3/C5（相位复位触发）轻量验收。
+"""相位复位触发 —— 轻量验收。
 
 不依赖 PX4：单独起 `trajectory_tracker`（lifecycle），由本脚本提供
  * `/agc/air/odom`（假 odom，50 Hz，使 offboard odom 有效）；

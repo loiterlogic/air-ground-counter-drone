@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r025_check —— R-025（整链覆盖矩阵 + 同一 run 因果记录 + pass 命题化）自包含验收核查。
+"""整链覆盖矩阵 + 同一 run 因果记录 + pass 命题化 —— 自包含验收。
 
 **不起 launch**：静态分析源文件（后端能力列）+ 读产物（轻量 report / 整链 same_run），构造覆盖矩阵，
 逐轴标 covered / uncovered / not_applicable + evidence 出处 + 未覆盖的如实原因。**绝不**把无证据的轴标 covered。
@@ -345,7 +345,7 @@ def case_e_frozen_abi():
 
 
 def write_matrix_md(matrix, path):
-    md = ['# W6 覆盖矩阵 · R-025（lightweight/full × GUI × 各轴）', '',
+    md = ['# 覆盖矩阵（lightweight/full × GUI × 各轴）', '',
           '> 逐轴标 **covered / uncovered / not_applicable** + evidence 出处 + 未覆盖如实原因。',
           '> 轻量 PASS ≠ 整链 / GUI 验收（契约 #hc-3）；未执行轴如实标注。', '',
           '## 后端能力（源文件事实）', '',

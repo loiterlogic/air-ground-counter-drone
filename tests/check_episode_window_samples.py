@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r028_check —— R-028（episode 窗口统计、终态锁存与有效样本掩码）自包含核查。
+"""episode 窗口统计、终态锁存与有效样本掩码 —— 自包含核查。
 
 **起过 Phase A/B 后**读 `summaries/harness-*.json`（6 个合成 case）与 `summaries/real_s11.json`，
 逐项判定：
@@ -16,7 +16,7 @@
       shield_infeasible_rate is None）；
   (f) 分子分母 / 缺失比例 / not_applicable 输出；
   (g) 真实回合（real_s11：窗口非空、有 ticks、applicable、窗口 ticks_total < 进程 ticks_total）；
-  (h) ADR 记录于 `docs/adr/0016-episode-window-and-sample-validity.md`（`Status: accepted`、`r-028`、无 `§`）。
+  (h) ADR 记录于 `docs/adr/0016-episode-window-and-sample-validity.md`（`Status: accepted`）。
 
 输出 `experiments/w6-task-eval/<run_id>/metrics/r028.json`；`overall_pass` = (a)∧…∧(h)。
 """

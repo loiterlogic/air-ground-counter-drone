@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""w6_r024_check —— 评审 R-024（三类时间口径与 RTF 记录）自包含 ROS 级验收 harness。
+"""三类时间口径与 RTF 记录 —— 自包含 ROS 级验收。
 
 结构拷贝自 `tests/check_tracking_dwell.py`（自包含：不起 launch，自己充当「假源 + 假 reset 服务」桩环境，
 以 subprocess 直接起 `install/agc_task/lib/agc_task/task_manager` + 临时参数文件，Popen 句柄 kill，
 **禁止** pkill -f "<名字>"）。
 
-R-024 关键新增：本 harness **自己发布 `/clock`**（`rosgraph_msgs/Clock`）驱动 `task_manager` 的仿真
+关键设计：本 harness **自己发布 `/clock`**（`rosgraph_msgs/Clock`）驱动 `task_manager` 的仿真
 时钟（用例 a 传 `use_sim_time: True`），从而演示「暂停仿真（停 `/clock` / RTF→0）→ `mission_sim_budget`
-（C4 仿真秒）不触发，而 `episode_wall_watchdog`（墙钟）触发并判 infra」。
+（契约 #hc-4，仿真秒）不触发，而 `episode_wall_watchdog`（墙钟）触发并判 infra」。
 
 用例（结果落 `experiments/w6-task-eval/<run_id>/metrics/r024.json`，ADR-0006）：
   a 暂停仿真 → mission 超时（`t_max_s`，仿真秒）**不**触发；wall watchdog 分类 infra（**核心**）；
-    恢复 `/clock` 后 C4 才触发 `MISSION_FAILED(TIMEOUT)`（对照：C4 走 ROS 时钟）。
+    恢复 `/clock` 后任务时限才触发 `MISSION_FAILED(TIMEOUT)`（对照：任务时限走 ROS 时钟）。
   b RTF 与起止事件：加速（rtf≈2.0）/ 减速（rtf≈0.5）两 run 按仿真时间可比；无仿真时钟 → rtf=None。
-  c 三类口径分别标注、互不冒充；源码检查 `run_logger.cpp` 进程时长口径 + `task_manager.cpp` C4 判据串。
+  c 三类口径分别标注、互不冒充；源码检查 `run_logger.cpp` 进程时长口径 + `task_manager.cpp` 任务时限判据串。
   d train/eval 单一预算来源：`classify_episode_outcome` 定义恰 1 处、eval adapter 复用；无第三套口径。
   e 冻结值与 ABI 回归：`capture_hit` 字面量不变 + 工作树 `src/agc_msgs` 未改。
 
@@ -37,7 +37,7 @@ from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 
 from ament_index_python.packages import get_package_share_directory
 
-# 复用 episode_runner 的唯一预算语义（R-024：single source）。
+# 复用 episode_runner 的唯一预算语义（单一来源）。
 sys.path.insert(0, '/home/chen/AGC/scripts')
 from episode_runner import TIME_BUDGETS, build_time_evidence, classify_episode_outcome  # noqa: E402
 
@@ -93,7 +93,7 @@ class R24Harness(Node):
         self.epoch = 0
         self.reset_calls = 0
 
-        # 仿真时钟（R-024）：harness 自己发 /clock 驱动 task_manager 的 use_sim_time 时钟。
+        # 仿真时钟：harness 自己发 /clock 驱动 task_manager 的 use_sim_time 时钟。
         self.sim_mode = False       # True = 假源时间戳 / /clock 用自增的仿真时间
         self.publish_clock = False  # True = 每个 tick 推进 sim_ns 并发布 /clock
         self.sim_ns = 0
@@ -298,7 +298,7 @@ def case_a(node, share, out_dir):
             cls['classification'] == 'infra' and
             cls['budget_kind'] == 'episode_wall_watchdog' and
             cls['counted_as_success'] is False)
-        # 恢复仿真：C4 走 ROS 时钟，恢复后才触发超时
+        # 恢复仿真：任务时限走 ROS 时钟，恢复后才触发超时
         node.publish_clock = True
         reached = node.run_until(lambda: node.state_name == 'MISSION_FAILED', 8.0)
         res['state_after_resume'] = node.state_name

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w7b_e2_check —— W7-b T2（E2 / F-11）验收：最小动态火控「完整射击闭环」取证。
+"""最小动态火控「完整射击闭环」取证。
 
 起 `main.launch.py backend:=lightweight scene:=s08_static_none_nominal_capture command_source:=rl`
 （可选 gui）→ 调 `/agc/task/start` → 追踪 `/agc/task/state` 至终态或超时，**同时**记录：

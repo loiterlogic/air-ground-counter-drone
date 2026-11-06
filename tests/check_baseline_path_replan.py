@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w5_r012_check —— W5 R-012 基线路径绑定与重规划失效安全故障注入验收。
+"""基线路径绑定与重规划失效安全 —— 故障注入验收。
 
 在 `agc_task safety_scenario.launch.py command_source:=baseline`（GUI 验收）运行中执行，
 对离线对照基线 `ground_baseline` 做故障注入，观察 `/agc/ground/path`（重规划事件）与

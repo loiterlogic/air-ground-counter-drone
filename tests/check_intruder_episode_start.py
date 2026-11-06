@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r016_check —— 评审 R-016（入侵者 episode 起点协议）自包含 ROS 级验收 harness。
+"""入侵者 episode 起点协议 —— 自包含 ROS 级验收。
 
 轻量栈 `main.launch.py backend:=lightweight` **不启动** `intruder_driver`，且其自带 `scenario_reset` 会发
 epoch 干扰；故本 check **自包含，无需起 launch**：自己充当「假 PX4」。

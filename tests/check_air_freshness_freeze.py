@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w3_c10_check —— W3 C10 联调录制与判据（spec R6/R7，契约 #hard-constraints C10）
+"""空中目标新鲜度冻结 —— 录制与判据（契约 #hc-10）。
 
 订阅归一化 `/agc/air/odom`、`/agc/targets`、`/agc/air/tracking_ref`、`/agc/air/control_conflict`，
 按**相位**录制并联立判据（阈值一律从 `--params`（`config/air.yaml`）读取，不复制参数；
@@ -40,8 +40,8 @@ LATCHED = QoSProfile(depth=1, history=HistoryPolicy.KEEP_LAST,
 
 
 def load_air_params(path: str, geometry_path: str) -> dict:
-    """阈值从 air.yaml 读（不复制）；静态障碍**几何**从单一真源 world_geometry.yaml 读
-    （S-06 / ADR-0007：几何已上移，air.yaml 不再硬编码障碍坐标）。"""
+    """阈值从 air.yaml 读（不复制）；静态障碍**几何**从几何源文件 world_geometry.yaml 读
+    （ADR-0007：几何已上移，air.yaml 不再硬编码障碍坐标）。"""
     with open(path) as f:
         doc = yaml.safe_load(f)
     follower = doc['standoff_follower']['ros__parameters']
@@ -60,7 +60,7 @@ def load_air_params(path: str, geometry_path: str) -> dict:
 
 
 def _body_to_world(q, v):
-    """机体系 FLU → 世界 ENU（R-003）：`/agc/air/odom` 的 twist 在 child frame（机体系），
+    """机体系 FLU → 世界 ENU（ADR-0008）：`/agc/air/odom` 的 twist 在 child frame（机体系），
     而本 CSV 口径为世界 ENU，故用姿态四元数旋转回去（v' = R(q)·v）。"""
     qx, qy, qz, qw = q.x, q.y, q.z, q.w
 

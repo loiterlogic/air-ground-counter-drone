@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w5_safety_check —— W5-a/c 验收：C2 三档触发 + C6 真实逃逸（spec R4/R5/R9）。
+"""安全三档触发 + 真实逃逸能力验收。
 
 在 `agc_task safety_scenario.launch.py` 运行中执行：
  1. 调 `/agc/task/start`（复用 门控）→ 期望 GROUND_APPROACH；

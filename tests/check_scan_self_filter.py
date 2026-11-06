@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w5_r007_check —— W5 R-007 真实仿真验收（自滤 / 旋转误停 / 旋转停 / 后向 / 薄障碍 / min_points 标定）。
+"""扫描自滤真实仿真验收（自滤 / 旋转误停 / 薄障碍 / min_points 标定）。
 
 在 `agc_task safety_scenario.launch.py` 运行中执行（先杀掉 RL 命令源，改由本脚本作脚本化命令源
 直接发 `/agc/ground/cmd_vel_raw`），观察 意图（cmd_vel_raw）/ 实际执行（cmd_vel）/ 物理真值（odom）。

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r035_check —— R-035（空中控制唯一权威与控制许可）自包含核查。
+"""空中控制唯一权威与控制许可 —— 自包含核查。
 
 **起过 run_w6_r035.sh 后**读 `experiments/w6-task-eval/<run_id>/r035/bench.json`（Phase A **实跑台架**证据）
 + 源码 / 配置 / ADR 静态核查，逐项判定 (a)…(h)；

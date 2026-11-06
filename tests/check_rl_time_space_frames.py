@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""w7_d1_check —— W7 入口前置 D1（时空与帧正确：R-002 / R-003）自包含对拍。
+"""RL 入口前置 —— 时空与帧正确性 —— 自包含对拍。
 
 拉起 `agc_air` 的 **px4_adapter**（生命周期节点），以**合成 `px4_msgs/VehicleOdometry`** 驱动，
 逐项断言：
-  a 时间单位（R-002）  —— 两条 msg 的 `timestamp` 差 1e6 µs → `/agc/air/odom` Header 差 ≈ 1e9 ns
+  a 时间单位  —— 两条 msg 的 `timestamp` 差 1e6 µs → `/agc/air/odom` Header 差 ≈ 1e9 ns
                           （误用 `toRosMicros` 会得 1e6 ns，缩小 1000 倍）
   b 时间锚定           —— Header ≈ 发送时刻墙钟（唯一 ROS 时钟）
-  c 位置原点（R-003）  —— `origin_pose=10,-5,0.2` 时，世界 ENU = 原点 + nedToEnu(2,3,-1) = (13,-3,1.2)
-  d 速度帧（R-003）    —— 机头朝北 + vel NED=(1,0,0) → twist.linear（child frame=机体系 FLU）=(1,0,0)
-  e 角速度帧（R-003）  —— ang FRD=(0.1,-0.2,0.3) → FLU=(0.1,0.2,-0.3)
+  c 位置原点  —— `origin_pose=10,-5,0.2` 时，世界 ENU = 原点 + nedToEnu(2,3,-1) = (13,-3,1.2)
+  d 速度帧  —— 机头朝北 + vel NED=(1,0,0) → twist.linear（child frame=机体系 FLU）=(1,0,0)
+  e 角速度帧  —— ang FRD=(0.1,-0.2,0.3) → FLU=(0.1,0.2,-0.3)
   f 帧名（契约 #namespace）—— frame_id=world、child_frame_id=drone/base_link
-  g 非 NED 帧丢弃（R-003） —— pose_frame=FRD 的 msg 不产出 `/agc/air/odom`
+  g 非 NED 帧丢弃  —— pose_frame=FRD 的 msg 不产出 `/agc/air/odom`
 
 对拍向量取自既有单测 `src/agc_air/test/test_px4_conversions.cpp`（**不**另造期望值）。
 
@@ -199,7 +199,7 @@ def main():
         node.spin_until(lambda: False, 1.0)   # 稳定 1 s
 
         # 时间对：P1 与 P2 的 `timestamp` 差 1 s，且**墙钟同样间隔 1 s**（保持 `ros−px4` 偏移不变）；
-        # 否则指数滤波偏移会被平滑拉到新值，Δstamp ≠ ΔT（那是设计问题，不是 R-002 的单位问题）。
+        # 否则指数滤波偏移会被平滑拉到新值，Δstamp ≠ ΔT（那是设计问题，不是时间单位问题）。
         t1 = int(time.time() * 1e6) - 10_000_000
         t2 = t1 + 1_000_000
         n0 = node.count
@@ -257,7 +257,7 @@ def main():
                 'got': [o.header.frame_id, o.child_frame_id],
                 'expected': ['world', 'drone/base_link']}
 
-        # 非 NED 帧应被丢弃（R-003）
+        # 非 NED 帧应被丢弃（ADR-0008）
         n2 = node.count
         node.pub.publish(make_msg(int(time.time() * 1e6) - 10_000_000, pose_frame=POSE_FRAME_FRD))
         node.spin_until(lambda: node.count > n2, 0.8)

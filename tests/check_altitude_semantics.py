@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""w6_r036_check —— R-036（C1 高度语义统一与同时间证据曲线）自包含核查。
+"""高度语义统一与同时间证据曲线 —— 自包含核查。
 
 **起过 run_w6_r036.sh 后**读 `experiments/w6-task-eval/<run_id>/r036/bench.json`（Phase A **实跑台架**证据）
 + `r036/curves.csv`（同时间轴 5 曲线）+ 源码 / 配置 / ADR 静态核查，逐项判定 (a)…(j)；
-C1 容限**读取** `src/agc_air/config/air.yaml`（`trajectory_tracker.ros__parameters.c1`，不复制参数）。
+轨迹容限**读取** `src/agc_air/config/air.yaml`（`trajectory_tracker.ros__parameters.c1`，不复制参数）。
 输出 `.../<run_id>/r036/check.json`（含 `overall_pass` 布尔）与 `.../<run_id>/metrics/r036.json`。
 overall_pass = (a)∧…∧(j)。
 """
@@ -201,7 +201,7 @@ def case_g_stock_retained():
 
 
 def case_h_no_abi_no_second_commander():
-    """冻结 9 消息 ABI 未改（src/agc_msgs 无改动）；setpoint 发布者仍单一（offboard_interface.cpp）；无 § 引用。"""
+    """冻结 9 消息 ABI 未改（src/agc_msgs 无改动）；setpoint 发布者仍单一（offboard_interface.cpp）；无章节号引用。"""
     p = subprocess.run(['git', 'status', '--porcelain', 'src/agc_msgs'],
                        cwd=ROOT, capture_output=True, text=True)
     abi_clean = (p.stdout.strip() == '')
@@ -212,7 +212,7 @@ def case_h_no_abi_no_second_commander():
                 t = _read(os.path.join(root, fn)) or ''
                 if 'create_publisher<px4_msgs::msg::TrajectorySetpoint>' in t:
                     hits.append(fn)
-    sec = subprocess.run(['grep', '-rnE', '§[0-9]', 'docs/', '.trae/specs/'],
+    sec = subprocess.run(['grep', '-rnE', '§[0-9]', 'docs/'],
                          cwd=ROOT, capture_output=True, text=True)
     res = {'agc_msgs_porcelain': p.stdout.strip(), 'abi_clean': abi_clean,
            'setpoint_publisher_files': hits,

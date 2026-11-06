@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r026_check —— R-026（场景轴承载者校验与覆盖记账）自包含核查。
+"""场景轴承载者校验与覆盖记账 —— 自包含核查。
 
 **起过 launch 后**读产物 + 静态核验源文件，逐项判定：
   (a) 轴承载者登记与启动校验：统一入口 `main.launch.py` 经共享模块 `composition.py`
@@ -71,8 +71,8 @@ def case_b_obstacle_none_static(out_dir):
     res = {}
     canonical = _read(os.path.join(ROOT, 'src/agc_sim/worlds/agc_world.sdf'))
     geometry = _read(os.path.join(ROOT, 'src/agc_sim/config/world_geometry.yaml'))
-    # S-06 / ADR-0007：base world 不含 pole_*；几何真源（world_geometry.yaml）含 pole_*；
-    #   none 世界 = base world 副本（无 pole）；static 世界 = 真源注入生成（含 pole）。
+    # 几何来源（world_geometry.yaml）含 pole_* 而 base world 不含（ADR-0007）；
+    #   none 世界 = base world 副本（无 pole）；static 世界 = 由几何来源注入生成（含 pole）。
     res['base_world_has_no_poles'] = ('<model name="pole_1">' not in canonical and
                                       '<model name="pole_2">' not in canonical)
     res['geometry_source_has_poles'] = ('id: pole_1' in geometry and 'id: pole_2' in geometry)

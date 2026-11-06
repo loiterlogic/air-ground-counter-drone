@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r041_check —— R-041（目标失效策略与位移阈值化重规划）自包含核查。
+"""目标失效策略与位移阈值化重规划 —— 自包含核查。
 
 **起过 run_w6_r041.sh 后**读 `experiments/w6-task-eval/<run_id>/r041/bench.json`（真实节点台架）
 + 源码 / ADR 静态核查，逐项判定；输出 `.../<run_id>/r041/check.json`（含 `overall_pass`）与

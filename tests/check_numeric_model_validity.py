@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r038_check —— R-038（数值模型暴露与配置合法性启动校验）自包含核查。
+"""数值模型暴露与配置合法性启动校验 —— 自包含核查。
 
 **起过 run_w6_r038.sh 后**读 `experiments/w6-task-eval/<run_id>/r038/` 的
 `gtest/*.xml`（Phase A **实跑**失败型 gtest）+ `bench.json`（Phase B **实跑**节点启动期拒绝台架）

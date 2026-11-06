@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""w6_r037_check —— R-037（传感器/车体限制声明与能力标定）自包含核查。
+"""传感器/车体限制声明与能力标定 —— 自包含核查。
 
 **起过 run_w6_r037.sh 后**读 `experiments/w6-task-eval/<run_id>/r037/bench.json`（Phase A **实跑台架**证据）
-+ `r037/xacro_baseline.sdf.xacro`（R-037 之前的安装模型基线）+ 源码 / 配置 / ADR 静态核查，逐项判定 (a)…(j)；
++ `r037/xacro_baseline.sdf.xacro`（该核查之前的安装模型基线）+ 源码 / 配置 / ADR 静态核查，逐项判定 (a)…(j)；
 输出 `.../<run_id>/r037/check.json`（含 `overall_pass` 布尔）与 `.../<run_id>/metrics/r037.json`。
 overall_pass = (a)∧…∧(j)。
 """
@@ -138,7 +138,7 @@ def case_e_turn(bench):
 
 
 # =====================================================================================
-# (f) 未改物理 / 惯性 / 驱动插件（对 R-037 之前的模型基线核验）
+# (f) 未改物理 / 惯性 / 驱动插件（对该核查之前的模型基线核验）
 # =====================================================================================
 def case_f_no_physics_change(run_dir):
     src = _read(XACRO) or ''
@@ -163,7 +163,7 @@ def case_f_no_physics_change(run_dir):
         'physical_lines_changed_vs_baseline': changed_physical,
         'no_physical_change_vs_baseline': (bool(baseline) and not changed_physical),
     }
-    # 交叉核验：git diff 中**新增**的物理标签行，均须存在于基线模型（= R-037 之前既有行，非 R-037 引入）。
+    # 交叉核验：git diff 中**新增**的物理标签行，均须存在于基线模型（= 该核查之前既有行，非本次引入）。
     p = subprocess.run(['git', 'diff', '--', XACRO], cwd=ROOT, capture_output=True, text=True)
     new_phys = []
     for ln in p.stdout.splitlines():

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_fsm_check —— W6-a R1（完整任务状态机）命令化验收。
+"""完整任务状态机 —— 命令化验收。
 
 在顶层 launch（`agc_task skeleton.launch.py`，无头 / GUI）运行中执行，校验：
  * `/agc/task/start` 命令化驱动 FSM；

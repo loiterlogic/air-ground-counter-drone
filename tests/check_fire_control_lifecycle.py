@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w7b_fire_control_lifecycle_check —— FL-1..FL-4 节点级合成话题回归（ADR-0011）。
+"""火控生命周期 FL-1..FL-4 —— 节点级合成话题回归（ADR-0011）。
 
 **只起** `capture_adjudicator`（不启 GZ / PX4 / 整链 launch），用合成话题驱动：
   /agc/ground/odom      nav_msgs/Odometry（车世界位姿）
@@ -27,7 +27,7 @@ import sys
 import time
 
 # 本机 DDS：测试节点与子进程必须用**同一**发现范围 / 传输（否则互相看不见）。
-# 走单一真源 scripts/demo/dds_transport.py，不再写死 LOCALHOST——
+# 走唯一入口 scripts/demo/dds_transport.py，不再写死 LOCALHOST——
 # `lo` 无 IFF_MULTICAST 时写死它就是整条收发链零送达（见整链排障速查#dds-transport）。
 os.environ['ROS_DOMAIN_ID'] = '0'
 sys.path.insert(0, os.path.join(

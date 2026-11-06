@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r033_check —— R-033（UAV 联合安全屏障与显式不可行路径）自包含核查。
+"""UAV 联合安全屏障与显式不可行路径 —— 自包含核查。
 
 **起过 run_w6_r033.sh 后**读 `experiments/w6-task-eval/<run_id>/r033/bench.json`（Phase A
 **实跑逻辑台架**证据）+ 源码 / 配置 / ADR 静态核查，逐项判定 (a)…(i)；

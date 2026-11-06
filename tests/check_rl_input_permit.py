@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""w5_r010_check —— W5 R-010 RL 推理节点「输入许可与失效停车」验收。
+"""RL 推理节点「输入许可与失效停车」验收。
 
-背景（评审风险 R-010）：`ground_policy_rl` 原对 odom / goal / scan / task 状态只记「到达过即**永久有效**」
+背景：`ground_policy_rl` 原对 odom / goal / scan / task 状态只记「到达过即**永久有效**」
 （have_odom / have_goal 布尔永不失效），且 `interface` 把 NaN / <=0 一并当「无遮挡」；`task_manager`
-若死在 `GROUND_APPROACH`，策略仍每拍发**新时间戳**的运动命令。契约真源：
+若死在 `GROUND_APPROACH`，策略仍每拍发**新时间戳**的运动命令。契约：
 docs/ROS2迁移交接文档.md#execution-port（唯一执行口）、#params（参数单一注入）。
 
 两个场景（`--scenario`）：
   node —— 独立进程（不依赖 GZ）：拉起 `ground_policy_rl`，本脚本向四类输入发合成消息，逐一注入
           失效并观测 `cmd_vel_raw` 是否归零（含 `interface` 单元判据）。
-  sim  —— 整仿真（GUI，硬约束 C3）内集成验收：W5 场景以 RL 为主控，对**真实节点**注入故障
+  sim  —— 整仿真（GUI 验收，契约 #hc-3）内集成验收：地面导航场景以 RL 为主控，对**真实节点**注入故障
           （`SIGSTOP ground_odom_adapter` / `SIGKILL task_manager`），观测 `cmd_vel_raw` 归零与真值停车。
 
 node 场景子测（PASS 判据见各 test 的 `pass` 字段）：
   U1 `interface` 单元：NaN → 扇区按遮挡（0.0）；`+inf` → 无遮挡（1.0）；all-NaN → `scan_has_valid_reading` 假。
   N0 **从未收到 scan** → 零速。 N1 正常链路 → 非零且输出 ~20 Hz。
-  N2 **全 NaN scan** → 零速（不当作无遮挡）。 N3 停 task/state → 超授权寿命后零速。
+  N2 **全 NaN scan** → 零速（不当作无遮挡）。 停 task/state → 超授权寿命后零速。
   N4 停 odom → 超寿命后零速。 N5 停 goal → 超寿命后零速。
 
 sim 场景子测：
@@ -287,7 +287,7 @@ def run_node(args):
             'cmd': 'scan 全 NaN（其余输入正常）',
             'max_v_recent': round(v2, 4), 'pass': bool(v2 < ZERO_V)}
 
-        # ---- N3 停 task/state → 零速（授权寿命）----
+        # ---- 停 task/state → 零速（授权寿命）----
         p.clear()
         p.pump(1.2)
         p.clear()

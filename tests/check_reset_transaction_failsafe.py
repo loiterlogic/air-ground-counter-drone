@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r015_check —— 评审 R-015 复位受控事务与失效安全验收。
+"""复位受控事务与失效安全验收。
 
 在轻量栈（`agc_task main.launch.py backend:=lightweight`，无 PX4）运行中执行：
 先等 `/agc/scenario/reset` 服务出现，再**杀掉 launch 起的 `task_manager`（[t]ask_manager）与
@@ -60,7 +60,7 @@ TARGET_GT = '/agc/gt/intruder_uav'
 GROUND_ODOM = '/agc/ground/odom'
 STATE = '/agc/task/state'
 
-# 终态集合（R-015 / tasks 3.4：含 INTERCEPT_CONFIRMED）
+# 终态集合（含 INTERCEPT_CONFIRMED；ADR-0011）
 TERMINAL_STATES = [
     AgcTaskState.INTERCEPT_CONFIRMED,   # 7
     AgcTaskState.TRACKING_SUCCESS,      # 4

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""w7_core_check —— W7-a 核心库自包含核查（T1 判定 · T2 版本化 · T3 种子分解）。
+"""RL 核心库自包含核查（判定 · 版本化 · 种子分解）。
 
 **不依赖仿真**（纯库 / 纯 Python），验证三件机制：
   T1（R1）`agc_rl.termination` 为**单一判定来源**（与 eval adapter 同一对象）；terminated / truncated
-           语义可分，且**超时一律失败**（契约 C4）、infra 单列不吞。
+           语义可分，且**超时一律失败**（契约 #hc-4）、infra 单列不吞。
   T2（R2）`obs_version` 机制：v1 维度与 `interface` 冻结一致；不同版本元数据可区分；旧版本回放可用；
            checkpoint 元数据 save/load 往返 + 指纹稳定。
   T3（R3）种子分解：确定可复现；外生流**不随 attempt 变**（CRN）；policy 随 attempt 变；

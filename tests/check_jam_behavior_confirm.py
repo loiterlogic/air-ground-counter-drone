@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r018_check —— 评审 R-018（干扰真实行为确认）自包含 ROS 级验收 harness。
+"""干扰真实行为确认 —— 自包含 ROS 级验收。
 
 结构拷贝自 `tests/check_jam_single_authorization.py`：**本脚本不起 launch**（自包含），自己充当「假 PX4」与
 「task_manager 桩环境」，以 subprocess 直接起 `install/agc_task/lib/agc_task/{jammer, task_manager}`
@@ -136,7 +136,7 @@ class R18Harness(Node):
         self.state = 0
         self.state_name = ''
         self.reason_code = ''
-        self.target_xy = (30.0, 30.0)   # 远 → 不触 C8 跟踪里程碑
+        self.target_xy = (30.0, 30.0)   # 远 → 不触跟踪里程碑
 
     # ---- callbacks ----
     def _on_reset(self, _req, res):
@@ -566,7 +566,7 @@ def case_f(node, share, out_dir):
         if not reached:
             res['pass'] = False
             return res
-        # 仅发布授权事件（模拟 R-017 授权 / jammer 已发命令但无真实状态反馈）
+        # 仅发布授权事件（模拟单一授权 / jammer 已发命令但无真实状态反馈）
         for _ in range(10):
             node.pub_jam_state.publish(String(data='JAM_RTL'))
             node.run(0.1)

@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""w5_r011_check —— W5 R-011 动作方向闭环 + C6 逃逸能力标定验收。
+"""动作方向闭环 + 逃逸能力标定验收。
 
 在 `agc_task safety_scenario.launch.py`（GUI 验收）运行中执行：先杀掉 RL 命令源，改由本脚本
-作「脚本化命令源」直接发 `/agc/ground/cmd_vel_raw`（与 R-008 同法），命令**取修复后的**
+作「脚本化命令源」直接发 `/agc/ground/cmd_vel_raw`（与失源停车核查同法），命令**取修复后的**
 `interface.action_to_twist` 输出（车前净空置 0 m → `magnitude = max_offset` 的满偏左 / 右转），
 经安全层（collision_monitor）+ 唯一执行中继（ground_drive_relay）到 GZ，测车**真实**横向逃逸能力。
 
 子测：
   D 方向闭环：`left`/`left_fast` → 车世界 yaw **增加**（左转，正 `angular.z`）；`right`/`right_fast`
               → yaw **减小**（右转）。记录 odom yaw / 横向 y 的符号，证明 ROS 约定端到端成立。
-  E C6 逃逸标定：各动作在**反应窗口 T**（s）内的横向位移（米）；`max(|lateral|) ≥ 配置 max_offset`
-              才 PASS，否则记录可达值供下调 `max_offset`（契约 C6：参数须用真实逃逸能力）。
+  E 逃逸能力标定：各动作在**反应窗口 T**（s）内的横向位移（米）；`max(|lateral|) ≥ 配置 max_offset`
+              才 PASS，否则记录可达值供下调 `max_offset`（契约 #hc-6：参数须用真实逃逸能力）。
 
 标定口径（先学后做，ADR-0010）：反应窗口 `T = 2.0 s` 取 Nav2 `time_before_collision` 上界
 （t_before ∈ [1.2, 2.0] s）。理论横向界（常 yaw 率圆弧）：lateral(T) ≈ (v/ω)·(1 − cos(ω·T))。

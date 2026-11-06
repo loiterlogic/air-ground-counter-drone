@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r034_check —— R-034（生命周期可重复资源状态机与完整失效清理）自包含核查。
+"""生命周期可重复资源状态机与完整失效清理 —— 自包含核查。
 
 **起过 run_w6_r034.sh 后**读 `experiments/w6-task-eval/<run_id>/r034/bench.json`（Phase A **实跑台架**证据）
 + 源码 / 配置 / ADR 静态核查，逐项判定 (a)…(i)；

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_intruder_check —— W6-a R4（目标 driver 三种运动）命令化验收。
+"""目标 driver 三种运动 —— 命令化验收。
 
 不依赖 PX4：向 `/<ns>/fmu/out/{vehicle_odometry,vehicle_status}` 注入**伪造**的已解锁/
 OFFBOARD 状态，使 `intruder_driver` 持续输出 `/<ns>/fmu/in/trajectory_setpoint`；采集

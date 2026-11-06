@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w5_scan_self_filter_check —— R-007 节点级确定性测（scan_self_filter）。
+"""扫描自滤节点级确定性测。
 
 起 `agc_ground/scan_self_filter` 节点，喂合成 LaserScan（含"车体区自返回" + "外部障碍返回"），
 断言：车体矩形内返回被置 +inf（自滤）、外部障碍返回与 header 原样保留。

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r022_check —— 评审 R-022（FSM 命令幂等与终态锁存）自包含 ROS 级验收 harness。
+"""任务状态机命令幂等与终态锁存 —— 自包含 ROS 级验收。
 
 结构拷贝自 `tests/check_capture_cross_episode.py`（自包含：不起 launch，自己充当「假源 + 假 reset 服务」桩环境，
 以 subprocess 直接起 `install/agc_task/lib/agc_task/task_manager` + 临时参数文件，`use_sim_time: False`，

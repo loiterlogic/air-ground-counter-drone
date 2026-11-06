@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r039_check —— R-039（地面 odom 源时刻分离 + 复位 epoch 速度历史）自包含核查。
+"""地面 odom 源时刻分离 + 复位 epoch 速度历史 —— 自包含核查。
 
 **起过 run_w6_r039.sh 后**读 `experiments/w6-task-eval/<run_id>/r039/bench.json`（真实节点台架）
 + 源码 / ADR 静态核查，逐项判定 (a)…(k)；输出 `.../<run_id>/r039/check.json`（含 `overall_pass`）

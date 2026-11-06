@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_r023_check —— 评审 R-023（连续跟踪 dwell 逐拍判据中断）自包含 ROS 级验收 harness。
+"""连续跟踪 dwell 逐拍判据中断 —— 自包含 ROS 级验收。
 
 结构拷贝自 `tests/check_fsm_idempotent_latch.py`（自包含：不起 launch，自己充当「假源 + 假 reset 服务」桩环境，
 以 subprocess 直接起 `install/agc_task/lib/agc_task/task_manager` + 临时参数文件，`use_sim_time: False`，
@@ -138,7 +138,7 @@ class R23Harness(Node):
             arr.header.frame_id = 'world'
             arr.header.stamp = stamp
             if self.targets_empty:
-                arr.tracks = []                             # 空数组模式（R-023 关键注入）
+                arr.tracks = []                             # 空数组模式（关键注入）
             else:
                 t = TargetTrack()
                 t.header.frame_id = 'world'

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""w7b_e4_check —— W7-b T4（E4 / F-04）验收：obs 版本化（v2 可区分 + v1 可回放）。
+"""obs 版本化（v2 可区分 + v1 可回放）验收。
 
 判据（[ADR-0022](docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)(d) / [F-04]）：
-  * **v1 可回放**：`obs_spec.build_obs_vector(1, ...)` 与冻结真源 `interface.build_observation(...)`
+  * **v1 可回放**：`obs_spec.build_obs_vector(1, ...)` 与冻结接口 `interface.build_observation(...)`
     **逐位一致**（旧权重不静默失效）；
   * **v2 维度** = v1 + 4（目标 bearing sin/cos / 相对速度 / 观测年龄）；
   * v2 追加值按归一公式正确（bearing sin/cos、rel/rel_norm 夹 1、age/age_norm 夹 1）；
