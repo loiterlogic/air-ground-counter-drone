@@ -1,17 +1,23 @@
 <a id="top"></a>
-# ADR-0030：机载正下视（nadir）相机能力
+# 机载正下视（nadir）相机能力
 
-- **Status**：accepted（2026-11-04）
-- **来源**：用户 2026-11-04 指示「把 `docs/plan/无人机俯视相机.md` 完成」。本 ADR 是该 plan 的结档结论。
-- **相关**：[ADR-0009](0009-perception-truth-derived-and-vision-path.md#top)（真值识别 / 视觉路径退役）、
+## Status
+
+accepted（2026-11-04）
+
+## 相关
+
+- **来源**：用户 2026-11-04 指示完成"无人机俯视相机"专题（该 plan 已按"结档即删"删除，
+  结论只存在于本篇）。
+- [ADR-0009](0009-perception-truth-derived-and-vision-path.md#top)（真值识别 / 视觉路径退役）、
   [ADR-0007](0007-scene-geometry-single-source-and-layout.md#top)（几何单一真源）、
   [路线分支治理](../conventions/路线分支治理.md#rule)（"地图 / 模型文件选择"不是路线分支）、
-  [飞行高度分层 ](../conventions/飞行高度分层与按地图定高.md#camera-split)（GSD 验算）。
+  [飞行高度分层](../conventions/飞行高度分层与按地图定高.md#camera-split)（GSD 验算）。
 
 ## 背景
 
 `gz_x500`（默认己方机型）**不带相机**；PX4 官方可选的 `gz_x500_mono_cam` 挂的是**前视**单目相机，
-不是俯视。项目此前**没有任何机载俯视相机**，`docs/plan/无人机俯视相机.md` 一直是"未立项占位"。
+不是俯视。项目此前**没有任何机载俯视相机**，该能力一直只是"未立项占位"。
 
 2026-11-04 用户裁定「**没有双相机分工，识别靠真值**」—— 识别路径**不变**（`gt_adapter`），
 但"将来做视觉测绘需要一台朝下的相机"这个能力缺口仍然存在。本 ADR 只补**能力**，不动识别路径。
@@ -53,7 +59,7 @@
 - SDF 纯 pitch 旋转 `R_y(θ)·x̂ = (cosθ, 0, −sinθ)`：
   θ = **+90°** → `(0,0,−1)` = **正下方**；θ = −90° → `(0,0,+1)` = 正上方（**拍天空**）。
 
-> **纠错记录**：`docs/plan/无人机俯视相机.md` 与 曾写"加 −90° 俯角"，那是把**下俯量**当成了
+> **纠错记录**：立项阶段曾写"加 −90° 俯角"，那是把**下俯量**当成了
 > **字段值**。二者不是同一件事：下俯 90° ⇔ pitch = +1.5708。本 ADR 明确此区分，防止后人照字面改符号。
 >
 > 离线闸门**双断言**钉死这一点（`scripts/tests/test_nadir_camera_contract.py`）：
@@ -145,7 +151,7 @@ sdformat14 的该元素在 **`<camera>` 下**（不是 `<sensor>` 下），写�
 `experiments/`、`.git/`）：
 
 - `docs/conventions/系统结构图.md`
-- `docs/temp/11_1.md`
+- 立项期的临时草稿（`docs/temp/` 下，按约定不入库、已随之清理）
 - `scripts/tests/test_branch_ledger.py`（注释里作为"非路线分支"的例子）
 
 ### 验证（本轮实测，T2）

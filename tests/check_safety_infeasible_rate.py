@@ -20,6 +20,9 @@ import os
 import sys
 from datetime import datetime
 
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
 ROOT = '/home/chen/AGC'
 
 DV_KEYS = ('shield_infeasible_rate', 'collision_truth', 'true_shield_infeasible')
@@ -31,9 +34,7 @@ def _load(path):
         return json.load(f)
 
 
-def _read(path):
-    with open(path, encoding='utf-8', errors='replace') as f:
-        return f.read()
+_read = checklib.read_text_strict
 
 
 def case_a_definition_version(a_sum, b_sum):

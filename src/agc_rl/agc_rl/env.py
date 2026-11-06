@@ -328,7 +328,7 @@ class GroundAgcEnv:
         ok, msg = False, 'timeout'
         for _ in range(4):
             fut = cli.call_async(Trigger.Request())
-            if self._spin_until(lambda: fut.done(), 20.0) and fut.result() is not None:
+            if self._spin_until(lambda f=fut: f.done(), 20.0) and fut.result() is not None:
                 ok = bool(fut.result().success)
                 msg = fut.result().message
                 if ok:

@@ -70,9 +70,9 @@ accepted（2026-11-02 由 ADR-0040 / 0041 / 0046 / 0057 合并；结论未变）
 - **obstacle** `none|static` → 世界障碍生成（`world_obstacles`）+ `obstacles_file`；`dynamic` → `supported: false`（**无承载者**）；
 - **perception** `nominal|dropout|fov` → ~~`target_source=air_fusion` + 传感器通道文件（`sensors_file`），`requires_air_link`~~
   **（2026-11-04 失效，见下）**：`air_fusion` 已退役，两 backend 的 `target_source` 均为 `gt_adapter`；
-  `sensors_file` 仍被 `air_perception` 读取，但 `/agc/air/obs` **无消费者** ⇒ 三档**运行期行为相同**；
-  `no_target` 档标 `supported: false`（`s17` 随之 `unsupported:perception`，已从回归矩阵移除）。
-  详见 [`路线分支治理.md`](../conventions/路线分支治理.md#rule) 的失效登记与 ADR-0009 (b)；
+  **2026-11-06 续**：`air_perception` 节点连同 `sensors_file` 与整条 `perception` 轴**已删除**
+  （此前三档行为即已相同）；`no_target` 档的 `content` 登记一并移除（`s17` 已不在回归矩阵中）。
+  详见 [`路线分支治理.md`](../conventions/路线分支治理.md#rule) 的退役台账与 ADR-0009 (b)；
 - **outcome** → `task_manager`（+ `capture_adjudicator` / `jammer`）。
 
 各场景在 `scenarios.yaml` 增 `support_status`（`supported` / `unsupported:<axis>`）；`s05` / `s12`（`obstacle=dynamic`）标 `unsupported:obstacle`。

@@ -16,17 +16,17 @@ import re
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
 ROOT = '/home/chen/AGC'
 XACRO = 'src/agc_sim/models/agc_car/agc_car.sdf.xacro'
 CAR_YAML = 'src/agc_sim/config/car.yaml'
 GROUND_YAML = 'src/agc_ground/config/ground.yaml'
 
 
-def _load(path):
-    if not path or not os.path.exists(path):
-        return None
-    with open(path, encoding='utf-8') as f:
-        return json.load(f)
+_load = checklib.load_json
+
 
 
 def _read(path):
@@ -52,9 +52,6 @@ def _scenario(bench, name):
 def _unsupported_ok(bench, name):
     """某能力项：真值证据存在 **或** 如实 unsupported（且带失败证据）。二者其一即通过。"""
     uns = (bench or {}).get('unsupported', []) or []
-    failure = (bench or {}).get('failure') or {}
-    infra = (bench or {}).get('infra_error')
-    has_failure_evidence = bool(infra and failure)
     return bool(name in uns)
 
 

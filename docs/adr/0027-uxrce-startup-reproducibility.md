@@ -102,6 +102,8 @@ uint32 seed：实例 0 = own、实例 1 = intruder、实例 3 = 可选 warmup；
 Box-Muller 流，**不用** libc 的进程全局 `rand`：变量未设 = 确定性 standalone 种子，值非法则**拒绝模块
 启动**；GPS 噪声模型与其配置幅度不变。同一主种子经显式 `perception_bringup` launch 参数传给
 `air_perception`，**只有** `air_perception` 收该参数（无关节点不得收到未声明参数）。
+（2026-11-06：`air_perception` 已退役，该 seed 通道随之删除；主种子仍经 `scenario_reset.spawn_seed` /
+`run_logger.seed` 两个强类型 `int` 参数进入整链。）
 
 ### (i) 时间源加固：仿真唯一时间源 + 生产者侧校验
 三层处置（**生产者修复为主，消费端只做纵深防御**）：

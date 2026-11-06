@@ -273,7 +273,7 @@ def test_epicycle_is_deterministic():
     rev = [d2._target(t) for t in reversed(ts)]
     assert fwd == list(reversed(rev)), 'epicycle 求值依赖调用顺序（存在隐藏状态）'
     # 重复求值
-    for t, p in zip(ts, fwd):
+    for t, p in zip(ts, fwd, strict=False):
         assert d1._target(t) == p, 't=%.3f 重复求值不一致' % t
 
 

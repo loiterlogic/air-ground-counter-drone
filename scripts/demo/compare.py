@@ -16,7 +16,6 @@
 纪律：缺值一律判失败/不可比，**绝不**把 `None` / `not_applicable` 当作 0 或"相等"。
 """
 
-import json
 import os
 import sys
 

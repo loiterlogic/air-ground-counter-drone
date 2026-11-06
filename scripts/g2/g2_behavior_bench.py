@@ -35,7 +35,7 @@ import uuid
 
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
+from rclpy.qos import QoSProfile, ReliabilityPolicy
 
 from agc_msgs.msg import AgcTaskState
 from geometry_msgs.msg import PoseStamped, TwistStamped

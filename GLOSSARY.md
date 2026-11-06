@@ -20,7 +20,7 @@ _Avoid_: 替代、迁移、照搬
 _Avoid_: Nav2 全覆盖（含义不清）
 
 **契约真源（Contract Source of Truth）**:
-不可变约束的唯一归属地——《交接文档》，承载坐标系、唯一执行口、硬约束、终态语义、接口语义。其它文档只能引用、不得复述。
+不可变约束的唯一归属地——[ADR-0020](docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)，承载坐标系、唯一执行口、硬约束、终态语义、接口语义。其它文档只能引用、不得复述。
 _Avoid_: 合同、基线文档
 
 **唯一执行口（Sole Execution Port）**:

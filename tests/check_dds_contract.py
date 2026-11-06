@@ -29,6 +29,9 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
 ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 P = {
     'gt_bypass': os.path.join(ROOT, 'src/agc_perception/src/gt_bypass.cpp'),
@@ -40,9 +43,7 @@ P = {
 }
 
 
-def _read(path):
-    with open(path, encoding='utf-8') as f:
-        return f.read()
+_read = checklib.read_text_strict
 
 
 def case_a_gt_type(res):

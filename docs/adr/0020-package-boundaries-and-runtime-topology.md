@@ -81,8 +81,10 @@ BACKENDS[backend].air_link`），**不再**逐文件硬编码「轻量栈无空�
 
 > ⚠ **2026-11-04 修正**：原表 `full` 行的 `target_source` 写作 `air_fusion`，该节点已退役
 > （[ADR-0009](0009-perception-truth-derived-and-vision-path.md#top) (b)），两 backend 现均为 `gt_adapter`。
-> 同时 `air_perception` 虽仍在 `full` 链中启动，但 `/agc/air/obs` **无订阅者**，
-> 故 `perception` 轴在运行期**不再有区分力**（见 [ADR-0018](0018-acceptance-and-coverage-matrix.md#top) (g)）。
+> 同时 `air_perception` 的 `/agc/air/obs` **无订阅者**，故 `perception` 轴在运行期**不再有区分力**。
+> **2026-11-06 续**：该节点连同 `perception` 场景轴、传感器通道文件与 `s17`（`no_target` 负例）
+> 已整体删除（台账见 [路线分支治理](../../docs/conventions/路线分支治理.md#rule)）；
+> 本条保留为"该轴为何没有区分力"的记录（见 [ADR-0018](0018-acceptance-and-coverage-matrix.md#top) (g)）。
 
 ### (e) 入口名 == 报告身份
 manifest 记 `launch='main.launch.py'` + 实际 `backend` + `nodes`（完整展开节点名）+ 生效参数（`scene` /

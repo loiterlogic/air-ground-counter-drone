@@ -2,7 +2,7 @@
 # docs/archive/ — 历史归档导航
 
 > **角色**：本目录存放**已退出当前执行路径**的历史文档。它们仍是有效证据，但**不是当前入口、不是约束、不是进度真源**。
-> **任务计划规则**见 [任务计划规则](../plan/README.md#plan-index)；活约束见 [契约真源](../ROS2迁移交接文档.md#hard-constraints)。
+> **任务计划规则**见 [任务计划规则](../plan/README.md#plan-index)；活约束见 [契约真源](../adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)。
 > **引用纪律**：可以**明确标注为历史**地按需链接；不得把这里的内容当作现行规定（[ADR-0025](../adr/0025-publishing-boundary-and-retirement.md#top)）。
 
 ## 归档了什么

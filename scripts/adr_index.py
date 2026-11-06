@@ -223,7 +223,9 @@ def render(entries: list[dict[str, str]]) -> str:
         "- **`deferred` 不等于废止**：表示已裁定暂缓，括号里通常写了阻塞原因。",
         "- **合并篇的 `deferred` 写在正文里**（2026-11-02 起）：合并后每篇只保留一个 `Status`，",
         "  其下若有某项仍暂缓，正文对应小节会以 `**deferred**` 显式标注；查暂缓项请搜正文，不要只看本表。",
-        "- **暂停的路线其 ADR 仍是 `accepted`**：暂停事实记在 plan 的开关文件，不写进 ADR 状态。",
+        "- **暂停的路线其 ADR 仍是 `accepted`**：暂停事实由"
+        "  [ADR-0025](./0025-publishing-boundary-and-retirement.md#top) 承载（原 plan 开关文件已退役），"
+        "  不写进 ADR 状态。",
         "",
         "## 统计",
         "",

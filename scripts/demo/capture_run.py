@@ -149,7 +149,6 @@ def pick_frames(frames, timeline, prefer_size=None, stable_median=None, tol=0.02
         if prefer_size is not None:
             # 优先在同一图像尺寸的帧里挑——否则三图尺寸不一致（实测：
             # 终态帧撞上窗口被放大，1539×999 vs 另两张 831×952）
-            import os as _os
             from PIL import Image as _Img
             same = []
             for t_i, p_i in frames:
@@ -226,7 +225,6 @@ def pick_frames(frames, timeline, prefer_size=None, stable_median=None, tol=0.02
             # 若该帧尺寸与另两张不同（窗口在终态后被改过大小），改取**同尺寸**的最后一帧，
             # 保证三图尺寸一致（实测：终态帧撞上 1539×999）
             if prefer_size is not None:
-                import os as _os
                 from PIL import Image as _Img
                 same = []
                 for t_i, p_i in after:
@@ -278,7 +276,6 @@ def probe_topdown(out_dir):
  时机要求：**终态之后、进程回收之前**（回收后服务消失，探针必失败）。
  返回 dict（写进 manifest），不抛异常（探针失败不得掩盖主结论）。
     """
-    import json as _json
     result = {'at': time.time(), 'attempted': True}
     all_svcs, gui_svcs, raw = gui_services()
     result['service_count'] = len(all_svcs)
@@ -622,8 +619,7 @@ def main(argv=None):
     # 修法：从 result.json 的 `started_at` 取运行起点，把帧时刻换算成同一零点。
     run_t0_unix = _run_start_unix(demo_dir)
     if run_t0_unix is not None and frames:
-        import os as _os
-        frames = [(_os.path.getmtime(p) - run_t0_unix, p) for _t, p in frames]
+        frames = [(os.path.getmtime(p) - run_t0_unix, p) for _t, p in frames]
 
     # 先算稳定帧统计（下面的挑帧要用它过滤"被拖动/缩放"的帧），**不能**放到后面。
     stable_median, stable_detail = stable_skyband(frame_skybands)

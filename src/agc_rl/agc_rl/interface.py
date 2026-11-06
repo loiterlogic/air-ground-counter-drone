@@ -53,7 +53,7 @@ def sectors_from_angles(angles, ranges, num_sectors, max_range):
     """
     out = [1.0] * num_sectors
     width = 2.0 * math.pi / num_sectors
-    for angle, rng in zip(angles, ranges):
+    for angle, rng in zip(angles, ranges, strict=False):
         idx = int(math.floor(((angle % (2.0 * math.pi)) + width * 0.5) / width)) % num_sectors
         if rng is None:
             out[idx] = 0.0                      # 未知读数 → 保守按遮挡

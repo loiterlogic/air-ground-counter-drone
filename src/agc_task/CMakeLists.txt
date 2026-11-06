@@ -67,6 +67,9 @@ if(BUILD_TESTING)
   # P0 / T2：summary.json epoch 秒精度回归（17 位有效数字，防退化为科学计数法）
   ament_add_gtest(test_epoch_seconds test/test_epoch_seconds.cpp)
   target_include_directories(test_epoch_seconds PRIVATE include)
+  # 证据 JSON 的标量序列化（转义 / 非有限 → null / 数值往返）；无 ROS 依赖
+  ament_add_gtest(test_json_value test/test_json_value.cpp)
+  target_include_directories(test_json_value PRIVATE include)
   # P3 / ADR-0021：固定预算任务 FCO 积分器（手算确定性案例）
   ament_add_gtest(test_mission_fco_fixed_budget test/test_mission_fco_fixed_budget.cpp)
   target_include_directories(test_mission_fco_fixed_budget PRIVATE include)

@@ -35,6 +35,7 @@
 """
 
 import os
+import sys
 
 # 策略取值：auto（按探测）/ localhost-udp / subnet-shm / subnet-udp / 自定义 dict 不走这里
 POLICIES = ('auto', 'localhost-udp', 'subnet-shm', 'subnet-udp')
@@ -135,3 +136,35 @@ def describe(policy=None, flags=None):
             'ROS_AUTOMATIC_DISCOVERY_RANGE=%s FASTDDS_BUILTIN_TRANSPORTS=%s'
             % (resolved, mc, '?' if flags is None else hex(flags),
                env.get('ROS_AUTOMATIC_DISCOVERY_RANGE'), transport))
+
+
+def env_lines(policy=None, flags=None):
+    """`KEY=VALUE` 行列表（值 None 的键**不输出**：调用方须先 unset 它们）。
+
+ 供 shell 直接消费：`run_demo.sh` 用本模块的命令行入口取环境，不再内嵌 Python 源码
+ ——内嵌写法曾因嵌套引号与误删括号同时出问题，且无法被任何测试直接调用。
+    """
+    return ['%s=%s' % (k, v) for k, v in sorted(env_for(policy, flags).items())
+            if v is not None]
+
+
+def main(argv=None):
+    """命令行入口：首行摘要，其后为可直接 `export` 的 `KEY=VALUE`。"""
+    import argparse
+    ap = argparse.ArgumentParser(description='打印 DDS 发现范围 / 传输的注入环境')
+    ap.add_argument('--policy', default=None, help='覆盖策略（默认读环境或 auto）')
+    ap.add_argument('--describe-only', action='store_true', help='只打印摘要')
+    args = ap.parse_args(argv)
+    try:
+        print(describe(args.policy))
+        if not args.describe_only:
+            for line in env_lines(args.policy):
+                print(line)
+    except ValueError as exc:
+        sys.stderr.write('[dds_transport] 错误：%s\n' % exc)
+        return 2
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

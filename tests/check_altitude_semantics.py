@@ -20,21 +20,18 @@ import sys
 import yaml
 
 ROOT = '/home/chen/AGC'
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 AIR_YAML = os.path.join(ROOT, 'src/agc_air/config/air.yaml')
 
 
-def _load(path):
-    if not path or not os.path.exists(path):
-        return None
-    with open(path, encoding='utf-8') as f:
-        return json.load(f)
+_load = checklib.load_json
 
 
-def _read(path):
-    if not path or not os.path.exists(path):
-        return None
-    with open(path, encoding='utf-8', errors='replace') as f:
-        return f.read()
+
+_read = checklib.read_text
+
 
 
 def _code_only(txt):
@@ -212,14 +209,14 @@ def case_h_no_abi_no_second_commander():
                 t = _read(os.path.join(root, fn)) or ''
                 if 'create_publisher<px4_msgs::msg::TrajectorySetpoint>' in t:
                     hits.append(fn)
-    sec = subprocess.run(['grep', '-rnE', '§[0-9]', 'docs/'],
-                         cwd=ROOT, capture_output=True, text=True)
+    # 跨文档禁章节号引用（应使用稳定锚点）。代码块与行内代码里的示例不算引用——
+    # 否则规则文件自己写的反例会把本项永久判红，真违规反而被噪声淹没。
+    sec = ['%s:%d %s' % h for h in checklib.section_number_hits(ROOT)]
     res = {'agc_msgs_porcelain': p.stdout.strip(), 'abi_clean': abi_clean,
            'setpoint_publisher_files': hits,
            'single_setpoint_publisher': hits == ['offboard_interface.cpp'],
-           'section_refs': sec.stdout.strip()}
-    res['pass'] = bool(abi_clean and res['single_setpoint_publisher'] and
-                       sec.stdout.strip() == '')
+           'section_refs': sec}
+    res['pass'] = bool(abi_clean and res['single_setpoint_publisher'] and not sec)
     return res
 
 

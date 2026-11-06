@@ -25,14 +25,16 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
 ROOT = '/home/chen/AGC'
 SELF = Path(__file__).resolve()
 
 AXES = ['task_start', 'own_takeover', 'target_motion', 'real_terminal']
 
 
-def _read(path):
-    return Path(path).read_text(encoding='utf-8', errors='replace')
+_read = checklib.read_text_strict
 
 
 def _cell(status, value, evidence, reason=''):
@@ -363,7 +365,7 @@ def write_matrix_md(matrix, path):
     for row in matrix['rows']:
         cells = row['cells']
 
-        def fmt(ax):
+        def fmt(ax, cells=cells):   # 绑定当前行：闭包在本轮内消费，显式绑定防 B023 隐式捕获
             c = cells.get(ax)
             if not c:
                 return '-'

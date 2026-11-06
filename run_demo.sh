@@ -25,18 +25,18 @@ ROS_SETUP="/opt/ros/jazzy/setup.bash"
 WS_SETUP="${ROOT}/install/setup.bash"
 
 # ---------------------------- 人话错误 ----------------------------
-fail { # fail <标题> <第1行> [第2行…]
+fail() { # fail <标题> <第1行> [第2行…]
   local title="$1"; shift
   echo "" >&2
   echo "======================================================================" >&2
   echo "[run_demo] 错误：${title}" >&2
   echo "----------------------------------------------------------------------" >&2
   local line
-  for line in "$@"; do echo " ${line}" >&2; done
+  for line in "$@"; do echo "  ${line}" >&2; done
   echo "======================================================================" >&2
 }
 
-usage {
+usage() {
   sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
 }
 
@@ -48,9 +48,9 @@ SCENE=""
 DURATION=""
 BACKEND=""
 GUI_RENDER_BACKEND=""
-EXTRA=
+EXTRA=()
 DOCTOR_ONLY=""
-ARGS_REST=
+ARGS_REST=()
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -78,7 +78,7 @@ done
 
 # ---------------------------- 环境 ----------------------------
 # 自动 source（这是**脚本自身的职责**；"少 source 的故障提示"另用隔离 env 测试，见 doctor 的 inject 项）
-source_ros {
+source_ros() {
   if [ ! -f "$ROS_SETUP" ]; then
     fail "ROS 2 Jazzy 未安装" "缺少 ${ROS_SETUP}" "先装 ROS 2 Jazzy：https://docs.ros.org/en/jazzy/"
     exit 1
@@ -86,7 +86,7 @@ source_ros {
   # shellcheck disable=SC1090
   . "$ROS_SETUP" >/dev/null 2>&1
 }
-source_ws {
+source_ws() {
   if [ ! -f "$WS_SETUP" ]; then
     fail "工作区未构建" "缺少 ${WS_SETUP}" "先构建：cd ${ROOT} && colcon build --symlink-install"
     exit 1
@@ -100,18 +100,9 @@ source_ws
 
 # DDS 发现范围 / 传输由 scripts/demo/dds_transport.py 按 lo 能力探测（ADR-0028）；
 # 不写死 LOCALHOST。需要钉死时：AGC_DDS_TRANSPORT_POLICY=localhost-udp|subnet-shm|subnet-udp
-_dds_env="$(python3 -c '
-import os, sys
-sys.path.insert(0, os.path.join("'"${ROOT}"'", "scripts", "demo"))
-import dds_transport as d
-try:
-    print(d.describe)
-    resolved = d.resolve
-except ValueError as exc:
-    sys.stderr.write("[run_demo] 错误：%s\n" % exc); raise SystemExit(2)
-for key, value in d.env_for(resolved).items:
-    print("%s=%s" % (key, "" if value is None else value))
-')" || exit 2
+# 取环境走该模块的**命令行入口**，不在 shell 里内嵌 Python 源码（内嵌写法无法被测试直接调用，
+# 且嵌套引号极易在批量改名中被打坏）。
+_dds_env="$(python3 "${DEMO_PY}/dds_transport.py")" || exit 2
 echo "[run_demo] ${_dds_env%%$'\n'*}"
 unset ROS_AUTOMATIC_DISCOVERY_RANGE FASTDDS_BUILTIN_TRANSPORTS
 while IFS= read -r _line; do
@@ -155,7 +146,7 @@ esac
 python3 "${DEMO_PY}/main.py" preflight --headless "$HEADLESS" || exit $?
 
 # 组装参数
-EXTRA_ARGS=
+EXTRA_ARGS=()
 for e in "${EXTRA[@]-}"; do [ -n "$e" ] && EXTRA_ARGS+=("$e"); done
 
 exec python3 "${DEMO_PY}/main.py" start \

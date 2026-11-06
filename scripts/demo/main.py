@@ -56,7 +56,6 @@ def cmd_preflight(args):
 # --------------------------------------------------------------------------------------
 
 def cmd_doctor(args):
-    import json
     import time
     t0 = time.monotonic()
     results = doctor.run_checks(want_gui=not args.headless)

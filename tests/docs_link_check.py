@@ -89,6 +89,11 @@ LOCAL_ONLY_PREFIXES = (
     "reference/",            # 旧树归档（只读）
     "toolchain/",            # 外部工具链（仅 README 入库）
     ".trae/",                # 已退役；残留即异常，但语义仍是"本机"
+    # 协作台账逐轮过程物（2026-11-06 起不入库，见 .gitignore）：
+    # `CURRENT.md` 会链到具体轮次做"当前在办"的证据，本地完整检出里有效，
+    # 公开 clone 里没有——与 experiments/ 同口径，既不判链也不声称可导航。
+    ".coordination/task/",
+    ".coordination/drafts/",
 )
 
 # 历史范围：断链只列名，不计入失败。

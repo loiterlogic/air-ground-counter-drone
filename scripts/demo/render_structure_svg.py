@@ -344,9 +344,9 @@ def layout():
     for layer, _label, cols, gap, after in ROWS:
         widths = [int(round(row_w * frac)) for _id, frac in cols]
         widths[-1] = row_w - sum(widths[:-1]) - gap * (len(cols) - 1)
-        h = max(node_height(NODE_BY_ID[nid], w) for (nid, _f), w in zip(cols, widths))
+        h = max(node_height(NODE_BY_ID[nid], w) for (nid, _f), w in zip(cols, widths, strict=False))
         x = NODE_X0
-        for (nid, _f), w in zip(cols, widths):
+        for (nid, _f), w in zip(cols, widths, strict=False):
             nodes[nid] = (x, y, w, h)
             x += w + gap
         bands[layer] = (y, y + h)
@@ -511,7 +511,7 @@ def _label_free(bx, nodes, segs, boxes):
                 and bx[1] < b[1] + b[3] and b[1] < bx[1] + bx[3]):
             return False
     for seg in segs:
-        for p, q in zip(seg['pts'], seg['pts'][1:]):
+        for p, q in zip(seg['pts'], seg['pts'][1:], strict=False):
             if _seg_hits_rect(p, q, bx, pad=1):
                 return False
     return True
@@ -614,7 +614,7 @@ def validate_routes(nodes, segs):
     errors = []
     for seg in segs:
         kind, pts = seg['kind'], seg['pts']
-        for p, q in zip(pts, pts[1:]):
+        for p, q in zip(pts, pts[1:], strict=False):
             if p[0] != q[0] and p[1] != q[1]:
                 errors.append('非轴对齐线段：%r → %r' % (p, q))
                 continue
@@ -627,7 +627,7 @@ def validate_routes(nodes, segs):
                 if _on_border(p, rect) or _on_border(q, rect):
                     continue
                 errors.append('类 %d 线段穿过 %s 框体：%r → %r' % (kind, nid, p, q))
-    flat = [(seg['kind'], a, b) for seg in segs for a, b in zip(seg['pts'], seg['pts'][1:])]
+    flat = [(seg['kind'], a, b) for seg in segs for a, b in zip(seg['pts'], seg['pts'][1:], strict=False)]
     for i, (k1, a1, b1) in enumerate(flat):
         for k2, a2, b2 in flat[i + 1:]:
             hit = _cross(a1, b1, a2, b2)
@@ -649,14 +649,14 @@ def validate_labels(nodes, segs, boxes):
             if (bx[0] < rect[0] + rect[2] and rect[0] < bx[0] + bx[2]
                     and bx[1] < rect[1] + rect[3] and rect[1] < bx[1] + bx[3]):
                 errors.append('标签 %r 压在节点 %s 上' % (text, nid))
-    for i, (n1, b1, t1) in enumerate(boxes):
-        for n2, b2, t2 in boxes[i + 1:]:
+    for i, (_n1, b1, t1) in enumerate(boxes):
+        for _n2, b2, t2 in boxes[i + 1:]:
             if (b1[0] < b2[0] + b2[2] and b2[0] < b1[0] + b1[2]
                     and b1[1] < b2[1] + b2[3] and b2[1] < b1[1] + b1[3]):
                 errors.append('标签互相重叠：%r / %r' % (t1, t2))
     for seg in segs:
         kind, pts = seg['kind'], seg['pts']
-        for p, q in zip(pts, pts[1:]):
+        for p, q in zip(pts, pts[1:], strict=False):
             for _name, bx, text in boxes:
                 if _seg_hits_rect(p, q, bx):
                     errors.append('类 %d 线段压住标签 %r（%r → %r）' % (kind, text, p, q))

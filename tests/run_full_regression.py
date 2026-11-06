@@ -185,7 +185,7 @@ def main(argv=None):
 
     results = []
     t_all = time.monotonic()
-    for scene, expected, desc in todo:
+    for scene, expected, _desc in todo:
         sys.stdout.write('%-38s ' % scene)
         sys.stdout.flush()
         r = run_scene(scene, expected, args.timeout, args.campaign, args.seed,

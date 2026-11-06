@@ -60,7 +60,6 @@ import re
 import shutil
 import subprocess
 import sys
-import tempfile
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))

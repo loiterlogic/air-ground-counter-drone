@@ -23,21 +23,18 @@ import struct
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
 ROOT = '/home/chen/AGC'
 
 
-def _read(path):
-    if not path or not os.path.exists(path):
-        return None
-    with open(path, encoding='utf-8', errors='replace') as f:
-        return f.read()
+_read = checklib.read_text
 
 
-def _load(path):
-    if not path or not os.path.exists(path):
-        return None
-    with open(path, encoding='utf-8') as f:
-        return json.load(f)
+
+_load = checklib.load_json
+
 
 
 def _code_only(txt):

@@ -38,9 +38,7 @@
 `/agc/task/start`（既有服务）与 `/agc/task/state`（既有话题）。
 """
 
-import json
 import os
-import re
 import signal
 import subprocess
 import time
@@ -686,7 +684,6 @@ class DemoRun:
                               % (PX4_OWN_DELAY_S, PX4_INTRUDER_DELAY_S))
 
     def _phase_wait_ready(self):
-        import rclpy
         self.monitor = TaskMonitor()
         require_air = self.opts['backend'] == 'full'
         t0 = time.monotonic()

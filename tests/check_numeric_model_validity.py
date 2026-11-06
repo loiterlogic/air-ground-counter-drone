@@ -22,19 +22,16 @@ import xml.etree.ElementTree as ET
 
 ROOT = '/home/chen/AGC'
 
-
-def _read(path):
-    if not path or not os.path.exists(path):
-        return None
-    with open(path, encoding='utf-8', errors='replace') as f:
-        return f.read()
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 
 
-def _load(path):
-    if not path or not os.path.exists(path):
-        return None
-    with open(path, encoding='utf-8') as f:
-        return json.load(f)
+_read = checklib.read_text
+
+
+
+_load = checklib.load_json
+
 
 
 def _code_only(txt):
@@ -115,16 +112,14 @@ def case_d_map_seed(bench):
             (sc.get('map_adapter_invalid_geometry', {}).get('pass')),
         'map_adapter_invalid_obstacle_rejected':
             (sc.get('map_adapter_invalid_obstacle', {}).get('pass')),
-        'air_perception_valid_alive': (sc.get('air_perception_valid_seed', {}).get('pass')),
-        'air_perception_invalid_seed_rejected':
-            (sc.get('air_perception_invalid_seed', {}).get('pass')),
     }
     map_src = _read(os.path.join(ROOT, 'src/agc_perception/src/map_adapter.cpp')) or ''
     res['map_adapter_has_startup_validation'] = ('validateStartupOrThrow' in map_src) and \
                                                 ('拒绝启动' in map_src)
-    perc_src = _read(os.path.join(ROOT, 'src/agc_perception/src/air_perception.cpp')) or ''
-    res['air_perception_rejects_bad_seed'] = ('拒绝启动' in perc_src) and \
-                                             ('不静默退回默认基种子' in perc_src)
+    # `air_perception` 节点已于 2026-11-06 整体退役（见退役台账）；本项改判**它保持删除**，
+    # 不再引用已不存在的源文件——否则这条核查会永久红，把真回归淹掉。
+    perc_path = os.path.join(ROOT, 'src/agc_perception/src/air_perception.cpp')
+    res['air_perception_retired'] = not os.path.exists(perc_path)
     # seed 消费方登记：scenario_reset.spawn_seed / run_logger.seed 为**强类型 int 参数**（launch int()
     # 生成），非法值由 ROS 参数类型系统在启动期拒绝 → 登记为「已覆盖（类型安全）」。
     sr = _read(os.path.join(ROOT, 'src/agc_task/src/scenario_reset.cpp')) or ''
@@ -132,15 +127,14 @@ def case_d_map_seed(bench):
     res['seed_consumers'] = {
         'scenario_reset.spawn_seed': 'declare_parameter<int>' in sr,
         'run_logger.seed': 'declare_parameter<int>' in rl,
-        'air_perception.seed': '启动期校验（拒绝非整数字面量）',
+        'air_perception.seed': '已随节点退役（不再有消费者）',
     }
     res['seed_typed_int_registered'] = ('declare_parameter<int>("spawn_seed"' in sr) and \
                                         ('declare_parameter<int>("seed"' in rl)
     res['pass'] = bool(
         res['map_adapter_valid_alive'] and res['map_adapter_invalid_geometry_rejected'] and
-        res['map_adapter_invalid_obstacle_rejected'] and res['air_perception_valid_alive'] and
-        res['air_perception_invalid_seed_rejected'] and
-        res['map_adapter_has_startup_validation'] and res['air_perception_rejects_bad_seed'] and
+        res['map_adapter_invalid_obstacle_rejected'] and
+        res['map_adapter_has_startup_validation'] and res['air_perception_retired'] and
         res['seed_typed_int_registered'])
     return res
 
@@ -256,17 +250,9 @@ def case_h_abi_single_commander_section():
                 t = _read(os.path.join(root, fn)) or ''
                 if 'create_publisher<px4_msgs::msg::TrajectorySetpoint>' in t:
                     hits.append(fn)
-    # 跨文档禁 `§ 数字` 章节号（应使用稳定锚点）
-    sec = []
-    for base in (os.path.join(ROOT, 'docs'), os.path.join(ROOT, '.trae', 'specs')):
-        for root, _dirs, files in os.walk(base):
-            for fn in files:
-                if not fn.endswith('.md'):
-                    continue
-                fp = os.path.join(root, fn)
-                t = _read(fp) or ''
-                if re.search(r'§\s*[0-9]', t):
-                    sec.append(os.path.relpath(fp, ROOT))
+    # 跨文档禁章节号引用（应使用稳定锚点）。代码块 / 行内代码里的示例不算——
+    # 规则文件自己的反例不该把本项判红。`.trae/specs` 已随 ADR-0025 退役，不再扫描。
+    sec = ['%s:%d' % (h[0], h[1]) for h in checklib.section_number_hits(ROOT)]
     res = {'agc_msgs_porcelain': p.stdout.strip(), 'abi_clean': abi_clean,
            'setpoint_publisher_files': hits,
            'single_setpoint_publisher': hits == ['offboard_interface.cpp'],

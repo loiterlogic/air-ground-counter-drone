@@ -572,7 +572,7 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
     try:
         launch_env['AGC_DDS_POLICY_USED'] = demo_dds.apply(launch_env)
     except ValueError as exc:
-        raise SystemExit('[episode_runner] DDS 传输策略非法：%s' % exc)
+        raise SystemExit('[episode_runner] DDS 传输策略非法：%s' % exc) from exc
     # ADR-0024： worker 归属 / 隔离环境（单 worker 不设，保持既有行为不变）。
     if worker_id is not None:
         launch_env['AGC_WORKER_ID'] = str(worker_id)
@@ -830,7 +830,7 @@ def main():
     try:
         demo_dds.apply(os.environ)
     except ValueError as exc:
-        raise SystemExit('[episode_runner] DDS 传输策略非法：%s' % exc)
+        raise SystemExit('[episode_runner] DDS 传输策略非法：%s' % exc) from exc
 
     rclpy.init()
     episodes = []

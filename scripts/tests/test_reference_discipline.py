@@ -140,7 +140,7 @@ def _changed_lines():
             cwd=ROOT, capture_output=True, text=True, timeout=60)
     except (OSError, subprocess.SubprocessError) as exc:
         raise BaselineUnavailable(
-            '无法执行 git diff（%s）；本闸门依赖 git 历史，请勿在无 git 环境运行' % exc)
+            '无法执行 git diff（%s）；本闸门依赖 git 历史，请勿在无 git 环境运行' % exc) from exc
     if proc.returncode != 0:
         raise BaselineUnavailable(
             'git diff 基线 %s 不可达（exit %d）：%s\n'

@@ -157,10 +157,10 @@ def load_spawn_layout(task_share, path=None):
             raw = sec[k]
             try:
                 val = float(raw)
-            except (TypeError, ValueError):
+            except (TypeError, ValueError) as exc:
                 raise RuntimeError(
                     '出生布局文件 %s 的 `spawn_layout.%s.%s`=%r 非数值 → 拒绝运行'
-                    % (path, entity, k, raw))
+                    % (path, entity, k, raw)) from exc
             if not math.isfinite(val):
                 # NaN / ±Inf：比较式对 NaN 恒假 → 越界与净空拒绝分支失效（静默放行）。
                 raise RuntimeError(
@@ -179,9 +179,9 @@ def load_spawn_layout(task_share, path=None):
         raw = off.get(k, default)
         try:
             val = float(raw)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError) as exc:
             raise RuntimeError(
-                '出生布局文件 %s 的 `goal_offset_m.%s`=%r 非数值 → 拒绝运行' % (path, k, raw))
+                '出生布局文件 %s 的 `goal_offset_m.%s`=%r 非数值 → 拒绝运行' % (path, k, raw)) from exc
         if not math.isfinite(val):
             raise RuntimeError(
                 '出生布局文件 %s 的 `goal_offset_m.%s`=%r 非有限值 → 拒绝运行' % (path, k, raw))
@@ -225,8 +225,8 @@ def parse_own_pose(pose_string, layout=None):
             '己方机位姿 %r 需要 6 个分量（x,y,z,roll,pitch,yaw）→ 拒绝运行' % (pose_string,))
     try:
         vals = [float(p) for p in parts[:6]]
-    except ValueError:
-        raise RuntimeError('己方机位姿 %r 含非数值分量 → 拒绝运行' % (pose_string,))
+    except ValueError as exc:
+        raise RuntimeError('己方机位姿 %r 含非数值分量 → 拒绝运行' % (pose_string,)) from exc
     if not all(math.isfinite(v) for v in vals):
         raise RuntimeError('己方机位姿 %r 含非有限值（NaN/±Inf）→ 拒绝运行' % (pose_string,))
     is_layout = bool(layout) and pose_string.strip() == own_uav_pose_string(layout)
@@ -723,8 +723,9 @@ def flight_altitude_block(geometry):
             raise RuntimeError('flight_altitude 缺少键 %r → 拒绝运行' % (key,))
         try:
             v = float(fa[key])
-        except (TypeError, ValueError):
-            raise RuntimeError('flight_altitude.%s=%r 非数值 → 拒绝运行' % (key, fa[key]))
+        except (TypeError, ValueError) as exc:
+            raise RuntimeError(
+                'flight_altitude.%s=%r 非数值 → 拒绝运行' % (key, fa[key])) from exc
         if not math.isfinite(v) or v <= 0.0:
             raise RuntimeError(
                 'flight_altitude.%s=%r 非有限正数（NaN/±Inf/≤0）→ 拒绝运行' % (key, fa[key]))
@@ -937,7 +938,7 @@ def assertions(scene, merged, info, air_merged=None, sim_share=None, layout=None
         res['air_z_tops_match_geometry'] = (
             len(safety.get('obstacle_z_top', [])) == len(gids)
             and all(abs(float(v) - z) < 1e-9
-                    for v, z in zip(safety.get('obstacle_z_top', []), z_tops)))
+                    for v, z in zip(safety.get('obstacle_z_top', []), z_tops, strict=False)))
         res['air_vertical_clearance_matches_source'] = (
             abs(float(safety.get('vertical_clearance_m', -1e9))
                 - flight_altitude_block(geometry)['own_clearance_min_m']) < 1e-9)

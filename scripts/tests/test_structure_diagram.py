@@ -163,7 +163,6 @@ def test_declared_package_xml_matches_edges():
     if not os.path.isdir(os.path.join(ROOT, 'src')):
         pytest.skip('无 src/')
     import xml.etree.ElementTree as ET
-    problems = []
     for pid in sorted(BUSINESS):
         xml = os.path.join(ROOT, 'src', pid, 'package.xml')
         if not os.path.isfile(xml):
@@ -461,10 +460,9 @@ def test_lines_are_distinguishable_from_background(qt):
     img = qt['raster'](scale=1)
     nodes, bands, _frame = R.layout()
     segs = R.routes(nodes, bands)
-    QtGui = qt['QtGui']
     checked = 0
     for seg in segs:
-        for (x1, y1), (x2, y2) in zip(seg['pts'], seg['pts'][1:]):
+        for (x1, y1), (x2, y2) in zip(seg['pts'], seg['pts'][1:], strict=False):
             span = abs(x2 - x1) + abs(y2 - y1)
             if span < 8:
                 continue          # 太短，多半是端口进出段

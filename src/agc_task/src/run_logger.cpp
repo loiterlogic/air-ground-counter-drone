@@ -75,9 +75,16 @@
 #include <trajectory_msgs/msg/multi_dof_joint_trajectory.hpp>
 
 #include "agc_task/epoch_seconds.hpp"
+#include "agc_task/json_value.hpp"
 #include "agc_task/mission_fco_fixed_budget.hpp"
 
 namespace fs = std::filesystem;
+
+// 证据 JSON 的标量序列化（见 agc_task/json_value.hpp）：本类不在 agc_task 命名空间内，
+// 故在此做文件级 using，避免每个调用点写全限定名。
+using agc_task::jsonBool;
+using agc_task::jsonNumber;
+using agc_task::jsonString;
 
 class RunLogger : public rclcpp::Node
 {
@@ -445,7 +452,8 @@ public:
     for (size_t i = 0; i < collision_events_.size(); ++i) {
       const auto & ev = collision_events_[i];
       if (i > 0) {out << ", ";}
-      out << "{\"t_sim\": " << ev.t_sim_s << ", \"other\": \"" << ev.other << "\", \"depth\": "
+      out << "{\"t_sim\": " << ev.t_sim_s << ", \"other\": " << jsonString(ev.other)
+          << ", \"depth\": "
           << (ev.have_depth ? std::to_string(ev.depth) : std::string("null")) << ", \"position\": ";
       if (ev.have_pos) {
         out << "{\"x\": " << ev.pos_x << ", \"y\": " << ev.pos_y << ", \"z\": " << ev.pos_z << "}";
@@ -1163,26 +1171,8 @@ private:
   }
 
   // === ADR-0021：mission_fco_fixed_budget_v1 的 JSON 证据 ===
-  static std::string jsonString(const std::string & s)
-  {
-    std::string out = "\"";
-    for (char c : s) {
-      if (c == '\\' || c == '"') {out += '\\';}
-      out += c;
-    }
-    out += '"';
-    return out;
-  }
-
-  static std::string jsonNumber(double v)
-  {
-    if (!std::isfinite(v)) {return "null";}
-    std::ostringstream os;
-    os << std::setprecision(17) << v;
-    return os.str();
-  }
-
-  static std::string jsonBool(bool v) {return v ? "true" : "false";}
+  // 标量序列化（字符串转义 / 非有限 → null / 17 位有效数字）在 json_value.hpp，
+  // 那里无 ROS 依赖，可直接 gtest。
 
   std::string missionFcoConfigJson() const
   {

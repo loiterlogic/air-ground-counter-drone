@@ -299,7 +299,8 @@ def main():
                     for _ in range(2):
                         cs_before = node.car_start_count
                         r = call_reset()
-                        arrived, _ = wait_until(lambda: node.car_start_count > cs_before, 2.0)
+                        arrived, _ = wait_until(
+                            lambda cs=cs_before: node.car_start_count > cs, 2.0)
                         ep = node.last_epoch
                         rounds.append({'success': r['success'], 'reason': r['reason'],
                                        'epoch': ep, 'car_start_arrived': bool(arrived)})

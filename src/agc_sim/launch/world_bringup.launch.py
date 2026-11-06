@@ -30,8 +30,6 @@ from world_map import (  # noqa: E402
     obstacle_geometry_sdf,
     obstacle_part_geometry_sdf,
     obstacle_parts,
-    obstacle_safety_radius,
-    obstacle_shape,
     part_finish,
 )
 from world_map import geometry_path as geometry_file_for_map  # noqa: E402
@@ -265,10 +263,10 @@ def generate_launch_description():
             raw = str(default)
         try:
             val = float(raw)
-        except ValueError:
+        except ValueError as exc:
             raise RuntimeError(
                 'spawn 参数 %s=%r（来源：%s）非数值（可用：有限数值 | auto）→ 拒绝运行'
-                % (name, raw, src))
+                % (name, raw, src)) from exc
         if not math.isfinite(val):
             # NaN 会让一切区间比较恒假；±Inf 会让 create/物理出现非有限位姿。
             raise RuntimeError(

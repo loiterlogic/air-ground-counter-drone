@@ -34,8 +34,11 @@ experiments/<campaign>/<run_id>/
   └── figures/ 出图
 ```
 
-**禁止**在其它任何位置写实验产物。`experiments/` 整体 git 忽略，仅 `experiments/README.md` 与
-`experiments/**/config/` 入库。每次 run 必须落 config 快照 + git commit hash。
+**禁止**在其它任何位置写实验产物。每次 run 必须落 config 快照 + git commit hash。
+
+> **入库口径已由 [ADR-0025](0025-publishing-boundary-and-retirement.md#top) 取代**：`/experiments/`
+> **整目录**不入库，只有 `experiments/README.md` 例外（本 ADR 早期"放行 `experiments/**/config/`"
+> 的说法作废——`.gitignore` 实测是整目录忽略，`.coordination/` 的实验产物同理）。
 
 ### (b) run_id 唯一不可覆盖
 

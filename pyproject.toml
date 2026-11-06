@@ -1,0 +1,43 @@
+# ruff 配置 —— 只对**活跃代码**钉口径，历史脚本不追溯
+#
+# 为什么需要它：此前全仓没有 ruff 配置，`ruff check` 用默认规则集报 2400+ 条
+# （`UP031` printf 风格 1623 条、`E501` 行长 3047 条），噪声把真正该看的
+# `F401`/`F841`/`B023` 淹掉了；也没有 `target-version`，规则集随 ruff 版本漂移，
+# 无法判断"新代码是否比昨天更差"。
+#
+# 口径：
+# * `src/` / `scripts/` / `tests/` 是活跃代码 → 只保留**抓真 bug**的规则族；
+# * `scripts/archive/`、`scripts/research/`、`experiments/` 是历史证据，按 ADR-0002
+#   「历史不改写」整体排除——它们的风格问题不是待办事项。
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+exclude = [
+    "scripts/archive",
+    "scripts/research",
+    "build",
+    "install",
+    "log",
+    "experiments",
+    "toolchain",
+    "__pycache__",
+]
+
+[tool.ruff.lint]
+# 只选"写错了"的族，不选"写法偏好"的族。
+# E9 = 语法/IO 级错误；F = 未定义名/未用导入/未用变量；B = 真实陷阱
+# （`B023` 闭包捕获循环变量、`B006` 可变默认值、`B904` raise from）。
+select = ["E9", "F", "B"]
+# 行内 `# noqa: BLE001` 之类的历史写法不在选中族里，保留不报。
+ignore = [
+    # 长行由 formatter / review 管，静态规则收益低且噪音大（存量 3000+）。
+    "E501",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# 测试脚本允许"先赋值再断言"的写法（`x = f(); assert x`），
+# 且大量 `import` 是为 `--help` 之外的可选依赖探测而保留。
+"tests/**" = ["F401"]
+"scripts/tests/**" = ["F401"]

@@ -119,7 +119,6 @@ def _latest_summary(campaign, scene, seed):
     camp = os.path.join(ROOT, 'experiments', 'w6-task-eval')
     if not os.path.isdir(camp):
         return None
-    prefix = '2026'
     cands = []
     for d in os.listdir(camp):
         p = os.path.join(camp, d, 'metrics', 'summary.json')
@@ -183,9 +182,9 @@ def run_case(category, scene, expected, desc, kind, seed,
     try:
         proc = subprocess.run(['bash', '-c', _shell(argv)], cwd=ROOT, env=_env(),
                               capture_output=True, text=True, timeout=timeout_s + 180)
-        rc, out = proc.returncode, (proc.stdout or '') + (proc.stderr or '')
+        out = (proc.stdout or '') + (proc.stderr or '')
     except subprocess.TimeoutExpired:
-        rc, out = 124, 'TIMEOUT\n'
+        out = 'TIMEOUT\n'
     elapsed = time.monotonic() - t0
 
     rep = os.path.join(ROOT, 'experiments', campaign, run_id, 'metrics', 'report.json')
@@ -291,7 +290,7 @@ def main(argv=None):
     bad = [x for x in results if not x[5]['ok']]
     infra = [x for x in bad if x[5]['infra']]
 
-    for cat, scene, expected, desc, kind, r in bad:
+    for cat, _scene, _expected, desc, _kind, r in bad:
         print('\n%s %s（%s）' % (c('未通过：', RED), cat, desc))
         if r['infra']:
             print('  分类：**infra** — 不是能力回归；先查环境')

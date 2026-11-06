@@ -22,9 +22,12 @@
 - **消息来源**：任务、报告、审查、状态变更与关键判断必须标明来源（用户/Leader/Worker）。日志、哈希、命令输出是证据引用，不能替代三方结论或冒充来源。
 - **停止与状态完整性**：出现契约硬约束违规、基线未知漂移、guard 拦截、**资源总量或总时间耗尽**、**并行资源冲突**、必要证据缺失、通知失败或越界时，立即停止并回报；不静默重试、不扩大范围、不伪造证据、**不自行改交接状态**、不开下一任务。**建议次数用尽本身不是停止条件**（见 [计数只记账](#counts)），但**它也不授权任何未授权的运行或越界写入**。任务只有经 Leader 独立审查才能验收归档。
 
-真源分层：项目执行以 [项目完成路线](../docs/plan/README.md#plan-index) 为入口；决策归 `docs/adr/`（[索引](../docs/adr/README.md#adr-index)），进度归路线各阶段的出口判据，实验产物归 `experiments/`；历史 Runbook 在 [归档](../docs/archive/ROS2迁移步骤.md#top)（**不是**进度真源）。硬约束只引用 [契约真源](../docs/ROS2迁移交接文档.md#hard-constraints)。交接文件用稳定锚点引用，不复制规格或硬约束。
+真源分层：项目执行以 [项目完成路线](../docs/plan/README.md#plan-index) 为入口；决策归 `docs/adr/`（[索引](../docs/adr/README.md#adr-index)），进度归路线各阶段的出口判据，实验产物归 `experiments/`；历史 Runbook 在 [归档](../docs/archive/ROS2迁移步骤.md#top)（**不是**进度真源）。硬约束只引用 [契约真源](../docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)。交接文件用稳定锚点引用，不复制规格或硬约束。
 
-本目录纳入 Git；`experiments/` 沿用本地保留规则（不发布）。纳入 Git 不代表自动提交或推送。
+**入库范围**：本文件、`CURRENT.md`、`roles/`、`locks/README.md`——即**规则与当前交接状态**。
+逐轮过程物（`task/<ID>/round-*/`、`drafts/`、`locks/*.lock`、`STOP-*.md`）**不入库**：
+它们是执行期台账与运行时状态，结论按协作协议并入 ADR / `docs/` / `CURRENT.md`
+（[ADR-0025](../docs/adr/0025-publishing-boundary-and-retirement.md#top) 同一口径）。纳入 Git 不代表自动提交或推送。
 
 <a id="files"></a>
 ## 文件与写入归属
@@ -72,7 +75,7 @@
 | **里程碑达成** | 派工单登记的验收判据全部满足 |
 | **阻塞** | 无可行路径、需越白名单/契约、缺必要来源，或**并行资源冲突**（见 [并行任务](#parallel)） |
 | **资源耗尽** | 本批次**总墙钟**用完，或**真实运行总时长**用完，或并行任务占满独占资源 |
-| **契约风险** | 任一硬约束（[#hard-constraints](../docs/ROS2迁移交接文档.md#hard-constraints)）可能被破坏 |
+| **契约风险** | 任一硬约束（[#hard-constraints](../docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)）可能被破坏 |
 
 **不唤醒的情形**（Worker 自行继续）：局部失败后按已知根因重试、探针失败但仍有未排除假设、常规证据积累、白名单内同根因修复、**已明确根因但还需若干次验证**、**记录轮数达到 N**、**建议次数用尽但仍有正向运行授权与剩余总时长**。
 
@@ -115,7 +118,7 @@
 |---|---|
 | **未授权不运行** | 派工单**未写**该类运行授权，或**明确写 0**（如 `T1=0`/`T2=0`）→ **一次都不能启动**。不得用"次数只记账"推出可以运行 |
 | **文件边界** | 只写本单白名单；共享文件按 [并行任务](#parallel) 的拥有者规则 |
-| **契约与硬约束** | 任一 [#hard-constraints](../docs/ROS2迁移交接文档.md#hard-constraints) 可能被破坏即停 |
+| **契约与硬约束** | 任一 [#hard-constraints](../docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints) 可能被破坏即停 |
 | **单次物理边界** | T1 每次 ≤30 s、≤2 进程、不碰共享状态；T2 单次运行时长上限 |
 | **总时长/资源总量** | 派工单给的墙钟与真实运行总时长，用尽即停 |
 | **上级明确指定的硬限** | 用户或派工单**明确**以"外部配额、费用、硬件占用"等为由指定次数硬限时，**按指定执行**，不得以本节通则绕过；派工单须写明理由 |

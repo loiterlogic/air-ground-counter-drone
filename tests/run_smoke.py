@@ -9,11 +9,14 @@
 
 | 组 | 断言什么 | 为什么进冒烟集 |
 |---|---|---|
+| `entry` | 跟踪的 shell / Python 文件可被解析器读懂（`tests/check_entry_syntax.py`） | 入口坏掉时其他组的绿灯毫无意义 |
 | `geometry` | 几何派生链：地图配置文件 → 世界 SDF 展开一致（`tests/check_scene_geometry.py`） | 改地图/材质最常踩的坑，纯静态 |
 | `messages` | 9 消息 ABI 字段与顺序不变 + `AgcTaskState` 9 个状态常量 | 契约红线，离线可判 |
 | `docs` | 活跃文档本地链接与锚点可解析（`tests/docs_link_check.py`） | 改 README / 计划文档后必跑 |
 | `index` | 脚本索引与实际文件集合一致（`scripts/adr_index.py --check` + `scripts/tests/test_scripts_index.py`） | 索引漂移靠测试拦，不靠纪律 |
 | `offline` | `scripts/tests/` 全部离线单测（不启 ROS 节点 / 不启仿真） | 演示入口、视觉接线、视觉高亮等回归 |
+| `dds` | DDS 契约：不写死发现范围 / launch 不覆盖 | 写死 `LOCALHOST` 曾两次让收发链静默零送达 |
+| `toolchain` | PX4 工具链 pin 清单与实机一致 | 外部依赖，缺失时如实 FAIL 而非静默跳过 |
 
 **不是**要求全部核查全绿——那需要整链环境，语义是"验收"而非"冒烟"
 （见 [tests/README](README.md#top)）。
@@ -21,7 +24,7 @@
 ## 用法
 
 ```bash
-./run_demo.sh test # 全部 5 组
+./run_demo.sh test # 全部组
 ./run_demo.sh test --list       # 只列出组与命令，不执行
 ./run_demo.sh test --only docs  # 只跑某组（可多次）
 ./run_demo.sh test --verbose    # 失败时打印完整输出（默认只打最后 20 行）
@@ -54,6 +57,11 @@ GROUP_TIMEOUT_S = 300
 
 # 每组：(名称, 说明, 命令前缀列表)
 GROUPS = [
+    # 2026-11-06：入口语法闸门。批量改名曾把 run_demo.sh 的 6 处 `()` 删掉，
+    # 一键演示整条不可用，而当时本冒烟 7/7 全绿——因为没有任何门槛读这个 shell。
+    # 纯静态（bash -n + compile），秒级。
+    ('entry', '入口文件可解析：shell 语法 + Python 语法',
+     [[sys.executable, os.path.join(ROOT, 'tests', 'check_entry_syntax.py')]]),
     ('geometry', '几何派生链：地图配置 → 世界 SDF',
      [[sys.executable, os.path.join(ROOT, 'tests', 'check_scene_geometry.py')]]),
     ('messages', '9 消息 ABI 字段序 + AgcTaskState 状态常量',

@@ -144,7 +144,7 @@ def _geom_of(node):
 
 def _close(a, b, eps=1e-9):
     return a is not None and b is not None and len(a) == len(b) and all(
-        abs(x - y) <= eps for x, y in zip(a, b))
+        abs(x - y) <= eps for x, y in zip(a, b, strict=False))
 
 
 def _src_geometry_of(ob, world_map_mod):
@@ -625,7 +625,7 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
     # 不再只有"车↔目标 ≥6 m"这一条。
     g = {'map': map_name, 'spawn_layout_source': SPAWN_LAYOUT_PATH}
     worst = {}
-    for name, (px, py), extent in (
+    for name, (px, py), _extent in (
             ('car', CAR_XY, 0.5037), ('target', (TARGET_X, TARGET_Y), 0.25),
             ('own_uav', OWN_XY, 0.25)):
         clear = min(_obb_clearance(px, py, o, world_map_mod) - _footprint_extent(o, world_map_mod)

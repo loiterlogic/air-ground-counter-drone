@@ -100,7 +100,7 @@ def test_headless_and_gui_differ_only_in_gz_s_and_viz():
     head = demo_start.launch_argv(backend='full', scene=common.DEFAULT_SCENE,
                                   world_map=common.DEFAULT_MAP, headless=True)
     assert len(gui) == len(head)
-    diff = [(a, b) for a, b in zip(gui, head) if a != b]
+    diff = [(a, b) for a, b in zip(gui, head, strict=False) if a != b]
     assert len(diff) == 2, 'GUI/headless 只应有 2 处差异，实际 %r' % diff
     keys = {a.split(':=')[0] for a, _b in diff}
     assert keys == {'gz_args', 'viz'}, '差异参数集应为 {gz_args, viz}，实际 %r' % keys
@@ -160,7 +160,7 @@ def test_gui_headless_differ_only_in_gz_s_and_viz_even_with_px4_root():
     head = demo_start.launch_argv(backend='full', scene=common.DEFAULT_SCENE,
                                   world_map=common.DEFAULT_MAP, headless=True,
                                   px4_run_root=root)
-    diff = [(a, b) for a, b in zip(gui, head) if a != b]
+    diff = [(a, b) for a, b in zip(gui, head, strict=False) if a != b]
     assert len(gui) == len(head)
     assert {a.split(':=')[0] for a, _b in diff} == {'gz_args', 'viz'}, diff
 

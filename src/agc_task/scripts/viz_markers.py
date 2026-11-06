@@ -149,7 +149,6 @@ class VizMarkers(Node):
 
     def on_car_odom(self, msg):
         p = msg.pose.pose.position
-        q = msg.pose.pose.orientation
         self.car_pose = msg.pose.pose
         self.car_path.append((p.x, p.y, p.z))
         self.car_path = self.car_path[-500:]

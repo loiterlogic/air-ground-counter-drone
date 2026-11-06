@@ -14,6 +14,9 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
 ROOT = '/home/chen/AGC'
 
 RUN_DIR_RE = re.compile(r'^\d{8}-c9-resetfail-0-\d{6}-\d{4}$')
@@ -26,18 +29,12 @@ IDENTITY_FILES = ('params_applied.yaml', 'git_head.txt', 'git_status_porcelain.t
 HEX64 = re.compile(r'[0-9a-fA-F]{64}')
 
 
-def _load(path):
-    if not path or not os.path.exists(path):
-        return None
-    with open(path, encoding='utf-8') as f:
-        return json.load(f)
+_load = checklib.load_json
 
 
-def _read(path):
-    if not path or not os.path.exists(path):
-        return None
-    with open(path, encoding='utf-8', errors='replace') as f:
-        return f.read()
+
+_read = checklib.read_text
+
 
 
 def case_a_start_rejected(run_dir):

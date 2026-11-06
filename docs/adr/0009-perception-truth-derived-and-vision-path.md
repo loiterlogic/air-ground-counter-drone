@@ -177,8 +177,8 @@ accepted（2026-11-02 由 0020 / 0052 / 0053 / 0103 / 0110 合并；2026-11-03 �
 - **R7 · 目标位置识别仍用真值仿生，后续再换视觉** —— **已被 (b) 取代并终结**
   - 2026-11-03 曾裁定"视觉后端降为可选分支、代码保留"；**2026-11-04 进一步裁定：直接删除**。
   - 因此 `/agc/targets` 的发布者恒为 `gt_adapter`（**无门控，不分远近**）——**没有第二条路**。
-    `air_fusion` 亦已于同日退役；`air_perception` 保留但无消费者，其 30 m 量程 / FOV 门控
-    **不影响** `/agc/targets`。
+    `air_fusion` 同日退役；`air_perception` 于 **2026-11-06 整体删除**（届时其 30 m 量程 / FOV 门控
+    本就已**不影响** `/agc/targets`）。
 
 ### (c) 传感器高度与障碍族可见性边界（如实登记、收窄声明）
 
@@ -241,9 +241,9 @@ accepted（2026-11-02 由 0020 / 0052 / 0053 / 0103 / 0110 合并；2026-11-03 �
   否则报出各数组长度并抛错）；`safety_radius > 0` 且有限、坐标有限；「磁盘联合约束」语义**不变**。
 - **地图与 `seed` 启动期校验**：`map_adapter` 新增 `validateStartupOrThrow`（构造末调用）校验
   `resolution/size_x/size_y > 0` 且有限、`origin_x/y` 有限、障碍 `x/y` 有限、`size`（`sx/sy > 0`）有限、`yaw` 有限，
-  非法即**拒绝启动**（运行期 `rebuild` 守卫保留）；`air_perception.seed` 显式 `"unseeded"` 保留默认基种子，其余
-  必须是**整数字面量**否则拒绝（删除 `strtol` 静默兜底）；`scenario_reset.spawn_seed` / `run_logger.seed` 为强类型
+  非法即**拒绝启动**（运行期 `rebuild` 守卫保留）；`scenario_reset.spawn_seed` / `run_logger.seed` 为强类型
   `int`，由 ROS 参数类型系统在启动期拒绝（登记为「已覆盖（类型安全）」）。
+  （`air_perception.seed` 的同类校验随该节点于 2026-11-06 删除，不再有消费者。）
 - **ground 映射的适用性标注**：共享 LQR 输出 3 自由度 holonomic 世界加速度，`ground_baseline` 仅取前进分量
   `lin = clamp(bx, 0, v_max)`（**丢弃倒车**）+ `ang = k_yaw·atan2(by, max(bx, 0.1))`（**丢弃纯横向自由度**）
   → 可达集 ⊊ 世界系 holonomic 参考集。**不**本批重写为完整差速动力学，只加**适用性注释**并做**独立解析对拍**：

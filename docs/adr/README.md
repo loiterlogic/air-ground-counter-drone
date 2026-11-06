@@ -15,11 +15,11 @@
 - **`deferred` 不等于废止**：表示已裁定暂缓，括号里通常写了阻塞原因。
 - **合并篇的 `deferred` 写在正文里**（2026-11-02 起）：合并后每篇只保留一个 `Status`，
   其下若有某项仍暂缓，正文对应小节会以 `**deferred**` 显式标注；查暂缓项请搜正文，不要只看本表。
-- **暂停的路线其 ADR 仍是 `accepted`**：暂停事实记在 plan 的开关文件，不写进 ADR 状态。
+- **暂停的路线其 ADR 仍是 `accepted`**：暂停事实由  [ADR-0025](./0025-publishing-boundary-and-retirement.md#top) 承载（原 plan 开关文件已退役），  不写进 ADR 状态。
 
 ## 统计
 
-- 合计 **32** 篇：`accepted` 30 篇、`deferred` 0 篇、其它 2 篇
+- 合计 **32** 篇：`accepted` 31 篇、`deferred` 0 篇、其它 1 篇
 
 ## 索引表
 
@@ -54,7 +54,7 @@
 | [0027](./0027-uxrce-startup-reproducibility.md) | uXRCE 启动可复现性：预热、错峰与种子协议 | accepted（2026-11-02 由 ADR-0075 / 0094 / 0100 / 0101 合并；结论未变） | 本篇只覆盖**启动可复现性**：进程清场、PX4 启动错峰、可选 warmup、空中就绪门、seed 派生与注入。 它**不**改变估计 odom 契约、**不**替代正式测量门、**不**宣称整链确定性。per-instance seed 派生 只适用于full 组合；standalone `a… |
 | [0028](./0028-dds-discovery-range-and-transport.md) | DDS 发现范围与传输：按 `lo` 能力探测，禁止写死 `LOCALHOST` | accepted（2026-11-04） | DDS 发现范围与传输的**唯一决定点**是 `scripts/demo/dds_transport.py`。 禁止在任何其它位置写死 `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`。 |
 | [0029](./0029-continuous-validation-layers.md) | 持续验证：三层回归入口与"负例加严"判定 | accepted（2026-11-04） | `tests/run_smoke.py` · 离线冒烟 7 组 · 每次提交 · 否 · ~40 s `tests/run_full_regression.py` · `full` 整链 3 场景 · 定时 · 是 · ~240 s `tests/run_n3_matrix.py` · 回归矩阵… |
-| [0030](./0030-nadir-camera-capability.md) | ADR-0030：机载正下视（nadir）相机能力 | （未标注） | 新增机型取值 `gz_agc_x500_nadir`（复用**已有** launch 参数 `px4_sim_model`，**不新增 launch 参数**）。 默认 `gz_x500` 时：不加相机、不注入任何新环境变量、rcS 走原路径 —— 与改动前完全一致。 |
+| [0030](./0030-nadir-camera-capability.md) | 机载正下视（nadir）相机能力 | accepted（2026-11-04） | 新增机型取值 `gz_agc_x500_nadir`（复用**已有** launch 参数 `px4_sim_model`，**不新增 launch 参数**）。 默认 `gz_x500` 时：不加相机、不注入任何新环境变量、rcS 走原路径 —— 与改动前完全一致。 |
 | [0031](./0031-target-motion-and-speed-regime.md) | 目标无人机运动规则与三主体速度体制 | accepted（2026-11-04） | 本篇同时结档两条 plan：**目标无人机运动规则** 与 **速度调研与运行节奏优化** （两者按 [任务计划规则](../plan/README.md#plan-index) 结档即删，结论只存在于本篇）。 它们共用 `intruder_driver` 与 `scenarios.yaml` 的… |
 | [0032](./0032-pending-directions.md) | 待立项的后续方向（占位登记） | proposed（2026-11-06；未立项、无实施） | 以下 4 项**均未立项**，不得据本篇推定已实现、已批准或已有排期： |
 

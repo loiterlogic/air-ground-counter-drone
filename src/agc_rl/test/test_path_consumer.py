@@ -196,7 +196,7 @@ def test_straight_path_points_endpoints_and_spacing():
     assert pts[0] == (0.0, 0.0)
     assert pts[-1] == (10.0, 0.0)
     assert len(pts) == 11
-    for (x0, _), (x1, _) in zip(pts, pts[1:]):
+    for (x0, _), (x1, _) in zip(pts, pts[1:], strict=False):
         assert abs((x1 - x0) - 1.0) < 1e-9
 
 

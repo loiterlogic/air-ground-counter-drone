@@ -19,7 +19,6 @@
  gz_args:="-s -r -v 3 <world>"
 """
 
-import math
 import os
 import shutil
 import sys

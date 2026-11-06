@@ -28,3 +28,11 @@ __pycache__/
 # ===== 已退役的本地 Agent / 交接产物（ADR-0025 / ADR-0026）=====
 /.trae/
 /.coordination/wake/
+
+# ===== 协作台账：逐轮过程物与锁文件不入库（ADR-0025 / ADR-0026）=====
+# 结论归 ADR / docs/ / CURRENT.md；逐轮 request/report/review 与证据按协作协议
+# 结档即删，不进长期档案。锁文件是**运行时状态**，入库只会让检出带上别人的锁。
+/.coordination/task/
+/.coordination/drafts/
+/.coordination/locks/*.lock
+/.coordination/STOP-*.md

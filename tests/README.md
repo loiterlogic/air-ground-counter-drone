@@ -95,5 +95,19 @@ if r.returncode != 0:
 
 ## 命名
 
-沿用原风险项编号：`w<ws>_r<nnn>_check.py`、`w<ws>_<name>_check.py`。
-描述性改名留待**单独一轮**（避免与历史文档引用一次性大改；ADR 史料不重写）。
+按**被测能力**命名：`check_<能力>.py`（`run_*` 是入口，不是核查）。
+
+## 共用脚手架 `checklib.py`
+
+`check_*.py` 历史上各自抄了一份 `_read` / `_load` / `_code_only` / `dump`，且已漂移。
+[`checklib.py`](./checklib.py) 收编**实现逐字相同**的那些纯函数：
+
+| 函数 | 用途 | 与旧副本的区别 |
+|---|---|---|
+| `read_text` | 读文本，缺失返回 `None` | 老的"严格版"用 `read_text_strict`（缺失即抛） |
+| `load_json` | 读 JSON，缺失返回 `None` | 不吞解析错误 |
+| `code_only` | 剥整行注释 | 用于"注释里提到 `rm -rf` 不算违规" |
+| `strip_code` / `section_number_hits` | markdown 去代码块 + 扫章节号引用 | 文档门禁专用，示例写法不算违规 |
+
+新增核查**直接 import**；有状态的 harness（起节点、抓话题）仍各写各的——那些差异是真实的，
+不该被"统一"伪装掉。

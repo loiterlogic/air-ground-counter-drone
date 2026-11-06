@@ -78,8 +78,6 @@ def generate_launch_description():
     # （ADR-0007）：地图几何文件由上层经**配置文件**派生注入（缺省 = 包内回退副本）。
     obstacles_file = LaunchConfiguration('obstacles_file')
     map_file = LaunchConfiguration('map_file')
-    # 地图名（仅用于**显式拒绝**不受支持的回退路径，见 `_reject_non_minimal_fallback`）。
-    world_map = LaunchConfiguration('world_map')
     # （ADR-0007）：场景 / 源版本 → 折入地图内容身份 hash（诊断，非 ABI）
     scenario_version = LaunchConfiguration('scenario_version')
 
