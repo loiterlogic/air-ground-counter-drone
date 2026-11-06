@@ -368,7 +368,7 @@ private:
     grid_.hash = contentIdentityHash(grid_.data, width, height);
     grid_.valid = true;
     built_ = true;
-    ++update_seq_;   // R-040：实质重建 -> 单调更新序号 +1
+    ++update_seq_;   // 实质重建 -> 单调更新序号 +1（ADR-0007）
     RCLCPP_INFO(get_logger(),
       "map 重建：%dx%d @ %.3f m, occupied=%ld, unknown=%zu, seq=%llu, hash=%s（effective=%zu static=%zu live=%zu source=%s）",
       grid_.width, grid_.height, grid_.resolution, grid_.occupied, unknown_idx_.size(),
@@ -440,7 +440,7 @@ private:
     std_msgs::msg::UInt64 seq;
     seq.data = update_seq_;
     seq_pub_->publish(seq);
-    publishValid(geometry_ok_ && knowledge_current());   // R-006：valid = 几何 && 知识时效
+    publishValid(geometry_ok_ && knowledge_current());   // valid = 几何 && 知识时效（ADR-0007）
   }
 
   void publishValid(bool ok)
@@ -469,7 +469,7 @@ private:
   };
 
   std::string world_frame_, map_file_, obstacles_file_, obstacle_source_, map_topic_;
-  std::string scenario_version_, update_seq_topic_;   // R-040：场景/源版本 与 单调更新序号话题
+  std::string scenario_version_, update_seq_topic_;   // 场景/源版本 与 单调更新序号话题（ADR-0007）
   double rate_hz_{2.0};
   double dynamic_max_age_s_{1.5}, source_max_age_s_{1.0};
   double res_{0.5}, sx_{0.0}, sy_{0.0}, ox_{0.0}, oy_{0.0};
@@ -480,7 +480,7 @@ private:
   std::set<size_t> unknown_idx_;                   // 未知单元（过期动态轨覆盖格）
   bool built_{false};
   bool geometry_ok_{false};
-  uint64_t update_seq_{0};                         // R-040：单调更新序号（实质重建 +1）
+  uint64_t update_seq_{0};                         // 单调更新序号（实质重建 +1；ADR-0007）
   Grid grid_;
   std::string last_hash_;
 

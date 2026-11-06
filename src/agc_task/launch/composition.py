@@ -82,7 +82,7 @@ def world_map_module(sim_share=None):
         _WORLD_MAP_CACHE[cache_key] = mod
         return mod
     raise RuntimeError(
-        '找不到几何真源地图清单 world_map.py（尝试：%s）→ 拒绝运行' % ', '.join(candidates))
+        '找不到地图清单 world_map.py（尝试：%s）→ 拒绝运行' % ', '.join(candidates))
 
 
 def new_run_token():
@@ -97,7 +97,7 @@ def resolve_world_map(world_map, sim_share=None):
 
 
 def geometry_path(sim_share, world_map=DEFAULT_WORLD_MAP):
-    """按地图解析真源绝对路径（P1-1）。`minimal` → `config/world_geometry.yaml`。"""
+    """按地图解析几何源文件的绝对路径。`minimal` → `config/world_geometry.yaml`。"""
     return world_map_module(sim_share).geometry_path(sim_share, world_map)
 
 
@@ -109,7 +109,7 @@ def load_geometry(sim_share, world_map=DEFAULT_WORLD_MAP):
 
 
 def geometry_sha256(sim_share, world_map=DEFAULT_WORLD_MAP):
-    """真源文件**字节**的 sha256（几何版本身份；写入 manifest）。P1-1：按地图区分。"""
+    """几何源文件**字节**的 sha256（版本身份；写入 manifest；按地图区分）。"""
     _, path = geometry_path(sim_share, world_map)
     with open(path, 'rb') as f:
         return hashlib.sha256(f.read()).hexdigest()
@@ -125,7 +125,7 @@ SPAWN_LAYOUT_FILE = 'spawn_layout.yaml'
 
 
 def load_spawn_layout(task_share, path=None):
-    """读出生布局真源；缺键 / 非数值 / **非有限值（NaN·±Inf）** → `RuntimeError`（拒绝运行）。
+    """读出生布局文件；缺键 / 非数值 / **非有限值（NaN·±Inf）** → `RuntimeError`（拒绝运行）。
 
  `path` 仅供测试注入（缺省即配置文件文件），避免测试为造非法值去改配置文件。
 
@@ -139,7 +139,7 @@ def load_spawn_layout(task_share, path=None):
         doc = yaml.safe_load(f) or {}
     layout = doc.get('spawn_layout')
     if not isinstance(layout, dict):
-        raise RuntimeError('出生布局真源 %s 缺少顶层 `spawn_layout` → 拒绝运行' % path)
+        raise RuntimeError('出生布局文件 %s 缺少顶层 `spawn_layout` → 拒绝运行' % path)
     out = {}
     for entity, keys in (
             ('car', ('x', 'y', 'yaw', 'world_z', 'reset_z')),
@@ -148,23 +148,23 @@ def load_spawn_layout(task_share, path=None):
         sec = layout.get(entity)
         if not isinstance(sec, dict):
             raise RuntimeError(
-                '出生布局真源 %s 缺少 `spawn_layout.%s` → 拒绝运行' % (path, entity))
+                '出生布局文件 %s 缺少 `spawn_layout.%s` → 拒绝运行' % (path, entity))
         vals = {}
         for k in keys:
             if k not in sec:
                 raise RuntimeError(
-                    '出生布局真源 %s 缺少 `spawn_layout.%s.%s` → 拒绝运行' % (path, entity, k))
+                    '出生布局文件 %s 缺少 `spawn_layout.%s.%s` → 拒绝运行' % (path, entity, k))
             raw = sec[k]
             try:
                 val = float(raw)
             except (TypeError, ValueError):
                 raise RuntimeError(
-                    '出生布局真源 %s 的 `spawn_layout.%s.%s`=%r 非数值 → 拒绝运行'
+                    '出生布局文件 %s 的 `spawn_layout.%s.%s`=%r 非数值 → 拒绝运行'
                     % (path, entity, k, raw))
             if not math.isfinite(val):
                 # NaN / ±Inf：比较式对 NaN 恒假 → 越界与净空拒绝分支失效（静默放行）。
                 raise RuntimeError(
-                    '出生布局真源 %s 的 `spawn_layout.%s.%s`=%r 非有限值（NaN/±Inf）→ 拒绝运行'
+                    '出生布局文件 %s 的 `spawn_layout.%s.%s`=%r 非有限值（NaN/±Inf）→ 拒绝运行'
                     % (path, entity, k, raw))
             vals[k] = val
         out[entity] = vals
@@ -173,7 +173,7 @@ def load_spawn_layout(task_share, path=None):
     off = layout.get('goal_offset_m') or {}
     if not isinstance(off, dict):
         raise RuntimeError(
-            '出生布局真源 %s 的 `spawn_layout.goal_offset_m` 非映射 → 拒绝运行' % path)
+            '出生布局文件 %s 的 `spawn_layout.goal_offset_m` 非映射 → 拒绝运行' % path)
     goal_off = {}
     for k, default in (('dx', -2.5), ('dy', 0.0)):
         raw = off.get(k, default)
@@ -181,10 +181,10 @@ def load_spawn_layout(task_share, path=None):
             val = float(raw)
         except (TypeError, ValueError):
             raise RuntimeError(
-                '出生布局真源 %s 的 `goal_offset_m.%s`=%r 非数值 → 拒绝运行' % (path, k, raw))
+                '出生布局文件 %s 的 `goal_offset_m.%s`=%r 非数值 → 拒绝运行' % (path, k, raw))
         if not math.isfinite(val):
             raise RuntimeError(
-                '出生布局真源 %s 的 `goal_offset_m.%s`=%r 非有限值 → 拒绝运行' % (path, k, raw))
+                '出生布局文件 %s 的 `goal_offset_m.%s`=%r 非有限值 → 拒绝运行' % (path, k, raw))
         goal_off[k] = val
     out['goal_offset_m'] = goal_off
     out['source'] = path
@@ -192,7 +192,7 @@ def load_spawn_layout(task_share, path=None):
 
 
 def spawn_layout_sha256(task_share):
-    """出生布局真源文件的 sha256（布局版本身份；写入 manifest，便于审查核对）。"""
+    """出生布局文件的 sha256（布局版本身份；写入 manifest，便于审查核对）。"""
     path = os.path.join(task_share, 'config', SPAWN_LAYOUT_FILE)
     with open(path, 'rb') as f:
         return hashlib.sha256(f.read()).hexdigest()
@@ -385,7 +385,7 @@ def geometry_ys(geometry):
 
 
 def work_area_bounds(geometry):
-    """由真源 `work_area` 派生作业区边界（`map_*`，map 系）。"""
+    """由几何源文件的 `work_area` 派生作业区边界（`map_*`，map 系）。"""
     wa = geometry['work_area']
     return {
         'map_x_min': float(wa['origin_x']),
@@ -450,7 +450,7 @@ def derive_px4_sim_seed(master_seed, instance):
 
 
 def carrier_entry(carriers, axis, value, scene):
-    """R-026：声明轴值必须有承载者；无承载者 → 显式拒绝运行（不以命名当执行）。"""
+    """声明轴值必须有承载者；无承载者 → 显式拒绝运行（不以命名当执行；ADR-0018）。"""
     ent = (carriers.get(axis) or {}).get(value)
     if ent is None:
         raise RuntimeError(
@@ -525,7 +525,7 @@ def apply_target_motion_override(info, carriers, motion, backend):
 
 
 def write_derived_obstacles(geometry, mode, scene, seed, token=None, sim_share=None):
-    """S-06：由真源派生**感知障碍先验文件**（`obstacles.yaml` 形态），返回 (路径, id 列表)。
+    """由几何源文件派生**感知障碍先验文件**（`obstacles.yaml` 形态），返回 (路径, id 列表)。
 
  `static` → 配置文件障碍实体（`id/x/y/z/yaw/size`）；`none` → 空数组（与「无障碍世界」一致）。
  w6 路径**不再**读 agc_perception 包内副本（副本仅作 standalone 回退）。
@@ -552,7 +552,7 @@ def write_derived_obstacles(geometry, mode, scene, seed, token=None, sim_share=N
 
 
 def write_derived_map(geometry, scene, seed, token=None):
-    """S-06：由真源 `work_area` 派生**感知地图几何文件**（`map.yaml` 形态），返回路径。"""
+    """由几何源文件 `work_area` 派生**感知地图几何文件**（`map.yaml` 形态），返回路径。"""
     token = token or new_run_token()
     wa = geometry['work_area']
     doc = {'resolution': float(wa['resolution']), 'size_x': float(wa['size_x']),
@@ -628,7 +628,7 @@ def load_scene(task_share, sim_share, scene, seed, token=None,
         'world_obstacles': world_obstacles,
         'world_map': map_name,
         'world_map_source': map_source,
-        'obstacles_file': derived_obstacles_file,          # S-06：派生路径（非包内副本）
+        'obstacles_file': derived_obstacles_file,          # 派生路径（非包内副本）
         'derived_obstacles_file': derived_obstacles_file,
         'derived_obstacles_ids': derived_obstacles_ids,
         'derived_map_file': derived_map_file,
@@ -681,7 +681,7 @@ def compose_params(base, sc, backend, seed, own_uav=(0.0, 0.0), geometry=None,
 
 
 def apply_air_geometry(air_merged, geometry, sim_share=None):
-    """S-06：把真源静态障碍几何注入空中安全列表（`trajectory_tracker.safety`）。
+    """把几何源文件的静态障碍几何注入空中安全列表（`trajectory_tracker.safety`）。
 
  `obstacle_names/x/y` 由配置文件派生；**：`obstacle_safety_radius` 亦按障碍派生**
  （`safety_radius` 逐障碍取值，缺省 2.0），消除旧的「与障碍数对齐的定长列表」——
@@ -821,7 +821,7 @@ def apply_flight_altitude_air(air_merged, geometry):
 
 def assertions(scene, merged, info, air_merged=None, sim_share=None, layout=None,
                effective_spawn=None, effective_own=None):
-    """R-026 + S-06 + F1 断言：实际生效参数 == 声明轴、**派生几何 == 真源**、
+    """断言：实际生效参数 == 声明轴、**派生几何 == 几何源文件**、
  **生效出生位 == 喂给世界的那一组**；任一失败 → 拒绝运行。
 
     F1（2026-10-31）：`effective_spawn` 为 `apply_spawn_layout()` 的返回值（该 run 实际生效的
@@ -948,7 +948,7 @@ def assertions(scene, merged, info, air_merged=None, sim_share=None, layout=None
     bad = [k for k, v in res.items() if not v]
     if bad:
         raise RuntimeError(
-            '场景 %s 实际生效参数 != 声明轴 或 派生几何 != 真源（断言失败：%s）→ 拒绝运行' % (
+            '场景 %s 实际生效参数 != 声明轴 或 派生几何 != 几何源文件（断言失败：%s）→ 拒绝运行' % (
                 scene, bad))
     return res
 
@@ -1167,7 +1167,7 @@ def build_manifest(backend, info, merged, assertions_result, sim_share=None,
 
 
 def observe_yaw_block(info=None, air_merged=None, cli_value=''):
-    """H0 round-5：`trajectory_tracker.observe_yaw_mode` 的**实际生效值 + 来源**（manifest 可追溯）。
+    """`trajectory_tracker.observe_yaw_mode` 的**实际生效值 + 来源**（manifest 可追溯）。
 
  三级优先级（与 `main.launch.py` 的合并顺序一致，此处只做记录、不改合并）：
  CLI `observe_yaw_mode:=<mode>`（非空） > 场景 `trajectory_tracker.observe_yaw_mode`
@@ -1251,7 +1251,7 @@ def cruise_altitude_block(merged, info=None, effective_spawn=None):
 
 def spawn_layout_block(layout, layout_sha256=None, own_pose=None, effective_spawn=None,
                        effective_own=None):
-    """出生布局证据块（F1）：真源身份 + **实际生效**位姿 + 三组距离 + 己方机起飞参考。
+    """出生布局证据块：文件身份 + **实际生效**位姿 + 三组距离 + 己方机起飞参考。
 
  `layout=None`（未注入出生布局的调用方，如历史单测）→ 返回 `None`，不改既有行为。
  `spawn` 是**消费者实际拿到的值**：车给出 `world_z`（世界 spawn，轮触地）与 `reset_z`

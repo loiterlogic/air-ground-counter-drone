@@ -59,10 +59,10 @@ void LqrController::configure(ParamReader & p)
   r_ = p.getDouble("r", 1.0);
   dt_ = p.getDouble("dt", 0.02);
   acc_max_ = p.getDouble("acc_max", 4.0);
-  max_iter_ = p.getInt("max_iter", 2000);   // R-038：预算需 ≥ ~559 方达 tol=1e-10（见 ADR-0009 取证）
+  max_iter_ = p.getInt("max_iter", 2000);   // 预算需 ≥ ~559 方达 tol=1e-10（取证见 ADR-0009）
   tol_ = p.getDouble("tol", 1e-10);
 
-  validateParameters();   // R-038：非法 Q/R/dt/max_iter/tol → 明确拒绝（删除静默兜底 dt=0.02/r=1.0）
+  validateParameters();   // 非法 Q/R/dt/max_iter/tol → 明确拒绝，不留静默兜底（ADR-0009）
   solveDiscreteLqr();
 }
 
@@ -114,21 +114,21 @@ void LqrController::solveDiscreteLqr()
 
   // 有限性：P / S 必须有限，否则**明确失败**（不静默使用）。
   if (!P.allFinite()) {
-    throw std::runtime_error("LqrController DARE 迭代产生非有限 P（NaN/Inf）：拒绝使用（R-038）");
+    throw std::runtime_error("LqrController DARE 迭代产生非有限 P（NaN/Inf）：拒绝使用（ADR-0009）");
   }
   const Eigen::Matrix3d S = R + Bd.transpose() * P * Bd;
   if (!S.allFinite()) {
-    throw std::runtime_error("LqrController DARE 中间量 S 非有限（NaN/Inf）：拒绝使用（R-038）");
+    throw std::runtime_error("LqrController DARE 中间量 S 非有限（NaN/Inf）：拒绝使用（ADR-0009）");
   }
   K_ = S.inverse() * Bd.transpose() * P * Ad;  // 3×6
   if (!K_.allFinite()) {
-    throw std::runtime_error("LqrController 反馈增益 K 非有限（NaN/Inf）：拒绝使用（R-038）");
+    throw std::runtime_error("LqrController 反馈增益 K 非有限（NaN/Inf）：拒绝使用（ADR-0009）");
   }
   // 未收敛（残差 ≥ tol）→ **明确失败**（不静默使用不可靠增益）。
   if (!converged) {
     std::ostringstream oss;
     oss << "LqrController DARE 达 max_iter=" << max_iter_ << " 未收敛：残差=" << residual
-        << " ≥ tol=" << tol_ << "（dt=" << dt_ << " s）；拒绝使用不可靠增益（R-038）";
+        << " ≥ tol=" << tol_ << "（dt=" << dt_ << " s）；拒绝使用不可靠增益（ADR-0009）";
     throw std::runtime_error(oss.str());
   }
 }
