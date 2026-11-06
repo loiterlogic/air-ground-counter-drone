@@ -36,11 +36,10 @@ add_executable(gt_adapter src/gt_adapter.cpp)
 ament_target_dependencies(gt_adapter ${DEPS})
 target_include_directories(gt_adapter PRIVATE include)
 
-# ---- W4-b · 感知与融合 ----
-add_executable(air_perception src/air_perception.cpp)
-ament_target_dependencies(air_perception ${DEPS})
-target_include_directories(air_perception PRIVATE include)
-target_link_libraries(air_perception yaml-cpp)
+# ---- W4-b · 感知与融合已于 2026-11-06 退役（用户裁定）----
+# `air_perception` 节点（发布 /agc/air/obs）自 air_fusion 退役后无消费者，已整体删除：
+# 源文件 / 可执行 / sensors_file 通道配置 / perception 场景轴 / 承载者解析链一并移除。
+# 防复活闸门见 scripts/tests/test_retirement_ledger.py。
 
 # ---- W4-c · 地图 ----
 add_executable(map_adapter src/map_adapter.cpp)
@@ -50,7 +49,7 @@ target_link_libraries(map_adapter yaml-cpp)
 
 install(TARGETS
   gt_bypass ground_odom_adapter gt_adapter
-  air_perception map_adapter
+  map_adapter
   DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch config DESTINATION share/${PROJECT_NAME})

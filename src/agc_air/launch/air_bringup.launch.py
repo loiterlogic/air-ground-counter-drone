@@ -247,7 +247,7 @@ def generate_launch_description():
                               description='契约 /agc/target/source（W4 目标源）：'
                                           'gt_adapter | none（air_fusion 已退役；none 用于单独录制 C1 八字轨迹）'),
         DeclareLaunchArgument('seed', default_value='0',
-                              description='实验随机种子（注入 air_perception 与 PX4 GPS 仿真）'),
+                              description='实验随机种子（注入 PX4 GPS 仿真；原 air_perception 已于 2026-11-06 退役）'),
         # P1-1：地图（几何真源选择）；缺省 minimal = 既有行为（几何逐值不变）。
         DeclareLaunchArgument('world_map', default_value='minimal',
                               description='地图（几何真源选择）：minimal（默认）| yard | open_field'),

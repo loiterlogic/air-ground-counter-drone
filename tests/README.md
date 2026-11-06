@@ -21,11 +21,12 @@ python3 tests/run_n3_matrix.py --list           # 回归矩阵：四类要求
 python3 tests/run_n3_matrix.py                  # 回归矩阵（4 格；无目标负例与 vision 臂均已无承载者）
 ```
 
-**无目标负例当前不可用**（2026-11-04）：`s17` 原本靠 `air_perception` 的 FOV 收窄制造"看不见"，
-但 `air_fusion` 退役后 `/agc/air/obs` 无人订阅，`gt_adapter` 又无几何门控 ⇒ 该前置条件**无法构造**。
-`s17` 已在 `scenarios.yaml` 标 `unsupported:perception`（启动期拒绝运行），并从回归矩阵移除。
-加严判据（`visibility_rate==0` / `reason==TIMEOUT` / 无 `fco_exposure_s>0`）**保留**在代码里，
-作为恢复该负例后的判据模板。
+**无目标负例已退役**（2026-11-06）：`s17` 原本靠 `air_perception` 的 FOV 收窄制造"看不见"，
+但 `air_fusion` 退役后 `/agc/air/obs` 无人订阅，`gt_adapter` 又无几何门控 ⇒ 该前置条件
+**无法构造**。用户裁定「彻底删」后，`perception` 场景轴、`air_perception` 节点、
+`perception_sensors*.yaml` 与 `s17` 场景号一并删除，防复活闸门见
+`scripts/tests/test_retirement_ledger.py`。加严判据（`visibility_rate==0` / `reason==TIMEOUT` /
+无 `fco_exposure_s>0`）**保留**在代码里，作为将来重新立项后的判据模板。
 
 **GUI 留证**（N3）：`python3 scripts/demo/capture_run.py --out <dir> --scene <场景>`。
 **必须给可达终态的场景**：默认场景在 GUI 下偶发 `air_hover_timeout`，那时时间线无状态跳变，

@@ -65,9 +65,8 @@ def generate_launch_description():
             'use_sim_time': LaunchConfiguration('use_sim_time'),
             # W7-b（P1）：观测来源（lightweight 缺省 gt_adapter；可被上层覆盖）
             'target_source': LaunchConfiguration('target_source'),
-            'seed': LaunchConfiguration('seed'),
-            # R-026：传感器通道 / 障碍真值文件按场景轴由上层选择并单一注入
-            'sensors_file': LaunchConfiguration('sensors_file'),
+            # R-026：障碍真值文件按场景轴由上层选择并单一注入
+            # 2026-11-06：`sensors_file` / `seed` 随 `perception` 轴退役，不再透传。
             'obstacles_file': LaunchConfiguration('obstacles_file'),
             # S-06（ADR-0007）：地图几何文件由上层经单一真源派生注入
             'map_file': LaunchConfiguration('map_file'),
@@ -126,12 +125,11 @@ def generate_launch_description():
     ld.add_action(DeclareLaunchArgument(
         'target_source', default_value='gt_adapter',
         description='观测来源（gt_adapter；air_fusion 已退役）'))
-    ld.add_action(DeclareLaunchArgument(
-        'seed', default_value='0',
-        description='感知随机种子（由 w6 顶层注入；默认 0）'))
+    # 2026-11-06 清退：`seed` 与 `sensors_file` 随 `perception` 场景轴退役，
+    # 本入口不再声明、也不再向 perception_bringup 透传（见治理规范 5.2.2）。
     # 2026-11-04 清退：`shield` 开关已删除——安全层恒定启用
     # （见 docs/conventions/路线分支治理.md 5.3）。
-    # R-026：场景轴承载者接线（缺省 = 既有行为：static 世界 + 标称通道 + 默认障碍 + 无 manifest）
+    # R-026：场景轴承载者接线（缺省 = 既有行为：static 世界 + 默认障碍 + 无 manifest）
     ld.add_action(DeclareLaunchArgument(
         'world_obstacles', default_value='static',
         description='障碍轴世界生成：static | none（由上层按场景轴传入）'))
@@ -152,10 +150,7 @@ def generate_launch_description():
             ('target_z', '目标 spawn z（m；auto=用 agc_sim target.yaml 缺省）'),
             ('target_yaw', '目标 spawn yaw（rad；auto=用 agc_sim target.yaml 缺省）')):
         ld.add_action(DeclareLaunchArgument(_arg, default_value='auto', description=_desc))
-    ld.add_action(DeclareLaunchArgument(
-        'sensors_file',
-        default_value=os.path.join(perception_share, 'config', 'perception_sensors.yaml'),
-        description='传感器通道文件（由上层按感知轴传入）'))
+    # `sensors_file` 已于 2026-11-06 随 `perception` 轴退役（无消费者），不再声明。
     ld.add_action(DeclareLaunchArgument(
         'obstacles_file',
         default_value=os.path.join(perception_share, 'config', 'obstacles.yaml'),

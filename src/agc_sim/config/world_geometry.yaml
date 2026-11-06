@@ -39,10 +39,10 @@
 #                    「max(part 偏心 + part 足迹半径)」；**不再**用与障碍数对齐的定长列表
 #                    （旧 `air.yaml: obstacle_safety_radius: [2.0, 2.0]` 已消除）。
 #                    ⚠ 细长实体的外接圆半径 ≈ 半长：长围墙的安全圆盘会侵占空域，见 yard.yaml「已知限制」。
-#   * `occludes`  —— 可省略，缺省 `true`；是否参与感知遮挡。**当前无消费者**：
-#                    `agc_perception/config/perception_sensors.yaml` 的 `occlusion.enabled`
-#                    默认 false，且开启后按**全部**先验障碍判定（无逐障碍门）。该字段为
-#                    P1-4 预置的透传位，**不作**能力声明。
+#   * `occludes`  —— 可省略，缺省 `true`；是否参与感知遮挡。**无消费者**：
+#                    原 `perception_sensors.yaml`（`occlusion.enabled` 默认 false）已随
+#                    `perception` 场景轴于 2026-11-06 退役；本字段为 P1-4 预置的透传位，
+#                    **不作**能力声明。
 #
 # 纪律：
 #   * 修改几何**只改对应地图文件**；各域随之派生（`python3 tests/w6_geometry_check.py` 可复核，

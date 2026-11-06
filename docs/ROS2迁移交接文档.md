@@ -28,7 +28,12 @@
 
 由 launch **单一设置**，节点**不得覆写**：
 
-`/agc/target/source`、`/agc/obstacles/source`、`/agc/perception/sensors_file`、`/agc/air/takeoff_altitude_m`、`/agc/air/follow/*`、`/agc/scenario/dynamic_obstacles`、`/agc/world_file`、`/agc/log/seed`
+`/agc/target/source`、`/agc/obstacles/source`、`/agc/air/takeoff_altitude_m`、`/agc/air/follow/*`、`/agc/scenario/dynamic_obstacles`、`/agc/world_file`、`/agc/log/seed`
+
+> `/agc/perception/sensors_file` 已于 **2026-11-06** 随 `perception` 场景轴与 `air_perception`
+> 节点退役（用户裁定）：该参数原指向的 4 个 `perception_sensors*.yaml` 通道变体无消费者、
+> 运行期行为完全相同，已整体删除。契约不再保留该参数入口；量程 R=30.0 的推导登记处
+> 改为 `air.yaml` 的 `standoff_follower` 注释与[飞行高度规范 K1](conventions/飞行高度分层与按地图定高.md#where)。
 
 <a id="perception-path"></a>
 **目标源选择（`/agc/target/source`）**：`/agc/targets` 的**唯一发布者**恒为 `gt_adapter`。
@@ -39,9 +44,10 @@
 
 - **`air_fusion` 已于 2026-11-04 退役**（用户裁定，见 [ADR-0009](../docs/adr/0009-perception-truth-derived-and-vision-path.md#top)），
   故本参数**只有一个有效取值**，不存在"二选一"也不再存在双发布者风险。
-- `air_perception` 节点与 `sensors_file`（`range_max_m` / FOV / 遮挡）**保留但当前无消费者**：
-  它发布的 `/agc/air/obs` 在整链里没有任何订阅者，故其几何门控**不影响** `/agc/targets`，
-  即**目标指示不分远近**。不得据 `sensors_file` 的数值宣称本仓当前存在"感知量程限制"。
+- **`air_perception` 节点与 `/agc/air/obs` 已于 2026-11-06 删除**（用户裁定「彻底删」）：
+  它们在 `air_fusion` 退役后没有任何订阅者，`sensors_file` 通道配置不影响 `/agc/targets`。
+  即**目标指示不分远近**；不得据任何"传感器量程 / FOV / 丢包"配置宣称本仓当前存在
+  感知质量差异或感知量程限制。
 
 - 目标检测/追踪**不是本项目范围**：目标位置**始终由真值给出**，`/agc/targets` 不得由图像识别产生
   （[ADR-0009](../docs/adr/0009-perception-truth-derived-and-vision-path.md#top) (a2)）。

@@ -9,11 +9,12 @@
 //
 // ## 2026-11-03 裁定：真值链路**不再**是"理想直通"
 //
-// 背景：本项目主线**不做目标检测**（视觉后端降为可选分支）。目标位置由真值直接给出，
+// 背景：本项目主线**不做目标检测**。目标位置由真值直接给出，
 // 但**必须带不确定性**，否则"能跟踪"这个结论没有意义——零噪声、零延迟、置信度恒 1 的
 // 链路只是把答案抄了一遍。
 //
-// 因此本节点引入**与 `air_perception` 同名的六类不确定性参数**（换源时下游一行不改）：
+// 因此本节点引入**六类不确定性参数**（原与已退役的 `air_perception` 同名同口径；
+// 该节点于 2026-11-06 删除后，本节点是唯一消费者，参数名沿用不改名）：
 //
 //   | 类别 | 参数 | 实现位置 |
 //   |---|---|---|
@@ -53,10 +54,11 @@
 //   * **位置** = 加噪后的原始观测（噪声可见、可被下游与真值比对测误差）
 //   * **速度** = α-β 滤波器输出（不被噪声放大）
 //
-// ## 与 `air_perception` 的差别（唯一的差别）
+// ## 几何门控：本节点不做
 //
 // 本节点**不做几何门控**（无量程 / 无 FOV / 无遮挡）——真值目标指示不分远近。
-// 其余不确定性模型与 `air_perception` 同口径、同参数名，便于对照。
+// 原 `air_perception` 曾带几何门控，已于 2026-11-06 随 `perception` 轴退役删除；
+// 本节点的不确定性模型沿用当时的参数名，未改名。
 //
 // ## 目标源互斥
 //
@@ -120,7 +122,7 @@ public:
     target_source_ = declare_parameter<std::string>("target_source", kSource);
     rate_hz_ = declare_parameter<double>("rate_hz", 10.0);
 
-    // ---- 不确定性模型（与 air_perception 同名同口径；缺省 = 理想基线，行为等价旧版）----
+    // ---- 不确定性模型（参数名沿用已退役的 air_perception；缺省 = 理想基线，行为等价旧版）----
     sigma_xy_ = declare_parameter<double>("sigma_xy_m", 0.0);
     sigma_z_ = declare_parameter<double>("sigma_z_m", 0.0);
     latency_s_ = declare_parameter<double>("latency_s", 0.0);
@@ -145,7 +147,7 @@ public:
     }
     if (sigma_z_ <= 0.0) {sigma_z_ = sigma_xy_;}
 
-    // ---- seed 合法性：与 air_perception 同口径（整数字面量，否则拒绝启动）----
+    // ---- seed 合法性：整数字面量，否则拒绝启动（口径沿用已退役的 air_perception）----
     {
       unsigned base = 0u;
       if (seed_ == "unseeded") {
@@ -213,7 +215,7 @@ private:
     has_prev_t_ = true;
     ++received_;
 
-    // ① 丢包：独立同分布 + 两态成簇（与 air_perception 同实现）
+    // ① 丢包：独立同分布 + 两态成簇（实现沿用已退役的 air_perception）
     std::uniform_real_distribution<double> uni(0.0, 1.0);
     const bool indep_hit = (drop_prob_ > 0.0) && (uni(rng_) < std::min(1.0, drop_prob_));
     if (indep_hit || burstThisTick(dt)) {

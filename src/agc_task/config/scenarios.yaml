@@ -1,13 +1,16 @@
-# W6 场景族登记表（R5）——12 场景轴矩阵 + 期望终态。
+# W6 场景族登记表（R5）——场景轴矩阵 + 期望终态。
 #
-# 轴：目标运动 {static|linear|maneuver} × 障碍 {none|static|dynamic}
-#     × 感知 {nominal|dropout|fov} × 结局 {tracking|capture|jam|unreachable|timeout}
+# 轴：目标运动 {static|linear|maneuver|epicycle} × 障碍 {none|static|dynamic}
+#     × 结局 {tracking|capture|jam|unreachable|timeout}
 # 由 w6.launch.py 读取，与 config/w6_base.yaml 合并（场景覆盖基参）后单一注入（契约 #params）。
 # 说明：
 #   * `intruder_driver` 段描述目标运动（W6 PX4 驱动；整数 load 由双 PX4 整链 launch 集成承载）。
 #   * capture / jam 类场景的**期望终态**依赖 W6-c 裁决器（Task 9–11）；spawn/goal 已就绪，裁决落地即达终态。
-#   * 感知注入（dropout / fov）与障碍（none / static）的**承载者**见 config/scenario_carriers.yaml；
-#     launch 启动时校验声明轴值必有承载者，无承载者（obstacle=dynamic）显式拒绝运行。
+#   * 障碍（none / static）的**承载者**见 config/scenario_carriers.yaml；launch 启动时校验
+#     声明轴值必有承载者，无承载者（obstacle=dynamic）显式拒绝运行。
+#   * `perception` 轴已于 2026-11-06 退役（用户裁定「彻底删」）：`sensors_file` 通道变体无
+#     消费者、四档运行期行为完全相同。场景定义不得再声明该轴；部分场景 ID 名中的
+#     `dropout` / `fov` 字样为**历史遗留标签**，不表示存在对应的活跃轴或行为差异。
 #   * `support_status`：supported = 全部声明轴有承载者；unsupported:<axis> = 该轴无承载者（拒绝运行）。
 #   * `world_map`（P1-1，**场景级**、位于 `axes` 之外）：该场景默认使用的**地图 / 几何真源**。
 #       minimal（缺省）| yard | open_field —— 见 agc_sim/launch/world_map.py（单一清单）。
@@ -16,7 +19,7 @@
 #       s04 指向 yard，正是「主场景在演示主地图上跑」的落地（P1-1 派工范围决定 1）。
 scenes:
   s01_static_none_nominal_track:
-    axes: {target_motion: static, obstacle: none, perception: nominal, outcome: tracking}
+    axes: {target_motion: static, obstacle: none, outcome: tracking}
     support_status: supported
     expected_terminal: TRACKING_SUCCESS
     params:
@@ -25,7 +28,7 @@ scenes:
       intruder_driver: {motion: static}
 
   s02_linear_none_nominal_track:
-    axes: {target_motion: linear, obstacle: none, perception: nominal, outcome: tracking}
+    axes: {target_motion: linear, obstacle: none, outcome: tracking}
     support_status: supported
     expected_terminal: TRACKING_SUCCESS
     params:
@@ -37,7 +40,7 @@ scenes:
       intruder_driver: {motion: linear, speed_mps: 0.5}
 
   s03_maneuver_none_nominal_track:
-    axes: {target_motion: maneuver, obstacle: none, perception: nominal, outcome: tracking}
+    axes: {target_motion: maneuver, obstacle: none, outcome: tracking}
     support_status: supported
     expected_terminal: TRACKING_SUCCESS
     params:
@@ -46,7 +49,7 @@ scenes:
       intruder_driver: {motion: maneuver, speed_mps: 0.5, radius_m: 4.0}
 
   s04_static_static_obs_track:
-    axes: {target_motion: static, obstacle: static, perception: nominal, outcome: tracking}
+    axes: {target_motion: static, obstacle: static, outcome: tracking}
     support_status: supported
     expected_terminal: TRACKING_SUCCESS
     # P1-1：主场景跑在演示主地图 `yard` 上（出生位 / 期望终态不动，仅几何真源换图）。
@@ -72,7 +75,7 @@ scenes:
       trajectory_tracker: {observe_yaw_mode: track}
 
   s05_linear_dynamic_obs_track:
-    axes: {target_motion: linear, obstacle: dynamic, perception: nominal, outcome: tracking}
+    axes: {target_motion: linear, obstacle: dynamic, outcome: tracking}
     support_status: "unsupported:obstacle"
     expected_terminal: TRACKING_SUCCESS
     params:
@@ -81,7 +84,7 @@ scenes:
       intruder_driver: {motion: linear, speed_mps: 0.5}
 
   s06_static_none_dropout_track:
-    axes: {target_motion: static, obstacle: none, perception: dropout, outcome: tracking}
+    axes: {target_motion: static, obstacle: none, outcome: tracking}
     support_status: supported
     expected_terminal: TRACKING_SUCCESS
     params:
@@ -89,7 +92,7 @@ scenes:
       intruder_driver: {motion: static}
 
   s07_linear_none_fov_track:
-    axes: {target_motion: linear, obstacle: none, perception: fov, outcome: tracking}
+    axes: {target_motion: linear, obstacle: none, outcome: tracking}
     support_status: supported
     expected_terminal: TRACKING_SUCCESS
     params:
@@ -98,7 +101,7 @@ scenes:
       intruder_driver: {motion: linear, speed_mps: 0.5}
 
   s08_static_none_nominal_capture:
-    axes: {target_motion: static, obstacle: none, perception: nominal, outcome: capture}
+    axes: {target_motion: static, obstacle: none, outcome: capture}
     support_status: supported
     expected_terminal: INTERCEPT_CONFIRMED
     expected_reason: CAPTURE_NET
@@ -115,7 +118,7 @@ scenes:
       capture_adjudicator: {interception_authorized: true}
 
   s09_linear_none_nominal_jam:
-    axes: {target_motion: linear, obstacle: none, perception: nominal, outcome: jam}
+    axes: {target_motion: linear, obstacle: none, outcome: jam}
     support_status: supported
     expected_terminal: INTERCEPT_CONFIRMED
     expected_reason: JAM_LAND
@@ -125,7 +128,7 @@ scenes:
       intruder_driver: {motion: linear, speed_mps: 0.5}
 
   s10_maneuver_none_fov_timeout:
-    axes: {target_motion: maneuver, obstacle: none, perception: fov, outcome: timeout}
+    axes: {target_motion: maneuver, obstacle: none, outcome: timeout}
     support_status: supported
     expected_terminal: MISSION_FAILED
     expected_reason: TIMEOUT
@@ -136,31 +139,13 @@ scenes:
       run_logger: {scenario: "s10_maneuver_none_fov_timeout"}
       intruder_driver: {motion: maneuver, speed_mps: 0.5, radius_m: 4.0}
 
-  # N3 回归矩阵 · **无目标负例**（2026-11-04 新立；此前从未跑过）
-  # 目标真值仍在世界里，但感知视场收窄到近零 → 永不出航迹 → 不得导向成功。
-  # "无目标"的期望是**停在 AIR_SEARCH 直到 T_max，落 MISSION_FAILED(TIMEOUT)**（C4）；
-  # 若出现 TRACKING_SUCCESS / INTERCEPT_CONFIRMED，即为**假成功回归**。
-  s17_static_none_no_target_timeout:
-    axes: {target_motion: static, obstacle: none, perception: no_target, outcome: timeout}
-    # ⚠ 2026-11-04 修正：本场景**当前不可运行**。
-    #   原载体是 `air_perception` 的 FOV 收窄（`perception_sensors_no_target.yaml`，hfov/vfov=0.1°），
-    #   但 `air_fusion` 退役后 `/agc/air/obs` **无人订阅**，故该门控不再影响 `/agc/targets`。
-    #   `/agc/targets` 的发布者 `gt_adapter` **无几何门控**（不分远近），因此本场景的
-    #   「看不见」**造不出来**；旧实跑能得到 `TIMEOUT` 只是因为 `t_max_s=40` 到点，
-    #   **不是**被感知拒——`visibility_rate` 那项证据在当时也因通道无消费者而失真。
-    #   ⇒ 如实标 unsupported（`carrier_entry()` 会在启动期**拒绝运行**，不以命名推定已覆盖）。
-    #   恢复方式（**属新决策，未立项**）：给 `gt_adapter` 加可致盲的开关（如 `confidence < confidence_min`
-    #   或 `drop_prob = 1.0`），见 `scenario_carriers.yaml` 的 `no_target.reason`。
-    support_status: "unsupported:perception"
-    expected_terminal: MISSION_FAILED
-    expected_reason: TIMEOUT
-    params:
-      task_manager: {goal_follow_target: false, t_max_s: 40.0}
-      run_logger: {scenario: "s17_static_none_no_target_timeout"}
-      intruder_driver: {motion: static}
+  # N3 无目标负例 `s17_static_none_no_target_timeout` 已于 2026-11-06 删除：
+  # 它的全部前提（`perception=no_target` 轴 + `air_perception` FOV 门控）随本次清退消失，
+  # 且自 2026-11-04 起就已标 `unsupported:perception`、启动期拒绝运行，从不产出有效证据。
+  # 若将来需要真正的"看不见"负例，属**新决策**，须按治理规范 2.2 节重新立项。
 
   s11_static_static_none_unreachable:
-    axes: {target_motion: static, obstacle: static, perception: nominal, outcome: unreachable}
+    axes: {target_motion: static, obstacle: static, outcome: unreachable}
     support_status: supported
     expected_terminal: MISSION_FAILED
     expected_reason: TIMEOUT
@@ -175,7 +160,7 @@ scenes:
       intruder_driver: {motion: static}
 
   s12_linear_dynamic_nominal_capture:
-    axes: {target_motion: linear, obstacle: dynamic, perception: nominal, outcome: capture}
+    axes: {target_motion: linear, obstacle: dynamic, outcome: capture}
     support_status: "unsupported:obstacle"
     expected_terminal: INTERCEPT_CONFIRMED
     expected_reason: CAPTURE_NET
@@ -188,7 +173,7 @@ scenes:
   # —— W7-b P1 机制激活候选（ADR-0023）：s08 的"固定目标 + 静态 + 标称"使 α（观测指向 + 跟踪参考）
   #    的因果链被旁路（ADR-0022）。以下两个场景为该命题的**固定条件候选**，先经 pilot 选一。
   s13_linear_none_nominal_capture:
-    axes: {target_motion: linear, obstacle: none, perception: nominal, outcome: capture}
+    axes: {target_motion: linear, obstacle: none, outcome: capture}
     support_status: supported
     expected_terminal: INTERCEPT_CONFIRMED
     expected_reason: CAPTURE_NET
@@ -202,7 +187,7 @@ scenes:
       capture_adjudicator: {interception_authorized: true}
 
   s14_linear_none_fov_capture:
-    axes: {target_motion: linear, obstacle: none, perception: fov, outcome: capture}
+    axes: {target_motion: linear, obstacle: none, outcome: capture}
     support_status: supported
     expected_terminal: INTERCEPT_CONFIRMED
     expected_reason: CAPTURE_NET
@@ -217,7 +202,7 @@ scenes:
   # —— 第 2 轮 pilot 候选（ADR-0023）：静态目标 ⇒ 无"追不上 + C10 hold 自锁"混淆，
   #    难度只落在观测通道（窄视场 / 丢包），用于分离"指向 / 跟踪"本身的机制效应。
   s15_static_none_fov_capture:
-    axes: {target_motion: static, obstacle: none, perception: fov, outcome: capture}
+    axes: {target_motion: static, obstacle: none, outcome: capture}
     support_status: supported
     expected_terminal: INTERCEPT_CONFIRMED
     expected_reason: CAPTURE_NET
@@ -230,7 +215,7 @@ scenes:
       capture_adjudicator: {interception_authorized: true}
 
   s16_static_none_dropout_capture:
-    axes: {target_motion: static, obstacle: none, perception: dropout, outcome: capture}
+    axes: {target_motion: static, obstacle: none, outcome: capture}
     support_status: supported
     expected_terminal: INTERCEPT_CONFIRMED
     expected_reason: CAPTURE_NET
@@ -259,7 +244,7 @@ scenes:
   #   speed_mps 1.0 / radius_m 1.8 / drift_amplitude_m 0.6 / drift_period_s 30.0
   #   峰值速度上界 1.126 ≤ 1.206（火控提前量上界）；位移上界 2.40 + goal_tol 0.3 = 2.70 < d_track 3.0。
   s18_epicycle_none_nominal_track:
-    axes: {target_motion: epicycle, obstacle: none, perception: nominal, outcome: tracking}
+    axes: {target_motion: epicycle, obstacle: none, outcome: tracking}
     support_status: supported
     expected_terminal: TRACKING_SUCCESS
     world_map: yard

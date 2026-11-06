@@ -140,7 +140,7 @@ def test_retired_branches_have_no_declaration():
 def test_retired_branches_documented_in_ledger():
     """每个已清退分支必须在规范 5.2 节有记录（删了不记录 = 下次又会被加回来）。"""
     text = CONVENTION.read_text(encoding='utf-8')
-    assert '5.2 已清退' in text, '规范缺少 5.2 节「已清退」'
+    assert '5.2 已退役台账' in text, '规范缺少 5.2 节「已退役台账」'
     for name in RETIRED_BRANCHES:
         assert name in text, (
             '已清退分支 `%s` 未出现在 docs/conventions/路线分支治理.md 5.2 表里' % name)

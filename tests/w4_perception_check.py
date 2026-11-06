@@ -4,9 +4,13 @@
 用法：
   ros2 run（或 python3）tests/w4_perception_check.py --duration 8 --tol 0.10
 
-检查六话题频率（air/obs 20、targets 10、obstacles 10、ground/odom 30、map 2、gt/* 30）
-与 header.frame_id（须 world、无裸 base_link）。结果打印并落
+检查四话题频率（targets 10、ground/odom 30、map 2、gt/* 30）与 header.frame_id
+（须 world、无裸 base_link）。结果打印并落
 experiments/w4-perception/<run_id>/metrics/frequency.json（ADR-0006）。
+
+2026-11-06：`/agc/air/obs`（原 air_perception 发布）与 `/agc/obstacles`（原 air_fusion
+发布）两条话题已随节点/感知轴清除，不再有发布者，故从检查清单移除。消息定义
+（`AirObservationArray` 等）作为接口 ABI 保留，但不再被任何活跃节点发布或订阅。
 """
 import argparse
 import json
@@ -22,13 +26,11 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry, OccupancyGrid
 from std_msgs.msg import String
-from agc_msgs.msg import AirObservationArray, TargetTrackArray, ObstacleTrackArray
+from agc_msgs.msg import TargetTrackArray
 
 # (topic, type, expected_hz, lenient)  lenient=True 表示非 W4 交付物（仅观测）
 TOPICS = [
-    ('/agc/air/obs', AirObservationArray, 20.0, False),
     ('/agc/targets', TargetTrackArray, 10.0, False),
-    ('/agc/obstacles', ObstacleTrackArray, 10.0, False),
     ('/agc/ground/odom', Odometry, 30.0, False),
     ('/agc/map', OccupancyGrid, 2.0, False),
     ('/agc/gt/intruder_uav', PoseStamped, 30.0, False),

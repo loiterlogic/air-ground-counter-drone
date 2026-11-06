@@ -134,8 +134,9 @@ intruder_driver:
     #   `[0, applicable_max_alt_m=2.009]` 与 `jam_envelope_max_alt_m=2.0` 的边界内，
     #   并与 `air.yaml` 的己方跟踪高度 2.5 m 形成 0.41 m 高差（远小于感知 range_max 30 m
     #   与 standoff 水平预算 √(30²−0.41²)=29.997 m）→ 不改变既有能力包络。
-    #   ⚠ 2026-11-04：`range_max` 属 `air_perception`，而它当前**无消费者**；
-    #   `/agc/targets` 由 `gt_adapter` 发布且**无几何门控**——本行只是配置自洽性验算。
+    #   ⚠ `range_max` 原属 `air_perception`（已于 2026-11-06 随 `perception` 轴退役删除）；
+    #   `/agc/targets` 由 `gt_adapter` 发布且**无几何门控**——本行只是配置自洽性验算，
+    #   常量 R=30.0 的登记处见 `air.yaml` standoff_follower 注释 / 飞行高度规范 K1。
     # ADR-0007（2026-11-02）：**运行期由地图几何真源派生注入**（`flight_altitude.target_cruise_m`，
     # 见 `w6_composition.apply_flight_altitude_params`）。本值仅作 standalone / 单测兜底。
     # 用户裁定「高度和地图绑定，因为后面会做小障碍高密度和大障碍低密度等图」——

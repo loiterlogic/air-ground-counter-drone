@@ -1,7 +1,8 @@
 // agc_perception 内部数学工具（W4 共享）
 //
-// 仅服务于本包内节点（gt_bypass / ground_odom_adapter / gt_adapter / air_perception /
-// air_fusion），不导出为公共接口。四元数 / 偏航 / 角度归一等纯函数。
+// 仅服务于本包内节点（gt_bypass / ground_odom_adapter / gt_adapter / map_adapter），
+// 不导出为公共接口。四元数 / 偏航 / 角度归一等纯函数。
+// （原 air_perception / air_fusion 亦用本文件，已分别于 2026-11-06 / 2026-11-04 退役。）
 #pragma once
 
 #include <cmath>

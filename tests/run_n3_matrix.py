@@ -19,15 +19,16 @@
 | 静态正常 | `s01` | 达 `TRACKING_SUCCESS`；`visibility_rate` 显著 > 0 |
 | 动态正常 | `s02` / `s03` | 达 `TRACKING_SUCCESS` |
 | 丢失重捕获 | `s06`（`drop_prob=0.1`） | 达 `TRACKING_SUCCESS`（丢包下不 hold 死） |
-| ~~无目标负例~~ | ~~`s17`（视场收窄到近零）~~ | **当前无有效承载者，已从矩阵移除**（见下方"负例为什么暂时不可用"） |
+| ~~无目标负例~~ | ~~`s17`（视场收窄到近零）~~ | **已随 `perception` 轴退役，场景号删除**（见下方"负例为什么不可用"） |
 
-## 负例为什么暂时不可用（2026-11-04 起）
+## 负例为什么不可用（2026-11-06 起）
 
-`s17` 原靠 `air_perception` 的 FOV 收窄（`perception_sensors_no_target.yaml`，hfov/vfov=0.1°）
-制造"看不见"。`air_fusion` 退役后 `/agc/air/obs` **无人订阅**，该门控不再影响 `/agc/targets`；
-而唯一的发布者 `gt_adapter` **无几何门控、不分远近**。⇒ 「看不见」这一前置条件**无法构造**，
-本类别已从 `MATRIX` 移除，`s17` 亦在 `scenarios.yaml` 标为 `unsupported:perception`
-（启动期拒绝运行）。恢复需给 `gt_adapter` 加可致盲开关，属**新决策、未立项**。
+`s17` 原靠 `air_perception` 的 FOV 收窄制造"看不见"。`air_fusion` 退役后
+`/agc/air/obs` 无人订阅，该门控不再影响 `/agc/targets`；而唯一的发布者 `gt_adapter`
+**无几何门控、不分远近**。「看不见」这一前置条件**无法构造**。
+2026-11-06（用户裁定「彻底删」）：`perception` 场景轴、`air_perception` 节点、
+`perception_sensors*.yaml` 与 `s17` 场景号一并删除。恢复需给 `gt_adapter` 加可致盲
+开关，属**新决策、未立项**，须按治理规范 2.2 节重新立项。
 
 下面的加严断言逻辑**保留**，它是恢复该负例后的判据（也是任何"某臂不要求成功"的判据模板）。
 
@@ -78,12 +79,15 @@ MATRIX = [
      '动态正常（直线）', 'positive'),
     ('dynamic-normal-maneuver', 's03_maneuver_none_nominal_track', 'TRACKING_SUCCESS',
      '动态正常（机动）', 'positive'),
+    # 场景 ID 名中的 `dropout` 为历史遗留标签（`perception` 轴已退役）；该场景当前
+    # 的丢包来自 `gt_adapter` 的 `drop_prob=0.1`（config/perception.yaml），与轴无关。
     ('loss-reacquire', 's06_static_none_dropout_track', 'TRACKING_SUCCESS',
-     '丢失重捕获（drop_prob=0.1）', 'positive'),
+     '丢失重捕获（gt_adapter drop_prob=0.1）', 'positive'),
     # 视觉定位路径已于 2026-11-04 退役（用户裁定）：原 `('vision-cost', ..., 'vision')`
     # 一格随之删除。矩阵不再有"感知代价臂"——目标位置始终由真值给出（ADR-0009 (a2)）。
-    # 无目标负例（`s17`）亦已移除：`air_fusion` 退役后没有消费者读取 `air_perception` 的
-    # FOV 门控，而 `gt_adapter` 无几何门控 ⇒「看不见」无法构造。见文件头「负例为什么暂时不可用」。
+    # 无目标负例（`s17`）亦已随 `perception` 轴于 2026-11-06 删除：`air_fusion` 退役后
+    # 没有消费者读取 `air_perception` 的 FOV 门控，而 `gt_adapter` 无几何门控
+    # ⇒「看不见」无法构造。见文件头「负例为什么不可用」。
 ]
 
 INFRA_OUTCOMES = {'wall_watchdog_timeout', 'infra', 'infra_failure'}

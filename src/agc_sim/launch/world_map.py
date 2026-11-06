@@ -234,8 +234,9 @@ def obstacle_z_top(ob):
 def obstacle_bbox_size(ob):
     """感知先验 / 地图栅格可表达的尺寸：单图元按 `_part_bbox_size`；复合模型取**包络盒**。
 
-    `map_adapter` / `air_perception` 的障碍模型是 OBB（只有 sx/sy/sz + yaw），无法表达圆柱 /
+    `map_adapter` 的障碍模型是 OBB（只有 sx/sy/sz + yaw），无法表达圆柱 /
     球 / 多图元；故一律**降级为水平轴对齐包络矩形**（保守外扩，不缩小实体）。成文约定。
+    （原 `air_perception` 同用此降级，已于 2026-11-06 随 `perception` 轴退役删除。）
     """
     if not is_composite(ob):
         return _part_bbox_size(ob)

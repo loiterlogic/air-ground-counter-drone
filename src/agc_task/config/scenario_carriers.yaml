@@ -8,9 +8,12 @@
 #     覆盖账本标 `not_carried`（**不**以命名冒充已执行）。
 #
 # 约定：
-#   * `sensors_file` / `obstacles_file` 为 **agc_perception/config 下的文件名**，由上层 launch
-#     解析为绝对路径经 perception_bringup 单一注入（契约 #params）。
+#   * `obstacles_file` 为 **agc_perception/config 下的文件名**，由上层 launch 解析为绝对路径
+#     经 perception_bringup 单一注入（契约 #params）。
 #   * `world_obstacles` 传给 world_bringup：`static` 用含 pole_* 的世界，`none` 用去除 pole_* 的世界。
+#   * `perception` 轴已于 2026-11-06 退役（用户裁定「彻底删」）：`sensors_file` 通道变体在
+#     `air_fusion` 退役后无消费者，四档运行期行为完全相同。场景定义不得再声明该轴；
+#     防复活闸门见 scripts/tests/test_retirement_ledger.py。
 axes:
   target_motion:
     static:
@@ -49,42 +52,6 @@ axes:
       supported: false
       carrier: null
       reason: "无动态障碍执行节点（R-026 不新建执行节点、不改世界物理）"
-
-  perception:
-    # ---- 2026-11-04 用户裁定：air_fusion 退役，`/agc/targets` 只由 gt_adapter 发布 ----
-    # 本轴原载体是 "target_source=air_fusion + sensors_file"，sensors_file 只被 air_perception 读。
-    # air_fusion 删除后 sensors_file **不再影响目标位置**（air_perception 无消费者），
-    # 故**四档的实际行为现在完全相同**——这是已知缺陷，不是无差别设计。
-    #
-    # 诚实标注：本轴目前**只能证明"链路通"**，不能证明"不同感知质量下的鲁棒性"。
-    # 若将来要恢复区分力，须给 gt_adapter 加对应的可调参数（已有 drop_prob / latency_s /
-    # sigma_*），届时按 docs/conventions/路线分支治理.md 2.2 节四项重新立项。
-    nominal:
-      supported: true
-      carrier: "target_source=gt_adapter + 传感器通道参数 (无丢包)"
-      requires_air_link: true
-      sensors_file: perception_sensors.yaml
-    dropout:
-      supported: true
-      carrier: "target_source=gt_adapter + 传感器通道参数 (drop_prob>0)"
-      requires_air_link: true
-      sensors_file: perception_sensors_dropout.yaml
-      # 已知缺陷（2026-11-04）：gt_adapter 不是本档的消费者，drop_prob 由 perception.yaml 恒定，
-      # 故本档与 nominal 在当前实现下**无行为差异**。
-    fov:
-      supported: true
-      carrier: "target_source=gt_adapter + 传感器通道参数 (收窄 hfov/vfov)"
-      requires_air_link: true
-      sensors_file: perception_sensors_fov.yaml
-      # 已知缺陷：gt_adapter **无 FOV 门控**（真值不分远近），本档与 nominal 无行为差异。
-    # N3 回归矩阵的**无目标负例**（2026-11-04）：原靠 air_perception 的 FOV 收窄到近零制造"看不见"。
-    # air_fusion 退役后该机制失效——**本档不再是有效的无目标负例**，见下方 reason。
-    no_target:
-      supported: false
-      carrier: null
-      reason: ("air_fusion 退役后无人消费 air_perception 的 FOV 门控，本档无法制造'看不见'。"
-               "有效的无目标负例须改用 gt_adapter 侧手段（如 confidence<confidence_min），"
-               "属新决策，未立项。")
 
   outcome:
     tracking:

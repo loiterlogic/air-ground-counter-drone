@@ -115,7 +115,7 @@ def _compose(context, *args, **kwargs):
     if not px4_sim_model:
         raise RuntimeError('px4_sim_model 不得为空（默认 gz_x500）→ 拒绝运行')
 
-    info = load_scene(task_share, perc_share, sim_share, scene, seed, world_map=world_map)
+    info = load_scene(task_share, sim_share, scene, seed, world_map=world_map)
 
     # `target_motion:=` CLI 覆盖（`--escape`）：必须在 **load_scene 之后、两个 backend 分支之前**
     # 一次性对齐「生效参数 / 声明轴 / 承载者」三处，否则启动期断言
@@ -186,7 +186,7 @@ def _compose(context, *args, **kwargs):
                     'use_sim_time': use_sim_time,
                     'world_obstacles': info['world_obstacles'],
                     'world_map': info['world_map'],
-                    'sensors_file': info['sensors_file'],
+                    # `sensors_file` 已于 2026-11-06 随 `perception` 轴退役，不再透传。
                     # S-06：障碍先验 / 地图几何由**真源派生**（不再读 agc_perception 包内副本）
                     'obstacles_file': info['obstacles_file'],
                     'map_file': info['derived_map_file'],
@@ -199,7 +199,6 @@ def _compose(context, *args, **kwargs):
                     # **空串**，会**覆盖** perception_bringup 的默认值 → gt_adapter 不发布
                     # 「不发布 /agc/targets」→ 任务无目标 → TIMEOUT（实测轻量栈回归）。
                     'target_source': target_source,
-                    'seed': LaunchConfiguration('seed'),
                 }, **spawn_args).items(),
             ),
             # W6 拦截裁决（地面侧，无需 PX4）：发射式网捕获裁决器 + 行为级干扰注入
@@ -426,12 +425,10 @@ def _compose(context, *args, **kwargs):
                 os.path.join(perc_share, 'launch', 'perception_bringup.launch.py')),
             launch_arguments={
                 'use_sim_time': use_sim_time,
-                # R-026：按场景轴选择传感器通道 / 障碍文件
                 # 2026-11-04：`target_source` 恒为 gt_adapter（air_fusion 退役）；仍保留透传口，
                 #   因为 gt_adapter 用该参数决定自己是否发布 `/agc/targets`。
+                # 2026-11-06：`sensors_file` / `perception` 轴已退役，不再透传。
                 'target_source': target_source,
-                'seed': LaunchConfiguration('seed'),
-                'sensors_file': info['sensors_file'],
                 # S-06：障碍先验 / 地图几何由**真源派生**（不再读 agc_perception 包内副本）
                 'obstacles_file': info['obstacles_file'],
                 'map_file': info['derived_map_file'],

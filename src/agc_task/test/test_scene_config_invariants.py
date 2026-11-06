@@ -486,10 +486,11 @@ def test_standoff_safe_max_respects_safety_floor_and_sensor_range():
         air = yaml.safe_load(f)
     sf = air['standoff_follower']['ros__parameters']
     safety = air['trajectory_tracker']['ros__parameters']['safety']
-    sensors_path = os.path.join(os.path.dirname(os.path.dirname(CONFIG_DIR)),
-                                'agc_perception', 'config', 'perception_sensors.yaml')
-    with open(sensors_path) as f:
-        sensors = yaml.safe_load(f)
+    # 2026-11-06：`perception_sensors*.yaml` 随 `perception` 轴退役，量程 R 的登记处
+    # 改为 `air.yaml` 的 standoff_follower 注释与飞行高度规范 K1（30.0 m）。本测试用
+    # 该常量做**配置自洽性验算**（`gt_adapter` 不做几何门控，R 不是运行期限制），
+    # 不读已退役文件、不新建第二份数值真源。
+    range_max = 30.0
 
     safe_max = float(sf['safe_max'])
     safe_min = float(sf['safe_min'])
@@ -500,7 +501,6 @@ def test_standoff_safe_max_respects_safety_floor_and_sensor_range():
     floor = (float(safety['target_min_dist']) + float(safety['target_margin'])
              + float(safety['reaction_time_s']) * float(safety['max_speed_mps'])
              + float(safety['reachability_margin']))
-    range_max = min(float(s['range_max_m']) for s in sensors['sensors'])
     dz = own_h - target_z
     ceil = math.sqrt(range_max ** 2 - dz ** 2)
 
@@ -534,15 +534,12 @@ def test_standoff_stop_point_matches_safety_floor_minimally():
         air = yaml.safe_load(f)
     sf = air['standoff_follower']['ros__parameters']
     safety = air['trajectory_tracker']['ros__parameters']['safety']
-    sensors_path = os.path.join(os.path.dirname(os.path.dirname(CONFIG_DIR)),
-                                'agc_perception', 'config', 'perception_sensors.yaml')
-    with open(sensors_path) as f:
-        sensors = yaml.safe_load(f)
-
+    # 见 test_standoff_safe_max_respects_safety_floor_and_sensor_range：量程 R=30.0
+    # 由飞行高度规范 K1 / air.yaml 注释登记，随 perception 轴退役不再读 sensors 文件。
+    range_max = 30.0
     safe_max = float(sf['safe_max'])
     hyst = float(sf['hysteresis'])
     dz = float(sf['height']) - float(base['cruise_alt_m'])
-    range_max = min(float(s['range_max_m']) for s in sensors['sensors'])
     ceil = math.sqrt(range_max ** 2 - dz ** 2)
     floor = (float(safety['target_min_dist']) + float(safety['target_margin'])
              + float(safety['reaction_time_s']) * float(safety['max_speed_mps'])

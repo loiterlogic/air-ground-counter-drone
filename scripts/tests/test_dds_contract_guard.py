@@ -147,38 +147,26 @@ def test_n3_matrix_entry_is_real():
     assert m._assert_negative({}, None), '拿不到 summary 时应判不通过，不能默认放行'
 
 
-def test_n3_negative_scene_is_registered(check):
-    """无目标负例场景必须**如实标为不可运行**（2026-11-04 起）。
+def test_perception_axis_and_no_target_scene_are_retired(check):
+    """`perception` 场景轴 + `s17` 无目标负例已于 2026-11-06 整体退役（用户裁定）。
 
-    `air_fusion` 退役后 `/agc/air/obs` 无人订阅，`gt_adapter` 又无几何门控 ⇒ `s17` 的
-    「看不见」造不出来。本测试因此守护**诚实标注**，而不是继续假装它可用：
-      ① 场景仍在登记表里（不静默删号，便于将来恢复）；
-      ② 它被标 `unsupported:perception`（否则启动期能跑通会被误当有效负例）；
-      ③ 承载者表 `no_target` 为 `supported: false` 且给出 reason；
-      ④ 两者一致——不存在"场景说 supported、承载者说 unsupported"的矛盾。
+    原 `test_n3_negative_scene_is_registered` 守护的是"诚实标注 s17 不可用"；本次
+    「彻底删」后改为守护**不复活**：场景表不得再声明 `perception` 轴、承载者表
+    不得再有该轴、`s17` 场景号不得回来。完整清退台账与闸门见
+    `scripts/tests/test_retirement_ledger.py` 与治理规范 5.2。
     """
     import yaml
     with open(ROOT / 'src/agc_task/config/scenarios.yaml', encoding='utf-8') as f:
         scenes = yaml.safe_load(f)['scenes']
-    s17 = scenes.get('s17_static_none_no_target_timeout')
-    assert s17, '负例场景未登记（不得静默删号；恢复时要用同一编号）'
-    assert s17['axes']['perception'] == 'no_target'
-    assert s17['expected_terminal'] == 'MISSION_FAILED'
-    assert s17.get('expected_reason') == 'TIMEOUT'
-    # ④ 一致性：场景侧必须标 unsupported（否则 launch 会真跑，产生"看起来有效"的假负例）
-    status = str(s17.get('support_status', 'supported'))
-    assert status.startswith('unsupported'), (
-        's17 当前无有效承载者，support_status 必须为 unsupported:<axis>，实际 %r' % status)
+    assert 's17_static_none_no_target_timeout' not in scenes, (
+        's17 无目标负例已随 perception 轴退役，不得重新登记')
+    for name, sc in scenes.items():
+        assert 'perception' not in (sc.get('axes') or {}), (
+            '场景 %s 仍声明已退役的 perception 轴' % name)
 
     with open(ROOT / 'src/agc_task/config/scenario_carriers.yaml', encoding='utf-8') as f:
-        car = yaml.safe_load(f)['axes']['perception']
-    assert 'no_target' in car, 'carriers 缺少 no_target 档'
-    entry = car['no_target']
-    assert entry.get('supported') is False, (
-        'no_target 档当前无法制造"看不见"，必须如实标 supported=false')
-    assert entry.get('reason'), 'no_target 档标为不支持时必须给出 reason'
-    assert 'air_fusion' in entry['reason'], (
-        'reason 应说明根因（air_fusion 退役导致门控无消费者）')
+        car = yaml.safe_load(f)['axes']
+    assert 'perception' not in car, 'scenario_carriers.yaml 仍登记已退役的 perception 轴'
 
 
 def test_vision_localization_path_is_retired():

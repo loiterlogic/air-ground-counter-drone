@@ -355,7 +355,7 @@ def geometry_z_tops(geometry, sim_share=None):
 def obstacle_bbox_size(ob, sim_share=None):
     """感知先验 / 地图栅格的障碍尺寸（**降级为水平轴对齐包络**）。
 
-    `map_adapter` / `air_perception` 的障碍模型是 OBB（只有 sx/sy/sz + yaw），无法表达圆柱 /
+    `map_adapter` 的障碍模型是 OBB（只有 sx/sy/sz + yaw），无法表达圆柱 /
     球 / 多图元复合体；故一律降级为包络矩形（保守外扩，不缩小实体）。该降级为成文约定，
     见 P1-1 规格「派生点需同步改」）。
     """
@@ -428,8 +428,9 @@ BACKENDS = {
             'scenario_reset', 'task_manager', 'run_logger',
             'capture_adjudicator', 'jammer', 'intruder_driver',
         ],
-        # 整链含全部 4 轴（obstacle / outcome + target_motion / perception 的空中侧）。
-        'supported_axes': ['obstacle', 'outcome', 'target_motion', 'perception'],
+        # 整链承载 3 轴（obstacle / outcome + target_motion 的空中侧）。
+        # `perception` 轴已于 2026-11-06 退役（无消费者的 sensors_file 通道变体），不再登记。
+        'supported_axes': ['obstacle', 'outcome', 'target_motion'],
     },
 }
 
@@ -563,7 +564,7 @@ def write_derived_map(geometry, scene, seed, token=None):
     return path
 
 
-def load_scene(task_share, perc_share, sim_share, scene, seed, token=None,
+def load_scene(task_share, sim_share, scene, seed, token=None,
                world_map=None):
     """加载场景配置：base / registry / carriers，校验 scene 存在与 support_status，逐轴取承载者。
 
@@ -603,11 +604,9 @@ def load_scene(task_share, perc_share, sim_share, scene, seed, token=None,
         raise RuntimeError(
             '场景 %s support_status=%s（声明轴无承载者）→ 拒绝运行' % (scene, support_status))
 
-    # 按轴选择承载者文件
-    sensors_file_name = entries['perception']['sensors_file']
+    # 按轴选择承载者文件（`perception` 轴已于 2026-11-06 退役，不再有 sensors_file）
     obstacles_file_name = entries['obstacle']['obstacles_file']
     world_obstacles = entries['obstacle']['world_obstacles']
-    sensors_file = os.path.join(perc_share, 'config', sensors_file_name)
 
     # S-06：几何真源 + 按域派生（感知障碍先验 / 感知地图）。障碍文件改由真源派生，
     #   不再读 agc_perception 包内副本。P1-1：真源文件由 `world_map` 决定。
@@ -625,11 +624,10 @@ def load_scene(task_share, perc_share, sim_share, scene, seed, token=None,
         # carriers 随 info 带出：CLI 覆盖场景轴时须按新轴值重取承载者（单一真源，不二次读盘）。
         'carriers': carriers,
         'support_status': support_status, 'entries': entries,
-        'sensors_file_name': sensors_file_name, 'obstacles_file_name': obstacles_file_name,
+        'obstacles_file_name': obstacles_file_name,
         'world_obstacles': world_obstacles,
         'world_map': map_name,
         'world_map_source': map_source,
-        'sensors_file': sensors_file,
         'obstacles_file': derived_obstacles_file,          # S-06：派生路径（非包内副本）
         'derived_obstacles_file': derived_obstacles_file,
         'derived_obstacles_ids': derived_obstacles_ids,
@@ -851,8 +849,6 @@ def assertions(scene, merged, info, air_merged=None, sim_share=None, layout=None
             info['world_obstacles'] == entries['obstacle']['world_obstacles'],
         'obstacles_file_effective_matches':
             info['obstacles_file_name'] == entries['obstacle']['obstacles_file'],
-        'perception_sensors_file_effective_matches':
-            info['sensors_file_name'] == entries['perception']['sensors_file'],
         # S-06：派生几何 == 真源（scenario_reset 障碍清单 / 作业区边界）。
         'scenario_reset_obstacles_match_geometry':
             list(sr.get('obstacle_names', [])) == gids
@@ -958,13 +954,16 @@ def assertions(scene, merged, info, air_merged=None, sim_share=None, layout=None
 
 
 def _flight_altitude_assertions(merged, info, air_merged, geometry):
-    """ADR-0007：高度派生四条断言（误配即拒绝运行）。
+    """ADR-0007：高度派生三条断言（误配即拒绝运行）。
 
-    四条对应规范 [§4.2](../../docs/conventions/飞行高度分层与按地图定高.md#where) 第 4 点：
+    三条对应规范 [§4.2](../../docs/conventions/飞行高度分层与按地图定高.md#where) 第 4 点：
       1. `flight_altitude_derived_matches_source` —— 注入值 == 地图文件值（防"有人又改了 air.yaml"）
       2. `own_height_covers_h_max_env`            —— `h_o ≥ H_max_env + c_clear`（防"飞得比楼低"）
-      3. `dz_within_perception_range`             —— `|h_o − h_t| ≤ √(R²−S²)`（防"抬完看不见目标"）
-      4. `target_within_capture_envelope`         —— capture/jam 场景 `h_t ≤ 包络上限`（防"抬完打不着"）
+      3. `target_within_capture_envelope`         —— capture/jam 场景 `h_t ≤ 包络上限`（防"抬完打不着"）
+
+    原第 3 条 `dz_within_perception_range`（K1 感知量程自洽性验算）已于 2026-11-06 删除：
+    它读的 `sensors_file` / `air_perception` 随 `perception` 场景轴一并退役，且规范本身
+    标注"当前不生效、`gt_adapter` 不做几何门控"，删它不改变任何运行期判定。
     """
     fa = flight_altitude_block(geometry)
     res = {}
@@ -989,22 +988,7 @@ def _flight_altitude_assertions(merged, info, air_merged, geometry):
     h_max_env = float(fa['derived']['h_max_env_m'])
     res['own_height_covers_h_max_env'] = (
         fa['own_track_m'] >= h_max_env + fa['own_clearance_min_m'] - 1e-9)
-    # ③ 感知量程（K1，三维球）：`|dz| ≤ √(R² − S²)`，R = 感知量程，S = 停止趋近点。
-    #    停止点 = safe_max − hysteresis；lightweight 下从 air.yaml 基线取（节点不启动，但仍需自洽）。
-    sensors = _load_sensors_range(info)
-    safe_max = float(sf.get('safe_max', 11.2))
-    hyst = float(sf.get('hysteresis', 1.0))
-    if not has_air:
-        base_air = _load_air_baseline(info)
-        sf_base = (base_air or {}).get('standoff_follower') or {}
-        safe_max = float(sf_base.get('safe_max', safe_max))
-        hyst = float(sf_base.get('hysteresis', hyst))
-    stop_point = safe_max - hyst
-    dz = abs(fa['own_track_m'] - fa['target_cruise_m'])
-    if sensors is not None and sensors > stop_point:
-        res['dz_within_perception_range'] = (
-            dz <= math.sqrt(sensors * sensors - stop_point * stop_point) + 1e-9)
-    # ④ 捕获/干扰包络（K4）：**只对已授权射击的场景**判（tracking 类不判，避免误伤）。
+    # ③ 捕获/干扰包络（K4）：**只对已授权射击的场景**判（tracking 类不判，避免误伤）。
     cap = merged.get('capture_adjudicator') or {}
     authorized = bool(cap.get('interception_authorized', False))
     if authorized:
@@ -1018,38 +1002,6 @@ def _flight_altitude_assertions(merged, info, air_merged, geometry):
         h_target = fa['target_cruise_m'] - car_z - launcher
         res['target_within_capture_envelope'] = (h_target <= apex + 1e-9)
     return res
-
-
-def _load_air_baseline(info):
-    """读 `air.yaml` 基线（lightweight 后端不起空中链路时，断言仍需要 safe_max / hysteresis）。
-
-    从 `info` 的 `air_file`（若 launch 提供）或源码树相对路径读；读不到返回 `None`
-    → 对应判据退化为 `air.yaml` 的内置缺省，不伪造通过。
-    """
-    path = (info or {}).get('air_file') or os.path.join(_SRC_AIR_CONFIG, 'air.yaml')
-    if not os.path.exists(str(path)):
-        return None
-    try:
-        return yaml.safe_load(open(str(path)))
-    except Exception:   # noqa: BLE001
-        return None
-
-
-def _load_sensors_range(info):
-    """感知量程 `range_max_m`（三维球半径）——从传感器配置读，**不复制参数**。
-
-    读不到（文件缺失 / 无通道）时返回 `None`，对应断言**不参与判定**
-    （如实标注"该 run 无法核验"，而不是伪造一个通过）。
-    """
-    path = (info or {}).get('sensors_file_path') or (info or {}).get('sensors_file')
-    if not path or not os.path.exists(str(path)):
-        return None
-    try:
-        doc = yaml.safe_load(open(str(path)))
-        chans = (doc or {}).get('sensors') or []
-        return min(float(c['range_max_m']) for c in chans if 'range_max_m' in c)
-    except Exception:   # noqa: BLE001 —— 解析失败不阻断启动，断言自动跳过（如实降级）
-        return None
 
 
 def vision_plane_block(plane=None, perception_path='truth', detector_backend=None):
@@ -1101,9 +1053,7 @@ def build_manifest(backend, info, merged, assertions_result, sim_share=None,
     sc = info['sc']
     support_status = info['support_status']
     world_obstacles = info['world_obstacles']
-    sensors_file_name = info['sensors_file_name']
     obstacles_file_name = info['obstacles_file_name']
-    sensors_file = info['sensors_file']
     obstacles_file = info['obstacles_file']
     world_file = info['world_file']
     target_source = BACKENDS[backend]['target_source']
@@ -1163,8 +1113,6 @@ def build_manifest(backend, info, merged, assertions_result, sim_share=None,
         if ax == 'obstacle':
             eff = {'world_obstacles': world_obstacles, 'obstacles_file': obstacles_file_name,
                    'obstacle_ids': obstacle_ids, 'world_map': info.get('world_map', DEFAULT_WORLD_MAP)}
-        elif ax == 'perception':
-            eff = {'sensors_file': sensors_file_name, 'target_source': target_source}
         elif ax == 'target_motion':
             eff = {'intruder_driver.motion': merged.get('intruder_driver', {}).get('motion')}
         carriers_ledger[ax] = {'value': val, 'carrier': entries[ax].get('carrier'),
@@ -1200,7 +1148,11 @@ def build_manifest(backend, info, merged, assertions_result, sim_share=None,
                 'master_seed': seed,
                 'px4_sim_seeds': px4_seeds,
             },
-            'sensors_file': sensors_file, 'obstacles_file': obstacles_file,
+            # `sensors_file` 随 `perception` 轴退役（2026-11-06）：保留键、值固定为
+            # 退役标记（规范 4.4 schema 不漂移），使新旧 run 仍可直接对比，且审查
+            # 一眼能看出本 run 不使用任何传感器通道变体（而非"忘了记"）。
+            'sensors_file': 'retired:perception-axis',
+            'obstacles_file': obstacles_file,
             'world_obstacles': world_obstacles, 'world_file': world_file,
             # P1-1：地图（几何真源选择）与实际世界生成路径——`static` 时世界是
             #   `/tmp/agc_world_static_obstacles[_<map>].sdf`，与真源一一对应。

@@ -17,7 +17,7 @@
 |---|---|---|
 | `s01_static_none_nominal_track` | `TRACKING_SUCCESS` | 静态目标 + 跟踪里程碑（整链最快路径） |
 | `s08_static_none_nominal_capture` | `INTERCEPT_CONFIRMED` | 拦截捕获终态 + 火控链 |
-| `s10_maneuver_none_fov_timeout` | `MISSION_FAILED` | **负例**：机动目标出视场后应判失败（防"假成功"） |
+| `s10_maneuver_none_fov_timeout` | `MISSION_FAILED` | **负例**：机动目标置远 + 不跟随 → T_max 超时（防"假成功"）。ID 名中的 `fov` 为历史遗留标签，`perception` 轴已于 2026-11-06 退役 |
 
 ## 判据（退出码与 tests/ 约定一致）
 

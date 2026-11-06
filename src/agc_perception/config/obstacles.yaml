@@ -1,4 +1,5 @@
-# W4 感知用「障碍真值」几何（供 air_perception 生成 ObstacleObservation 与遮挡判定）
+# W4 感知用「障碍真值」几何（现为 map_adapter 的 standalone 回退；原 air_perception
+# 生成 ObstacleObservation / 遮挡判定的用途已随 `perception` 轴于 2026-11-06 退役）
 #
 # ---- 几何真源（S-06；ADR-0007）----
 # 静态障碍**实体几何**的唯一真源为 `agc_sim/config/world_geometry.yaml`（地图 `minimal`；
@@ -17,8 +18,9 @@
 # 注意：此为**非实时传感器**——假设**一次 run 内场景静止家具已知且不变**；该假设显式成文，
 # **不得静默引入真值优势**（不依赖实时感知即可预知这些静止障碍的存在与几何）。
 #
-# 对齐旧树行为：旧 air_perception 从 scenario_file 读取静态障碍真值（非从 gazebo 取），
-# 故本文件的位姿/尺寸**须与 src/agc_sim/worlds/agc_world.sdf** 中的静态障碍一致
+# 对齐旧树行为：旧感知前端从 scenario_file 读取静态障碍真值（非从 gazebo 取；该前端
+# 已于 2026-11-06 随 `perception` 轴退役）。本文件现为 `map_adapter` 的 standalone 回退，
+# 其位姿/尺寸**须与 src/agc_sim/worlds/agc_world.sdf** 中的静态障碍一致
 # （pole_1 / pole_2，W3 打补丁后重排）。W6 若将障碍改为运行期 spawn/toggle，则应把本文件
 # 指向对应场景描述。
 obstacles:

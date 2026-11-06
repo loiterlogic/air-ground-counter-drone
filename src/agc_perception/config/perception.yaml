@@ -3,8 +3,10 @@
 # 由 `perception_bringup.launch.py` 经 launch 单一注入；节点不得覆写（契约 [参数入口]）。
 # 契约参数名 → 本文件节点参数映射：
 #   `/agc/target/source`            → gt_adapter.target_source（air_fusion 已退役）
-#   `/agc/perception/sensors_file`  → air_perception.sensors_file（W4-b）
 #   `/agc/obstacles/source`         → map_adapter（air_fusion 已退役，恒 config）
+#
+# 2026-11-06：`/agc/perception/sensors_file` 契约项随 `air_perception` 与 `perception`
+# 场景轴一并退役（无消费者），本文件不再有对应节点段。
 
 gt_bypass:
   ros__parameters:
@@ -43,9 +45,8 @@ gt_adapter:
     rate_hz: 10.0
     diff_window_s: 0.15
     # ---- 2026-11-03（N4）：真值链路的不确定性模型 ----
-    # 参数名与 air_perception 通道**同名同口径**（换源时下游一行不改）。
     # 缺省全 0 = **理想基线**，行为与旧版等价（节点启动时会打 WARN 提示不得据此宣称鲁棒性）。
-    # 档位定义与实测结果见 docs/adr/0009-perception-truth-derived-and-vision-path.md#top（2026-11-04 已回填）。
+    # 说明见 docs/adr/0009-perception-truth-derived-and-vision-path.md#top（2026-11-04 已回填）。
     sigma_xy_m: 0.3                  # 位置噪声（m）；只进协方差与融合权重 [nominal 档]
     sigma_z_m: 0.3
     latency_s: 0.2                   # 交付延迟（s）；改交付时刻，不改源采样时刻 [nominal 档]
@@ -58,7 +59,7 @@ gt_adapter:
     confidence: 1.0
     # 精度容差（**仅诊断**）：给定 σ，误差落在 tol 内的概率。不参与 confidence。
     confidence_tolerance_m: 0.25
-    seed: "0"                        # 字符串（与 air_perception 同款，避免 yaml 求值成 int）
+    seed: "0"                        # 字符串（避免 yaml 求值成 int）
     # α-β 滤波器（位置加噪 → 速度估计）：σ_w 为目标机动强度（m/s²）。
     #   σ_p ≤ 1e-6 时**自动旁路**（零噪声下 α=1,β=2 会退化为二阶振荡，见 gt_adapter.cpp）。
     filter_enabled: true
@@ -68,40 +69,14 @@ gt_adapter:
     # 保留键以免既有实验配置静默失效，但**不再**是噪声真源。
     pose_std_m: 0.0
     twist_std_m: 0.0
-# ---- 视觉定位路径已于 2026-11-04 退役（用户裁定）----
-# 原 `camera_tf` / `vision_target` 两段参数（相机外参、检测话题、目标高度平面等）已删除，
-# 对应节点 `camera_tf` / `vision_target` 亦已从本包移除。
-#
-# `perception_path` 参数随之取消；`air_fusion` 亦已于同日退役。
-# `/agc/targets` 的发布者**恒为** `gt_adapter`，项目不做目标识别，目标位置始终由真值给出
-# （ADR-0009 (a2)）。
-
-# ---- W4-b · 感知与融合 ----
-air_perception:
-  ros__parameters:
-    world_frame: "world"
-    target_id: "intruder_uav"
-    target_gt_topic: "/agc/gt/intruder_uav"
-    drone_odom_topic: "/agc/air/odom"
-    obs_topic: "/agc/air/obs"
-    obs_hz: 20.0
-    source_timeout_s: 0.3         # 感知源寿命：源采样时刻(Header.stamp)起算的失效期限（spec R-004）
-    # 精度容差（**仅诊断**）：给定 σ，误差落在 tol 内的概率。
-    #   2026-11-03 起**不**参与 confidence 生成（语义解耦，见 confidence.hpp 文件头）；
-    #   保留以便回答"本通道精度是否够用"。
-    confidence_tolerance_m: 0.25
-    seed: "0"
-    # sensors_file / obstacles_file 由 launch 以绝对路径注入
-
-# ---- air_fusion 已于 2026-11-04 退役（用户裁定）----
-# 原 `air_fusion` 是 `/agc/targets` 与 `/agc/obstacles` 的融合发布者；目标位置改为**只由
-# `gt_adapter` 给出**后，融合不再有独立价值。对应节点与本节参数一并删除。
-#
-# 连带变化：
-#   * `/agc/targets` 的唯一发布者 = `gt_adapter`（不再有"二选一"）；
-#   * `/agc/obstacles` 无发布者 → `obstacles_source` 恒为 `config`（静态先验）；
-#   * `air_perception` 代码**保留**（用户 2026-11-04 裁定："后续自然会有用到的地方"），
-#     但它当前**没有任何消费者**——`/agc/air/obs` 在整链里是空转的。
+# ---- 已退役路线（用户裁定）----
+#   * 2026-11-04：视觉定位路径（`camera_tf` / `vision_target` / `perception_path`）整体删除；
+#     `air_fusion` 节点与参数段删除。项目不做目标识别，目标位置始终由真值给出（ADR-0009 (a2)）。
+#   * 2026-11-06：`air_perception` 节点与本节参数段删除。它在 `air_fusion` 退役后发布的
+#     `/agc/air/obs` 恒无订阅者，`sensors_file` 通道配置亦不再影响任何运行期行为。
+#     `/agc/targets` 的发布者**恒为** `gt_adapter`；`/agc/obstacles` 无发布者 →
+#     `obstacles_source` 恒为 `config`（静态先验）。
+# 防复活闸门见 scripts/tests/test_retirement_ledger.py；台账见治理规范 5.2。
 
 # ---- W4-c · 地图 ----
 map_adapter:

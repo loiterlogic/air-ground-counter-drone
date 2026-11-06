@@ -233,7 +233,7 @@ class VizMarkers(Node):
         ms = [m for m in self.dyn.markers if not m.ns.startswith('target')]
         idx = 100
         for t in msg.tracks:
-            # p.orientation 在 gt_adapter / air_perception 里都有填（世界 ENU yaw）
+            # p.orientation 在 gt_adapter 里有填（世界 ENU yaw）
             ms.extend(self._body_markers('target_%d' % idx, t.pose.pose, (1.0, 0.0, 0.0)))
             idx += 1
         self.dyn.markers = ms

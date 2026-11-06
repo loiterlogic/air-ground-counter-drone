@@ -5,40 +5,31 @@
 
 分段：
   * W4-a：gt_bypass（真值旁路）+ ground_odom_adapter + gt_adapter
-  * W4-b：air_perception（**保留但当前无消费者**，见下）
   * W4-c：map_adapter
 
-## 两条路线已先后退役（2026-11-04，用户裁定）
+## 已退役的路线（用户裁定）
 
 **① 视觉定位路径**（`perception_path=vision`，含 `camera_tf` + `vision_target`：像素检测 →
-射线 × 高度平面求交 → `/agc/targets`）已**整体删除**。项目不做目标识别，目标位置始终由真值给出。
+射线 × 高度平面求交 → `/agc/targets`）已**整体删除**（2026-11-04）。项目不做目标识别，
+目标位置始终由真值给出。
 
-**② `air_fusion`**（两路空中通道观测融合 → `/agc/targets` + `/agc/obstacles`）也已**删除**：
-目标位置既然只由真值给出，融合就没有独立价值。
+**② `air_fusion`**（两路空中通道观测融合 → `/agc/targets` + `/agc/obstacles`）已**删除**
+（2026-11-04）：目标位置既然只由真值给出，融合就没有独立价值。
 
-**结果**：`/agc/targets` 的唯一发布者是 `gt_adapter`（**无几何门控，不分远近**）；
-`/agc/obstacles` 无发布者，`obstacles_source` 恒为 `config`（静态先验）。
+**③ `air_perception` 与 `perception` 场景轴**（2026-11-06，用户裁定「彻底删」）：
+`air_fusion` 退役后 `/agc/air/obs` 恒无订阅者，`sensors_file` 通道变体
+（nominal / dropout / fov / no_target）在运行期**行为完全相同**，属"退役了功能但没退役
+承载物"。本次一并删除：节点、4 个 `perception_sensors*.yaml`、场景 `perception` 轴、
+`sensors_file` 解析/注入链、专项验收脚本。防复活闸门见
+`scripts/tests/test_retirement_ledger.py`；处置依据见
+[路线分支治理](../conventions/路线分支治理.md#retire) 5.2 台账。
 
-### `air_perception` 为什么保留却没有消费者
+**结果（当前唯一行为）**：`/agc/targets` 的唯一发布者是 `gt_adapter`（**无几何门控，
+不分远近**）；`/agc/obstacles` 无发布者，`obstacles_source` 恒为 `config`（静态先验）。
+下游不得据任何"传感器量程 / FOV / 丢包"配置宣称本仓当前存在感知质量差异。
 
-用户 2026-11-04 裁定："air_perception 后续自然会有用到的地方"。代码与配置保留，但它发布的
-`/agc/air/obs` 在整链里**没有任何订阅者**——属**已知空转**，不是遗漏。
-
-**连带后果（必须知道，否则会误判"感知轴还有区分力"）**：本节点的 `sensors_file`
-几何门控（`range_max_m` / `hfov` / `vfov` / 遮挡）**不影响** `/agc/targets`——
-那由 `gt_adapter` 发布且无门控，故**目标指示不分远近**。因此：
-  * `perception=nominal|dropout|fov` 三档在运行期**行为完全相同**；
-  * `perception=no_target`（靠 `perception_sensors_no_target.yaml` 把视场收到 0.1°）
-    **造不出"看不见"** ⇒ `scenario_carriers.yaml` 已标 `supported: false`，
-    场景 `s17` 同步标 `unsupported:perception`（启动期拒绝运行），并已从 N3 回归矩阵移除。
-    恢复须给 `gt_adapter` 加可致盲开关，属**新决策、未立项**。
-
-将来启用时（例：无人机正俯视相机生成障碍物地图），必须**同时**补一个消费者节点，
-不得只起 `air_perception` 就宣称"感知在工作"。届时按
-[路线分支治理](../conventions/路线分支治理.md#rule) 2.2 节四项重新立项。
-
-「无人机正俯视相机生成障碍物地图」是**另一条尚未立项的需求**：它与已删的视觉目标定位路径
-**无代码共用**；将来需要相机 TF 时须重新实现（不得复用已删代码）。
+`/agc/map` 链（map_adapter → /agc/map → costmap）**不在本次清退范围**：它是 `baseline`
+命令源（规范 5.1 已批准分支）的组成部分，状态为「待建」，见治理规范 5.3 台账。
 """
 
 
@@ -50,7 +41,6 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch_ros.parameter_descriptions import ParameterValue
 
 
 def _reject_non_minimal_fallback(context, *args, **kwargs):
@@ -80,22 +70,18 @@ def _reject_non_minimal_fallback(context, *args, **kwargs):
 def generate_launch_description():
     share = get_package_share_directory('agc_perception')
     params_file = os.path.join(share, 'config', 'perception.yaml')
-    default_sensors_file = os.path.join(share, 'config', 'perception_sensors.yaml')
     default_obstacles_file = os.path.join(share, 'config', 'obstacles.yaml')
     default_map_file = os.path.join(share, 'config', 'map.yaml')
 
     use_sim_time = LaunchConfiguration('use_sim_time')
     target_source = LaunchConfiguration('target_source')
-    # R-026：传感器通道 / 障碍真值文件由上层按场景轴选择并单一注入（契约 #params）。
-    sensors_file = LaunchConfiguration('sensors_file')
-    obstacles_file = LaunchConfiguration('obstacles_file')
     # S-06（ADR-0007）：地图几何文件由上层经**单一真源**派生注入（缺省 = 包内回退副本）。
+    obstacles_file = LaunchConfiguration('obstacles_file')
     map_file = LaunchConfiguration('map_file')
     # P1-1：地图名（仅用于**显式拒绝**不受支持的回退路径，见 `_reject_non_minimal_fallback`）。
     world_map = LaunchConfiguration('world_map')
     # R-040（ADR-0007）：场景 / 源版本 → 折入地图内容身份 hash（诊断，非 ABI）
     scenario_version = LaunchConfiguration('scenario_version')
-    seed = LaunchConfiguration('seed')
 
     declared = [
         DeclareLaunchArgument('use_sim_time', default_value='true'),
@@ -103,10 +89,6 @@ def generate_launch_description():
         # air_fusion 已退役，故**唯一有效值**是 `gt_adapter`（其它值 = gt_adapter 不发布 → 无目标源）。
         DeclareLaunchArgument('target_source', default_value='gt_adapter',
                               description='契约 /agc/target/source：gt_adapter（air_fusion 已退役）'),
-        # 2026-11-04：`obstacles_source` 参数已删除——air_fusion 退役后只可能取 `config`，
-        # 保留"可选值"等于留一条走不通的分支。`/agc/obstacles` 此后无发布者。
-        DeclareLaunchArgument('sensors_file', default_value=default_sensors_file,
-                              description='R-026 传感器通道文件（缺省 = 包内默认；由上层按场景轴选择）'),
         DeclareLaunchArgument('obstacles_file', default_value=default_obstacles_file,
                               description='R-026 障碍真值文件（缺省 = 包内默认；none 场景传空障碍文件）'),
         DeclareLaunchArgument('map_file', default_value=default_map_file,
@@ -118,8 +100,6 @@ def generate_launch_description():
                                           '回退副本仅支持 minimal，其余须由上层派生注入'),
         DeclareLaunchArgument('scenario_version', default_value='',
                               description='R-040 场景 / 源版本（由上层按场景轴选择；折入地图内容身份 hash）'),
-        DeclareLaunchArgument('seed', default_value='unseeded',
-                              description='感知随机种子（仅注入 air_perception；unseeded=兼容默认）'),
     ]
 
     common = [params_file, {'use_sim_time': use_sim_time}]
@@ -142,29 +122,13 @@ def generate_launch_description():
                                           'scenario_version': scenario_version}],
                     output='screen')
 
-    # ---- W4 真值链节点（gt_adapter → air_perception）----
-    # `air_fusion` 已于 2026-11-04 退役：`/agc/targets` 的唯一发布者是 gt_adapter。
-    # `air_perception` 保留（用户裁定"后续会有用到的地方"），但它当前**没有消费者**——
-    # `/agc/air/obs` 在本链里空转，启用时须同时补一个消费者。
-    chain_nodes = [
-        Node(package='agc_perception', executable='gt_adapter',
-             name='gt_adapter',
-             parameters=common + [{'target_source': target_source}],
-             output='screen'),
-        # ---- W4-b · 感知与融合 ----
-        # R-038 / P1-1 round-7：`seed` 在 air_perception 是 **string** 参数（`declare_parameter<
-        #   std::string>("seed", "unseeded")`；perception.yaml 亦写 `seed: "0"`），但 launch 的
-        #   裸 substitution 会先经 **yaml.safe_load** 求值 → `"0"` 变 **int 0** → 节点启动即抛
-        #   `InvalidParameterTypeException`（Wrong parameter type ... string → integer 不允许）
-        #   并 **exit -6**。故此处用 `ParameterValue(..., value_type=str)` 固定为字符串，
-        #   保留 `unseeded` 语义（不把它强转成整数）。
-        Node(package='agc_perception', executable='air_perception',
-             name='air_perception',
-             parameters=common + [{'sensors_file': sensors_file,
-                                   'obstacles_file': obstacles_file,
-                                   'seed': ParameterValue(seed, value_type=str)}],
-             output='screen'),
-    ]
+    # ---- W4 真值链：唯一发布者 gt_adapter ----
+    # `air_fusion` 已于 2026-11-04 退役；`air_perception`（/agc/air/obs）及其无消费者的
+    # 通道配置已于 2026-11-06 一并删除。本链现在只剩 gt_adapter 一个节点。
+    gt_node = Node(package='agc_perception', executable='gt_adapter',
+                   name='gt_adapter',
+                   parameters=common + [{'target_source': target_source}],
+                   output='screen')
 
     ld = LaunchDescription()
     for a in declared:
@@ -172,7 +136,6 @@ def generate_launch_description():
     ld.add_action(OpaqueFunction(function=_reject_non_minimal_fallback))
     for n in shared_a:
         ld.add_action(n)
-    for n in chain_nodes:
-        ld.add_action(n)
+    ld.add_action(gt_node)
     ld.add_action(map_node)
     return ld

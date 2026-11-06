@@ -4,7 +4,8 @@
 # **standalone 回退副本**（`obstacle=none` 时的空静态先验），与真源在 none 轴下一致（空集）。
 #
 # 与 config/obstacles.yaml（静态先验 pole_1/pole_2）对照：当场景声明 `obstacle=none` 时，
-# world_bringup 生成**不含 pole_** 的世界，air_perception / map_adapter 亦从本文件加载
-# **空**静态先验，使「无障碍」因子在世界与感知两侧一致（无残留立柱）。
+# world_bringup 生成**不含 pole_** 的世界，map_adapter 从本文件加载**空**静态先验
+# （原 air_perception 亦读此文件，已于 2026-11-06 随 `perception` 轴退役），使「无障碍」
+# 因子在世界与地图两侧一致（无残留立柱）。
 # 诚实口径：真值派生静态先验（ADR-0009）。
 obstacles: []

@@ -584,7 +584,7 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
     out['e_w6_base_derived'] = e
 
     # ---- (f) sha256 稳定 + manifest geometry 块 == 真源 ----
-    info = comp.load_scene(task_share, perc_share, sim_share,
+    info = comp.load_scene(task_share, sim_share,
                            's04_static_static_obs_track', 0, world_map=map_name)
     # ADR-0007：高度随地图派生——核查脚本必须复现 launch 的同一条派生链，
     # 否则 `flight_altitude_derived_matches_source` 会因"没注入"而失败（假阴性）。
