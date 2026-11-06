@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""episode_runner —— W6 评估 runner（R12 / C9）。
+"""episode_runner —— 整链评估 runner。
 
 对每个 `(scene, seed)`：起 `main.launch.py backend:=lightweight scene:=<scene> seed:=<seed>` → 调
 `/agc/task/start` → 追踪 `/agc/task/state` 至终态或超时 → SIGINT 拆除（令 run_logger 落
@@ -85,7 +85,7 @@ REAP_SIGKILL_S = 4.0
 
 
 def _num_str(v):
-    """R-031：数值 / not_applicable（None 或字符串）统一格式化，避免 %.3f 对 None 抛异常。"""
+    """数值 / not_applicable（None 或字符串）统一格式化，避免 %.3f 对 None 抛异常。"""
     return ('%.3f' % v) if isinstance(v, (int, float)) else 'n/a'
 
 # 缺省轻量后端；实际标注一律取 episode / CLI 的 backend，不能用该常量冒充 full 链。
@@ -96,19 +96,19 @@ LAUNCH = 'main.launch.py'
 def full_chain_note(backend):
     if backend == 'full':
         return ('本报告 backend=full（main.launch.py 双 PX4 整链）；pass 仅绑定本报告的明确命题，'
-                'headless 结果**不代表** C3 GUI 验收。')
+                'headless 结果**不代表** GUI 验收（契约 #hc-3）。')
     return ('本报告 backend=lightweight（main.launch.py 轻量栈：m0_skeleton+capture_adjudicator+jammer，'
-            '无 PX4/空中链路）；pass 仅绑定本报告的明确命题，**不代表**整链 / C3 GUI 验收。')
+            '无 PX4/空中链路）；pass 仅绑定本报告的明确命题，**不代表**整链 / GUI 验收（契约 #hc-3）。')
 
 
 FULL_CHAIN_NOTE = full_chain_note(BACKEND)
 
 
 def build_proposition(backend, mode, scene, expected_terminal, expected_reason):
-    """R-025：由 expected_terminal/expected_reason/backend 生成**明确验收命题**（pass 与命题强绑定）。"""
+    """由 expected_terminal/expected_reason/backend 生成**明确验收命题**（pass 与命题强绑定）。"""
     if backend == BACKEND:
         head = '轻量栈（m0_skeleton+capture_adjudicator+jammer，%s）' % mode
-        tail = '（非整链 / 非 C3 GUI 验收）'
+        tail = '（非整链 / 非 GUI 验收）'
     else:
         head = '整链 main.launch.py backend:=full（双 PX4，%s）' % mode
         tail = ''
@@ -119,7 +119,7 @@ def build_proposition(backend, mode, scene, expected_terminal, expected_reason):
 
 
 def build_coverage(mode, episodes, backend=None):
-    """R-025：coverage 汇总块——逐轴给 value + evidence（出处）。未覆盖轴如实标注。"""
+    """coverage 汇总块——逐轴给 value + evidence（出处）。未覆盖轴如实标注。"""
     started = [e for e in episodes if e.get('started')]
     motions = sorted({e.get('target_motion') for e in episodes if e.get('target_motion')})
     terminals = sorted({e.get('terminal_state') for e in episodes if e.get('terminal_state')})
@@ -155,7 +155,7 @@ def build_coverage(mode, episodes, backend=None):
 
 
 def summarize_layers(episodes):
-    """R-031：三层验收汇总——逐层通过计数 + 完整性失败场景 / 缺 summary 场景（不含 unsupported）。"""
+    """三层验收汇总——逐层通过计数 + 完整性失败场景 / 缺 summary 场景（不含 unsupported）。"""
     def _fail(scene_of):
         return [e['scene'] for e in episodes
                 if not scene_of(e) and not e.get('unsupported')]
@@ -179,7 +179,7 @@ def _carriers():
 
 
 def axis_coverage(scene, registry, carriers, backend=BACKEND):
-    """R-026：逐轴覆盖账本——unsupported（无承载者）/ not_carried（轻量栈缺承载）/ covered。
+    """逐轴覆盖账本——unsupported（无承载者）/ not_carried（轻量栈缺承载）/ covered。
 
  **如实标注**，绝不以登记命名冒充已执行；轻量栈的运动轴（无 PX4/intruder_driver）与
  感知轴（无空中链路）标 not_carried。
@@ -207,7 +207,7 @@ def axis_coverage(scene, registry, carriers, backend=BACKEND):
 
 
 def skipped_result(scene, seed, registry, carriers, backend=BACKEND):
-    """R-026：unsupported 场景**拒绝运行**并如实记账（不启动 launch、不产出可用评价）。"""
+    """unsupported 场景**拒绝运行**并如实记账（不启动 launch、不产出可用评价）。"""
     sc = registry.get(scene, {})
     support_status, ledger = axis_coverage(scene, registry, carriers, backend)
     return {
@@ -232,7 +232,7 @@ def skipped_result(scene, seed, registry, carriers, backend=BACKEND):
 
 
 def build_axis_ledger(episodes):
-    """R-026：campaign 级覆盖账本——逐轴汇总 status（covered / not_carried / unsupported）+ 场景数。"""
+    """campaign 级覆盖账本——逐轴汇总 status（covered / not_carried / unsupported）+ 场景数。"""
     ledger = {}
     for e in episodes:
         for ax, cell in (e.get('axis_coverage') or {}).items():
@@ -252,11 +252,11 @@ class Monitor(Node):
         self.reason = ''
         self.sim = None
         self.sim_first = None
-        self.terminal_wall = None   # R-031：首个终态观测的墙钟时刻（用于同 episode 关联）
-        self.gt_car_rx = None       # R-031：车/目标真值旁路最近接收墙钟（就绪门槛用）
+        self.terminal_wall = None   # 首个终态观测的墙钟时刻（用于同 episode 关联）
+        self.gt_car_rx = None       # 车/目标真值旁路最近接收墙钟（就绪门槛用）
         self.gt_target_rx = None
-        self.cmd_rx = None          # W7-a：/agc/ground/cmd_vel 回环最近接收墙钟
-        self.odom_valid = None      # W7-b：/agc/ground/odom_valid 最近值（None=未收到）
+        self.cmd_rx = None          # /agc/ground/cmd_vel 回环最近接收墙钟
+        self.odom_valid = None      # /agc/ground/odom_valid 最近值（None=未收到）
         self.odom_valid_rx = None
         self.air_rx = None          # ADR-0027：/agc/air/odom 最近接收墙钟（整链就绪门）
         self.sim_at_start = None    # W7-b（ADR-0022）：start 调用时刻的仿真钟（固定观测时长基准）
@@ -302,19 +302,19 @@ class Monitor(Node):
         return self.air_rx is not None and (time.monotonic() - self.air_rx) < AIR_FRESH_S
 
     def odom_valid_ok(self):
-        """W7-b：`/agc/ground/odom_valid` 已收到且为 true（task_manager 的 start 门要求项）。"""
+        """`/agc/ground/odom_valid` 已收到且为 true（task_manager 的 start 门要求项）。"""
         return bool(self.odom_valid) and self.odom_valid_rx is not None and \
             (time.monotonic() - self.odom_valid_rx) < GT_FRESH_S
 
     def gt_fresh(self):
-        """R-031：车 / 目标真值旁路是否**均在新鲜窗口内**（scenario_reset 复位前置：gt 新鲜）。"""
+        """车 / 目标真值旁路是否**均在新鲜窗口内**（scenario_reset 复位前置：gt 新鲜）。"""
         t = time.monotonic()
         car_ok = self.gt_car_rx is not None and (t - self.gt_car_rx) < GT_FRESH_S
         tgt_ok = self.gt_target_rx is not None and (t - self.gt_target_rx) < GT_FRESH_S
         return bool(car_ok and tgt_ok)
 
     def cmd_fresh(self):
-        """W7-a（R5）：`/agc/ground/cmd_vel` 回环是否在新鲜窗口内（命令链已活）。"""
+        """`/agc/ground/cmd_vel` 回环是否在新鲜窗口内（命令链已活）。"""
         return self.cmd_rx is not None and (time.monotonic() - self.cmd_rx) < CMD_FRESH_S
 
     def sim_span(self):
@@ -338,7 +338,7 @@ class Monitor(Node):
 
 
 def wait_ready(mon, timeout_s, require_air=False):
-    """R-029/R-031：就绪门槛 = `/agc/task/start` 服务就绪 **且** 车/目标真值旁路**新鲜**。
+    """就绪门槛 = `/agc/task/start` 服务就绪 **且** 车/目标真值旁路**新鲜**。
 
  仅看服务存在不足以复位成功（scenario_reset 复位前置要求 gt 新鲜，年龄 ≤ 0.5 s）；故就绪须等
  **真值数据在流动**，**不**以固定 `sleep` 代就绪（避免 start 早于 gt/桥就绪 → gt_stale → 假 infra）。
@@ -360,7 +360,7 @@ def wait_ready(mon, timeout_s, require_air=False):
 
 
 def _group_alive(pgid):
-    """R-031：进程组是否仍存活（`killpg(pgid, 0)` 探测；无成员 → ProcessLookupError）。"""
+    """进程组是否仍存活（`killpg(pgid, 0)` 探测；无成员 → ProcessLookupError）。"""
     if pgid is None:
         return False
     try:
@@ -472,7 +472,7 @@ def sweep_stale_processes(log_path=None, worker_id=None):
 
 
 def _reap_process_group(proc, pgid):
-    """R-031：受限进程组回收——SIGINT（优雅）→ wait → SIGKILL（清理游离子进程）→ 轮询确认整组退出。
+    """受限进程组回收——SIGINT（优雅）→ wait → SIGKILL（清理游离子进程）→ 轮询确认整组退出。
 
  仅回收**本 run 的进程组**（Popen `start_new_session=True`；`pgid` 在 Popen 后即取，防 leader 先死
     无法按 pid 反查组）。**不**匹配裸名、**不**杀其它会话。`ros2 launch` 可能先退出而让子进程（如 gz sim）
@@ -595,7 +595,7 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
         launch_args, env=launch_env,
         stdout=open(log, 'w'), stderr=subprocess.STDOUT, start_new_session=True)
     try:
-        pgid = os.getpgid(proc.pid)   # R-031：Popen 后即取组 id（防 leader 先死无法反查组）
+        pgid = os.getpgid(proc.pid)   # Popen 后即取组 id（防 leader 先死无法反查组）
     except ProcessLookupError:
         pgid = None
 
@@ -624,7 +624,7 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
         t_settle = time.monotonic() + 2.0
         while time.monotonic() < t_settle:
             rclpy.spin_once(mon, timeout_sec=0.1)
-        t_start_wall = time.monotonic()   # R-031：start 调用时刻（用于 state 同 episode 关联）
+        t_start_wall = time.monotonic()   # start 调用时刻（用于 state 同 episode 关联）
         ok, msg = mon.start(timeout=start_timeout_s)
         result['started'] = bool(ok)
         result['start_message'] = msg
@@ -769,7 +769,7 @@ def main():
     ap.add_argument('--wall-watchdog-s', type=float, default=None,
                     help='episode 墙钟看门狗预算（秒）；缺省回落到 --timeout')
     ap.add_argument('--ready-timeout-s', type=float, default=60.0,
-                    help='R-029：等待 /agc/task/start 服务就绪的上限（秒）')
+                    help='等待 /agc/task/start 服务就绪的上限（秒）')
     ap.add_argument('--campaign', default='w6-task-eval')
     ap.add_argument('--run-id', default=None)
     # （R5）：命令源单一选择——`rl`（RL 主控）默认 / `baseline`（Navfn + 自研 LQR 离线对照基线）。
@@ -917,7 +917,7 @@ def main():
     with open(os.path.join(out_dir, 'metrics', 'report.json'), 'w') as f:
         json.dump(report, f, indent=2, ensure_ascii=False)
 
-    md = ['# W6 campaign 报告 · %s' % run_id,
+    md = ['# campaign 报告 · %s' % run_id,
           '', '- git: `%s`' % report['git_commit'], '- 回合数: %d' % report['n_episodes'],
           '- backend: `%s` · launch: `%s` · mode: `%s`' % (
               report['backend'], report['launch'], report['mode']),
@@ -927,7 +927,7 @@ def main():
           '', '## 覆盖矩阵（本报告可见轴；逐轴 value + evidence）']
     for axis, info in report['coverage'].items():
         md.append('- `%s` = %s — 证据: %s' % (axis, info.get('value'), info.get('evidence')))
-    md += ['', '## 轴覆盖账本（R-026：unsupported / not_carried 如实标注）',
+    md += ['', '## 轴覆盖账本（unsupported / not_carried 如实标注）',
            '| axis | values | statuses |', '|---|---|---|']
     for axis, info in report['axis_coverage_ledger'].items():
         md.append('| %s | %s | %s |' % (
@@ -942,7 +942,7 @@ def main():
         return '%s（valid=%d / missing=%d，缺失率=%.2f）' % (
             vs, summary['valid_count'], summary['missing_count'], summary['missing_ratio'])
 
-    md += ['', '## R-031 三层验收（完整性 + 终态命题 + 指标有效性；三层全必过）',
+    md += ['', '## 三层验收（完整性 + 终态命题 + 指标有效性；三层全必过）',
            '- 完整性通过: %d/%d · 命题通过: %d/%d · 指标有效: %d/%d' % (
                report['layer_integrity_count'], report['n_episodes'],
                report['layer_proposition_count'], report['n_episodes'],
@@ -951,7 +951,7 @@ def main():
                report['integrity_failures'] or '无'),
            '- 缺 summary 回合: %s（缺失计入分母，**不**剔除）' % (
                report['summary_missing_episodes'] or '无'),
-           '', '## C9 指标（口径标注；均值仅基于有效样本）',
+           '', '## 指标（口径标注；均值仅基于有效样本）',
            '- `shield_infeasible_rate`: %s — %s' % (
                _fmt_metric(report['metric_completeness']['shield_infeasible_rate']),
                report['metric_notes']['shield_infeasible_rate']),

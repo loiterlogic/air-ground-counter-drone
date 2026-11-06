@@ -55,7 +55,7 @@ def test_campaign_metadata_uses_actual_backend():
     assert '双 PX4' in full['backend']['evidence']
     assert full['own_takeover']['value'] == 'covered'
     assert 'backend=full' in er.full_chain_note('full')
-    assert 'headless 结果**不代表** C3 GUI 验收' in er.full_chain_note('full')
+    assert 'headless 结果**不代表** GUI 验收（契约 #hc-3）' in er.full_chain_note('full')
 
     light = er.build_coverage('headless', [{'backend': 'lightweight', 'started': True}], 'lightweight')
     assert light['backend']['value'] == 'lightweight'

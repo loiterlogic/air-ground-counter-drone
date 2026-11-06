@@ -347,7 +347,7 @@ def case_e_frozen_abi():
 def write_matrix_md(matrix, path):
     md = ['# W6 覆盖矩阵 · R-025（lightweight/full × GUI × 各轴）', '',
           '> 逐轴标 **covered / uncovered / not_applicable** + evidence 出处 + 未覆盖如实原因。',
-          '> 轻量 PASS ≠ 整链 / C3 GUI 验收；未执行轴如实标注。', '',
+          '> 轻量 PASS ≠ 整链 / GUI 验收（契约 #hc-3）；未执行轴如实标注。', '',
           '## 后端能力（源文件事实）', '',
           '| backend | launch | PX4 实例 | uXRCE Agent | 空中节点 | takeover 服务端 |',
           '|---|---|---|---|---|---|']
