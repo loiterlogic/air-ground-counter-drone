@@ -203,7 +203,7 @@ def _ground_applicability():
         'ground_frac_desired_tracked_within_10pct': round(ground_tracked / n, 3),
         'air_frac_desired_tracked_within_10pct': 1.0,   # holonomic、无障碍 → 任意期望速度可跟踪
         'air_vs_ground_note': 'air（holonomic、无障碍）可达任意 (vx,vy)；ground（clamp 前进 + 横向转偏航）'
-                              '可达集 ⊊ air 参考集 —— **不**假定同等闭环（见 ADR-0053）。',
+                              '可达集 ⊊ air 参考集 —— **不**假定同等闭环（见 ADR-0009）。',
     }
 
 
@@ -212,7 +212,7 @@ def case_f_ground(ground_report):
     src = _read(os.path.join(ROOT, 'src/agc_ground/src/ground_baseline.cpp')) or ''
     res = {
         'source_has_applicability_annotation': ('适用性标注' in src and '非完整差速动力学' in src),
-        'source_anchors_adr_0053': 'ADR-0053' in src,
+        'source_anchors_adr_0053': 'ADR-0009' in src,
         'source_notes_discarded_dof': ('丢弃' in src and '横向自由度' in src),
         'reports_air_vs_ground_difference':
             (ground_report.get('ground_frac_desired_tracked_within_10pct') is not None and
@@ -276,7 +276,7 @@ def case_h_abi_single_commander_section():
 
 
 def case_i_adr():
-    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0053-*.md')))
+    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0009-perception-truth-derived-and-vision-path.md')))
     res = {'path': os.path.relpath(matches[0], ROOT) if matches else None, 'exists': bool(matches)}
     if matches:
         t = _read(matches[0]) or ''

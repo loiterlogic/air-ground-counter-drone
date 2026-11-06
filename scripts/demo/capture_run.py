@@ -451,6 +451,10 @@ def main(argv=None):
     ap.add_argument('--out', required=True, help='产物目录（截图 / 帧 / 清单都写这里）')
     ap.add_argument('--duration', type=float, default=110.0,
                     help='传给 run_demo.sh 的 --duration（秒，默认 110）')
+    ap.add_argument('--scene', default='',
+                    help='传给 run_demo.sh 的 --scene（空 = run_demo 默认场景）。'
+                         '取证要求场景可达终态：默认场景在 GUI 下可能因 '
+                         'air_hover_timeout 不产生状态跳变，三张代表帧会取不到')
     ap.add_argument('--interval', type=float, default=1.0, help='取帧间隔秒（默认 1.0）')
     ap.add_argument('--max-seconds', type=float, default=200.0,
                     help='取帧总时长上限（防跑飞）')
@@ -482,7 +486,8 @@ def main(argv=None):
     log_path = os.path.join(out, 'run.log')
     with open(log_path, 'w', encoding='utf-8') as log:
         proc = subprocess.Popen(
-            [os.path.join(ROOT, 'run_demo.sh'), '--duration', str(args.duration)],
+            [os.path.join(ROOT, 'run_demo.sh'), '--duration', str(args.duration)]
+            + (['--scene', args.scene] if args.scene else []),
             cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
             start_new_session=True)
         print('[capture] run_demo.sh 已启动（pid %d），日志 %s' % (proc.pid, log_path),

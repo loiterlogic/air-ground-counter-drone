@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """run_demo 的共享底层：进程组 / 运行状态文件 / 人话错误 / 证据落点（P1-2）。
 
-定位：[P1-2 一键演示入口](../../docs/archive/completion-20261031/p1-2-一键演示入口.md#p1-2-goal) 的**薄封装**基础层。
+定位：[演示可观测性与产物语义](../../docs/conventions/演示可观测性与产物语义.md#top) 的**薄封装**基础层。
 本模块只提供四类机械能力，**不含**任何启动编排 / launch 参数语义 / 任务状态解释：
 
   1. **运行状态文件**（`experiments/demo/.run/`）—— 让 `stop` 能在**另一个终端**里按
@@ -10,7 +10,7 @@
      纪律与 [`scripts/episode_runner.py`](../episode_runner.py) 的 `_reap_process_group` 同源：
      **只**回收本 run 的进程组（`start_new_session=True`），不按裸名匹配、不杀其它会话。
   3. **人话错误** —— 统一的 `[run_demo] 错误：…` + 建议行，绝不把 Python 栈丢给使用者。
-  4. **证据落点** —— `experiments/demo/<timestamp>/`（ADR-0007 campaign=demo）。
+  4. **证据落点** —— `experiments/demo/<timestamp>/`（ADR-0006 campaign=demo）。
 
 不做：不 source 环境（由 `run_demo.sh` 负责）、不写 `/agc/ground/cmd_vel`、不写模型位姿
 （[唯一执行口](../../docs/ROS2迁移交接文档.md#execution-port)）。
@@ -42,10 +42,16 @@ DEFAULT_SCENE = 's04_static_static_obs_track'
 DEFAULT_MAP = 'yard'
 DEFAULT_BACKEND = 'full'
 DEFAULT_SEED = 0
-# P1-1 round-7：成功样本使用 `observe_yaw_mode=target`（**显式 oracle 指向臂**）。
-# 默认演示必须**显式**传该值，不得依赖 air.yaml 的默认 `velocity` 后宣称成功。
-# 依据：[P1-1 round-7 验收裁定](../../.coordination/archive/20261029-006-p1-1-scene-assets/round-7/review.md#p1-1-r7-acceptance)
-DEFAULT_OBSERVE_YAW_MODE = 'target'
+# 观测指向臂的**实际生效值**（仅供展示 / 记录，**不**作为 launch 参数传递）。
+#
+# 2026-11-04 修正：`observe_yaw_mode` 的 launch 参数已清退（W7-b 对照臂结档），
+#   现只有「场景覆盖 > `air.yaml` 真源」两级，**没有** run 级 CLI 覆盖口。
+#   主场景 `s04` 在 `scenarios.yaml` 覆盖为 `track`（机头对准 `/agc/targets` 感知航迹，
+#   **非** oracle）；`air.yaml` 缺省 `velocity`。
+#   ⚠ 此前 demo 仍传 `observe_yaw_mode:=target`，而 ros2 launch 对**未声明**的
+#   `name:=value` 是**静默忽略**（实测：加 `totally_bogus:=1` 也不报错），
+#   故产物里报告的 `target` 与实际生效的 `track` **不一致**。本值改为如实反映实际生效档。
+DEFAULT_OBSERVE_YAW_MODE = 'track'
 
 WORLD_SDF = os.path.join(ROOT, 'install', 'agc_sim', 'share', 'agc_sim', 'worlds', 'agc_world.sdf')
 GZ_PLUGIN_DIR = os.path.join(ROOT, 'install', 'agc_sim', 'lib')
@@ -96,13 +102,43 @@ def now_iso():
 
 
 def stamp_dir():
-    """`YYYYmmdd-HHMMSS`（本地时区）——演示产物目录名（ADR-0007 的 <timestamp>）。"""
+    """`YYYYmmdd-HHMMSS`（本地时区）——演示产物目录名（ADR-0006 的 <timestamp>）。"""
     return time.strftime('%Y%m%d-%H%M%S', time.localtime())
 
 
 def ensure_dir(path):
     os.makedirs(path, exist_ok=True)
     return path
+
+
+# --------------------------------------------------------------------------------------
+# PX4 每实例可写运行根（ADR-0024 (d) 的 demo 默认开关）
+# --------------------------------------------------------------------------------------
+
+def px4_run_root(run_dir):
+    """本 run 的 PX4 可写运行根：`<run_dir>/px4`。
+
+    **为什么 demo 必须隔离**（2026-11-03 实测）：
+    不隔离时 own（实例 0）/ intruder（实例 1）**共用** `build/px4_sitl_default/rootfs/`
+    这一个工作目录——PX4 以 `cwd=<build>` 启动，看到 `PX4_BINARY_DIR/etc` 存在就落回
+    `rootfs/` 且**不追加实例号**（日志 `assuming working directory is rootfs, no symlinks
+    needed.`；`rootfs/` 下确实没有 `0/`、`1/`）。两个实例于是共用同一份 `parameters.bson`
+    与 `dataman`，`MAV_SYS_ID` / `UXRCE_DDS_KEY` 每次启动互相覆写。
+
+    实测后果：`px4_1` 的 EKF 间歇性报 `Preflight Fail: Yaw estimate error` + `ekf2 missing
+    data` → `ekf2` 不发布 `vehicle_odometry` → `intruder_driver` 收不到 odom → 不 ARM →
+    目标机停在地面 → 全程 `AIR_SEARCH` 失败。对照证据：目视成功的探针轮 0 次
+    `Yaw estimate error`，两次 `run_demo.sh` 失败轮各 3–5 次。
+
+    2026-11-03 更正：旧注释以"3D 距离 ≥14 m > 感知量程 12 m ⇒ 感知恒盲"为**诊断特征**。
+    量程改为 30.0 后 √(26.17²+14²)=29.68 m 仍在量程内（余量 0.32 m），该特征**已失效**：
+    目标停地面时感知照样有航迹。⇒ 判定"目标没起飞"**只能**靠 `intruder_driver` 的
+    `have_odom` 错误日志与 `target_takeoff_guard`，**不得**依赖感知致盲。
+
+    隔离后每实例独占 `instance_<n>/{dataman,parameters*.bson,log/,eeprom/}`，共享 build
+    只读（ADR-0024 (d) 的既有机制，此处只是把 opt-in 打开并固定落点）。
+    """
+    return os.path.join(run_dir, 'px4')
 
 
 def read_json(path, default=None):

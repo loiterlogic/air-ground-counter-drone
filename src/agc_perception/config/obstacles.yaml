@@ -1,6 +1,6 @@
 # W4 感知用「障碍真值」几何（供 air_perception 生成 ObstacleObservation 与遮挡判定）
 #
-# ---- 几何真源（S-06；ADR-0062）----
+# ---- 几何真源（S-06；ADR-0007）----
 # 静态障碍**实体几何**的唯一真源为 `agc_sim/config/world_geometry.yaml`（地图 `minimal`；
 # 其余地图见 `agc_sim/config/maps/`，清单 `agc_sim/launch/world_map.py`）。本文件是
 # **standalone 回退副本**（供不经 w6_composition 的 standalone perception_bringup / air_bringup
@@ -10,8 +10,9 @@
 #
 # ---- R-006 静态先验（static 层）成文假设（2026-10-15）----
 # 本文件所列障碍为**场景作者给定的静止障碍**（静态先验 / static 层），与几何真源
-# src/agc_sim/config/world_geometry.yaml 一致、属**真值派生**（ADR-0020）。map_adapter **无论**
-# obstacles_source 取 air_fusion 还是 config，都从本文件加载它们为**已知静态事实**，
+# src/agc_sim/config/world_geometry.yaml 一致、属**真值派生**（ADR-0009）。map_adapter **无论**
+# 无论 obstacles_source 取何值（2026-11-04 起恒为 config，air_fusion 已退役），
+# 都从本文件加载它们为**已知静态事实**，
 # 并 **SHALL NOT** 因 /agc/obstacles 的**空数组 / 丢观测**而被清除（可见→遮挡→恢复时立柱仍在）。
 # 注意：此为**非实时传感器**——假设**一次 run 内场景静止家具已知且不变**；该假设显式成文，
 # **不得静默引入真值优势**（不依赖实时感知即可预知这些静止障碍的存在与几何）。

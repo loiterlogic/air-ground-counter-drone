@@ -1,6 +1,6 @@
 // agc_control/trajectory_generator.hpp —— 轨迹生成器插件基类（pluginlib）
 //
-// 形态对齐 Nav2 的 controller/planner 插件抽象（ADR-0008 吸收点：pluginlib）：
+// 形态对齐 Nav2 的 controller/planner 插件抽象（ADR-0003 吸收点：pluginlib）：
 //   configure(节点, 插件实例名) 声明并读取自己的参数 → reset(起始态) → sample(t) 取参考。
 // `t` 为**自 reset 起的相对时间**（s）；周期轨迹自动按周期取模（C5 相位复位即 reset）。
 

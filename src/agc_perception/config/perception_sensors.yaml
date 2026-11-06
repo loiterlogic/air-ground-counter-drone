@@ -1,9 +1,13 @@
 # W4 感知仿真「传感器通道」配置（契约参数 /agc/perception/sensors_file）
 #
 # 诚实口径：本文件描述**真值派生的感知仿真**观测通道，不是真实传感器标定，
-#   非真实视觉/雷达识别（ADR-0020）。
-#   - sigma_xy_m / sigma_z_m：观测噪声标准差（m）；confidence 由 Rayleigh 径向覆盖解析给出：
-#       conf = 1 - exp(-tol² / (2·sigma_xy²))，tol = /agc/calibration/confidence_tolerance_m。
+#   非真实视觉/雷达识别（ADR-0009）。
+#   - sigma_xy_m / sigma_z_m：观测**噪声标准差**（m）——只表示**精度**，进协方差与融合权重。
+#   - confidence：该通道的**链路可信度**（声明值，缺省 1.0）——表示"这条航迹是不是真的"，
+#       供下游 `confidence_min` 门使用。**2026-11-03 起不再由 σ 派生**（旧口径
+#       `conf = 1 - exp(-tol²/(2σ²))` 在 tol=0.25 m 时把 σ>0.212 m 的通道全判死，
+#       使"加噪声"与"过 confidence_min=0.5"直接冲突）。精度与可信度是两件事，
+#       详见 `include/agc_perception/confidence.hpp` 文件头。
 #   - latency_s：观测延迟（s）；发布的观测 header.stamp 仍为**原始观测时刻**，
 #     消费者看到的观测年龄会随延迟增长。
 #   - drop_prob：单拍独立丢包概率。
@@ -13,17 +17,54 @@
 #       range_min_m / range_max_m：有效量程
 #   - 可选：corr_xy（通道内 x/y 相关）、bias_m（确定性偏置）、noise_tau_s（AR(1) 时间相关）、
 #     drop_burst_*（成簇丢失两态）。默认 0/关。
+#
+# ---- range_max_m 的依据（2026-11-03 裁定：12.0 → 30.0）----
+# 该值由**任务几何**定，不由传感器定。推导链逐项可复核：
+#
+#   ① 物理上限 = 112.9 m（**量级参照**，不是本量程的依据）
+#      相机：toolchain/PX4-Autopilot/Tools/simulation/gz/models/mono_cam/model.sdf
+#            <horizontal_fov>1.74</horizontal_fov>（rad）= 99.69°，640×480
+#            ⇒ 角分辨率 640/1.74 = 367.8 px/rad
+#      目标：intruder_uav.sdf.xacro 高亮球 <radius>0.6</radius> ⇒ 直径 1.2 m
+#      检测器：原 `min_area_px = 12`（该检测器已随视觉定位路径于 2026-11-04 退役）
+#      解：球直径(px) = 367.8×1.2/R；面积 = π(直径/2)² = 12 ⇒ R = 112.9 m
+#      （Johnson 判据交叉核：机体 0.32 m 的 detection/recognition/identification
+#        分别为 78.5 / 19.6 / 9.8 m —— 与上式同量级，口径一致）
+#      **注意**：本仓 `air_perception` 不消费真实图像（它是真值派生的通道仿真），
+#      故 112.9 m 只用于回答"30 m 是不是被物理能力卡住的"——答案是不是。
+#
+#   ② 任务下限 = 26.25 m
+#      src/agc_task/config/spawn_layout.yaml：己方 (-11,1,14) / 目标 (15,-2,12)
+#      水平 √(26²+3²) = 26.17 m；三维 √(26.17²+2²) = 26.25 m
+#      方位 atan2(-3,26) = -6.58°（限 ±50°）；俯仰 atan2(-2,26.17) = -4.37°（限 ±35°）
+#      ⇒ 只有**距离**一项会拒绝；量程必须 ≥ 26.25 m，否则开局第一帧即盲。
+#
+#   ③ 取 30.0 = 26.25 + 3.75 m 余量
+#      该距离上：机体 0.32 m → 3.9 px（**检测级**，非识别级）；
+#                高亮球 1.2 m → 14.7 px / 170 px²（检测器下限 12 px² 的 14 倍）。
+#      ⇒ 本通道只主张"检测级"，不主张"识别/辨认级"。
+#
+#   **旧值 12.0 的来历（如实登记）**：W4 提交 40f4b91 手填，无推导记录、无注释依据。
+#   按上式反算，12 m 对应机体 9.8 px —— 恰好是 Johnson 判据的**辨认**（12 px）距离，
+#   即"把辨认距离当成检测距离用"，属量纲错位，不是保守取值。
+#   注意与站距参数的关系：safe_max=11.2 由**安全层几何**定（10.2 + hysteresis 1.0），
+#   与量程无关，本次**不改**；改量程只是解开 sqrt(R²−dz²) 的上限约束。
+#   诚实边界：本通道的 `sigma_xy_m` / `sigma_z_m` 是**与距离无关的常数**——
+#   即"近处一个精度、远处同一精度、超过 range_max 直接看不见"。
+#   它**不建模**"距离越远误差越大"（那是视觉反投影的物理特性，随视觉定位路径一并退役）。
+#   若日后需要距离相关精度，须新增 `sigma_*_per_m` 一类参数并重标定，属新决策。
 sensors:
   - id: air_eo_front
     sigma_xy_m: 0.10
     sigma_z_m: 0.12
     latency_s: 0.0
     drop_prob: 0.0
+    confidence: 1.0                   # 链路可信度（声明值，非精度；见 confidence.hpp）
     boresight_body: [1.0, 0.0, 0.0]   # 机头前视 EO
     hfov_deg: 100.0                   # ±50°
     vfov_deg: 70.0                    # ±35°
     range_min_m: 0.30
-    range_max_m: 12.0
+    range_max_m: 30.0                 # 依据见文件头「range_max_m 的依据」
     corr_xy: 0.0
     noise_tau_s: 0.0
     bias_m: [0.0, 0.0, 0.0]
@@ -35,11 +76,12 @@ sensors:
     sigma_z_m: 0.25
     latency_s: 0.0
     drop_prob: 0.0
+    confidence: 1.0                   # 链路可信度（声明值，非精度；见 confidence.hpp）
     boresight_body: [1.0, 0.0, -0.10] # 顶部红外云台固定前视（微俯）
     hfov_deg: 70.0                    # ±35°
     vfov_deg: 50.0                    # ±25°
     range_min_m: 0.30
-    range_max_m: 12.0
+    range_max_m: 30.0                 # 与 air_eo_front 同值（融合取 min，两者必须一致）
     corr_xy: 0.0
     noise_tau_s: 0.0
     bias_m: [0.0, 0.0, 0.0]

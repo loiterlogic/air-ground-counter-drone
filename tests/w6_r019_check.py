@@ -13,7 +13,7 @@
   * 发布 `/agc/task/envelope_in`（Bool，可控）+ 订 `/agc/task/jam_state`（授权）/`jam_confirm`
     （确认）/`jam_evidence`（证据）。
 
-用例（结果落 `experiments/w6-task-eval/<run_id>/metrics/r019.json`，ADR-0007）：
+用例（结果落 `experiments/w6-task-eval/<run_id>/metrics/r019.json`，ADR-0006）：
   a `LOST` **仅断 Offboard**：授权 `JAM_LOST`；jammer **未**发任何 `SET_NAV_STATE`（command==100001）；
     证据含 `factor=offboard_only`。子检：假 PX4 模拟「收到授权后停 offboard，经 `com_of_loss_t` 后
     把 `nav_state` 置为映射值（POSCTL=2）并保持」→ jammer 随后确认 `JAM_LOST`。
@@ -23,7 +23,7 @@
     （先调用 `scripts/lock_px4_failsafe_params.sh`），断言三参数存在且值 == 声明值；并断言 jammer 的
     `lost_expected_nav_state` == `com_obl_rc_act` 的映射值（跨源一致性）。
   d 未实现因子③如实限制：`r019.json` 顶层写 `factor_3_data_link_loss`；
-    断言 `docs/adr/0034-*.md` 存在且含该限制表述（含 `NAV_DLL_ACT` 与 `未实现`/`限制`）。
+    断言 `docs/adr/0015-jam-authorization-and-confirmation.md` 存在且含该限制表述（含 `NAV_DLL_ACT` 与 `未实现`/`限制`）。
 
 注：清理**禁止** pkill -f "<名字>"（会匹配 shell 自身 → 自杀）；用 "[x]xx" 写法规避或 Popen 句柄 kill。
 """
@@ -442,10 +442,10 @@ def case_c(node, share, out_dir):
 
 
 def case_d(node, share, out_dir):
-    """未实现因子③如实限制：ADR-0034 存在且含限制表述。"""
+    """未实现因子③如实限制：ADR-0015 存在且含限制表述。"""
     res = {}
     root = Path(share).parents[3]
-    adrs = sorted(glob.glob(str(root / 'docs' / 'adr' / '0034-*.md')))
+    adrs = sorted(glob.glob(str(root / 'docs' / 'adr' / '0015-jam-authorization-and-confirmation.md')))
     res['adr_paths'] = adrs
     text = ''
     if adrs:

@@ -107,7 +107,7 @@ def case_e_unique_identity(run_dir):
 
 
 def case_f_adr():
-    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0045-*.md')))
+    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0006-experiment-artifacts-and-evidence-discipline.md')))
     res = {'path': matches[0] if matches else None, 'exists': bool(matches)}
     if matches:
         t = _read(matches[0]) or ''

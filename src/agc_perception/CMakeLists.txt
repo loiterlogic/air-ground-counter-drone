@@ -42,11 +42,6 @@ ament_target_dependencies(air_perception ${DEPS})
 target_include_directories(air_perception PRIVATE include)
 target_link_libraries(air_perception yaml-cpp)
 
-add_executable(air_fusion src/air_fusion.cpp)
-ament_target_dependencies(air_fusion ${DEPS})
-target_include_directories(air_fusion PRIVATE include)
-target_link_libraries(air_fusion yaml-cpp)
-
 # ---- W4-c · 地图 ----
 add_executable(map_adapter src/map_adapter.cpp)
 ament_target_dependencies(map_adapter ${DEPS})
@@ -55,9 +50,19 @@ target_link_libraries(map_adapter yaml-cpp)
 
 install(TARGETS
   gt_bypass ground_odom_adapter gt_adapter
-  air_perception air_fusion map_adapter
+  air_perception map_adapter
   DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch config DESTINATION share/${PROJECT_NAME})
+
+# N4（2026-11-04）：α-β 速度滤波的可执行判据（出口判据 3）。
+# 此前 `AlphaBeta` 藏在 gt_adapter.cpp 的匿名命名空间里，任何测试都引用不到，
+# "σ_v 被抑制 40–100 倍"只能写在 ADR 里而无法复核。现抽到
+# include/agc_perception/alpha_beta.hpp，单测直接跑蒙特卡洛。
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(test_alpha_beta test/test_alpha_beta.cpp)
+  target_include_directories(test_alpha_beta PRIVATE include)
+endif()
 
 ament_package()

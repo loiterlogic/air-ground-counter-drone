@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """w7b_arms_runner —— W7-b T6：臂与消融批量跑（R1–R3；P1 需整链双 PX4）。
 
-按 [ADR-0070](docs/adr/0070-w7b-research-propositions-and-rl-role-adjudication.md)(f) 跑臂：
+按 [ADR-0022](docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)(f) 跑臂：
   * **基线锚**（R3）：`command_source=baseline`（Navfn + 自研 LQR，准确命名）；
   * **P2 臂 A（c2）**：`command_source=rl`（直接出 cmd_vel；full 链固定协同）；
   * **P2 臂 B（规则高层 + 成熟低层）**：`command_source=rl_high`（高层出拦截点；低层 Navfn+LQR；full 链固定协同）；
@@ -11,7 +11,7 @@
 复用 `episode_runner.run_episode`（同一就绪门 / 回收 / 三层验收）。产物落
 `experiments/w7-rl-b/<run_id>/{metrics/arms.json,metrics/arms.md,log/*}`。
 
-**CRN 配对**（[ADR-0070](docs/adr/0070-w7b-research-propositions-and-rl-role-adjudication.md)(e)）：`--seeds` 同 seed 逐臂跑，
+**CRN 配对**（[ADR-0022](docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)(e)）：`--seeds` 同 seed 逐臂跑，
 按 (arm, seed) 记录；P1 两臂给**逐 seed 配对差**（协同 − 非协同）块，P2 两臂给（臂 B − 臂 A）块，
 供 `w7b_p1_adjudicate.py` / `w7b_p2_adjudicate.py` 按预注册判定。
 
@@ -44,6 +44,11 @@ P1_SCENE = 's08_static_none_nominal_capture'
 P2_SCENE = P1_SCENE
 
 # 通用字段缺省（保持既有轻量臂不变）：backend=lightweight / target_source='' / observe_yaw_mode=''
+#
+# ⚠ 2026-11-04：`ARMS` 里的 `target_source='air_fusion'` 是**历史臂定义**（与冻结预注册
+#   `w7b_prereg.yaml` 逐值一致，不得追改）。`air_fusion` 退役后这些臂**不可复现**：
+#   `target_source=air_fusion` 会让 `gt_adapter` 不发布 `/agc/targets` → 无目标源。
+#   本 runner 当前仅用于**复算历史产物**；要重跑须新立预注册版本并显式记录可比性断裂。
 ARMS = [
     {'arm': 'baseline_anchor', 'group': 'R3', 'scene': TRACK_SCENE,
      'command_source': 'baseline', 'shield': 'true',
@@ -52,28 +57,28 @@ ARMS = [
      'command_source': 'rl', 'shield': 'true', 'backend': 'full',
      'target_source': 'air_fusion', 'observe_yaw_mode': 'target', 'air_tracking_ref': 'on',
      'goal_follow_target': 'true',
-     'note': 'P2 臂 A：c2 直接出 cmd_vel；固定协同（full 链，ADR-0082/预注册 v3）'},
+     'note': 'P2 臂 A：c2 直接出 cmd_vel；固定协同（full 链，ADR-0023/预注册 v3）'},
     {'arm': 'p2_rl_high', 'group': 'P2', 'scene': P2_SCENE,
      'command_source': 'rl_high', 'shield': 'true', 'backend': 'full',
      'target_source': 'air_fusion', 'observe_yaw_mode': 'target', 'air_tracking_ref': 'on',
      'goal_follow_target': 'true',
-     'note': 'P2 臂 B：规则高层拦截点 + 成熟低层 Navfn+LQR；固定协同（full 链，ADR-0082/预注册 v3）'},
+     'note': 'P2 臂 B：规则高层拦截点 + 成熟低层 Navfn+LQR；固定协同（full 链，ADR-0023/预注册 v3）'},
     {'arm': 'ablation_with_shield', 'group': 'ABL', 'scene': SAFETY_SCENE,
      'command_source': 'rl', 'shield': 'true', 'note': '消融·安全干预：with-shield'},
     {'arm': 'ablation_without_shield', 'group': 'ABL', 'scene': SAFETY_SCENE,
      'command_source': 'rl', 'shield': 'false', 'note': '消融·安全干预：无 shield（纯仿真）'},
     # P1（R1，整链）：自变量 α = observe_yaw_mode。协同臂用**真值方位**指向 → **显式 oracle 指向臂**
-    # （ADR-0070(i) 允许并须标注）；**测量**仍走真实感知通道（噪声 / 丢包 / FOV 照常生效）。
+    # （ADR-0022 允许并须标注）；**测量**仍走真实感知通道（噪声 / 丢包 / FOV 照常生效）。
     {'arm': 'p1_coop', 'group': 'R1', 'scene': P1_SCENE, 'command_source': 'rl', 'shield': 'true',
      'backend': 'full', 'target_source': 'air_fusion', 'observe_yaw_mode': 'target',
-     'note': 'P1 协同臂：空中机**对准目标**观测（显式 oracle 指向臂，ADR-0070(i)）'},
+     'note': 'P1 协同臂：空中机**对准目标**观测（显式 oracle 指向臂，ADR-0022）'},
     {'arm': 'p1_noncoop', 'group': 'R1', 'scene': P1_SCENE, 'command_source': 'rl', 'shield': 'true',
      'backend': 'full', 'target_source': 'air_fusion', 'observe_yaw_mode': 'velocity',
      'air_tracking_ref': 'off',
      'note': 'P1 非协同臂：空中机**固定航迹**（不订阅跟踪参考）+ **机头随速度**（不指向目标）'},
-    # —— ADR-0087：P1 机制消融（指向 × 跟踪参考 2×2）的另外两个 cell ——
+    # —— ADR-0023：P1 机制消融（指向 × 跟踪参考 2×2）的另外两个 cell ——
     #   ①p1_coop = target+on ｜ ②p1_noncoop = velocity+off（上）｜ ③p1_point_only = target+off
-    #   ④p1_track_only = velocity+on（已知风险：ADR-0073 实证 C10 hold 自锁可能使该 cell 退化——预登记）。
+    #   ④p1_track_only = velocity+on（已知风险：ADR-0023 实证 C10 hold 自锁可能使该 cell 退化——预登记）。
     {'arm': 'p1_point_only', 'group': 'R1x', 'scene': P1_SCENE, 'command_source': 'rl', 'shield': 'true',
      'backend': 'full', 'target_source': 'air_fusion', 'observe_yaw_mode': 'target',
      'air_tracking_ref': 'off',
@@ -82,7 +87,7 @@ ARMS = [
      'backend': 'full', 'target_source': 'air_fusion', 'observe_yaw_mode': 'velocity',
      'air_tracking_ref': 'on',
      'note': 'P1 消融④仅跟踪：跟随目标航迹（订阅跟踪参考），但机头**随速度**（不指向目标）；'
-             'ADR-0073 已实证该组合可能触发 C10 hold 自锁 → 若退化照实报告'},
+             'ADR-0023 已实证该组合可能触发 C10 hold 自锁 → 若退化照实报告'},
 ]
 
 
@@ -126,7 +131,7 @@ def paired_deltas(results):
 def paired_deltas_p2(results):
     """CRN 配对（P2）：按 seed 对齐两臂，给**逐 seed 配对差**（臂 B − 臂 A）+ 汇总。
     判定（显著性 / 置信区间 / 阈值）**不在**此处——由 `scripts/research/w7b_p2_adjudicate.py`
-    按预注册 `statistics.p2` 执行（ADR-0082 / 预注册 v2）。"""
+    按预注册 `statistics.p2` 执行（ADR-0023 / 预注册 v2）。"""
     by = {(r['arm'], r['seed']): r for r in results}
     seeds = sorted({r['seed'] for r in results if r['group'] == 'P2'})
     rows = []
@@ -168,7 +173,7 @@ def paired_deltas_p2(results):
 
 
 def perception_health(results, out_dir):
-    """ADR-0080：汇总 `air_perception` 的 B1 门控计数（逐最终尝试日志）→ 批次产物。
+    """ADR-0019：汇总 `air_perception` 的 B1 门控计数（逐最终尝试日志）→ 批次产物。
 
     计数口径：每 5 s 一条诊断，**逐通道**累加（本项目 2 通道）→ 绝对数不是"拍数"，
     比值 = 该原因计数 / (gate_ok + 各拒绝原因计数)。无诊断行的批次（轻量栈 / 旧日志）标 available=false。
@@ -271,8 +276,8 @@ def main():
     ap.add_argument('--mode', default='headless', choices=['headless', 'gui'])
     ap.add_argument('--gui-render-backend', default='auto',
                     choices=['auto', 'd3d12', 'software'],
-                    help='W8/ADR-0096：GUI 渲染后端；auto=WSL2+D3D12+X11 自动')
-    # ADR-0094：own 25 s / intruder 35 s 启动后，单 episode 墙钟约 110–130 s；
+                    help='W8/ADR-0021：GUI 渲染后端；auto=WSL2+D3D12+X11 自动')
+    # ADR-0027：own 25 s / intruder 35 s 启动后，单 episode 墙钟约 110–130 s；
     #   原 120 s 默认会把正常回合截成 ACTIVE（infra 类），故提高到 240 s。
     ap.add_argument('--timeout', type=float, default=240.0)
     ap.add_argument('--ready-timeout-s', type=float, default=180.0)
@@ -280,25 +285,25 @@ def main():
     ap.add_argument('--run-id', default=None)
     ap.add_argument('--seeds', default='0', help='逗号分隔 seed（CRN：同 seed 逐臂配对跑）')
     ap.add_argument('--arms', default=None, help='逗号分隔 arm 名（缺省全部）')
-    # ADR-0085：场景覆盖（pilot / 新固定条件用；缺省 '' = 用 ARMS 内各臂自带场景）。
+    # ADR-0023：场景覆盖（pilot / 新固定条件用；缺省 '' = 用 ARMS 内各臂自带场景）。
     ap.add_argument('--scene', default='', help='覆盖所选臂的场景（缺省沿用 ARMS 定义）')
-    # ADR-0074：终态后继续采到**固定观测时长**（自 start 起、仿真钟秒）；须与 run_logger 的
+    # ADR-0022：终态后继续采到**固定观测时长**（自 start 起、仿真钟秒）；须与 run_logger 的
     # `obs_window_s` 同值（w6_base.yaml，缺省 60.0），否则 visibility_metrics 窗口采不满。
     ap.add_argument('--obs-horizon-s', type=float, default=60.0)
     # 放宽（2026-10-20）：/agc/task/start 等待上限（s；须 ≥ task_manager 的 air_hover_timeout_s=45）
     ap.add_argument('--start-timeout-s', type=float, default=60.0)
-    # ADR-0075：**infra 重试协议**——本机 uXRCE 实体创建**间歇**超时（PX4 侧硬编码 1 s 预算）导致的
+    # ADR-0027：**infra 重试协议**——本机 uXRCE 实体创建**间歇**超时（PX4 侧硬编码 1 s 预算）导致的
     #   `air_hover_timeout` / `odom_invalid` 等 `classification=='infra'` 结果按本上限**重跑**；
     #   mission 结果（含 TIMEOUT）**一律不重试**。0 = 关闭。逐次产物（日志 .rN / run_id）全留。
     ap.add_argument('--infra-retries', type=int, default=3)
-    # ADR-0094（uXRCE 预热 / 错峰）：仅显式给出时透传 w6.launch.py；缺省沿用 launch 默认
+    # ADR-0027（uXRCE 预热 / 错峰）：仅显式给出时透传 w6.launch.py；缺省沿用 launch 默认
     #   （px4_warmup=true / own_px4_delay_s=12.0）。
     ap.add_argument('--own-px4-delay-s', type=float, default=None)
     ap.add_argument('--intruder-px4-delay-s', type=float, default=None)
     ap.add_argument('--px4-warmup', default='', choices=['', 'true', 'false'])
-    # ADR-0077：W7-c worker 归属；产物落 experiments/<campaign>/<run_id>/worker_<id>/。
+    # ADR-0024：W7-c worker 归属；产物落 experiments/<campaign>/<run_id>/worker_<id>/。
     ap.add_argument('--worker-id', type=int, default=None)
-    # W7-c（ADR-0095）：PX4 每实例可写运行根（仅显式给出时透传；空 = 既有共享 build 行为不变）。
+    # W7-c（ADR-0024）：PX4 每实例可写运行根（仅显式给出时透传；空 = 既有共享 build 行为不变）。
     ap.add_argument('--px4-run-root', default=None)
     args = ap.parse_args()
 
@@ -323,7 +328,7 @@ def main():
 
     registry, carriers = _registry(), _carriers()
     arms = ARMS if not args.arms else [a for a in ARMS if a['arm'] in args.arms.split(',')]
-    # ADR-0085：场景覆盖——**复制**后改 scene，不改 ARMS 本体（缺省行为不变）。
+    # ADR-0023：场景覆盖——**复制**后改 scene，不改 ARMS 本体（缺省行为不变）。
     if args.scene:
         arms = [dict(a, scene=args.scene) for a in arms]
     seeds = [int(s) for s in args.seeds.split(',') if s.strip()]
@@ -363,7 +368,7 @@ def main():
             vis = sm.get('visibility_metrics') or {}
             ew = sm.get('episode_window_metrics') or {}
             attr = sm.get('command_attribution') or {}
-            # W7-b P2 v3（ADR-0083）：active-window FCO——分母 = GROUND_APPROACH→终态 的有效拍，
+            # W7-b P2 v3（ADR-0023）：active-window FCO——分母 = GROUND_APPROACH→终态 的有效拍，
             # 不含终态后停泊（规避 window_fixed_v1 的终态后污染）。
             fco_active = (ew['ticks_fire_control_opportunity'] / ew['vis_ticks_total']
                           if ew.get('vis_ticks_total') else None)
@@ -380,23 +385,23 @@ def main():
                 'layer_integrity': r.get('layer_integrity'), 'outcome_class': r.get('outcome_class'),
                 'rtf': r.get('rtf'), 'wall_elapsed_s': r.get('wall_elapsed_s'),
                 'run_id': r.get('run_id'), 'summary_path': r.get('summary_path'),
-                # W8 / ADR-0096：GUI 渲染后端与实际 renderer（headless 为 None）
+                # W8 / ADR-0021：GUI 渲染后端与实际 renderer（headless 为 None）
                 'gui_render_backend': r.get('gui_render_backend'),
                 'gui_renderer': r.get('gui_renderer'),
                 # W8 P0（T3）：renderer 证据按 run 有界（状态 + 有界证据，不含整份共享日志）
                 'gui_renderer_status': r.get('gui_renderer_status'),
                 'gui_renderer_evidence': r.get('gui_renderer_evidence'),
-                # DV（分层多指标，ADR-0070(b)）+ P1 判据（有效火控机会率 / 最小净空）
+                # DV（分层多指标，ADR-0022）+ P1 判据（有效火控机会率 / 最小净空）
                 'shield_infeasible_rate': r.get('shield_infeasible_rate'),
                 'intervened_ticks': attr.get('intervened_ticks'),
                 'visibility_rate': vis.get('visibility_rate'),
                 'fire_control_opportunity_rate': vis.get('fire_control_opportunity_rate'),
-                # P2 v3 primary（ADR-0083）：active 窗口（不含终态后停泊）
+                # P2 v3 primary（ADR-0023）：active 窗口（不含终态后停泊）
                 'fire_control_opportunity_rate_active': fco_active,
                 'active_window_ticks': ew.get('ticks_total'),
                 'longest_outage_s': vis.get('longest_outage_s'),
                 'min_clearance_m': attr.get('clearance_min_m'),
-                # ADR-0075：infra 重试协议证据——本 (arm, seed) 用了几次重试、逐次终态/原因/run_id
+                # ADR-0027：infra 重试协议证据——本 (arm, seed) 用了几次重试、逐次终态/原因/run_id
                 'infra_retries_used': r.get('infra_retries_used'),
                 'infra_attempts': r.get('infra_attempts'),
                 'infra_retry_protocol': r.get('infra_retry_protocol'),
@@ -421,7 +426,7 @@ def main():
         'px4_run_root': args.px4_run_root,
         'n_runs': len(results), 'wall_elapsed_s': time.monotonic() - t0,
         'arms': results,
-        # ADR-0075：infra 重试协议（机器噪声处理，**不**改自变量 / 阈值 / 样本量）
+        # ADR-0027：infra 重试协议（机器噪声处理，**不**改自变量 / 阈值 / 样本量）
         'infra_retry_protocol': {
             'rule': 'classification=="infra"（判据唯一来源 agc_rl.termination）→ 按 max_retries 重跑；'
                     'mission 结果（含 MISSION_FAILED(TIMEOUT)，契约 C4）**一律不重试**',
@@ -443,7 +448,7 @@ def main():
                        'CRN 配对结果见 `p2_pairing`（判定由 scripts/research/w7b_p2_adjudicate.py 按预注册 statistics.p2 执行）。',
         'diversity_note': '各臂仅自变量不同（命令源 / shield / observe_yaw_mode），余同'
                           '（同场景 / 同 seed / 同安全层 / 同终态语义；'
-                          'P2 v3 两臂 goal_follow_target 同置 → 同源感知目标，见 ADR-0083）。',
+                          'P2 v3 两臂 goal_follow_target 同置 → 同源感知目标，见 ADR-0023）。',
     }
     with open(os.path.join(out_dir, 'metrics', 'arms.json'), 'w') as f:
         json.dump(report, f, indent=2, ensure_ascii=False)
@@ -461,7 +466,7 @@ def main():
             r['pass'], r['visibility_rate'], r['fire_control_opportunity_rate'],
             r.get('fire_control_opportunity_rate_active'), r['min_clearance_m'],
             r.get('infra_retries_used') or 0))
-    md += ['', '- infra 重试协议（ADR-0075）：上限 %d · 触发重试的 (arm, seed) 数 %d；'
+    md += ['', '- infra 重试协议（ADR-0027）：上限 %d · 触发重试的 (arm, seed) 数 %d；'
            '逐次尝试产物全留（日志 `ep_<arm>_<scene>_<seed>.log[.rN]`），上报结果 = 最后一次尝试；'
            '`mission` 结果（含 TIMEOUT）**不**重试。' % (
                args.infra_retries,
@@ -505,7 +510,7 @@ def main():
     with open(os.path.join(out_dir, 'metrics', 'arms.md'), 'w') as f:
         f.write('\n'.join(md) + '\n')
 
-    # ADR-0080：感知健康度（B1 门控计数）随批次落盘，供每批复核几何盲区 / 位姿断供占比。
+    # ADR-0019：感知健康度（B1 门控计数）随批次落盘，供每批复核几何盲区 / 位姿断供占比。
     ph = perception_health(results, out_dir)
     n_avail = sum(1 for e in ph['episodes'] if e['available'])
     print('\n-> %s（感知健康度 available=%d/%d）' % (

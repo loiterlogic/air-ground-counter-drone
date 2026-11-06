@@ -1,4 +1,4 @@
-// test_target_motion_filter.cpp —— ADR-0079（B2）：目标运动估计单测
+// test_target_motion_filter.cpp —— ADR-0011（B2）：目标运动估计单测
 //
 // 覆盖四类失效模式：
 //   1. 静止目标 + 20 Hz 位置噪声 → 速度必须置零（不得把噪声放大成假速度）；

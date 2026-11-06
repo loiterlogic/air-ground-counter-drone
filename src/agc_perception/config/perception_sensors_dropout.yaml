@@ -2,20 +2,31 @@
 #
 # 与 config/perception_sensors.yaml（nominal，drop_prob=0）对照：本文件**打开单拍丢包**
 # （drop_prob=0.3）并启用成簇丢失（drop_burst_*），使 air_perception 的通道观测按概率丢失，
-# 进而 air_fusion 的 /agc/targets 观测出现「按概率丢失」（R-026 dropout 轴正例）。
+# 进而其观测出现「按概率丢失」（R-026 dropout 轴正例）。
+# 2026-11-04：air_fusion 退役后本文件**不影响目标位置**（air_perception 无消费者）——
+# 见 scenario_carriers.yaml 的 perception 轴「已知缺陷」标注。
 # 其余（噪声 / FOV / 量程）保持标称，**只**变化 dropout 因子。
-# 诚实口径：真值派生感知仿真，非真实传感器标定（ADR-0020）。
+#   ⇒ 量程必须与 perception_sensors.yaml **逐值相同**（2026-11-03 起同为 30.0，
+#     依据见该文件头「range_max_m 的依据」）；不同步会把对照臂变成"量程也变了"的混淆实验。
+# ⚠ **2026-11-04 起本文件不再影响 `/agc/targets`（如实登记）。**
+#   它只被 `air_perception` 读取，而 `air_fusion` 退役后 `/agc/air/obs` **无订阅者**；
+#   唯一的 `/agc/targets` 发布者 `gt_adapter` **无几何门控、不分远近**。
+#   ⇒ 本变体与 `perception_sensors.yaml` 在**运行期行为完全相同**
+#   （`scenario_carriers.yaml` 的 `dropout` 档已逐档标注「已知缺陷」）。
+#   保留原因：用户裁定 `air_perception` 后续会有用到的地方。
+# 诚实口径：真值派生感知仿真，非真实传感器标定（ADR-0009）。
 sensors:
   - id: air_eo_front
     sigma_xy_m: 0.10
     sigma_z_m: 0.12
     latency_s: 0.0
     drop_prob: 0.3                    # 单拍独立丢包（正例 >0）
+    confidence: 1.0                   # 链路可信度（声明值，非精度；见 confidence.hpp）
     boresight_body: [1.0, 0.0, 0.0]
     hfov_deg: 100.0
     vfov_deg: 70.0
     range_min_m: 0.30
-    range_max_m: 12.0
+    range_max_m: 30.0
     corr_xy: 0.0
     noise_tau_s: 0.0
     bias_m: [0.0, 0.0, 0.0]
@@ -27,11 +38,12 @@ sensors:
     sigma_z_m: 0.25
     latency_s: 0.0
     drop_prob: 0.3
+    confidence: 1.0                   # 链路可信度（声明值，非精度；见 confidence.hpp）
     boresight_body: [1.0, 0.0, -0.10]
     hfov_deg: 70.0
     vfov_deg: 50.0
     range_min_m: 0.30
-    range_max_m: 12.0
+    range_max_m: 30.0
     corr_xy: 0.0
     noise_tau_s: 0.0
     bias_m: [0.0, 0.0, 0.0]

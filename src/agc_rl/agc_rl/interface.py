@@ -4,7 +4,7 @@
 节点（`inference_node`）与策略（`policy`）**只**经本模块构造 obs / 解释 action，
 不得各自另立维度或语义（契约 [参数入口](../../docs/ROS2迁移交接文档.md#params)：由 config 单一注入）。
 
-对齐旧行为事实（旧树归档 `reference/` 已于 2026-10-31 退役，见 `docs/adr/0107`；
+对齐旧行为事实（旧树归档 `reference/` 已于 2026-10-31 退役，见 `docs/adr/0025-publishing-boundary-and-retirement.md`；
 以下保留当时的对齐来源记录，只对齐 WHAT、不复制代码）：
 `reference/old_ros1/src/rl_ground_avoidance/scripts/ground_env.py` 的
 `get_observation()`（`num_sectors + 2 + 1 + N_ACTIONS` 维）与 `ACTION_NAMES`（5 离散动作）。

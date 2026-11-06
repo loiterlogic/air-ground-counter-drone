@@ -5,7 +5,7 @@
 > `MAP_DESIGN_PLAYBOOK.md` 的**内容快照**，已迁入 map-design 技能的按需资源，根目录不再保留副本。
 > 迁移时**只做两处改动**：① 相对链接前缀改为本文件所在深度（`../../../../`），目标文件不变；
 > ② 增加本段说明。**正文一字未改**，包括文中"本文暂放根目录…应迁走"的位置说明——
-> 那是迁移**之前**的状态，保留它是为了不伪造历史（[ADR-0066](../../../../docs/adr/0066-decision-applicability-and-reference-discipline.md)）。
+> 那是迁移**之前**的状态，保留它是为了不伪造历史（[ADR-0002](../../../../docs/adr/0002-docs-source-of-truth-and-reference-discipline.md#top)）。
 >
 > **它是历史快照，不是现行约束**：文中所有数字（实体数 / 覆盖率 / 净空 / 内存占用）都是
 > **当时**的实测值，会漂移；现行值一律跑 `python3 tests/w6_geometry_check.py` 读 JSON。
@@ -19,9 +19,9 @@
 > 不是约束、不是真源。
 >
 > **不是真源**：几何 schema 的唯一出口是 [`world_map.py`](../../../../src/agc_sim/launch/world_map.py)，
-> 派生链纪律见 [ADR-0062](../../../../docs/adr/0062-scene-geometry-single-source-and-derivation.md)，
-> 布局范式见 [ADR-0106](../../../../docs/adr/0106-work-area-100x100-and-yard-layout-paradigm.md)，
-> 进度口径见 [P1-1](../../../../docs/archive/completion-20261031/p1-1-地图与场景资产.md)。本文**只引用不复述**约束。
+> 派生链纪律见 [ADR-0007](../../../../docs/adr/0007-scene-geometry-single-source-and-layout.md#top)，
+> 布局范式见 [ADR-0007](../../../../docs/adr/0007-scene-geometry-single-source-and-layout.md#top)，
+> 进度口径见 [当前方向](../../../../docs/plan/README.md#plan-index)。本文**只引用不复述**约束。
 >
 > **位置说明**：按 [目录与命名规范](../../../../docs/conventions/目录与命名规范.md#10-产物分类与生命周期)，
 > 项目级可复用 Agent 资产的家是 `.agents/skills/<name>/SKILL.md`；本文暂放根目录是为了先成型，
@@ -53,7 +53,7 @@
 <a id="arch"></a>
 ## 1. 一张图看懂架构
 
-几何**只有一个家**，其余全部派生（[ADR-0062](../../../../docs/adr/0062-scene-geometry-single-source-and-derivation.md)）：
+几何**只有一个家**，其余全部派生（[ADR-0007](../../../../docs/adr/0007-scene-geometry-single-source-and-layout.md#top)）：
 
 ```text
 world_geometry.yaml        ← minimal（核查基线，pole 双柱，几何逐值不变）
@@ -197,7 +197,7 @@ C7 出生净空  = 逐图元足迹距离（**不是**实体中心距离）
 ## 6. 第 3 步 · 布局范式
 
 现实工业场站的分布 = **功能分区 + 网格对齐 + 道路留白 + 尺寸长尾 + 中央留空**，
-不是均匀随机撒点（[ADR-0106](../../../../docs/adr/0106-work-area-100x100-and-yard-layout-paradigm.md)）。
+不是均匀随机撒点（[ADR-0007](../../../../docs/adr/0007-scene-geometry-single-source-and-layout.md#top)）。
 
 ### 6.1 七个分区（yard，世界 ENU，作业区 [−50,50]²）
 
@@ -475,7 +475,7 @@ C7: car 8.67 / target 6.48 / own_uav 9.07 m    car↔target 11.85 m
 1. **空中安全层是二维静态圆盘**，半径 = 实体水平外接圆半径。
    细长实体的圆盘 ≈ 半长 → **不能用通长围墙**，必须分段（见 6.2）。
 2. **无贴图 / 无 mesh** → 材质只有标量 PBR + 纯色，出不了纹理细节。
-   再往上要贴图必须走 [ADR-0068](../../../../docs/adr/0068-third-party-asset-provenance-license-and-hash-manifest.md)
+   再往上要贴图必须走 [ADR-0005](../../../../docs/adr/0005-px4-toolchain-and-link.md#top)
    的 provenance / 许可 / 哈希登记。
 3. **地面激光是 z≈0.48 m 的单一水平面**。矮墙、悬空结构、薄片对它**不可见**，
    若加入必须在文档中如实标注"该障碍对地面激光不可见"，**不得假装能避**。
@@ -513,7 +513,7 @@ C7: car 8.67 / target 6.48 / own_uav 9.07 m    car↔target 11.85 m
 | 1 | [`world_geometry.yaml:11`](../../../../src/agc_sim/config/world_geometry.yaml) | 写 yard 是"29 实体 / 107 图元" | **36 / 186**（R5 已改，注释未跟上） |
 | 2 | [`world_geometry.yaml:13`](../../../../src/agc_sim/config/world_geometry.yaml) | 引用 `w6_composition.resolve_geometry_file` | 该函数**不存在**，实际是 `world_map.geometry_path` |
 | 3 | [`w6_geometry_check.py:8`](../../../../tests/w6_geometry_check.py) | docstring 写 `shape ∈ {box, cylinder}` | 代码用 `SHAPES`（**3 类**，含 sphere） |
-| 4 | [P1-1 文档](../../../../docs/archive/completion-20261031/p1-1-地图与场景资产.md) C7 值 6.49 / 9.04 | 与实测 6.48 / 9.07 有 0.01–0.03 偏差 | 实测优先 |
+| 4 | P1-1 规格（已删除，见 [ADR-0025](../../../../docs/adr/0025-publishing-boundary-and-retirement.md#top)）C7 值 6.49 / 9.04 | 与实测 6.48 / 9.07 有 0.01–0.03 偏差 | 实测优先 |
 | 5 | [`world_bringup.launch.py:380`](../../../../src/agc_sim/launch/world_bringup.launch.py) | `plugin_dir` 算成 `install/agc_sim/share/lib`（**不存在**） | 真实插件在 `install/agc_sim/lib`；详见 [14.2](#run) |
 
 **另有一处结构性风险（比上面 5 条严重）**：

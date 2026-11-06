@@ -15,7 +15,7 @@
      ABORTED(6) / INFRA_FAILURE(8)；每态**同进程连续两次**均 success=True 且 car_start 到达、epoch 递增。
   b. active 拒绝：GROUND_APPROACH(3) → success=False，reason=not_resettable。
   c. 目标写入失败 → 无中间态：`target_entity_name=no_such_uav`（GZ 对不存在实体仍返回 success，
-     实测结论见 ADR-0030）→ 写目标"成功"但**读回**（/agc/gt/intruder_uav 未到新位姿）超时判失败 →
+     实测结论见 ADR-0014）→ 写目标"成功"但**读回**（/agc/gt/intruder_uav 未到新位姿）超时判失败 →
      回滚车到写入前位姿；断言 success=False、car_start 未到达、车 gt ≈ 写入前 且 ≠ 新 spawn。
   d. 读回不一致 → 失败：`readback_tolerance_m=0.0` + `car_entity_name=no_such_car`（GZ 复位写入
      不存在实体仍返回 success；tol=0.0 下真实车 gt 与写入目标不一致）→ success=False 且 reason 含 readback。
@@ -24,7 +24,7 @@
 
 注：用例 a–d 起节点后先用 active 态**抑制**启动初始复位（4 s 定时器门控拒绝），再切到目标态调用，
 避免启动复位污染 epoch / car_start 计数。结果落
-`experiments/w6-task-eval/<run_id>/metrics/r015.json`（ADR-0007）。
+`experiments/w6-task-eval/<run_id>/metrics/r015.json`（ADR-0006）。
 
 注：清理**禁止** pkill -f "<名字>"（会匹配 shell 自身命令行 → 自杀）；用 "[x]xx" 写法规避。
 """

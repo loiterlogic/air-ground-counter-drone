@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w7b_p2_map_trigger_audit —— P2 臂 B「地图变化」触发来源 / 路径影响审计（ADR-0092）。
+"""w7b_p2_map_trigger_audit —— P2 臂 B「地图变化」触发来源 / 路径影响审计（ADR-0013）。
 
 输入：既有 `w7b_arms_runner` run 的 `log/ep_*.log`。
 输出：`experiments/<campaign>/<run_id>/metrics/p2_map_trigger_audit.{json,md}`。
@@ -11,7 +11,7 @@
   * 聚合：哪一层在连续触发间发生变化、hard_cells 范围、点数变化比例。
 
 不直接断言「目标点云 = 触发来源」；只报告分层计数、目标估计距离与路径代理量，
-供 ADR-0092 决策。真值仅用于离线评估，不进入运行时门。
+供 ADR-0013 决策。真值仅用于离线评估，不进入运行时门。
 """
 
 import argparse
@@ -142,7 +142,7 @@ def analyze(run_dir, source_run_id=None):
 
 def markdown(a):
     lines = [
-        '# P2 地图触发来源 / 路径影响审计（ADR-0092）', '',
+        '# P2 地图触发来源 / 路径影响审计（ADR-0013）', '',
         '> **诊断 / 非确证**；不改 `needReplan`、不改 P2 verdict。',
         '', '## 汇总', '',
         f"- run：`{a['run_id']}`（源 `{a['source_run_id']}`）",
@@ -183,7 +183,7 @@ def main():
     (run_dir / 'config').mkdir(parents=True, exist_ok=True)
     (run_dir / 'config' / 'source_run.json').write_text(json.dumps({
         'source_run_id': args.source_run_id or args.run_id,
-        'purpose': 'ADR-0092 map trigger audit (diagnostic only)',
+        'purpose': 'ADR-0013 map trigger audit (diagnostic only)',
     }, indent=2, ensure_ascii=False) + '\n')
     out.mkdir(parents=True, exist_ok=True)
     (out / 'p2_map_trigger_audit.json').write_text(json.dumps(a, indent=2, ensure_ascii=False))

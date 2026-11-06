@@ -12,7 +12,7 @@ find_package(pluginlib REQUIRED)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-# 通用控制层：纯数学接口（头文件），与执行器解耦（ADR-0018）。
+# 通用控制层：纯数学接口（头文件），与执行器解耦（ADR-0004）。
 # 接口 = state(pos,vel) + ref(pos,vel,acc) → acc_cmd（世界系）；控制频率由消费者 pump。
 add_library(agc_control INTERFACE)
 target_include_directories(agc_control INTERFACE

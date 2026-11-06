@@ -8,7 +8,7 @@
 （R-032/R-033 配套诊断，含 `shield_infeasible` / `shield_reason` / `shield_action`）。
 
 只回收**本进程组的 tracker 子进程**（terminate → wait → kill）；**不** 用裸名模式批杀、**不**做递归删除。
-证据落 `experiments/w6-task-eval/<run_id>/r033/bench.json`（ADR-0007）。
+证据落 `experiments/w6-task-eval/<run_id>/r033/bench.json`（ADR-0006）。
 
 场景（与评审 R-033 / spec 场景一一对应）：
   a_joint_overlap   —— 两障碍交叠，期望参考深入重叠区 → **联合复检不可行**（非交换投影收敛失败）→ hold

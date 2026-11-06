@@ -19,7 +19,7 @@
 
 记录 claim 历史（`uid` / `sp_hz` / `permit` / `writers`）→ 供「实际写者 / 频率」复核。
 只回收**本进程组**的子进程（`start_new_session` + `killpg` + `wait`）；**不**用裸名 `pkill -f`、**不**做递归删除。
-证据落 `experiments/w6-task-eval/<run_id>/r035/bench.json`（ADR-0007）。
+证据落 `experiments/w6-task-eval/<run_id>/r035/bench.json`（ADR-0006）。
 
 ⚠ 范围标注：本台架为**控制许可逻辑台架**（真实节点 + 真实 manager，**非**整链 / **非**双 PX4 / **非** GUI）。
 """

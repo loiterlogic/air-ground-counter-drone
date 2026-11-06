@@ -17,7 +17,7 @@
 **配对比较**；`policy` 流随 attempt 变化（智能体侧的探索随机）。
 
 不可复现边界（成文）：外生流（spawn / 噪声序列）**逐位可复现**；但**物理步进调度**（实时异步
-墙钟调度，见 [ADR-0069](../../docs/adr/0069-w7-entry-and-exit-definition.md)(b)）**不承诺** bitwise
+墙钟调度，见 [ADR-0021](../../docs/adr/0021-w8-gui-headless-equivalence.md#top)(b)）**不承诺** bitwise
 一致——轨迹在时间维度上的分叉属**已知边界**，由 W7 runner 记录（spec R3）。
 """
 
@@ -98,7 +98,7 @@ class SeedPlan:
             'reproducibility_note': (
                 '外生流（spawn / sensor / channel / target / physics）逐位可复现且**不随 attempt 变化**'
                 '（配对比较用共同外生随机过程）；policy 流随 attempt 变化。物理步进调度为实时异步，'
-                '**不承诺** bitwise 轨迹一致（ADR-0069(b)）。'),
+                '**不承诺** bitwise 轨迹一致（ADR-0021）。'),
         }
 
 

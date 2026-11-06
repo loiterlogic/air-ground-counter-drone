@@ -4,7 +4,7 @@
 从**既有**可复现 run 产物（默认 W7-a 的 `experiments/w7-rl/*/episodes/ep_a*.json`，含 spawn /
 动作序列 / 位姿轨迹 / 种子计划 / 终态）聚合为**离线数据集索引**，条目带身份与版本，**可重建**。
 
-产物（ADR-0007 唯一落点；`run_id` 不可覆盖）：
+产物（ADR-0006 唯一落点；`run_id` 不可覆盖）：
   `experiments/w7-rl-b/<run_id>/{config/dataset_manifest.json, metrics/dataset.json}`
 `dataset_manifest.json` 记：来源 campaign、条目（source run_id / attempt / scene / master_seed /
 steps / spawn / terminal / outcome / 文件 sha256）、字段版本、可重建命令。

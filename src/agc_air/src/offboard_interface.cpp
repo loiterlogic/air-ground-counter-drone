@@ -179,7 +179,7 @@ void OffboardInterface::sendOffboardMode()
 std::size_t OffboardInterface::countSetpointPublishers() const
 {
   // R-035：**仅作告警**——图内省计数含**静默 publisher**、且 DDS 发现延迟不保证事件顺序，
-  // 故**不**单独决定控制权威（唯一权威由显式控制许可判定，见 ADR-0050）。
+  // 故**不**单独决定控制权威（唯一权威由显式控制许可判定，见 ADR-0010）。
   return node_.count_publishers(params_.setpoint_topic);
 }
 

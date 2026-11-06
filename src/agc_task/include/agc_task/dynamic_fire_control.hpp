@@ -1,9 +1,9 @@
-// dynamic_fire_control.hpp —— 最小动态火控状态机（W7-b T2/E2；ADR-0079；ADR-0091）
+// dynamic_fire_control.hpp —— 最小动态火控状态机（W7-b T2/E2；ADR-0011；ADR-0011）
 //
 // 纯标准库实现（可单测；不依赖 ROS / GZ / PX4）。节点 capture_adjudicator.cpp 只做 I/O 与事件发布，
 // 状态机与弹道在本头文件内，便于确定性 gtest 以显式 t_s 驱动。
 //
-// 生命周期（ADR-0091）：已发射网的在飞推进 / 落地 / 超时结算与发射资格解耦；
+// 生命周期（ADR-0011）：已发射网的在飞推进 / 落地 / 超时结算与发射资格解耦；
 //   目标无效时不判命中但继续结算；复位 / 时钟回退以 SHOT_ABORTED 显式中止。
 
 #pragma once
@@ -42,7 +42,10 @@ struct FireParams
   double t_exp_s{0.2};           // 网展开时间 s（此期间有效半径线性增长）
   double cooldown_s{2.0};        // 射击后冷却 s
   double flight_timeout_s{3.0};  // 网飞行总时长上限 s（超时＝失手）
-  // ADR-0079（B2）：目标运动估计参数（时间窗回归 + 静止阈值 + 新息门 + 提前量上限）
+  // ADR-0011：瞄准余量 m——只有「预演弹道的最近距离 ≤ 网半径 − 本值」才允许开火。
+  //   0 = 只要预演能擦到就开火（最宽松）；调大 = 更靠近目标才开火（命中余量更大）。
+  double aim_margin{0.0};
+  // ADR-0011（B2）：目标运动估计参数（时间窗回归 + 静止阈值 + 新息门 + 提前量上限）
   TargetMotionFilter::Params target_filter{};
 };
 
@@ -72,13 +75,13 @@ struct CaptureDecision
   double flight_s{0.0};       // 命中 / 失手时刻的飞行时长
   double miss_dist{0.0};      // 最近逼近距离
   Vec3 predicted{0.0, 0.0, 0.0};
-  Vec3 target_vel{0.0, 0.0, 0.0};   // ADR-0079：发射时的滤波后目标速度（证据）
+  Vec3 target_vel{0.0, 0.0, 0.0};   // ADR-0011：发射时的滤波后目标速度（证据）
   Vec3 est{0.0, 0.0, 0.0};          // W7-b T3：发射时的滤波后目标位置（诊断）
   double t_est{0.0};                // W7-b T3：predictTarget 迭代后用于瞄准的到达时间（诊断）
   std::string shot_id;
-  std::string reason;           // ADR-0091：中止原因（episode_reset | clock_regression）
-  double t_event{0.0};          // ADR-0091：中止发生的仿真时刻
-  bool miss_dist_valid{false};  // ADR-0091：在飞期间是否获得过有效目标观测
+  std::string reason;           // ADR-0011：中止原因（episode_reset | clock_regression）
+  double t_event{0.0};          // ADR-0011：中止发生的仿真时刻
+  bool miss_dist_valid{false};  // ADR-0011：在飞期间是否获得过有效目标观测
 };
 
 // 可插拔裁决器接口（R9）：现为最小动态火控（逐帧弹道），后续可换真实弹道（含 GZ 网体）。
@@ -90,7 +93,7 @@ public:
   virtual CaptureDecision step(
     const Pose2 & car, const Pose2 & target,
     double t_s, bool allow_fire) = 0;
-  // ADR-0091：显式中止在飞网（缺省无在飞状态 → 返回默认决策）。
+  // ADR-0011：显式中止在飞网（缺省无在飞状态 → 返回默认决策）。
   virtual CaptureDecision abortInFlight(const std::string & /*reason*/, double /*t_s*/)
   {
     return CaptureDecision{};
@@ -123,7 +126,7 @@ public:
   {
     CaptureDecision d;
 
-    // ADR-0091：只有有效目标进入运动估计；失效拍不得用缓存位姿更新估计。
+    // ADR-0011：只有有效目标进入运动估计；失效拍不得用缓存位姿更新估计。
     if (target.valid) {
       target_filter_.update(t_s, agc_task::Vec3d{target.x, target.y, target.z});
     }
@@ -136,7 +139,7 @@ public:
       d.dist = std::hypot(dx, dy);
       // R-020：高度含车体——h = target.z − car.z − launcher_h。
       d.h = tf.z - car.z - p_.launcher_h;
-      gateStatus(d);   // ① 适用高度 → 可达 → 水平射程
+      gateStatus(d, car);   // ① 适用高度 → 可达 → 瞄准解算
     }
 
     // ④ 网在飞 → **每拍**推进弹道时钟并结算（先于一切发射资格检查）。
@@ -195,7 +198,7 @@ public:
       return d;
     }
 
-    // ②③ 发射：以目标预测方位角瞄准（ADR-0079：滤波后位置 + 有上限的提前量）
+    // ②③ 发射：以目标预测方位角瞄准（ADR-0011：滤波后位置 + 有上限的提前量）
     const agc_task::Vec3d tf = target_filter_.position();
     double t_est = 0.0;
     const Vec3 pred = predictTarget(car, tf, t_est);
@@ -227,7 +230,7 @@ public:
     return d;
   }
 
-  // ADR-0091：显式中止在飞网（episode_reset / clock_regression）；非在飞时返回默认（kInvalid）。
+  // ADR-0011：显式中止在飞网（episode_reset / clock_regression）；非在飞时返回默认（kInvalid）。
   CaptureDecision abortInFlight(const std::string & reason, double t_s) override
   {
     CaptureDecision d;
@@ -250,8 +253,18 @@ public:
   const std::string & shotId() const {return shot_id_;}
 
 private:
-  // ① 交战门：适用高度 → 可达 → 水平射程（只决定 engaged / 门失败状态，不阻断在飞）。
-  void gateStatus(CaptureDecision & d) const
+  // ① 交战门：适用高度 → 可达 → **瞄准解算**（只决定 engaged / 门失败状态，不阻断在飞）。
+  //
+  // ADR-0011（本轮修正）：旧式用 `dist ≤ reach + d/2` 作开火判据，即在**包络最外沿**就开火；
+  //   而网在该距离处恰处于**最远命中点**，余量只剩「网半径 − 最近距离」的残余量
+  //   （现状默认参数实测仅 0.18 m；抬到 h=12 m 后降到 0.08 m，h=20 m 时 0.008 m）。
+  //   更根本的是：`reach` 只是「网落到该高度的水平距离」，并不代表**这个距离上一定能命中**——
+  //   当目标位于网弹道的两个高度交点之间时（环带空隙），门为真却必空。
+  //
+  //   新式：以**当前瞄准方向**（目标滤波位置）预演整条弹道，求网心与目标的**最近距离**，
+  //   仅当 `最近距离 ≤ 半径 − aim_margin` 才判定可交战。门为真 ⇔ 此刻开火**必然命中**。
+  //   这使 `envelope_in`（可交战）与 `capture_hit`（命中）口径一致，不再存在「门真但必空」。
+  void gateStatus(CaptureDecision & d, const Pose2 & car) const
   {
     if (d.h < 0.0 || d.h < p_.applicable_min || d.h > p_.applicable_max) {
       d.status = CaptureStatus::kOutOfApplicableRange;
@@ -263,13 +276,42 @@ private:
       d.status = CaptureStatus::kUnreachable;
       return;
     }
-    const double t_desc = (vy0 + std::sqrt(disc)) / p_.g;   // 下降段到达该高度的时间
-    const double reach = p_.v0 * std::cos(p_.angle_rad) * t_desc * p_.drag;
-    if (d.dist > reach + 0.5 * p_.diameter) {
+    // 瞄准方向 = 目标滤波位置（与发射时 predictTarget 的静止目标解一致；运动目标提前量在
+    // predictTarget 内另行处理，此处只用于「现在这个方向能不能打中」的判定）。
+    const agc_task::Vec3d tp = target_filter_.position();
+    const double dx = tp.x - car.x, dy = tp.y - car.y;
+    const double pdist = std::hypot(dx, dy);
+    const double ux = (pdist > 1e-6) ? (dx / pdist) : 1.0;
+    const double uy = (pdist > 1e-6) ? (dy / pdist) : 0.0;
+    if (aimMissDistance(d.h, pdist, ux, uy) > 0.5 * p_.diameter - p_.aim_margin) {
       d.status = CaptureStatus::kOutOfEnvelope;   // 正常未入包络（不标注）
       return;
     }
     d.engaged = true;    // 可交战（/agc/task/envelope_in）
+  }
+
+  // 预演：从当前位置按给定瞄准方向发射，网心与「水平距离 target_dist、相对高度 h」处目标的
+  //   最近距离（m）。完全复用 netPos / radius 的同一套物理，保证「门」与「命中判定」同源。
+  //   target_dist 为 0（车恰在目标正下方）时沿 +x 方向预演，只用于判定能否打中。
+  double aimMissDistance(double h, double target_dist, double ux, double uy) const
+  {
+    const double vy0 = p_.v0 * std::sin(p_.angle_rad);
+    const double vh = p_.v0 * std::cos(p_.angle_rad) * p_.drag;
+    const double t_land = 2.0 * vy0 / p_.g;                 // 网落回发射高度的时间
+    const double t_end = std::min(t_land, p_.flight_timeout_s);
+    const double tgt_x = target_dist * ux, tgt_y = target_dist * uy;
+    constexpr int kSteps = 512;                             // 步长 ≈ t_end/512（≤6 ms）
+    double best = std::numeric_limits<double>::infinity();
+    for (int i = 0; i <= kSteps; ++i) {
+      const double t = t_end * static_cast<double>(i) / kSteps;
+      const double r_horiz = vh * t;
+      const double z = vy0 * t - 0.5 * p_.g * t * t;
+      const double ddx = r_horiz * ux - tgt_x;
+      const double ddy = r_horiz * uy - tgt_y;
+      const double ddz = z - h;
+      best = std::min(best, std::sqrt(ddx * ddx + ddy * ddy + ddz * ddz));
+    }
+    return best;
   }
 
   // 网逐帧弹道位置：水平 = v0·cosθ·drag·Δt（常速）；垂直 = v0·sinθ·Δt − ½gΔt²。
@@ -295,7 +337,7 @@ private:
   }
 
   // 目标预测：按预测到达时间（水平射程 / 网水平速度）迭代求交会点，再乘滤波后速度。
-  //   ADR-0079：不使用逐帧位置差分；静止目标的提前量为 0，移动目标提前量有上限。
+  //   ADR-0011：不使用逐帧位置差分；静止目标的提前量为 0，移动目标提前量有上限。
   Vec3 predictTarget(const Pose2 & car, const agc_task::Vec3d & tp, double & t_est_out) const
   {
     const double vh = std::max(p_.v0 * std::cos(p_.angle_rad) * p_.drag, 1e-3);

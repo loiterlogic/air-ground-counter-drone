@@ -1,4 +1,4 @@
-// test_mission_fco_fixed_budget.cpp —— ADR-0099 固定预算任务 FCO 的确定性手算测试。
+// test_mission_fco_fixed_budget.cpp —— ADR-0021 固定预算任务 FCO 的确定性手算测试。
 //
 // 每个案例先写手算期望，再断言积分、覆盖账、null/识别界与有效性，不只断言字段存在。
 

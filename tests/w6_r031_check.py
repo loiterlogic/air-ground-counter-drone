@@ -146,7 +146,7 @@ def case_e_scripts_hygiene():
 
 
 def case_f_adr():
-    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0046-*.md')))
+    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0018-acceptance-and-coverage-matrix.md')))
     res = {'path': matches[0] if matches else None, 'exists': bool(matches)}
     if matches:
         t = _read(matches[0]) or ''

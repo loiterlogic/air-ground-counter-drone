@@ -1,6 +1,6 @@
-// capture_adjudicator —— 发射式网捕获裁决器（W6 R9 / ADR-0022；W7-b T2/E2 升级为「最小动态火控」）
+// capture_adjudicator —— 发射式网捕获裁决器（W6 R9 / ADR-0011；W7-b T2/E2 升级为「最小动态火控」）
 //
-// 物理捕获 = **发射式网**。W7-b（T2 / E2，ADR-0070(c) / F-11）把 W6 的**闭式包络占位**
+// 物理捕获 = **发射式网**。W7-b（T2 / E2，ADR-0022 / F-11）把 W6 的**闭式包络占位**
 // 升级为**最小动态火控裁决**：
 //   ① 交战门（相对高度与可及集）：h = target.z − car.z − launcher_h；h∈[applicable_min, applicable_max]
 //      且该高度可达（vy0²−2gh ≥ 0）且水平距离 ≤ 该高度闭式射程 + d/2 → 可交战（envelope_in）。
@@ -12,7 +12,7 @@
 //      网落地 / 超 net_flight_timeout_s → 失手；随后进入冷却 fire_cooldown_s。
 //   ⑥ 证据：shot_id（epoch-seq）、射击时刻、预测目标位、最近逼近距离、命中/失手、飞行时长。
 //
-// 生命周期规则（ADR-0091）：网一旦在飞，弹道时钟 / 落地 / 超时结算**独立于**发射资格——
+// 生命周期规则（ADR-0011）：网一旦在飞，弹道时钟 / 落地 / 超时结算**独立于**发射资格——
 //   车 / 目标位姿失效、置信度下降、目标越出适用高度 / 可达集 / 水平射程时仍**每拍**推进；
 //   目标无效时不判命中（不用缓存位姿），但落地 / 超时照常结算。落地 / 超时一律以 ROS 仿真时钟
 //   （use_sim_time=true）判定。每次 SHOT_FIRED 恰有一个结局：SHOT_HIT / SHOT_MISS，或复位 /
@@ -28,7 +28,7 @@
 //
 // I/O 契约：
 //   输入：/agc/ground/odom（车世界位姿，含 z）、/agc/targets（目标世界位姿 + twist，含 z）
-//         /agc/task/state（AgcTaskState，任务窗口门控）、/agc/task/episode（episode 身份；ADR-0078）
+//         /agc/task/state（AgcTaskState，任务窗口门控）、/agc/task/episode（episode 身份；ADR-0016）
 //   输出：/agc/task/capture_hit（std_msgs/String，命中值恰为 CAPTURE_NET，一次性 latched）
 //         /agc/task/capture_event（std_msgs/String，配套事件，
 //           CAPTURE_NET ep=<task episode id> t=<ros_sec> target=<id> shot=<id>；非命令者）
@@ -83,7 +83,9 @@ public:
     p.t_exp_s = declare_parameter<double>("net_t_exp_s", p.t_exp_s);
     p.cooldown_s = declare_parameter<double>("fire_cooldown_s", p.cooldown_s);
     p.flight_timeout_s = declare_parameter<double>("net_flight_timeout_s", p.flight_timeout_s);
-    // ADR-0079（B2）：目标运动估计参数（单一注入；节点不得覆写）
+    // ADR-0011：瞄准余量（m）——预演弹道最近距离须 ≤ 网半径 − 本值才允许开火。
+    p.aim_margin = declare_parameter<double>("net_aim_margin_m", p.aim_margin);
+    // ADR-0011（B2）：目标运动估计参数（单一注入；节点不得覆写）
     p.target_filter.fit_window_s =
       declare_parameter<double>("target_fit_window_s", p.target_filter.fit_window_s);
     p.target_filter.min_fit_s =
@@ -97,7 +99,13 @@ public:
     p.target_filter.max_lead_m = declare_parameter<double>("target_max_lead_m", p.target_filter.max_lead_m);
     model_id_ = declare_parameter<std::string>("model_id", "net_ballistic_frame_v2");
     p.applicable_min = declare_parameter<double>("applicable_min_alt_m", 0.0);
-    p.applicable_max = declare_parameter<double>("applicable_max_alt_m", 2.009);
+    // ADR-0011：**上限不再由参数给出，改由弹道参数派生**。
+    //   旧式 `applicable_max_alt_m` 是手写的第二真源：它与 gateStatus 的 `disc<0`（可达性）
+    //   是**同一个条件** `h > (v0·sinθ)²/(2g)`，两处分别维护 → 改了 net_v0_mps / net_angle_deg
+    //   而忘了改本值，就会出现「明明打得到却被判 out_of_applicable_range」的静默不一致
+    //   （也是本次抬高度时"显式阻碍启动"的根源）。派生后改网参数，上限自动跟随。
+    const double vy0_param = p.v0 * std::sin(p.angle_rad);
+    p.applicable_max = (vy0_param * vy0_param) / (2.0 * p.g);
     applicableMin_ = p.applicable_min;
     applicableMax_ = p.applicable_max;
     jam_model_id_ = declare_parameter<std::string>("jam_model_id", "behavioral_range_gate");
@@ -123,7 +131,7 @@ public:
       declare_parameter<std::string>("jam_envelope_topic", "/agc/task/envelope_jam");
     const auto task_state_topic =
       declare_parameter<std::string>("task_state_topic", "/agc/task/state");
-    // ADR-0078：episode 身份**单一来源** = `task_manager` 发布的 `/agc/task/episode`（而非物理复位 epoch）。
+    // ADR-0016：episode 身份**单一来源** = `task_manager` 发布的 `/agc/task/episode`（而非物理复位 epoch）。
     //   启动期 `scenario_reset` 的 initial gated reset 与 start 的 reset 存在竞态；若本节点沿用
     //   `/agc/scenario/reset_epoch`，事件 ep 会比 task_manager 锁存的 episode 身份大 1 → 全部被拒收。
     const auto episode_topic =
@@ -151,10 +159,16 @@ public:
       });
     target_sub_ = create_subscription<agc_msgs::msg::TargetTrackArray>(
       target_topic, 10, [this](agc_msgs::msg::TargetTrackArray::SharedPtr m) {
-        if (m->tracks.empty()) {target_.valid = false; return;}
+        // 空数组 = **本拍无新观测**（门控 / 丢包），不是目标消失（ADR-0009；N4 2026-11-03）。
+        //   与 standoff_follower / trajectory_tracker / task_manager 同款修正：
+        //   保持上一有效航迹，由年龄（target_max_age_s）判定失效——火控自身另有新鲜度门。
+        if (m->tracks.empty()) {
+          ++diag_empty_;
+          return;
+        }
         const auto & t = m->tracks.front();
         const auto & pos = t.pose.pose.position;
-        // ADR-0079：速度不再在回调里用逐帧差分（噪声被 1/dt 放大）；改由 TargetMotionFilter
+        // ADR-0011：速度不再在回调里用逐帧差分（噪声被 1/dt 放大）；改由 TargetMotionFilter
         //   在控制拍上做时间窗回归，并按静止阈值置零。
         target_.x = pos.x; target_.y = pos.y; target_.z = pos.z;
         target_.valid = true;
@@ -201,7 +215,7 @@ private:
       target_.valid && (t - target_rx_).seconds() <= target_max_age_s_ &&
       target_conf_ >= confidence_min_;
 
-    // ADR-0091：新鲜度 / 置信度编码为位姿有效性，**不**提前 return —— 在飞网每拍都要推进。
+    // ADR-0011：新鲜度 / 置信度编码为位姿有效性，**不**提前 return —— 在飞网每拍都要推进。
     Pose2 car = car_;
     car.valid = car_fresh;
     Pose2 target = target_;
@@ -267,7 +281,7 @@ private:
           d.shot_id.c_str(), model_id_.c_str(), d.h, d.dist, d.flight_s, d.miss_dist, current_epoch_);
         break;
       case CaptureStatus::kAborted:
-        // ADR-0091：显式中止（episode_reset / clock_regression）——不发布 capture_hit、不写 CAPTURE_NET。
+        // ADR-0011：显式中止（episode_reset / clock_regression）——不发布 capture_hit、不写 CAPTURE_NET。
         publishFireControl("SHOT_ABORTED", d);
         publishEvidence(evidenceString("SHOT_ABORTED", d.shot_id, d));
         RCLCPP_WARN(get_logger(),
@@ -292,7 +306,7 @@ private:
   }
 
   // episode 身份变化 = 新 episode → 复位火控（清冷却 / 在飞）与一次性命中标志。
-  // ADR-0091：复位前若仍有在飞网，先发一条 SHOT_ABORTED reason=episode_reset（唯一结局）。
+  // ADR-0011：复位前若仍有在飞网，先发一条 SHOT_ABORTED reason=episode_reset（唯一结局）。
   void onEpisodeId(int e)
   {
     if (!have_epoch_ || e != current_epoch_) {
@@ -329,7 +343,7 @@ private:
                        " flight_s=" + fmt(d.flight_s) +
                        " miss_dist_m=" + fmt(d.miss_dist) +
                        " h=" + fmt(d.h) + " dist=" + fmt(d.dist);
-    // ADR-0091：中止事件附加 reason / 仿真时刻（追加 token，不破坏既有解析）。
+    // ADR-0011：中止事件附加 reason / 仿真时刻（追加 token，不破坏既有解析）。
     if (!d.reason.empty()) {
       text += " reason=" + d.reason + " t=" + fmt(d.t_event);
     }
@@ -393,6 +407,8 @@ private:
   double applicableMin_{0.0}, applicableMax_{2.009};
   double jam_min_{0.0}, jam_max_{2.0}, jam_max_range_{1.0};
   double car_max_age_s_{0.5}, target_max_age_s_{0.5}, confidence_min_{0.5};
+  // 诊断：空数组拍数（"本拍无新观测"，不是"目标丢失"）——不静默吞掉
+  unsigned long long diag_empty_{0};
   std::string required_target_id_{};
   uint8_t task_state_{0};
   int current_epoch_{-1};

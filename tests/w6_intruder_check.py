@@ -10,7 +10,7 @@ setpoint 位置随时间，按运动类型判据辨识：
 
 **范围说明**：本检查验证 driver **运动指令逻辑**可辨；机体真实响应（gz `model -p`）属
 "双 PX4 整链 launch 集成"（Task 5.3 的 GUI 观测部分，`static` 已由前置 P 实跑）。
-结果落 `experiments/w6-task-eval/<run_id>/metrics/intruder_<motion>.json`（ADR-0007）。
+结果落 `experiments/w6-task-eval/<run_id>/metrics/intruder_<motion>.json`（ADR-0006）。
 """
 
 import argparse

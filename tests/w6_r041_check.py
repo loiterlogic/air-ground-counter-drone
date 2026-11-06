@@ -147,8 +147,8 @@ def case_d_failsafe_stop(bench):
 
 
 def case_e_adr_0056():
-    """(e) 口径记录 ADR-0056：accepted + 取证节 + R-041 + 契约引用 + 边界 + C10 分野。"""
-    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0056-*.md')))
+    """(e) 口径记录 ADR-0013：accepted + 取证节 + R-041 + 契约引用 + 边界 + C10 分野。"""
+    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0013-ground-planning-path-contract.md')))
     res = {'path': os.path.relpath(matches[0], ROOT) if matches else None, 'exists': bool(matches)}
     if matches:
         t = _read(matches[0]) or ''

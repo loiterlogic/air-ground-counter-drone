@@ -11,10 +11,10 @@
 3. **跨路径取回验证**：归档解包到**另一路径**（临时目录）逐文件哈希比对，证明「**可取回**」，
    结果落 `experiments/_archive/<campaign>/<run_id>.retrieval.json`。
 
-决策真源：[ADR-0064](../docs/adr/0064-evidence-immutable-archive-and-intake-manifest.md)；
-产物纪律 [ADR-0007](../docs/adr/0007-experiment-artifacts-convention.md)；
-运行身份 [ADR-0044](../docs/adr/0044-unique-run-identity-and-reproducible-evidence.md)。
-R-030 证据丢失事实**只引用** [ADR-0045](../docs/adr/0045-resetfail-evidence-contradiction-registration-and-redo.md)，
+决策真源：[ADR-0006](../docs/adr/0006-experiment-artifacts-and-evidence-discipline.md#top)；
+产物纪律 [ADR-0006](../docs/adr/0006-experiment-artifacts-and-evidence-discipline.md#top)；
+运行身份 [ADR-0006](../docs/adr/0006-experiment-artifacts-and-evidence-discipline.md#top)。
+R-030 证据丢失事实**只引用** [ADR-0006](../docs/adr/0006-experiment-artifacts-and-evidence-discipline.md#top)，
 本脚本**不**伪造 / **不**重建 / **不**冒充复核已丢失原件。
 
 用法::
@@ -45,7 +45,7 @@ MANIFEST_REL = os.path.join('config', 'evidence_manifest.json')
 GENERATOR = 'scripts/evidence_archive.py'
 GENERATOR_VERSION = '1.0.0'
 MANIFEST_VERSION = 1
-RETENTION = '长期保留（≥ W8 对照冻结）；本地不可变归档（ADR-0064）'
+RETENTION = '长期保留（≥ W8 对照冻结）；本地不可变归档（ADR-0006）'
 
 KNOWN_TYPES = ('config', 'metrics', 'log', 'bag', 'figures')
 

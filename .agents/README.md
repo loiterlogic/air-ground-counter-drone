@@ -6,7 +6,7 @@
 
 ## 为什么在这里
 
-2026-10-29 用户裁定**退役 Trae**（[ADR-0105](../docs/adr/0105-retire-trae-and-relocate-specs-skills.md)）。原 `.trae/skills/` 的 4 个技能迁到本目录：
+2026-10-29 用户裁定**退役 Trae**（[ADR-0025](../docs/adr/0025-publishing-boundary-and-retirement.md#top)）。原 `.trae/skills/` 的 4 个技能迁到本目录：
 
 - `.agents/skills/` 是 DSH Harness 的**默认扫描根**之一（`@deepseek-ai/dsh-skill-filesystem` 的 `project-agents`，rank 200），放在这里会话就能直接发现并加载；
 - 技能是可复用的工程资产（不含密钥、本机路径或生成物），应当入库共享，而不是跟着已退役的编辑器一起忽略。

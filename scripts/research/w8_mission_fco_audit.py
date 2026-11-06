@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only audit for ADR-0099 `mission_fco_fixed_budget_v1` evidence.
+"""Read-only audit for ADR-0021 `mission_fco_fixed_budget_v1` evidence.
 
 Validates summary block + interval ledger coverage/integrity; never adjudicates
 scientific claims and never rewrites inputs.

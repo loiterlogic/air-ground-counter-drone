@@ -20,6 +20,7 @@ import subprocess
 import time
 
 import common
+import dds_transport
 
 OK, FAIL, WARN, SKIP = 'OK', 'FAIL', 'WARN', 'SKIP'
 
@@ -105,15 +106,24 @@ def check_domain_id():
 
 
 def check_discovery_range():
+    """发现范围 / 传输：按本机 **能力探测** 给结论，不再断言"必须 LOCALHOST"。
+
+    判据见 docs/conventions/整链排障速查.md#dds-transport：`lo` 无 `IFF_MULTICAST` 时
+    `LOCALHOST` 在 1:1 拓扑下稳定零送达（多进程偶通），须改 `SUBNET`+`SHM`。
+    """
+    try:
+        resolved = dds_transport.resolve()
+        summary = dds_transport.describe()
+    except ValueError as exc:
+        return (FAIL, 'DDS 传输策略非法', str(exc),
+                ['改用 AGC_DDS_TRANSPORT_POLICY=auto（按能力探测）或 unset 后重试'])
+    lo_mc = dds_transport.lo_has_multicast()
     val = os.environ.get('ROS_AUTOMATIC_DISCOVERY_RANGE', '')
-    if val == 'LOCALHOST':
-        return (OK, 'ROS_AUTOMATIC_DISCOVERY_RANGE', 'LOCALHOST（脚本自动设置）', [])
-    if val in ('', 'SUBNET'):
-        return (OK, 'ROS_AUTOMATIC_DISCOVERY_RANGE',
-                '%s（脚本启动时会设为 LOCALHOST）' % (val or '未设置'),
-                [])
-    return (WARN, 'ROS_AUTOMATIC_DISCOVERY_RANGE 非预期值',
-            '%s（脚本启动时会覆盖为 LOCALHOST）' % val, [])
+    note = 'lo multicast=%s → 生效 %s' % ('yes' if lo_mc else 'no', resolved)
+    if val and val != dds_transport.env_for(resolved)['ROS_AUTOMATIC_DISCOVERY_RANGE']:
+        return (WARN, 'ROS_AUTOMATIC_DISCOVERY_RANGE 与探测不一致',
+                '%s（脚本启动时会覆盖）' % val, [summary])
+    return (OK, 'ROS_AUTOMATIC_DISCOVERY_RANGE', note, [summary])
 
 
 def check_plugin_path():

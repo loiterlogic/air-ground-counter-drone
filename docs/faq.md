@@ -9,7 +9,7 @@
 
 **症状**：`doctor` 的「工具链二进制」一项 FAIL，提示 `MicroXRCEAgent` 或 `px4_sitl_default/bin/px4` 不在位。
 
-**原因**：`toolchain/` 是**外部依赖**，不进 git（[ADR-0012](adr/0012-px4-body-as-toolchain-dependency.md)），
+**原因**：`toolchain/` 是**外部依赖**，不进 git（[ADR-0005](adr/0005-px4-toolchain-and-link.md#top)），
 新 clone 的仓里它是空的。
 
 **处置**：按 [`toolchain/README`](../toolchain/README.md) 构建 PX4 + MicroXRCEAgent。
@@ -24,7 +24,7 @@
 **症状**：终端停在 `[00:17] PX4 己方实例 ... 等待中 (错峰 25s)` 十几秒不动。
 
 **原因**：**这是正常行为**。`backend:=full` 有 PX4 己方 25 s / 入侵者 35 s 的**错峰延时**，
-用于规避 uXRCE participant 创建长尾（[ADR-0094](adr/0094-uxrce-participant-warmup-and-px4-stagger.md)）。
+用于规避 uXRCE participant 创建长尾（[ADR-0027](adr/0027-uxrce-startup-reproducibility.md#top)）。
 从启动到任务开始约 **45–60 s**。
 
 **处置**：**等**。进度提示会分段打印，不是死循环。超过 60 s 仍无进展才按第 4 条查残留。
@@ -36,17 +36,28 @@
 
 **原因**：环境域/发现范围不对。本仓**铁律**是 `ROS_DOMAIN_ID` 保持默认 `0`；
 自设非 0 域会让 lifecycle **服务数据面不通**（话题却正常，极难判）。
-本机 `SUBNET` 发现范围 + WSL2 上行还会间歇性全失效。
+
+> **2026-11-04 修订**：旧版此处写"发现范围用 `LOCALHOST`"，该规则**已推翻**——本机 `lo`
+> 没有 `IFF_MULTICAST`，`LOCALHOST` **不可靠**：1 发布↔1 订阅这种最常见的两进程拓扑
+> **稳定零送达**（多进程偶通，正是历史"忽好忽坏"的来源）。
+> 现在按能力探测，`run_demo.sh` 自动选，证据见
+> [整链排障速查 2d-2](conventions/整链排障速查.md#dds-transport)。
 
 **处置**：
 
 ```bash
 echo $ROS_DOMAIN_ID                    # 应为空或 0
-export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+# 用脚本起实例：发现范围/传输由 dds_transport 探测，无需手工 export
+./run_demo.sh doctor                   # 会打印实际选中的策略
 ```
 
-`run_demo.sh` 已自动设 `LOCALHOST` 并在 `ROS_DOMAIN_ID` 未设时补 `0`——所以**用脚本起的实例**
-不受影响；受影响的是你**另开终端**手敲 `ros2` 命令的时候。
+**另开终端手敲 `ros2` 命令时**，必须与已启动实例用**同一**策略，否则互相看不见：
+
+```bash
+python3 -c "import sys; sys.path.insert(0,'scripts/demo'); import dds_transport as d; d.apply(); print(d.describe())"
+# 或直接 source 出脚本算好的值：
+eval "$(python3 -c "import sys; sys.path.insert(0,'scripts/demo'); import dds_transport as d; d.apply(); [print('export %s=%s'%(k,v)) for k,v in d.env_for().items() if v is not None]")"
+```
 
 > 注意：graph 查询在本机**不可靠**，不要用 `ros2 node list` 当门禁；用首个服务调用探活
 > （见排障速查 §3）。
@@ -131,7 +142,7 @@ python3 scripts/demo/gui_capture.py snap --out /tmp/shot.png
 `air_odom=0` 是它的**下游后果**，不是 EKF / 起飞时序问题——**不要**先去查 EKF。
 
 **处置**：按[启动前检查](conventions/整链排障速查.md#preflight)清场（含桥 / tf 孤儿）后重跑。
-默认 25/35 错峰已是主修复（[ADR-0094](adr/0094-uxrce-participant-warmup-and-px4-stagger.md)），
+默认 25/35 错峰已是主修复（[ADR-0027](adr/0027-uxrce-startup-reproducibility.md#top)），
 **不要**把 own PX4 改回 12 s、也不要用 runner 重试代替修复。
 
 ## 8. 演示成功了，但这个"成功"到底算什么
@@ -145,9 +156,12 @@ python3 scripts/demo/gui_capture.py snap --out /tmp/shot.png
 
 另外两个口径也要一起说清，否则结论会被误读：
 
-- 默认 `observe_yaw_mode=target` 是**显式 oracle 指向臂**（机头对准真值方位），
-  **不代表**真实视觉识别（[P1-2 观测指向臂](archive/completion-20261031/p1-2-一键演示入口.md#p1-2-oracle-arm)）；
-- 默认 `perception_path=truth`，感知是**真值派生**，不是从像素识别出来的
-  （[ADR-0020](adr/0020-perception-as-truth-derived-simulation.md)）。
+- 主场景 `s04` 的观测指向臂是 **`track`**（机头对准 `/agc/targets` 感知航迹），
+  **不是** oracle 臂——它消费的航迹与任务同源，**不读** `/agc/gt/*`。
+  该值由场景覆盖 `air.yaml` 的缺省 `velocity` 得到；`observe_yaw_mode` 的 **launch 参数已清退**，
+  没有 run 级 CLI 覆盖口。`target`（真值指向）档仍在节点里，仅供研究臂；
+- 感知是**真值派生**（`gt_adapter`），不是从像素识别出来的
+  （[ADR-0009](adr/0009-perception-truth-derived-and-vision-path.md#top)）。
+  `perception_path` 参数已删除，产物里该键恒为 `truth`（schema 不漂移）。
 
 完整的能力边界见 [README 的「已知边界」](../README.md#已知边界当前能力范围)。

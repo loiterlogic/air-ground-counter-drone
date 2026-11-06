@@ -2,7 +2,7 @@
 //
 // * 服务 /agc/scenario/reset（std_srvs/Trigger）：经 GZ set_pose 把车 / 目标置回 spawn；
 //   受运行期门控（仅**非 active** 态可复位——IDLE + 全终态，含 INTERCEPT_CONFIRMED；契约 #lessons）。
-// * **R-015（ADR-0030）复位受控事务**：
+// * **R-015（ADR-0014）复位受控事务**：
 //   - 门控即「撤销运动许可」；随后做**有界等待**观察车静止（订阅 /agc/ground/odom；**不发布 cmd_vel**）。
 //   - 读回前置：订阅真值旁路 gt（车 / 目标），要求写入前缓存**新鲜**（年龄 ≤ readback_max_age_s）。
 //   - 事务：写车 → 读回（XY 欧氏距 ≤ 容差，有界等待）→ 写目标 → 读回；任一步失败 → **回滚**已写实体到
@@ -49,12 +49,12 @@ public:
     car_yaw_ = declare_parameter<double>("car_yaw", 0.0);
     target_x_ = declare_parameter<double>("target_x", 6.5);
     target_y_ = declare_parameter<double>("target_y", 2.5);
-    target_z_ = declare_parameter<double>("target_z", 2.0);
+    target_z_ = declare_parameter<double>("target_z", 0.12);  // 2026-11-05：2.0→0.12，见 spawn_layout.yaml
     target_yaw_ = declare_parameter<double>("target_yaw", 0.0);
-    // C7 出生净空（ADR-0023）：按新 C2 安全档 + 实体外伸推导的可标定下限（暂定 ≈6 m，
+    // C7 出生净空（ADR-0012）：按新 C2 安全档 + 实体外伸推导的可标定下限（暂定 ≈6 m，
     // 以"车-目标 spawn 中心距"为代理）；旧值 2.4 m 作废。R-014 起为车↔目标对下限（标定值）。
     clearance_min_m_ = declare_parameter<double>("spawn_clearance_min_m", 6.0);
-    // R-014 出生净空统一候选校验（ADR-0029）：实体几何外伸 + 实体对下限 + 作业区边界。
+    // R-014 出生净空统一候选校验（ADR-0012）：实体几何外伸 + 实体对下限 + 作业区边界。
     clearance_radius_car_m_ = declare_parameter<double>("clearance_radius_car_m", 0.5037);
     clearance_radius_uav_m_ = declare_parameter<double>("clearance_radius_uav_m", 0.25);
     clearance_radius_obstacle_m_ = declare_parameter<double>("clearance_radius_obstacle_m", 0.15);
@@ -64,8 +64,8 @@ public:
     clearance_min_car_obstacle_m_ = declare_parameter<double>("clearance_min_car_obstacle_m", -1.0);
     clearance_min_target_obstacle_m_ =
       declare_parameter<double>("clearance_min_target_obstacle_m", -1.0);
-    // R-014 出生净空统一候选校验（ADR-0029）：实体几何外伸 + 实体对下限 + 作业区边界。
-    // S-06（ADR-0062）：作业区边界（map_*）与静态障碍清单（obstacle_*）的**几何真源**为
+    // R-014 出生净空统一候选校验（ADR-0012）：实体几何外伸 + 实体对下限 + 作业区边界。
+    // S-06（ADR-0007）：作业区边界（map_*）与静态障碍清单（obstacle_*）的**几何真源**为
     //   `agc_sim/config/world_geometry.yaml`，由 w6_composition 派生注入；此处默认值
     //   **仅**为 standalone 回退，不构成第二份几何真源（修改几何只改真源文件）。
     // 2026-10-29 用户裁定作业区 80×80 → **100×100（origin −50,−50）**，回退默认值随之同步。
@@ -87,7 +87,7 @@ public:
     spawn_seed_ = declare_parameter<int>("spawn_seed", 0);
     spawn_search_radius_m_ = declare_parameter<double>("spawn_search_radius_m", 4.0);
     spawn_internal_retry_ = declare_parameter<int>("spawn_internal_retry", 8);
-    // R-015（ADR-0030）：受控事务参数（config 单一注入，节点不得覆写）
+    // R-015（ADR-0014）：受控事务参数（config 单一注入，节点不得覆写）
     car_entity_name_ = declare_parameter<std::string>("car_entity_name", "agc_car");
     target_entity_name_ = declare_parameter<std::string>("target_entity_name", "intruder_uav");
     car_gt_topic_ = declare_parameter<std::string>("car_gt_topic", "/agc/gt/agc_car");
@@ -183,7 +183,7 @@ private:
     return override_min >= 0.0 ? override_min : (r_a + r_b);
   }
 
-  // R-014：统一候选校验（ADR-0029）。按序检查，任一不满足即返回 false 并设 reason。
+  // R-014：统一候选校验（ADR-0012）。按序检查，任一不满足即返回 false 并设 reason。
   bool validateCandidate(double cx, double cy, double tx, double ty,
     std::string & reason) const
   {
@@ -367,7 +367,7 @@ private:
     // (2) 撤销运动许可 + 停止执行（有界观察车静止，非致命）。
     waitForQuiescence();
 
-    // (3) 候选生成 + 统一净空校验（R-014 / ADR-0029）。
+    // (3) 候选生成 + 统一净空校验（R-014 / ADR-0012）。
     double cx, cy, tx, ty;
     std::string reason;
     if (!selectCandidate(cx, cy, tx, ty, reason)) {
@@ -482,7 +482,7 @@ private:
   double car_x_, car_y_, car_z_, car_yaw_;
   double target_x_, target_y_, target_z_, target_yaw_;
   double clearance_min_m_{6.0}, spawn_search_radius_m_{4.0};
-  // R-014（ADR-0029）：实体几何外伸 / 实体对下限覆盖 / 作业区边界 / 己方 UAV / 静态障碍
+  // R-014（ADR-0012）：实体几何外伸 / 实体对下限覆盖 / 作业区边界 / 己方 UAV / 静态障碍
   double clearance_radius_car_m_{0.5037}, clearance_radius_uav_m_{0.25};
   double clearance_radius_obstacle_m_{0.15};
   double clearance_min_car_own_uav_m_{-1.0}, clearance_min_target_own_uav_m_{-1.0};
@@ -495,7 +495,7 @@ private:
   std::string last_reason_;
   bool spawn_randomize_{false};
   int spawn_seed_{0}, spawn_internal_retry_{8};
-  // R-015（ADR-0030）：受控事务
+  // R-015（ADR-0014）：受控事务
   std::string car_entity_name_, target_entity_name_, car_gt_topic_, target_gt_topic_;
   std::string reset_epoch_topic_;
   double readback_tolerance_m_{0.25}, readback_timeout_s_{1.0}, readback_max_age_s_{0.5};

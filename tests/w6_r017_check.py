@@ -22,7 +22,7 @@
 `intruder_driver` 段 + 用例覆盖；`use_sim_time: false` → **墙钟**，规避本机
 「无 /clock → use_sim_time 节点时间冻结为 0」的已知坑。每用例独立 fresh 参数文件（避免残留状态）。
 
-用例（结果落 `experiments/w6-task-eval/<run_id>/metrics/r017.json`，ADR-0007）：
+用例（结果落 `experiments/w6-task-eval/<run_id>/metrics/r017.json`，ADR-0006）：
   a 未知命令不切断：包络 freshness=true/value=true；流已流动；发 `"BOGUS"` → 流继续、无 `JAM_*` 授权事件、
     jammer 未发 `SET_NAV_STATE`。
   b 包络外/过期不生效：b1 包络 false；b2 包络曾新鲜但停发 > `envelope_max_age_s`；两子测发 `"RTL"`

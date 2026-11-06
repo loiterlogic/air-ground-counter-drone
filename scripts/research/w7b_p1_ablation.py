@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""w7b_p1_ablation —— P1 机制消融（指向 × 跟踪参考 2×2）的**估计算**分析（ADR-0087）。
+"""w7b_p1_ablation —— P1 机制消融（指向 × 跟踪参考 2×2）的**估计算**分析（ADR-0023）。
 
 **定位**：**估计型**（析因对比 + 配对 CI），**不设门槛判定**、**不改**任何 verdict
-（门槛语义属 [ADR-0086](../../docs/adr/0086-decision-rule-three-state-ci-versus-mme.md)，本脚本不参与）。
+（门槛语义属 [ADR-0022](../../docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)，本脚本不参与）。
 
 2×2 cell（同批单 run，CRN 逐 seed 配对）：
 
@@ -20,7 +20,7 @@
 DV = 真实过程 FCO（`fire_control_opportunity_rate_active`；失败回合保留真实值、缺测配对剔除；**不等于** v5 失败置零判定口径）；
 辅报 `visibility_rate`（fixed 窗，描述）/ active 可见率 / 可见拍中包络占比。
 
-**预登记风险（ADR-0087(a)4）**：cell ④ 可能因 C10 hold 自锁**退化**——本脚本不掩饰：
+**预登记风险（ADR-00234）**：cell ④ 可能因 C10 hold 自锁**退化**——本脚本不掩饰：
 cell 画像表直接给每 cell 的终态分布与真实 FCO，退化即照实呈现。
 
 用法：
@@ -149,14 +149,14 @@ def main():
     else:
         contrasts['interaction'] = {'n': len(inter), 'mean': None}
 
-    out = {'kind': 'estimational（ADR-0087；无门槛判定；不改 verdict）',
+    out = {'kind': 'estimational（ADR-0023；无门槛判定；不改 verdict）',
            'run_id': args.run_id, 'campaign': args.campaign, 'seeds': seeds,
            'cells': cell_stats, 'contrasts': contrasts,
            'dv': 'fire_control_opportunity_rate_active（真实过程 FCO；失败回合保留真实值、缺测配对剔除；不等于 v5 失败置零判定口径）',
-           'known_risk': 'cell ④ p1_track_only 可能因 C10 hold 自锁退化（ADR-0087(a)4 预先登记）'}
+           'known_risk': 'cell ④ p1_track_only 可能因 C10 hold 自锁退化（ADR-00234 预先登记）'}
 
     md = ['# P1 机制消融（2×2）· %s' % args.run_id, '',
-          '> **估计型**分析（ADR-0087）：只做归因/区间估计，**不设门槛判定**、**不改** verdict。', '',
+          '> **估计型**分析（ADR-0023）：只做归因/区间估计，**不设门槛判定**、**不改** verdict。', '',
           '> DV = **真实过程 FCO**（失败回合保留真实值、缺测配对剔除；**不等于** v5 primary 的失败置零计分口径）。', '',
           '## Cell 画像', '',
           '| arm | 指向 | 跟踪 | n | 终态分布 | 真实过程 FCO | 计分均值 | active 可见率 | 可见拍中包络占比 | 干预拍均值 |',
@@ -176,7 +176,7 @@ def main():
             v.get('ci95') if v.get('ci95') else '-',
             ('%.4g' % v['p_two_sided']) if v.get('p_two_sided') is not None else '-'))
     md += ['', '## 读法约束（先定）', '',
-           '- 消融只回答"贡献来自哪一项"，**不**对 P1 命题另立判定（须新预注册版本，ADR-0087(a)）。',
+           '- 消融只回答"贡献来自哪一项"，**不**对 P1 命题另立判定（须新预注册版本，ADR-0023）。',
            '- cell ④ 若退化（如终态集中在失败 / FCO≈0），**跟踪主效应**只按 pointing=target 一侧（①−③）解读，',
            '  并如实登记该 cell 为"已知机制失效组合"，不得当作公平基线。']
 

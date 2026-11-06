@@ -5,7 +5,7 @@
 #
 # 背景：旧原件 experiments/w6-task-eval/20261014-c9-resetfail-0 已于 2026-10-16 因误删永久丢失
 #   （不可恢复，见 docs/adr/0045-*.md）。本脚本**不**重建旧原件，改为在**唯一新 run**（R-029 不可
-#   覆盖 run_id，见 ADR-0044）重做非法 spawn 验收，补原始日志 + 运行配置 + 产物身份。
+#   覆盖 run_id，见 ADR-0006）重做非法 spawn 验收，补原始日志 + 运行配置 + 产物身份。
 #
 # 阶段：
 #   Phase 1 起无头 m0_skeleton（注入 w6_c9_resetfail.yaml + world_file），有界轮询 /agc/task/start 就绪。

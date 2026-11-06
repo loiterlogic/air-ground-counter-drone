@@ -19,7 +19,7 @@
   3. `failsafe_stop`：目标有效时 `cmd_vel_raw` 有前进量 → 喂 `goal_info valid=0` → `cmd_vel_raw≈0`（安全停车）。
 
 只回收**本进程组**子进程（`start_new_session` + `killpg`）；**不**用裸名 `pkill -f`、**不**做递归删除。
-证据落 `experiments/w6-task-eval/<run_id>/r041/bench.json`（ADR-0007）。
+证据落 `experiments/w6-task-eval/<run_id>/r041/bench.json`（ADR-0006）。
 
 ⚠ 范围标注：本台架为**节点行为台架**（真实二进制 + 合成输入，**非**整链 / **非** GUI）。
 """

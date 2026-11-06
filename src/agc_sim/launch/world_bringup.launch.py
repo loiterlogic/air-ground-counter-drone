@@ -4,7 +4,7 @@
 单一入口，供 M0 顶层 launch include。参数单一来源：
   * 车 / 目标模型与 spawn 位默认值取自 config/car.yaml、config/target.yaml；
   * 桥配置取自 config/bridge.yaml；
-  * 静态障碍几何取自**单一真源** config/world_geometry.yaml（S-06；ADR-0062）——
+  * 静态障碍几何取自**单一真源** config/world_geometry.yaml（S-06；ADR-0007）——
     `agc_world.sdf` 为不含 `pole_*` 的 base world，本 launch 按 `world_obstacles`
     （`static` 注入 / `none` 不注入）由真源生成运行期世界；
   * P1-1：真源按**地图**分文件——`world_map` ∈ `minimal`（config/world_geometry.yaml）|
@@ -59,7 +59,7 @@ def _load_yaml(path):
 
 
 def _load_geometry(path):
-    """读**单一几何真源**（S-06；ADR-0062）；P1-1 起路径由 `world_map` 决定。"""
+    """读**单一几何真源**（S-06；ADR-0007）；P1-1 起路径由 `world_map` 决定。"""
     with open(path, 'r') as f:
         return yaml.safe_load(f)
 
@@ -415,7 +415,7 @@ def generate_launch_description():
                 '-Y', kw['target_yaw'],
             ],
         )
-        return [TimerAction(period=3.0, actions=[car_node, target_node])]
+        return [TimerAction(period=15.0, actions=[car_node, target_node])]
 
     # spawn 目标（与车同一条 OpaqueFunction，见上；此处只构造模型描述串）
     target_desc = Command([
@@ -436,7 +436,7 @@ def generate_launch_description():
     ld.add_action(SetEnvironmentVariable(
         'GZ_SIM_RESOURCE_PATH',
         [sim_models, ':', EnvironmentVariable('GZ_SIM_RESOURCE_PATH')]))
-    # R-009（ADR-0025）：gz 进程加载 GZ 侧末端失效停车插件 agc_cmd_deadman。
+    # R-009（ADR-0010）：gz 进程加载 GZ 侧末端失效停车插件 agc_cmd_deadman。
     # 插件库装于 <pkg prefix>/lib（install/agc_sim/lib），追加到 GZ_SIM_SYSTEM_PLUGIN_PATH
     # （gz_sim.launch.py 会再并入 LD_LIBRARY_PATH，故内置系统插件仍可加载）。**追加**而非覆盖。
     plugin_dir = os.path.join(os.path.dirname(share), 'lib')

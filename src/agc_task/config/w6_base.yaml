@@ -38,7 +38,7 @@ task_manager:
     d_track_m: 3.0
     t_dwell_s: 3.0
     t_max_s: 120.0
-    # ADR-0076：tracking_milestone 是否**等价终态**。缺省 true = 既有行为（达驻留即 TRACKING_SUCCESS 锁存）。
+    # ADR-0014：tracking_milestone 是否**等价终态**。缺省 true = 既有行为（达驻留即 TRACKING_SUCCESS 锁存）。
     # capture 场景（`interception_authorized: true`）在场景层覆盖为 false：里程碑只记指标
     # （`tracking_milestone_met` 仍发布），**不**提前锁存终态 → 保持 GROUND_APPROACH 交火窗口，
     # 结局交由 capture_adjudicator（CAPTURE_NET）或 t_max TIMEOUT 决定。单一注入，节点不得覆写。
@@ -74,11 +74,13 @@ scenario_reset:
     car_yaw: 0.0
     target_x: 15.0
     target_y: -2.0
-    target_z: 2.0
+    # 2026-11-05：2.0 → 0.12（与 `spawn_layout.yaml` 的 target.z 同步；本值仅作 standalone 回退）。
+    # 理由见 spawn_layout.yaml 的 target 段：原 2.0 会让目标在 PX4 attach 前自由落体砸地。
+    target_z: 0.12
     target_yaw: 0.0
-    # C7 出生净空下限（ADR-0023；旧值 2.4 m 作废）；R-014 起为**车↔目标对**下限（标定值）
+    # C7 出生净空下限（ADR-0012；旧值 2.4 m 作废）；R-014 起为**车↔目标对**下限（标定值）
     spawn_clearance_min_m: 6.0
-    # R-014 出生净空统一候选校验（ADR-0029）：实体几何外伸（半长/半宽）暂定值，待实测回填
+    # R-014 出生净空统一候选校验（ADR-0012）：实体几何外伸（半长/半宽）暂定值，待实测回填
     clearance_radius_car_m: 0.5037
     clearance_radius_uav_m: 0.25
     clearance_radius_obstacle_m: 0.15
@@ -90,7 +92,7 @@ scenario_reset:
     # 作业区边界（map 系）与静态障碍清单**不**在此硬编码：由单一几何真源
     # `agc_sim/config/world_geometry.yaml` 经 composition（`w6_composition.compose_params`）
     # **派生注入** `map_x_min/x_max/y_min/y_max` 与 `obstacle_names/obstacle_x/obstacle_y`
-    # （见 S-06 / ADR-0062）。scenario_reset.cpp 的默认值仅为 standalone 回退。
+    # （见 S-06 / ADR-0007）。scenario_reset.cpp 的默认值仅为 standalone 回退。
     # 显式运行模式（同 R-001 air_present 原则：不得由实体缺席推定）；backend:=full 透传己方机 spawn 位
     own_uav_present: false
     own_uav_x: 0.0
@@ -98,7 +100,7 @@ scenario_reset:
     spawn_randomize: false
     spawn_seed: 0
     spawn_search_radius_m: 3.0
-    # R-015（ADR-0030）复位受控事务：实体名 / 真值旁路 gt 话题 / epoch 话题 / 读回容差与超时 /
+    # R-015（ADR-0014）复位受控事务：实体名 / 真值旁路 gt 话题 / epoch 话题 / 读回容差与超时 /
     # 静止观察窗口。**单一注入**（节点不得覆写，契约 #params）。
     car_entity_name: "agc_car"
     target_entity_name: "intruder_uav"
@@ -112,16 +114,57 @@ scenario_reset:
     stop_exec_max_s: 0.5
     quiescence_eps: 0.05
 
-# R-016（ADR-0031）入侵者 episode 起点协议：契约 #params 单一注入（节点不得覆写）。
+# R-016（ADR-0014）入侵者 episode 起点协议：契约 #params 单一注入（节点不得覆写）。
 # 场景覆盖（motion/speed_mps/radius_m 等）由 config/scenarios.yaml 合并后透传（w6.launch.py 按 backend）。
 intruder_driver:
   ros__parameters:
     px4_ns: "px4_1"
     target_system: 2
     motion: "static"
+    # ---- H0（2026-11-02）：巡航高度**唯一权威输入** ----
+    # `cruise_alt_m` = 目标相对 **episode 原点**（epoch 后首帧 odom，ADR-0014）的巡航上升量
+    # （m，向上为正）。它**不是**世界 ENU 高度：绝对世界高度 = 原点世界高度 + 本值，而原点
+    # 世界高度由 EKF 初始化决定、跨 run 不可复现（H0 实测 `gt_z − (−ned_z)` 漂移 −0.50…+0.44 m）。
+    # 世界放置值另有其家：`config/spawn_layout.yaml` 的 `target.z`（PX4 attach 前的瞬态，
+    # **不是**巡航高度，也不与本节叠加）。
+    #
+    # 取值依据（H0 round-3 T2 实测，run `20261102-h0-altitude-semantics-101057-*`）：
+    #   世界 spawn 2.0 在 PX4 attach 后落到地面（gt_z≈−0.015），驱动随后按本值爬升；
+    #   实测世界高度稳态 2.09 m（中位），落在 `capture_adjudicator` 适用高度
+    #   `[0, applicable_max_alt_m=2.009]` 与 `jam_envelope_max_alt_m=2.0` 的边界内，
+    #   并与 `air.yaml` 的己方跟踪高度 2.5 m 形成 0.41 m 高差（远小于感知 range_max 30 m
+    #   与 standoff 水平预算 √(30²−0.41²)=29.997 m）→ 不改变既有能力包络。
+    #   ⚠ 2026-11-04：`range_max` 属 `air_perception`，而它当前**无消费者**；
+    #   `/agc/targets` 由 `gt_adapter` 发布且**无几何门控**——本行只是配置自洽性验算。
+    # ADR-0007（2026-11-02）：**运行期由地图几何真源派生注入**（`flight_altitude.target_cruise_m`，
+    # 见 `w6_composition.apply_flight_altitude_params`）。本值仅作 standalone / 单测兜底。
+    # 用户裁定「高度和地图绑定，因为后面会做小障碍高密度和大障碍低密度等图」——
+    # **不要在这里为某张图改数**，改地图文件。
+    cruise_alt_m: 2.0
+    # 弃用别名：仅为历史配置/历史 run 复现保留。与 `cruise_alt_m` 同时显式且不等 → 节点拒绝启动。
     alt_m: 2.0
     speed_mps: 1.0
     radius_m: 6.0
+    # ---- ADR-0031：`epicycle`（漂移轨道）的两个专有参数 ----
+    # ⚠ **命名纪律（必读，防混读）**：`drift_amplitude_m` 是**圆心**的漂移幅度，
+    #   **不是**轨道半径；**轨道半径仍然是 `radius_m`**。两者语义不同、量级不同：
+    #     radius_m           = 轨道半径（目标绕圆心转的圆半径）
+    #     drift_amplitude_m  = **圆心**自身漂移轨迹的幅度（圆心绕 episode 原点画的圆半径）
+    #   合成后的水平位移上界 = `drift_amplitude_m + radius_m`（三角不等式，见 ADR-0031）。
+    # 取值依据（ADR-0031 推导链，逐条可复核；**四条同时成立**）：
+    #   * 峰值速度上界 = A·(2π/T) + r·(v/r) = A·ω_c + v
+    #     ⇒ 取 A=0.6 / T=30 / v=1.0 / r=1.8 ⇒ 0.1257 + 1.000 = **1.126** ≤ 1.206（火控提前量上界）。
+    #   * **dwell 可达性（最紧的一条）**：A + r + goal_tol(0.3) = 2.40 + 0.3 = **2.70 < d_track_m 3.0**
+    #     ⇒ 目标机在整个轨道上**恒在车的 d_track 圆内**，`RANGE_EXCEEDED` 不会中断 dwell。
+    #     ⚠ 初值曾是 A=1.5 ⇒ 3.30+0.3 = 3.60 > 3.0 ⇒ dwell 会被反复清零、跟踪终态**不可达**
+    #     （单测 `test_epicycle_fits_inside_car_dwell_circle` 抓到的，不是拍出来的数）。
+    #   * A + r = 2.40 ≪ `run_region_radius_m` 15.0 ⇒ `_apply_region` 夹持**永不触发**
+    #     （轨迹是构造上有界，不是被夹出来的）。
+    #   * 观感：轨道周期 2πr/v = 11.31 s，漂移周期 30 s（≈2.65 个轨道）⇒ 每圈圆心都挪一点，
+    #     不会退化成"原地绕圈"（那正是 M1 `maneuver` 被否的观感问题）。
+    # 只在 `motion == 'epicycle'` 时被读取；`static` / `linear` / `maneuver` 行为**逐值不变**。
+    drift_amplitude_m: 0.6
+    drift_period_s: 30.0
     rate_hz: 20.0
     arm_retry_s: 2.0
     # R-017：来源为 jammer 的**已校验授权事件**（非原始命令；driver 不直订原始干扰命令话题）
@@ -145,19 +188,19 @@ run_logger:
     ground_odom_topic: "/agc/ground/odom"
     scan_topic: "/agc/ground/scan"
     collision_monitor_state_topic: "/collision_monitor_state"
-    # R-027（ADR-0042）：接触真值话题（GZ contact sensor → ROS，ros_gz_interfaces/Contacts）；
+    # R-027（ADR-0010）：接触真值话题（GZ contact sensor → ROS，ros_gz_interfaces/Contacts）；
     # 空字符串 = 接触真值不可用（not_applicable.collision_truth）；由 launch 单一注入（契约 #params）。
     contact_topic: "/agc/ground/contact"
-    # R-027：锁轮制动减速度（m/s^2，ADR-0021(C) 实测锁轮制动）→ 剩余停车裕度 brake_d=v^2/(2a)
+    # R-027：锁轮制动减速度（m/s^2，ADR-0010 实测锁轮制动）→ 剩余停车裕度 brake_d=v^2/(2a)
     a_brake_mps2: 0.9
-    # R-028（ADR-0043）：有效样本掩码的采样新鲜度上限（s）——odom 拍与最近 scan / collision
+    # R-028（ADR-0016）：有效样本掩码的采样新鲜度上限（s）——odom 拍与最近 scan / collision
     # action 快照年龄超过此值即该拍无效（陈旧 scan 不按新 odom 重复计数）。单一注入，节点不得覆写。
     scan_max_age_s: 0.5
     action_max_age_s: 0.5
-    # W7-b（ADR-0074）：可见 / 火控机会率的**固定观测时长**（s；自首个 active 拍起，**不**随终态截断）。
+    # W7-b（ADR-0022）：可见 / 火控机会率的**固定观测时长**（s；自首个 active 拍起，**不**随终态截断）。
     # 与 `episode_runner --obs-horizon-s`（runner 让 episode 存活到该时长）**须同值**——否则窗口采不满。
     obs_window_s: 60.0
-    # R-029（ADR-0044）：episode 身份话题（std_msgs/Int32，transient_local；非命令者）。
+    # R-029（ADR-0006）：episode 身份话题（std_msgs/Int32，transient_local；非命令者）。
     episode_topic: "/agc/task/episode"
     # R-029：世界模型文件（sha256 记入 config/toolchain_world.json；空 = 不记）。
     world_file: ""
@@ -177,6 +220,9 @@ capture_adjudicator:
     fire_control_topic: "/agc/task/fire_control"
     rate_hz: 20.0
     # 网发射物理模型（可标定暂定值，实跑回填；包络由其可及集推导）
+    # ADR-0007：v0 / θ / timeout 三键在**目标高度超出基线包络**时由地图派生
+    # （`net_params_for_altitude`：apex = 目标高度 + 0.65 m，θ=85°，timeout = 落地 + 0.3 s）。
+    # 基线（目标 2.0 m）逐值不变，故 minimal / open_field 的历史证据基线不被改写。
     net_v0_mps: 6.5
     net_angle_deg: 75.0
     net_g: 9.81
@@ -187,7 +233,12 @@ capture_adjudicator:
     net_t_exp_s: 0.2
     fire_cooldown_s: 2.0
     net_flight_timeout_s: 3.0
-    # ADR-0079（B2）：目标运动估计（时间窗最小二乘 + 静止阈值 + 新息门 + 提前量上限）
+    # ADR-0011（2026-11-02）：**瞄准余量**——交战门不再用「水平射程 reach」判可交战，
+    #   而是预演整条弹道求「网心与目标最近距离」，仅当 `最近距离 ≤ 半径 − 本值` 才开火。
+    #   旧式在包络最外沿开火，余量只剩 0.18 m（默认参数）/ 0.08 m（抬到 12 m 时）/ 0.008 m（20 m），
+    #   是 capture 场景「三中三不中」的直接原因。0 = 预演能擦到就开火。
+    net_aim_margin_m: 0.0
+    # ADR-0011（B2）：目标运动估计（时间窗最小二乘 + 静止阈值 + 新息门 + 提前量上限）
     target_fit_window_s: 1.5
     target_fit_min_s: 0.75
     target_fit_min_samples: 8
@@ -196,11 +247,13 @@ capture_adjudicator:
     target_pos_alpha: 0.5
     target_max_lead_m: 1.5
     # R-020：模型身份与适用范围标签（W7-b 起为**最小动态火控**口径）
-    # ADR-0091：在飞生命周期与发射资格解耦（模型身份升版）；物理参数不变。
+    # ADR-0011：在飞生命周期与发射资格解耦（模型身份升版）；物理参数不变。
     model_id: "net_ballistic_frame_v2"
     applicable_min_alt_m: 0.0
-    # 上限 ≈ 当前默认点弹道解析顶点 (v0·sinθ)²/(2g) ≈ 2.009 m（占位；未计 t_exp 与网几何）
-    applicable_max_alt_m: 2.009
+    # ADR-0011：**上限参数已删除**（原 `applicable_max_alt_m: 2.009`）。
+    #   它曾是手写第二真源，与 `gateStatus` 的 `disc<0` 是同一条件；改网参数忘改它就会
+    #   「打得到却判越界」。现由节点按 `(v0·sinθ)²/(2g)` **派生**，改 net_v0_mps / net_angle_deg
+    #   后上限自动跟随，不再需要、也不接受第二个数。
     # W7-b（T2/E2）：**射击授权**（任务决策，非自动）——缺省 false；按场景 outcome 轴由场景参数覆盖。
     # 未授权 → 交战门仍发布（envelope_in），但**不开火**（保持「跟踪类」场景结局不变）。
     interception_authorized: false
@@ -208,9 +261,11 @@ capture_adjudicator:
     jam_envelope_topic: "/agc/task/envelope_jam"
     jam_model_id: "behavioral_range_gate"
     jam_envelope_min_alt_m: 0.0
+    # ADR-0007：目标抬高后本上限由派生**只升不降**（= 目标巡航高度 + 0.5 m），
+    # 否则 jam 场景恒判包络外 → 全部退化为 TIMEOUT。
     jam_envelope_max_alt_m: 2.0
     jam_envelope_max_range_m: 1.0
-    # R-021（ADR-0078）：episode 身份**单一来源** = task_manager 的 `/agc/task/episode`（非物理 reset epoch）
+    # R-021（ADR-0016）：episode 身份**单一来源** = task_manager 的 `/agc/task/episode`（非物理 reset epoch）
     task_state_topic: "/agc/task/state"
     episode_topic: "/agc/task/episode"
     # 配套事件（ep / 时刻 / target；std_msgs/String，非命令者，不改冻结 9 消息 ABI）

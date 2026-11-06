@@ -16,7 +16,7 @@ map/obstacles YAML**（作 `--params-file` 的 `map_file` / `obstacles_file`）�
      air_fusion 模式源静默 → `valid=false`；三态与 info↔data 长度一致。
 
 只回收**本进程组**子进程（`start_new_session` + `killpg`）；**不**用裸名 `pkill -f`、**不**做递归删除。
-证据落 `experiments/w6-task-eval/<run_id>/r040/bench.json`（ADR-0007）。
+证据落 `experiments/w6-task-eval/<run_id>/r040/bench.json`（ADR-0006）。
 
 ⚠ 范围标注：本台架为**节点行为台架**（真实 map_adapter 二进制 + 合成障碍流，**非**整链 / **非** GUI）。
 """

@@ -86,6 +86,7 @@
            **视觉参数**（与 RViz `viz_markers` 的目标球同口径，GUI 两种呈现一致）：
              直径 1.2 m 半透明橙色球 + 自发光，不遮挡机架本身、也不受场景光照明暗影响。 -->
       <link name="target_highlight">
+        <pose>0 0 0.95 0 0 0</pose>
         <inertial>
           <mass>0.000001</mass>
           <inertia>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w7b_worker_repeatability —— **只读**的单 worker 重复性 / 时间线诊断（ADR-0095）。
+"""w7b_worker_repeatability —— **只读**的单 worker 重复性 / 时间线诊断（ADR-0024）。
 
 **定位**：本脚本**不**启动新 episode、**不**参与 P1 / P2 判定、**不**改写任何 verdict；
 只用既有 run 产物（`metrics/arms.json` + `summary.json` + 逐 episode 日志）回答：

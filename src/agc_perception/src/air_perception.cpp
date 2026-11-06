@@ -4,7 +4,7 @@
 // 按多个「传感器通道」转成带来源/坐标系/时间戳/置信度的观测，发布 /agc/air/obs
 // （agc_msgs/AirObservationArray）。
 //
-// 诚实口径：这是**真值派生的感知仿真**，不是真实视觉/雷达识别（ADR-0020）。
+// 诚实口径：这是**真值派生的感知仿真**，不是真实视觉/雷达识别（ADR-0009）。
 //
 // 关键口径（对齐旧树行为）：
 // 1. 每通道独立 RNG 噪声 + 独立延迟/丢包/偏置；不共享随机流。
@@ -55,7 +55,9 @@ struct SensorCfg
   double confidence{1.0};
   std::array<double, 3> boresight{{1.0, 0.0, 0.0}};
   double hfov_rad{M_PI / 2.0}, vfov_rad{M_PI / 3.0};
-  double range_min{0.30}, range_max{12.0};
+  // 缺省值只作**未提供 sensors_file 时的兜底**；现行配置 `perception_sensors*.yaml` 一律写 30.0
+  // （依据见该文件头）。此处与配置文件**保持一致**，避免"配置没读到就静默变成 12 m 旧值"。
+  double range_min{0.30}, range_max{30.0};
   double corr_xy{0.0};
   double noise_tau_s{0.0};
   std::array<double, 3> bias_m{{0.0, 0.0, 0.0}};
@@ -190,7 +192,7 @@ private:
       RCLCPP_ERROR(get_logger(), "%s 缺 sensors 序列", sensors_file_.c_str());
       return;
     }
-    // R-038（见 ADR-0053）：seed 启动期合法性校验 —— 显式 `unseeded` 保留默认基种子；
+    // R-038（见 ADR-0009）：seed 启动期合法性校验 —— 显式 `unseeded` 保留默认基种子；
     //   其余必须为**整数字面量**。**删除**旧的静默 `strtol` 兜底（非数值输入曾静默退回 base_seed=1）。
     long base_seed = 1;
     if (!seed_.empty() && seed_ != "unseeded") {
@@ -229,7 +231,11 @@ private:
       if (n["drop_burst_prob"]) {c.drop_burst_prob = n["drop_burst_prob"].as<double>();}
       if (n["drop_burst_mean_s"]) {c.drop_burst_mean_s = n["drop_burst_mean_s"].as<double>();}
       if (n["drop_burst_mean_gap_s"]) {c.drop_burst_mean_gap_s = n["drop_burst_mean_gap_s"].as<double>();}
-      c.confidence = agc::coverageConfidence(c.sigma_xy, tol_m_);
+      // 2026-11-03 语义解耦（见 confidence.hpp 文件头）：
+      //   `confidence` = **链路可信度**，由配置**显式声明**（缺省 1.0），**不再**由 σ 派生。
+      //   旧式 `coverageConfidence(sigma, tol)` 在 tol=0.25 时把 σ>0.212 m 的通道全部判死，
+      //   使"加噪声"与"过 confidence_min=0.5"直接冲突。σ 现只进协方差与融合权重。
+      if (n["confidence"]) {c.confidence = agc::declaredConfidence(n["confidence"].as<double>());}
       rng_.emplace_back(static_cast<unsigned>(base_seed + 101 * (idx + 1)));
       burst_state_.push_back(false);
       has_prev_t_.push_back(false);

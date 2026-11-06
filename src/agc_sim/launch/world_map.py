@@ -8,7 +8,7 @@
 
 纪律：
   * 新增地图 = 本表加一行 + 加一个 yaml 文件；**不得**在消费方各写一份文件名表
-    （三份表漂移会让不同域读到不同真源，正是 ADR-0062 要消灭的病灶）。
+    （三份表漂移会让不同域读到不同真源，正是 ADR-0007 要消灭的病灶）。
   * 未知地图名一律**拒绝运行**（不静默回退 minimal）。
   * 本模块只做**路径与形状规范化**，不做几何计算、不读环境、不写文件。
 
@@ -39,10 +39,10 @@ DEFAULT_WORLD_MAP = 'minimal'
 # 可用地图名（保持文件内声明顺序，供报错信息与核查使用）。
 WORLD_MAPS = tuple(MAP_GEOMETRY_FILES)
 
-# 外接圆半径缺省值（历史 pole 标定值；ADR-0062）。
+# 外接圆半径缺省值（历史 pole 标定值；ADR-0007）。
 DEFAULT_SAFETY_RADIUS = 2.0
 
-# 支持的单图元形状（P1-1 起含 sphere；ADR-0062 / 本单 schema 扩展）。
+# 支持的单图元形状（P1-1 起含 sphere；ADR-0007 / 本单 schema 扩展）。
 SHAPES = ('box', 'cylinder', 'sphere')
 
 # 材质档（P1-1 视觉保真；2026-10-29）：**可选**字段 `finish`，缺省不写 = 旧行为（无 PBR 块）。
@@ -213,6 +213,22 @@ def _part_bbox_size(part):
     if shape == 'sphere':
         return [2.0 * size[0], 2.0 * size[0], 2.0 * size[0]]
     return size
+
+
+def obstacle_z_top(ob):
+    """实体**顶面高度**（世界 ENU，m）：单图元 `z + size[2]/2`；复合体取**全部 part 的最大值**。
+
+    消费者 = 空中安全层的**垂直门控**（`safety.obstacle_z_top`，见 ADR-0010「垂直门控」）。
+    口径与 `height_survey` 的 `rect_of()[4]` 一致：复合体 part 的 `z` 已是**绝对高度偏移**
+    （锚点 z 恒为 0，见 `obstacle_parts`），故直接 `part.z + size[2]/2` 取 max，**不**叠加锚点 z。
+
+    这是**派生**量（真源仍是各 part 的 `z` / `size`），不新增 schema 键，故无需改动任何地图文件。
+    """
+    top = 0.0
+    for part in obstacle_parts(ob):
+        size = obstacle_size(part, part)
+        top = max(top, float(part.get('z') or 0.0) + float(size[2]) / 2.0)
+    return top
 
 
 def obstacle_bbox_size(ob):

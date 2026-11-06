@@ -1,4 +1,4 @@
-// mission_fco_fixed_budget —— ADR-0099 `mission_fco_fixed_budget_v1` 的确定性积分器。
+// mission_fco_fixed_budget —— ADR-0021 `mission_fco_fixed_budget_v1` 的确定性积分器。
 //
 // 只做固定 60 仿真秒预算内的任务内 FCO 时间积分与覆盖账；不读写 ROS、不改旧口径。
 // 单位：秒（仿真时间）；跨回合不合并比例。

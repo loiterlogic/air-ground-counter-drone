@@ -23,6 +23,7 @@
 
 import importlib.util
 import os
+import sys
 
 import pytest
 
@@ -38,7 +39,14 @@ VIZ_NODES = (
     'rviz2/rviz2',
 )
 
-os.environ.setdefault('ROS_AUTOMATIC_DISCOVERY_RANGE', 'LOCALHOST')
+# 本测试只查 launch 注册结构、不跨进程收发，但发现范围仍走单一真源
+# （scripts/demo/dds_transport.py），避免第三套 DDS 口径。
+sys.path.insert(0, os.path.join(ROOT, 'scripts', 'demo'))
+import dds_transport  # noqa: E402
+
+for _k, _v in dds_transport.env_for().items():
+    if _v is not None:
+        os.environ.setdefault(_k, _v)
 os.environ.setdefault('GZ_SIM_SYSTEM_PLUGIN_PATH', os.path.join(ROOT, 'install', 'agc_sim', 'lib'))
 
 

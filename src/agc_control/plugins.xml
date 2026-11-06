@@ -3,7 +3,7 @@
   agc_control 插件描述（pluginlib）
 
   两类插件：①轨迹生成器 TrajectoryGenerator；②控制器 Controller。
-  由 agc_air / agc_ground（基线）经 pluginlib 按类名加载，共用同一实现（ADR-0018）。
+  由 agc_air / agc_ground（基线）经 pluginlib 按类名加载，共用同一实现（ADR-0004）。
 -->
 <class_libraries>
 <library path="agc_trajectory_plugins">

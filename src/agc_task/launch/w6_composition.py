@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w6_composition —— W6 场景配置解析的**单一真源**（结构评审 S-05；ADR-0061）。
+"""w6_composition —— W6 场景配置解析的**单一真源**（结构评审 S-05；ADR-0020）。
 
 本模块集中承载 W6 顶层 composition 的**全部**场景配置解析逻辑，供统一入口
 `w6.launch.py` 复用（`backend` ∈ `lightweight` | `full`）：base/registry/carriers 加载、
@@ -42,7 +42,7 @@ GEOMETRY_FILE = 'world_geometry.yaml'
 # P1-1：真源按**地图**分文件。**单一清单**在 `agc_sim/launch/world_map.py`（随包安装到
 # `share/agc_sim/launch`，与 `world_bringup.launch.py` 同目录）。本模块经 `sim_share` 解析后
 # import 该模块，**不再自持第二份文件名表**——两份表漂移会让不同域读到不同真源，
-# 正是 ADR-0062 要消灭的病灶。
+# 正是 ADR-0007 要消灭的病灶。
 DEFAULT_WORLD_MAP = 'minimal'
 
 # 源码树定位（未 source 安装环境时的回退）：本文件位于 `src/agc_task/launch/`，
@@ -50,6 +50,11 @@ DEFAULT_WORLD_MAP = 'minimal'
 _SRC_SIM_LAUNCH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     'agc_sim', 'launch')
+# ADR-0007：`air.yaml` 源码树回退路径（lightweight 后端不起空中链路，但高度断言仍需
+# safe_max / hysteresis 做 K1 判据）。与 `_SRC_SIM_LAUNCH` 同款回退口径。
+_SRC_AIR_CONFIG = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    'agc_air', 'config')
 
 _WORLD_MAP_CACHE = {}
 
@@ -81,7 +86,7 @@ def world_map_module(sim_share=None):
 
 
 def new_run_token():
-    """S-07（ADR-0063）：每次调用生成唯一 token（时刻 + 进程 + 随机），供临时文件命名避免并发 / 重复覆盖。"""
+    """S-07（ADR-0006）：每次调用生成唯一 token（时刻 + 进程 + 随机），供临时文件命名避免并发 / 重复覆盖。"""
     return '%s-%s-%d-%04d' % (time.strftime('%Y%m%d'), time.strftime('%H%M%S'),
                               os.getpid(), random.randint(0, 9999))
 
@@ -97,7 +102,7 @@ def geometry_path(sim_share, world_map=DEFAULT_WORLD_MAP):
 
 
 def load_geometry(sim_share, world_map=DEFAULT_WORLD_MAP):
-    """读**单一几何真源**（S-06；ADR-0062）；P1-1 起按 `world_map` 选文件。"""
+    """读**单一几何真源**（S-06；ADR-0007）；P1-1 起按 `world_map` 选文件。"""
     _, path = geometry_path(sim_share, world_map)
     with open(path) as f:
         return yaml.safe_load(f)
@@ -312,7 +317,7 @@ def apply_spawn_layout(merged, layout, sc=None):
 
 
 def obstacle_shape(ob, sim_share=None):
-    """实体形状（schema 缺省 = box；ADR-0062 向后兼容——老配置不写 shape 仍可运行）。"""
+    """实体形状（schema 缺省 = box；ADR-0007 向后兼容——老配置不写 shape 仍可运行）。"""
     return world_map_module(sim_share).obstacle_shape(ob)
 
 
@@ -320,7 +325,7 @@ def obstacle_safety_radius(ob, sim_share=None):
     """实体水平面**外接圆半径**（空中安全层为二维圆盘模型，须覆盖实体几何）。
 
     `safety_radius` 缺省 2.0 = 历史 pole 标定值；P1-1 起由真源**逐障碍**给出，
-    消除旧的「与障碍数对齐的定长列表」（ADR-0062 未决项②）。
+    消除旧的「与障碍数对齐的定长列表」（ADR-0007 未决项②）。
     """
     return world_map_module(sim_share).obstacle_safety_radius(ob)
 
@@ -331,12 +336,28 @@ def geometry_safety_radii(geometry, sim_share=None):
             for ob in (geometry.get('obstacles') or [])]
 
 
+def obstacle_z_top(ob, sim_share=None):
+    """实体**顶面高度**（世界 ENU，m；复合体取全部 part 的最大值）。
+
+    消费者 = 空中安全层**垂直门控**（ADR-0010「垂直门控」）：本机高度高于
+    `z_top + c_clear` 时，该障碍的水平圆盘对本机不生效。真源已含 `z` + `size[2]`，
+    本函数只做派生，**不**新增 schema 键。
+    """
+    return world_map_module(sim_share).obstacle_z_top(ob)
+
+
+def geometry_z_tops(geometry, sim_share=None):
+    """按障碍派生的顶高列表（与 `geometry_ids` 同序；`apply_air_geometry` 使用）。"""
+    return [obstacle_z_top(ob, sim_share)
+            for ob in (geometry.get('obstacles') or [])]
+
+
 def obstacle_bbox_size(ob, sim_share=None):
     """感知先验 / 地图栅格的障碍尺寸（**降级为水平轴对齐包络**）。
 
     `map_adapter` / `air_perception` 的障碍模型是 OBB（只有 sx/sy/sz + yaw），无法表达圆柱 /
     球 / 多图元复合体；故一律降级为包络矩形（保守外扩，不缩小实体）。该降级为成文约定，
-    见 `docs/archive/completion-20261031/p1-1-地图与场景资产.md#p1-1-goal`（P1-1 规格「派生点需同步改」）。
+    见 P1-1 规格「派生点需同步改」）。
     """
     return world_map_module(sim_share).obstacle_bbox_size(ob)
 
@@ -377,7 +398,7 @@ def work_area_bounds(geometry):
 # backend 能力表：每 backend 声明能力事实，驱动覆盖状态派生与 manifest 节点展开。
 #   * air_link      —— 是否含空中链路（PX4 / 空中节点）；False → requires_air_link 承载者 not_carried。
 #   * px4           —— 是否起 PX4 SITL 实例。
-#   * target_source —— 感知轴目标源：gt_adapter（地面真值旁路）/ air_fusion（空中链路融合）。
+#   * target_source —— 感知轴目标源。**2026-11-04 起恒为 `gt_adapter`**（air_fusion 已退役）。
 #   * required_nodes —— 该 backend 完整展开的节点 / 进程名（manifest `nodes` 字段）。
 #   * supported_axes —— 该 backend 实际执行的轴（不含即如实标注 not_carried / N/A）。
 BACKENDS = {
@@ -397,7 +418,7 @@ BACKENDS = {
     'full': {
         'air_link': True,
         'px4': True,
-        'target_source': 'air_fusion',
+        'target_source': 'gt_adapter',   # 2026-11-04：air_fusion 退役，与 lightweight 一致
         'required_nodes': [
             'world_bringup', 'ros_gz_bridge', 'set_pose_bridge',
             'perception_bringup', 'ground_bringup',
@@ -450,6 +471,56 @@ def coverage_status(entry, backend):
         return 'not_carried', 'backend=%s 无空中链路 / PX4（能力表 air_link=False），承载者不生效' % (
             backend,)
     return 'covered', ''
+
+
+# `epicycle` 的标定参数（单一真源 = s18 / ADR-0031 §(a)）。
+# CLI 覆盖到 epicycle 时必须一并对齐：base 的 `radius_m=6.0` 会让位移上界
+# A+r = 6.6 m ≫ d_track 3.0 → 必然 RANGE_EXCEEDED / TIMEOUT（s04 继承的是 base，
+# 不是 s18 的场景覆盖）。此处只收**与 base 不同**的项，避免复制第二份数值真源。
+EPICYCLE_PARAMS = {'radius_m': 1.8}
+
+
+def apply_target_motion_override(info, carriers, motion, backend):
+    """`target_motion:=` CLI 覆盖：把**本 run 的目标运动轴**整条链一次性对齐。
+
+    `target_motion` 是 `scenario_carriers.yaml` 登记的**场景轴取值**（static/linear/
+    maneuver/epicycle），不是路线分支（治理 2.1「场景轴」排除项）。CLI 覆盖的是该轴在
+    本 run 的取值，因此必须同步三处，缺一处就会"实际跑 epicycle、声明/manifest 写 static"：
+
+      1. `info['sc'].params.intruder_driver.motion` —— 实际注入节点参数（compose_params 读它）；
+      2. `info['axes']['target_motion']` —— 声明轴（assertions / build_manifest 读它）；
+      3. `info['entries']['target_motion']` —— 承载者登记（carriers 台账读它）。
+
+    `epicycle` 额外补齐 `EPICYCLE_PARAMS`（radius_m=1.8）：ADR-0031 §(a) 的
+    `A+r+goal_tol=2.70 < d_track 3.0` 只在 r=1.8 时成立；s04 继承 base 的 r=6.0，
+    不补齐就是必然 TIMEOUT。**不做**静默回落：这些是数值参数，不是路线分支。
+
+    为什么必须重取承载者：`carrier_entry()` 会在 `load_scene` 里按**原**声明轴校验，
+    覆盖后轴值变了，须按新值重新校验「有登记 / supported / 该 backend 承载」。
+
+    无覆盖（空串）时**逐值不改**：默认启动、历史研究脚本的既有场景语义完全不变。
+
+    轻量栈无 `intruder_driver`（`supported_axes` 不含 `target_motion`），显式覆盖一律
+    **拒绝运行**，而不是悄悄忽略——否则 `--escape` 在 lightweight 下会静默不逃逸。
+    """
+    if not motion:
+        return info
+    if 'target_motion' not in BACKENDS[backend]['supported_axes']:
+        raise RuntimeError(
+            'backend=%s 不承载 target_motion 轴（无 intruder_driver）：'
+            'target_motion:=%s 无法生效 → 拒绝运行（不静默忽略）' % (backend, motion))
+    if motion not in ('static', 'linear', 'maneuver', 'epicycle'):
+        raise RuntimeError('未知 target_motion：%s' % motion)
+    scene = info['scene']
+    drv = info['sc'].setdefault('params', {}).setdefault('intruder_driver', {})
+    drv['motion'] = motion
+    if motion == 'epicycle':
+        drv.update(EPICYCLE_PARAMS)
+    info['axes'] = dict(info['axes'])
+    info['axes']['target_motion'] = motion
+    info['entries'] = dict(info['entries'])
+    info['entries']['target_motion'] = carrier_entry(carriers, 'target_motion', motion, scene)
+    return info
 
 
 def write_derived_obstacles(geometry, mode, scene, seed, token=None, sim_share=None):
@@ -551,6 +622,8 @@ def load_scene(task_share, perc_share, sim_share, scene, seed, token=None,
     return {
         'scene': scene, 'seed': seed,
         'base': base, 'sc': sc, 'axes': axes,
+        # carriers 随 info 带出：CLI 覆盖场景轴时须按新轴值重取承载者（单一真源，不二次读盘）。
+        'carriers': carriers,
         'support_status': support_status, 'entries': entries,
         'sensors_file_name': sensors_file_name, 'obstacles_file_name': obstacles_file_name,
         'world_obstacles': world_obstacles,
@@ -597,7 +670,7 @@ def compose_params(base, sc, backend, seed, own_uav=(0.0, 0.0), geometry=None,
     # W7-a（R3）：训练视图按 seed 随机化出生位（显式覆盖；缺省 None → 沿用 base / 场景值）。
     if spawn_randomize is not None:
         merged['scenario_reset']['spawn_randomize'] = bool(spawn_randomize)
-    # W7-b P2 v3（ADR-0083）：任务目标是否跟随感知目标——显式覆盖场景值（None=不改）。
+    # W7-b P2 v3（ADR-0023）：任务目标是否跟随感知目标——显式覆盖场景值（None=不改）。
     if goal_follow_target is not None:
         merged.setdefault('task_manager', {})['goal_follow_target'] = bool(goal_follow_target)
     # S-06：静态障碍清单 + 作业区边界由**真源**派生注入（物理世界为 static 时注入 pole_*）。
@@ -615,15 +688,136 @@ def apply_air_geometry(air_merged, geometry, sim_share=None):
     `obstacle_names/x/y` 由真源派生；**P1-1：`obstacle_safety_radius` 亦按障碍派生**
     （`safety_radius` 逐障碍取值，缺省 2.0），消除旧的「与障碍数对齐的定长列表」——
     该列表加到 N 个障碍却不同步扩展时会导致 `safety_shield` 索引错位或越界
-    （ADR-0062 未决项②；R-038 的四数组等长校验仍在启动期拒绝不一致）。原地修改并返回。
+    （ADR-0007 未决项②；R-038 的五数组等长校验仍在启动期拒绝不一致）。原地修改并返回。
     `obstacle_margin` / `target_margin` / 反应时间 / 可达性等**安全余量**仍来自 `air.yaml`
     （安全参数，非几何）。
+
+    ADR-0010「垂直门控」：另注入 `obstacle_z_top`（逐障碍顶面高度）与 `vertical_clearance_m`
+    （= 地图 `flight_altitude.own_clearance_min_m`，**不另立参数**——同一张图的高度与净空同源）。
     """
     safety = air_merged.setdefault('trajectory_tracker', {}).setdefault('safety', {})
     safety['obstacle_names'] = geometry_ids(geometry)
     safety['obstacle_x'] = geometry_xs(geometry)
     safety['obstacle_y'] = geometry_ys(geometry)
     safety['obstacle_safety_radius'] = geometry_safety_radii(geometry, sim_share)
+    safety['obstacle_z_top'] = geometry_z_tops(geometry, sim_share)
+    safety['vertical_clearance_m'] = flight_altitude_block(geometry)['own_clearance_min_m']
+    return air_merged
+
+
+def flight_altitude_block(geometry):
+    """ADR-0007：读地图真源里的 `flight_altitude` 块并**规范化 + 校验**。
+
+    用户 2026-11-02 裁定：「高度和地图绑定，因为后面会做小障碍高密度和大障碍低密度等图」。
+    ⇒ 每张地图在自己几何文件里声明"该图该飞多高"，运行期派生注入，`air.yaml` / `w6_base.yaml`
+    的同名键降级为 standalone / 单测兜底（与 `safety.obstacle_*` 同款处理）。
+
+    缺块 / 缺键 / 非有限值 / 非正 → **拒绝运行**（不静默回退到某份旧默认值——那正是
+    ADR-0007 要消灭的第二真源）。返回规范化 dict（含 `derived` 子块，供断言比对）。
+    """
+    fa = (geometry or {}).get('flight_altitude')
+    if not isinstance(fa, dict):
+        raise RuntimeError(
+            '地图几何真源缺少 flight_altitude 块（ADR-0007：高度必须随地图声明）→ 拒绝运行')
+    out = {}
+    for key in ('own_track_m', 'own_takeoff_m', 'target_cruise_m', 'own_clearance_min_m'):
+        if key not in fa:
+            raise RuntimeError('flight_altitude 缺少键 %r → 拒绝运行' % (key,))
+        try:
+            v = float(fa[key])
+        except (TypeError, ValueError):
+            raise RuntimeError('flight_altitude.%s=%r 非数值 → 拒绝运行' % (key, fa[key]))
+        if not math.isfinite(v) or v <= 0.0:
+            raise RuntimeError(
+                'flight_altitude.%s=%r 非有限正数（NaN/±Inf/≤0）→ 拒绝运行' % (key, fa[key]))
+        out[key] = v
+    derived = fa.get('derived') or {}
+    out['derived'] = {
+        'h_max_map_m': float(derived.get('h_max_map_m') or 0.0),
+        'h_max_env_m': float(derived.get('h_max_env_m') or 0.0),
+        'rule_version': int(derived.get('rule_version') or 1),
+    }
+    return out
+
+
+def net_params_for_altitude(target_cruise_m, base_cap):
+    """ADR-0007：按**目标巡航高度**反推网弹道参数（仅当基线弹道打不到时使用）。
+
+    设计口径（与 `dynamic_fire_control.hpp` 的 `netPos` / `radius` 同一套物理）：
+      * 抛射角固定 **85°**（近垂直 → 水平射程小，车可停在目标近旁开火）；
+      * 初速取「解析顶点 = 目标高度 + 0.65 m」反解：`v0 = √(2g(h+0.65)) / sinθ`；
+      * 飞行超时 = 落地时刻 `2·v0·sinθ/g` + 0.3 s（留一个结算周期余量）。
+
+    **只在基线弹道打不到该高度时才派生**（`apex_base < target_cruise_m`）——
+    这样 `minimal` / `open_field`（目标 2.0 m，基线 apex 2.009 m）**逐值不变**，
+    历史证据基线不被改写。返回 `None` 表示沿用基线参数。
+    """
+    apex_base = (base_cap['v0'] * math.sin(math.radians(base_cap['angle_deg']))) ** 2 / (
+        2.0 * base_cap['g'])
+    if target_cruise_m <= apex_base:
+        return None
+    angle_deg = 85.0
+    margin_m = 0.65
+    v0 = math.sqrt(2.0 * base_cap['g'] * (target_cruise_m + margin_m)) / math.sin(
+        math.radians(angle_deg))
+    vy = v0 * math.sin(math.radians(angle_deg))
+    return {
+        'net_v0_mps': round(v0, 2),
+        'net_angle_deg': angle_deg,
+        'net_flight_timeout_s': round(2.0 * vy / base_cap['g'] + 0.3, 2),
+        # 派生值只作证据：解析顶点与落地时刻，供断言/审查复算。
+        '_apex_m': round(vy * vy / (2.0 * base_cap['g']), 4),
+        '_t_land_s': round(2.0 * vy / base_cap['g'], 4),
+        '_rule': 'apex = target_cruise + 0.65 m; θ=85°; timeout = t_land + 0.3 s',
+    }
+
+
+def apply_flight_altitude_params(merged, info):
+    """ADR-0007：把地图高度注入**任务侧**参数。原地修改并返回规范化块。
+
+    注入三处（其余高度键在 `apply_flight_altitude_air`）：
+      1. `intruder_driver.cruise_alt_m`（+ 同值弃用别名 `alt_m`，否则别名冲突会让节点拒绝启动）；
+      2. `capture_adjudicator` 的网弹道参数 —— **仅当基线弹道打不到该高度**时派生
+         （`net_params_for_altitude`），否则逐值不变；
+      3. `task_manager.air_hover_climb_m` —— 起飞完成判据必须跟着抬，否则「爬升量 ≥ 阈值」
+         永远不成立，整链卡在 `air_hover_timeout`。
+    """
+    geometry = (info or {}).get('geometry')
+    fa = flight_altitude_block(geometry)
+    idr = merged.setdefault('intruder_driver', {})
+    idr['cruise_alt_m'] = fa['target_cruise_m']
+    if 'alt_m' in idr:
+        idr['alt_m'] = fa['target_cruise_m']
+    # 起飞完成判据：与 `takeoff_altitude_m` 同步（基线 2.5 → 2.3，差 0.2 = hover_tolerance）。
+    merged.setdefault('task_manager', {})['air_hover_climb_m'] = round(fa['own_takeoff_m'] - 0.2, 3)
+    cap = merged.setdefault('capture_adjudicator', {})
+    base_cap = {
+        'v0': float(cap.get('net_v0_mps', 6.5)),
+        'angle_deg': float(cap.get('net_angle_deg', 75.0)),
+        'g': float(cap.get('net_g', 9.81)),
+    }
+    derived_net = net_params_for_altitude(fa['target_cruise_m'], base_cap)
+    if derived_net is not None:
+        cap['net_v0_mps'] = derived_net['net_v0_mps']
+        cap['net_angle_deg'] = derived_net['net_angle_deg']
+        cap['net_flight_timeout_s'] = derived_net['net_flight_timeout_s']
+    # 干扰包络上限**只升不降**：抬目标后 2.0 m 的旧上限会让 jam 场景恒判包络外。
+    jam_max = float(cap.get('jam_envelope_max_alt_m', 2.0))
+    if fa['target_cruise_m'] > jam_max:
+        cap['jam_envelope_max_alt_m'] = round(fa['target_cruise_m'] + 0.5, 3)
+    fa['_net_derived'] = derived_net
+    # 来源登记走 `info`（launch 自有 dict），**不**注入节点参数——否则多一个未声明参数会拒绝启动。
+    # `cruise_altitude_block` 据此把 source 报成 `map`（ADR-0007 改变了 H0 的"必须来自场景"口径）。
+    if isinstance(info, dict):
+        info['flight_altitude'] = fa
+    return fa
+
+
+def apply_flight_altitude_air(air_merged, geometry):
+    """ADR-0007：把地图高度注入**空中侧**参数（与 `apply_air_geometry` 同款同位置）。"""
+    fa = flight_altitude_block(geometry)
+    air_merged.setdefault('standoff_follower', {})['height'] = fa['own_track_m']
+    air_merged.setdefault('takeoff_controller', {})['takeoff_altitude_m'] = fa['own_takeoff_m']
     return air_merged
 
 
@@ -682,7 +876,7 @@ def assertions(scene, merged, info, air_merged=None, sim_share=None, layout=None
             and abs(float(sr.get('target_y', 1e9)) - tgt['y']) < 1e-9
             and abs(float(sr.get('target_z', 1e9)) - tgt['z']) < 1e-9)
     if layout is not None:
-        # C7（ADR-0023）不变量：车↔目标出生距离不得低于标定下限（本任务只许拉大，不许削弱）。
+        # C7（ADR-0012）不变量：车↔目标出生距离不得低于标定下限（本任务只许拉大，不许削弱）。
         car = effective_spawn['car'] if effective_spawn is not None else layout['car']
         tgt = effective_spawn['target'] if effective_spawn is not None else layout['target']
         # own 用**实际生效**值：显式覆盖时不得拿 layout 的 own 算距离（那会造出自洽假象）。
@@ -717,7 +911,7 @@ def assertions(scene, merged, info, air_merged=None, sim_share=None, layout=None
             d_track = float((merged.get('task_manager') or {}).get('d_track_m', 3.0))
             res['derived_goal_within_track_range'] = (
                 math.hypot(gx - tgt['x'], gy - tgt['y']) <= d_track)
-    # ADR-0076 不变量：**已授权射击**的场景必须关闭「跟踪里程碑即终态」——
+    # ADR-0014 不变量：**已授权射击**的场景必须关闭「跟踪里程碑即终态」——
     #   否则 `capture_adjudicator` 的交火窗口（`task_state == GROUND_APPROACH`）会在
     #   `TRACKING_SUCCESS` 锁存时被提前关闭，捕获（`INTERCEPT_CONFIRMED/CAPTURE_NET`）**永不发生**
     #   （实测 s08 协同臂 20/20 落 TRACKING_SUCCESS）。此断言把该配置矛盾挡在启动前。
@@ -725,6 +919,11 @@ def assertions(scene, merged, info, air_merged=None, sim_share=None, layout=None
     milestone_terminal = bool(
         (merged.get('task_manager') or {}).get('tracking_milestone_is_terminal', True))
     res['capture_authorized_requires_nonterminal_milestone'] = (not authorized) or (not milestone_terminal)
+    # H0（2026-11-02）：巡航高度必须**单一来源且合法**——两个同值参数各自承担语义正是 H0 要消除的歧义。
+    # 与 `intruder_driver._resolve_cruise_alt()` 同判据，此处**启动前**就挡住，避免跑到半程才崩。
+    _ca = cruise_altitude_block(merged, info, effective_spawn)
+    res['cruise_altitude_single_valid_source'] = bool(
+        _ca['valid'] and not _ca['alias_conflicts'] and _ca['source'] != 'missing')
     if air_merged is not None:
         safety = air_merged.get('trajectory_tracker', {}).get('safety', {})
         res['air_obstacles_match_geometry'] = (
@@ -735,6 +934,21 @@ def assertions(scene, merged, info, air_merged=None, sim_share=None, layout=None
         res['air_safety_radii_match_geometry'] = (
             [float(v) for v in safety.get('obstacle_safety_radius', [])]
             == geometry_safety_radii(geometry, sim_share))
+        # ADR-0010「垂直门控」：顶高与净空也必须**逐障碍 / 逐地图**派生，长度与 ids 等长。
+        #   漏注入时安全层的缺省是「无顶高 → 门控不生效」（保守但仍正确）；本断言把
+        #   「明明有真源却没接上」挡在启动前，而不是让它静默退化成全高圆柱。
+        z_tops = geometry_z_tops(geometry, sim_share)
+        res['air_z_tops_match_geometry'] = (
+            len(safety.get('obstacle_z_top', [])) == len(gids)
+            and all(abs(float(v) - z) < 1e-9
+                    for v, z in zip(safety.get('obstacle_z_top', []), z_tops)))
+        res['air_vertical_clearance_matches_source'] = (
+            abs(float(safety.get('vertical_clearance_m', -1e9))
+                - flight_altitude_block(geometry)['own_clearance_min_m']) < 1e-9)
+    # ADR-0007：高度派生四条断言——**无论 backend** 都要跑（lightweight 不起空中链路时，
+    # 空中侧两键改用地图声明值 + air.yaml 基线做判据，见 `_flight_altitude_assertions`）。
+    # 放在 `if air_merged is not None` **之外**是刻意的：地图高度配置是否自洽与后端无关。
+    res.update(_flight_altitude_assertions(merged, info, air_merged, geometry))
     bad = [k for k, v in res.items() if not v]
     if bad:
         raise RuntimeError(
@@ -743,9 +957,134 @@ def assertions(scene, merged, info, air_merged=None, sim_share=None, layout=None
     return res
 
 
+def _flight_altitude_assertions(merged, info, air_merged, geometry):
+    """ADR-0007：高度派生四条断言（误配即拒绝运行）。
+
+    四条对应规范 [§4.2](../../docs/conventions/飞行高度分层与按地图定高.md#where) 第 4 点：
+      1. `flight_altitude_derived_matches_source` —— 注入值 == 地图文件值（防"有人又改了 air.yaml"）
+      2. `own_height_covers_h_max_env`            —— `h_o ≥ H_max_env + c_clear`（防"飞得比楼低"）
+      3. `dz_within_perception_range`             —— `|h_o − h_t| ≤ √(R²−S²)`（防"抬完看不见目标"）
+      4. `target_within_capture_envelope`         —— capture/jam 场景 `h_t ≤ 包络上限`（防"抬完打不着"）
+    """
+    fa = flight_altitude_block(geometry)
+    res = {}
+    # `air_merged is None`（lightweight 后端：不起空中链路）时，空中侧两键**不注入**。
+    # 此时 ①②③ 改用**地图声明值**做判据——这正是"这张图的高度配置本身是否自洽"，
+    # 仍然能在启动前挡住"地图写了个比楼低的高度"；断言 ① 则如实降级为"只校验任务侧"。
+    has_air = air_merged is not None
+    sf = (air_merged or {}).get('standoff_follower') or {}
+    tk = (air_merged or {}).get('takeoff_controller') or {}
+    # ① 注入值 == 地图文件值（两侧同源于 `geometry`，此处判"是否真的注入了"）。
+    task_side_ok = abs(float((merged.get('intruder_driver') or {}).get('cruise_alt_m', -1e9))
+                       - fa['target_cruise_m']) < 1e-9
+    if has_air:
+        res['flight_altitude_derived_matches_source'] = (
+            task_side_ok
+            and abs(float(sf.get('height', -1e9)) - fa['own_track_m']) < 1e-9
+            and abs(float(tk.get('takeoff_altitude_m', -1e9)) - fa['own_takeoff_m']) < 1e-9)
+    else:
+        # 如实登记"空中侧不适用"，而不是省略字段（省略会让审查分不清"没用"与"忘了记"）。
+        res['flight_altitude_derived_matches_source'] = task_side_ok
+    # ② 垂直净空：己方机跟踪高度必须高于**作业包络内**最高障碍 + c_clear。
+    h_max_env = float(fa['derived']['h_max_env_m'])
+    res['own_height_covers_h_max_env'] = (
+        fa['own_track_m'] >= h_max_env + fa['own_clearance_min_m'] - 1e-9)
+    # ③ 感知量程（K1，三维球）：`|dz| ≤ √(R² − S²)`，R = 感知量程，S = 停止趋近点。
+    #    停止点 = safe_max − hysteresis；lightweight 下从 air.yaml 基线取（节点不启动，但仍需自洽）。
+    sensors = _load_sensors_range(info)
+    safe_max = float(sf.get('safe_max', 11.2))
+    hyst = float(sf.get('hysteresis', 1.0))
+    if not has_air:
+        base_air = _load_air_baseline(info)
+        sf_base = (base_air or {}).get('standoff_follower') or {}
+        safe_max = float(sf_base.get('safe_max', safe_max))
+        hyst = float(sf_base.get('hysteresis', hyst))
+    stop_point = safe_max - hyst
+    dz = abs(fa['own_track_m'] - fa['target_cruise_m'])
+    if sensors is not None and sensors > stop_point:
+        res['dz_within_perception_range'] = (
+            dz <= math.sqrt(sensors * sensors - stop_point * stop_point) + 1e-9)
+    # ④ 捕获/干扰包络（K4）：**只对已授权射击的场景**判（tracking 类不判，避免误伤）。
+    cap = merged.get('capture_adjudicator') or {}
+    authorized = bool(cap.get('interception_authorized', False))
+    if authorized:
+        v0 = float(cap.get('net_v0_mps', 6.5))
+        ang = float(cap.get('net_angle_deg', 75.0))
+        g = float(cap.get('net_g', 9.81))
+        launcher = float(cap.get('launcher_height_m', 0.0))
+        apex = (v0 * math.sin(math.radians(ang))) ** 2 / (2.0 * g)
+        # h = 目标高度 − 车体 z − 发射器高度；车 z 取复位口径（地面）。
+        car_z = float((merged.get('scenario_reset') or {}).get('car_z', 0.0))
+        h_target = fa['target_cruise_m'] - car_z - launcher
+        res['target_within_capture_envelope'] = (h_target <= apex + 1e-9)
+    return res
+
+
+def _load_air_baseline(info):
+    """读 `air.yaml` 基线（lightweight 后端不起空中链路时，断言仍需要 safe_max / hysteresis）。
+
+    从 `info` 的 `air_file`（若 launch 提供）或源码树相对路径读；读不到返回 `None`
+    → 对应判据退化为 `air.yaml` 的内置缺省，不伪造通过。
+    """
+    path = (info or {}).get('air_file') or os.path.join(_SRC_AIR_CONFIG, 'air.yaml')
+    if not os.path.exists(str(path)):
+        return None
+    try:
+        return yaml.safe_load(open(str(path)))
+    except Exception:   # noqa: BLE001
+        return None
+
+
+def _load_sensors_range(info):
+    """感知量程 `range_max_m`（三维球半径）——从传感器配置读，**不复制参数**。
+
+    读不到（文件缺失 / 无通道）时返回 `None`，对应断言**不参与判定**
+    （如实标注"该 run 无法核验"，而不是伪造一个通过）。
+    """
+    path = (info or {}).get('sensors_file_path') or (info or {}).get('sensors_file')
+    if not path or not os.path.exists(str(path)):
+        return None
+    try:
+        doc = yaml.safe_load(open(str(path)))
+        chans = (doc or {}).get('sensors') or []
+        return min(float(c['range_max_m']) for c in chans if 'range_max_m' in c)
+    except Exception:   # noqa: BLE001 —— 解析失败不阻断启动，断言自动跳过（如实降级）
+        return None
+
+
+def vision_plane_block(plane=None, perception_path='truth', detector_backend=None):
+    """视觉目标高度平面登记块（**2026-11-04 起恒为"未启用"**）。
+
+    历史：`perception_path=vision` 时本块记录 `datum` / `world_enu_plane_z` / `source`，
+    供审查复核视觉投影用的世界 ENU 平面。视觉路径已整体退役，因此本函数**保留字段形状、
+    值恒为 applied=false**：
+
+      * 为什么保留而不删：`manifest` 是对外产物 schema，历史 run 都带 `perception_path` /
+        `vision_plane` 两个键；删键会让新旧 run 不可直接对比。保留后审查看到的仍是
+        "本 run 不使用高度平面"，而不是"忘了记"。
+      * `perception_path` 也恒为 `truth`（不再由 launch 参数驱动）。
+    """
+    _ = (plane, detector_backend)   # 仅为签名兼容保留；不再有视觉路径消费它们
+    return {
+        'applied': False,
+        'perception_path': 'truth',
+        'datum': 'episode_origin_ned',
+        'world_enu_plane_z': None,
+        'source': None,
+        'stacks_on_spawn_z': False,
+        'note': ('视觉定位路径已于 2026-11-04 退役（ADR-0009 (a2)）：本 run 不使用目标高度平面。'
+                 '目标位置由真值给出（gt_adapter；air_fusion 已退役），不经像素反推。'),
+    }
+
+
 def build_manifest(backend, info, merged, assertions_result, sim_share=None,
                    layout=None, layout_sha256=None, own_pose=None, effective_spawn=None,
-                   effective_own=None):
+                   effective_own=None, air_merged=None, cli_observe_yaw_mode='',
+                   perception_path='truth', vision_plane=None, detector_backend=None):
+    # `perception_path` / `vision_plane` / `detector_backend` 三个形参**保留但不再使用**：
+    #   视觉定位路径已于 2026-11-04 退役，manifest 对应字段恒写固定值（见 vision_plane_block）。
+    #   保留形参是为了不改既有调用点的签名（w6.launch / w6_geometry_check 等）。
+    _ = (perception_path, vision_plane, detector_backend)
     """产出 manifest dict（身份与入口名一致 + 完整展开节点 + 生效参数）。
 
     `launch` == `LAUNCH`（入口名）；`backend` = 实际 backend；`nodes` 由 backend 能力表派生。
@@ -803,6 +1142,8 @@ def build_manifest(backend, info, merged, assertions_result, sim_share=None,
                          else obstacle_bbox_size(ob, sim_share)),
                 'safety_radius': obstacle_safety_radius(ob, sim_share),
                 'footprint_radius': obstacle_footprint_radius(ob, sim_share),
+                # ADR-0010 (j)：顶面高度（垂直门控的输入），与注入安全层的值同源同值。
+                'z_top': obstacle_z_top(ob, sim_share),
                 'parts': ([{'id': pt['id'], 'shape': obstacle_shape(pt, sim_share),
                             'pose': [float(pt['x']), float(pt['y']), float(pt['z']), 0.0, 0.0,
                                      float(pt.get('yaw', 0.0))],
@@ -842,6 +1183,16 @@ def build_manifest(backend, info, merged, assertions_result, sim_share=None,
                 'air_present', 'goal_follow_target', 'goal_x', 'goal_y', 't_max_s')},
             'intruder_driver': {k: merged.get('intruder_driver', {}).get(k) for k in (
                 'motion', 'speed_mps', 'radius_m')},
+            # H0（2026-11-02）：巡航高度**实际生效值 + 来源**。`cruise_alt_m` 是唯一权威输入；
+            # 场景/基参未给时回落弃用别名 `alt_m`（与 intruder_driver 的解析规则同口径）。
+            # 同时显式登记**该值的参考基准**，避免下游把"相对 episode 原点的增量"误当世界 ENU 高度。
+            'cruise_altitude': cruise_altitude_block(merged, info, effective_spawn),
+            # H0 round-5：空中机**观测偏航实际生效值 + 来源**（场景默认 / CLI 覆盖 / air.yaml 缺省）。
+            'observe_yaw_mode': observe_yaw_block(info, air_merged, cli_observe_yaw_mode),
+            # 视觉定位路径已于 2026-11-04 退役：两键**保留、值固定**（schema 不漂移；
+            # 见 vision_plane_block 文件头）。
+            'perception_path': 'truth',
+            'vision_plane': vision_plane_block(),
             'run_logger': {'scenario': merged.get('run_logger', {}).get('scenario'), 'seed': seed},
             'target_source': target_source,
             'seed_protocol': {
@@ -860,6 +1211,89 @@ def build_manifest(backend, info, merged, assertions_result, sim_share=None,
         'spawn_layout': spawn_layout_block(layout, layout_sha256, own_pose, effective_spawn,
                                            effective_own),
         'assertions': assertions_result,
+    }
+
+
+def observe_yaw_block(info=None, air_merged=None, cli_value=''):
+    """H0 round-5：`trajectory_tracker.observe_yaw_mode` 的**实际生效值 + 来源**（manifest 可追溯）。
+
+    三级优先级（与 `w6.launch.py` 的合并顺序一致，此处只做记录、不改合并）：
+      CLI `observe_yaw_mode:=<mode>`（非空） > 场景 `trajectory_tracker.observe_yaw_mode`
+      > `air.yaml` 缺省。
+
+    为什么记录来源：round-4 的证据表明 s04 的成败取决于这一项（`behind` 门）。
+    只有把"本 run 到底用了哪个模式、是场景给的还是 CLI 覆盖的"写进 manifest，
+    才能事后区分"场景默认生效"与"某次实验用 CLI 强制了别的臂"——否则无法复核。
+    """
+    scene_val = ((((info or {}).get('sc') or {}).get('params') or {})
+                 .get('trajectory_tracker') or {}).get('observe_yaw_mode')
+    if air_merged is None:
+        # lightweight：不起空中链路，本项不适用（不冒充 air.yaml 缺省）。
+        return {'effective': None, 'source': 'not_applicable(lightweight)',
+                'scene_default': scene_val, 'cli_override': cli_value or None}
+    base_val = (air_merged.get('trajectory_tracker') or {}).get('observe_yaw_mode')
+    if cli_value:
+        source = 'cli'
+    elif scene_val is not None:
+        source = 'scene'
+    else:
+        source = 'air_yaml'
+    return {'effective': base_val, 'source': source,
+            'scene_default': scene_val, 'cli_override': cli_value or None}
+
+
+def cruise_altitude_block(merged, info=None, effective_spawn=None):
+    """H0（2026-11-02）：巡航高度**实际生效值 + 来源 + 参考基准**（manifest 可还原）。
+
+    为什么单独成块：H0 的核心歧义是"同一个数字既是出生高度、又是爬升量、又是巡航高度"。
+    把"生效值 / 来源 / 基准 / 是否叠加"四件事写进 manifest，使每个 run 的高度语义**可逐项复核**，
+    而不是靠读两份 yaml 自己推。
+
+    解析规则与 `intruder_driver._resolve_cruise_alt()` **同口径**（此处只做记录，不重复实现校验；
+    真正的拒绝启动由节点在运行期执行，故本函数对非法值如实标注 `invalid` 而不抛异常）。
+    """
+    idr = merged.get('intruder_driver') or {}
+    cruise = idr.get('cruise_alt_m')
+    alias = idr.get('alt_m')
+    scene_over = (((info or {}).get('sc') or {}).get('params') or {}).get('intruder_driver') or {}
+    # ADR-0007（2026-11-02）：高度归**地图**。`apply_flight_altitude_params` 已在 `info` 里
+    # 登记本图派生块，故来源优先级变为：**map > scene > base**。
+    # 这是对 H0「vision 平面必须 source=scene」口径的**显式修订**（见 ADR-0007）：
+    # 地图是几何事实、场景是任务意图；高度属前者。场景仍可覆盖（向后兼容），但默认走地图。
+    map_fa = (info or {}).get('flight_altitude')
+    if map_fa is not None and cruise is not None \
+            and abs(float(cruise) - float(map_fa['target_cruise_m'])) < 1e-9:
+        source = 'map'
+    elif 'cruise_alt_m' in scene_over:
+        source = 'scene'
+    elif cruise is not None:
+        source = 'base'
+    elif alias is not None:
+        source = 'base(alt_m 弃用别名)'
+    else:
+        source = 'missing'
+    effective = cruise if cruise is not None else alias
+    valid = isinstance(effective, (int, float)) and effective > 0
+    return {
+        'effective_m': effective,
+        'source': source,
+        # 弃用别名同时记录：两者不相等时节点会拒绝启动，manifest 让"为什么会拒"可见。
+        'deprecated_alias_alt_m': alias,
+        'alias_conflicts': (cruise is not None and alias is not None
+                            and abs(float(cruise) - float(alias)) > 1e-9),
+        'valid': bool(valid),
+        # 参考基准：本值相对 **episode 原点**（epoch 后首帧 odom），**不是**世界 ENU 高度。
+        'datum': 'episode_origin_ned',
+        'world_enu_absolute': False,
+        # 明确登记"不与世界 spawn 值叠加"——这是 H0 判定过的结论，不是默认假设。
+        'stacks_on_spawn_z': False,
+        'spawn_place_z': (((effective_spawn or {}).get('target')) or {}).get('z'),
+        # ADR-0007：本 run 的地图高度派生块（None = 未经地图派生，如历史单测）。
+        'map_flight_altitude': ({k: v for k, v in map_fa.items() if not k.startswith('_')}
+                                if map_fa is not None else None),
+        'note': ('巡航高度 = episode 原点世界高度 + effective_m；原点世界高度由 EKF 初始化决定、'
+                 '跨 run 不可复现，故本值不是绝对世界高度。世界放置值另见 spawn_layout.target.z'
+                 '（PX4 attach 前瞬态，不与本值叠加）。'),
     }
 
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w7b_p1_point_only_failures —— P1 消融③（仅指向）失败回合的**描述性**诊断（T4，ADR-0085(i) 后续）。
+"""w7b_p1_point_only_failures —— P1 消融③（仅指向）失败回合的**描述性**诊断（T4，ADR-0023 后续）。
 
 **定位**：诊断，**不**参与判定、**不**改 P1 v5 `inconclusive` / 消融数值。产物只新增：
 `experiments/<campaign>/<run_id>/metrics/p1_point_only_failures.{json,md}`。

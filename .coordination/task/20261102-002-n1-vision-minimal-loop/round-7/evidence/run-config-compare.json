@@ -1,0 +1,465 @@
+{
+ "run-155603-2790": {
+  "run_id": "20261102-s02_linear_none_nominal_track-0-155603-2790",
+  "artifacts": {
+   "summary": "/home/chen/AGC/experiments/w6-task-eval/20261102-s02_linear_none_nominal_track-0-155603-2790/metrics/summary.json",
+   "manifest": "/home/chen/AGC/experiments/w6-task-eval/20261102-s02_linear_none_nominal_track-0-155603-2790/config/scene_manifest.json"
+  },
+  "identity": {
+   "git_commit": "49e099ccbead0cd222e06edce29acbf78b8d3c58",
+   "episode_id": 2,
+   "wall_start_unix_s": 1793606163.503534,
+   "wall_end_unix_s": 1793606579.9033585,
+   "duration_s": 394.908,
+   "sim_start_s": 11.84,
+   "sim_end_s": 397.072
+  },
+  "config": {
+   "perception_path": "vision",
+   "detector_backend": null,
+   "target_source": "air_fusion",
+   "sensors_file": "perception_sensors.yaml",
+   "world_map": "minimal",
+   "world_obstacles": "none",
+   "observe_yaw_mode": {
+    "effective": "velocity",
+    "source": "air_yaml",
+    "scene_default": null,
+    "cli_override": null
+   },
+   "cruise_alt_m": 2.0,
+   "cruise_alt_source": "scene",
+   "vision_plane_z": 2.0,
+   "vision_plane_source": "scene",
+   "scene": "s02_linear_none_nominal_track",
+   "seed": 0,
+   "backend": "full",
+   "seed_protocol": {
+    "name": "agc-px4-sim-seed-v1",
+    "master_seed": 0,
+    "px4_sim_seeds": {
+     "own": 2462723854,
+     "intruder": 38592188,
+     "warmup": 1700723251
+    }
+   },
+   "spawn_distances": {
+    "car_target_m": 30.14962686336267,
+    "own_uav_target_m": 26.1725046566048,
+    "car_own_uav_m": 4.0
+   },
+   "goal": {
+    "x": 6.5,
+    "y": 2.5,
+    "source": "scene",
+    "offset_m": {
+     "dx": -2.5,
+     "dy": 0.0
+    }
+   },
+   "geometry_sha256": "0db269a10bd226c765c54d50257e67a947988d1f7c019a419d5506a38fa82fa1",
+   "spawn_layout_sha256": "27e155fcf91386a8958bdfab249701175216a714a311807b76ac40d028652ab6"
+  },
+  "terminal": {
+   "terminal_state": "TRACKING_SUCCESS",
+   "reason_code": "tracking_milestone",
+   "shield_infeasible_rate": 0,
+   "ticks_infeasible": 0,
+   "ticks_total": 11693,
+   "ticks_triggered": 4,
+   "true_shield_infeasible_rate": 0.0,
+   "collision_count": 1,
+   "stopping_margin_min_m": null,
+   "stopping_margin_negative_ticks": 0
+  },
+  "episode_window_metrics": {
+   "window_count": 1,
+   "ticks_total": 1741,
+   "ticks_valid": 1741,
+   "ticks_invalid_scan": 0,
+   "ticks_invalid_action": 0,
+   "ticks_missing_ratio_scan": 0.0,
+   "ticks_missing_ratio_action": 0.0,
+   "triggered_ticks": 0,
+   "infeasible_ticks": 0,
+   "scan_samples": 573,
+   "ticks_intervened": 1122,
+   "vis_ticks_total": 1741,
+   "vis_ticks_visible": 1545,
+   "ticks_fire_control_opportunity": 135,
+   "first_fire_control_opportunity_s": 51.336,
+   "envelope_in_ticks": 146,
+   "envelope_in_rate": 0.08386,
+   "first_envelope_in_s": 51.336,
+   "visibility_rate": 0.887421,
+   "intervention_ticks_ratio": 0.644457,
+   "shield_infeasible_rate": null
+  },
+  "command_attribution": {
+   "definition_version": "raw_effective_v2",
+   "semantics": "raw = 安全层输入（命令源原创）；effective = 安全层输出（唯一执行口值）；同拍=同一 odom 采样拍两话题快照均新鲜；净空可'已知'= 该拍有新鲜 scan 帧（无回波 = 范围内无遮挡）",
+   "shield_layer_enabled": true,
+   "raw_msgs_received": 7711,
+   "effective_msgs_received": 6557,
+   "ticks_total": 11693,
+   "ticks_paired": 11693,
+   "same_stamp_ticks": 19,
+   "stamp_delta_abs_max_s": 0.156,
+   "intervened_ticks": 1125,
+   "intervention_segments": 4,
+   "intervention_duration_s": 52.584,
+   "max_abs_delta_v_mps": 0.999999,
+   "max_abs_delta_w_radps": 2,
+   "clearance_min_m": 3.925949,
+   "clearance_min_at_intervention_m": 7.252077,
+   "clearance_ticks": 11691,
+   "clearance_no_return_ticks": 11292,
+   "clearance_at_intervention_ticks": 1125,
+   "clearance_at_intervention_no_return_ticks": 888,
+   "not_applicable": {
+    "raw": false,
+    "effective": false,
+    "paired_ticks": false,
+    "clearance": false
+   },
+   "note": "无 shield 臂（shield_layer_enabled=false）时 effective≡raw → intervened_ticks=0；纯仿真对照臂，**不**用于实际部署（ADR-0022）；净空口径 scan_fresh_v2（ADR-0016 修订）：无回波拍记入 clearance_no_return_ticks（范围内无遮挡），clearance_min_m 仅取有限回波最小值"
+  },
+  "visibility_metrics": {
+   "definition_version": "window_fixed_v1",
+   "window_s": 60,
+   "visibility_max_age_s": 0.5,
+   "ticks_total": 1824,
+   "ticks_visible": 1605,
+   "visibility_rate": 0.879934,
+   "ticks_fire_control_opportunity": 175,
+   "fire_control_opportunity_rate": 0.095943,
+   "longest_outage_s": 0.396,
+   "recovery_time_last_s": 0.296,
+   "not_applicable": {
+    "target_truth": false,
+    "episode_window": false,
+    "envelope": false
+   },
+   "note": "ADR-0022：可见率分母 = **自首个 active 拍起固定 window_s 秒内的拍数**（不随终态截断；消除早成功臂的饱和 / 选择效应）；tgt_age = 该拍时刻 − 目标 header.stamp。"
+  }
+ },
+ "run-161832-2961": {
+  "run_id": "20261102-s02_linear_none_nominal_track-0-161832-2961",
+  "artifacts": {
+   "summary": "/home/chen/AGC/experiments/w6-task-eval/20261102-s02_linear_none_nominal_track-0-161832-2961/metrics/summary.json",
+   "manifest": "/home/chen/AGC/experiments/w6-task-eval/20261102-s02_linear_none_nominal_track-0-161832-2961/config/scene_manifest.json"
+  },
+  "identity": {
+   "git_commit": "49e099ccbead0cd222e06edce29acbf78b8d3c58",
+   "episode_id": 2,
+   "wall_start_unix_s": 1793607512.8630888,
+   "wall_end_unix_s": 1793607620.4865224,
+   "duration_s": 100.536,
+   "sim_start_s": 12.292,
+   "sim_end_s": 107.512
+  },
+  "config": {
+   "perception_path": "vision",
+   "detector_backend": "synthetic_color",
+   "target_source": "air_fusion",
+   "sensors_file": "perception_sensors.yaml",
+   "world_map": "minimal",
+   "world_obstacles": "none",
+   "observe_yaw_mode": {
+    "effective": "velocity",
+    "source": "air_yaml",
+    "scene_default": null,
+    "cli_override": null
+   },
+   "cruise_alt_m": 2.0,
+   "cruise_alt_source": "scene",
+   "vision_plane_z": 2.0,
+   "vision_plane_source": "scene",
+   "scene": "s02_linear_none_nominal_track",
+   "seed": 0,
+   "backend": "full",
+   "seed_protocol": {
+    "name": "agc-px4-sim-seed-v1",
+    "master_seed": 0,
+    "px4_sim_seeds": {
+     "own": 2462723854,
+     "intruder": 38592188,
+     "warmup": 1700723251
+    }
+   },
+   "spawn_distances": {
+    "car_target_m": 30.14962686336267,
+    "own_uav_target_m": 26.1725046566048,
+    "car_own_uav_m": 4.0
+   },
+   "goal": {
+    "x": 6.5,
+    "y": 2.5,
+    "source": "scene",
+    "offset_m": {
+     "dx": -2.5,
+     "dy": 0.0
+    }
+   },
+   "geometry_sha256": "0db269a10bd226c765c54d50257e67a947988d1f7c019a419d5506a38fa82fa1",
+   "spawn_layout_sha256": "27e155fcf91386a8958bdfab249701175216a714a311807b76ac40d028652ab6"
+  },
+  "terminal": {
+   "terminal_state": "TRACKING_SUCCESS",
+   "reason_code": "tracking_milestone",
+   "shield_infeasible_rate": 0,
+   "ticks_infeasible": 0,
+   "ticks_total": 2833,
+   "ticks_triggered": 76,
+   "true_shield_infeasible_rate": 0.166667,
+   "collision_count": 1,
+   "stopping_margin_min_m": 3.212258,
+   "stopping_margin_negative_ticks": 0
+  },
+  "episode_window_metrics": {
+   "window_count": 1,
+   "ticks_total": 1492,
+   "ticks_valid": 1492,
+   "ticks_invalid_scan": 0,
+   "ticks_invalid_action": 0,
+   "ticks_missing_ratio_scan": 0.0,
+   "ticks_missing_ratio_action": 0.0,
+   "triggered_ticks": 61,
+   "infeasible_ticks": 0,
+   "scan_samples": 496,
+   "ticks_intervened": 777,
+   "vis_ticks_total": 1492,
+   "vis_ticks_visible": 1383,
+   "ticks_fire_control_opportunity": 42,
+   "first_fire_control_opportunity_s": 47.784,
+   "envelope_in_ticks": 42,
+   "envelope_in_rate": 0.02815,
+   "first_envelope_in_s": 47.784,
+   "visibility_rate": 0.926944,
+   "intervention_ticks_ratio": 0.520777,
+   "shield_infeasible_rate": 0.0
+  },
+  "command_attribution": {
+   "definition_version": "raw_effective_v2",
+   "semantics": "raw = 安全层输入（命令源原创）；effective = 安全层输出（唯一执行口值）；同拍=同一 odom 采样拍两话题快照均新鲜；净空可'已知'= 该拍有新鲜 scan 帧（无回波 = 范围内无遮挡）",
+   "shield_layer_enabled": true,
+   "raw_msgs_received": 1914,
+   "effective_msgs_received": 1895,
+   "ticks_total": 2833,
+   "ticks_paired": 2833,
+   "same_stamp_ticks": 104,
+   "stamp_delta_abs_max_s": 0.188,
+   "intervened_ticks": 779,
+   "intervention_segments": 6,
+   "intervention_duration_s": 42.716,
+   "max_abs_delta_v_mps": 1,
+   "max_abs_delta_w_radps": 0.200196,
+   "clearance_min_m": 3.189452,
+   "clearance_min_at_intervention_m": 3.262389,
+   "clearance_ticks": 2831,
+   "clearance_no_return_ticks": 1496,
+   "clearance_at_intervention_ticks": 779,
+   "clearance_at_intervention_no_return_ticks": 261,
+   "not_applicable": {
+    "raw": false,
+    "effective": false,
+    "paired_ticks": false,
+    "clearance": false
+   },
+   "note": "无 shield 臂（shield_layer_enabled=false）时 effective≡raw → intervened_ticks=0；纯仿真对照臂，**不**用于实际部署（ADR-0022）；净空口径 scan_fresh_v2（ADR-0016 修订）：无回波拍记入 clearance_no_return_ticks（范围内无遮挡），clearance_min_m 仅取有限回波最小值"
+  },
+  "visibility_metrics": {
+   "definition_version": "window_fixed_v1",
+   "window_s": 60,
+   "visibility_max_age_s": 0.5,
+   "ticks_total": 1802,
+   "ticks_visible": 1678,
+   "visibility_rate": 0.931188,
+   "ticks_fire_control_opportunity": 231,
+   "fire_control_opportunity_rate": 0.128191,
+   "longest_outage_s": 0.268,
+   "recovery_time_last_s": 0.168,
+   "not_applicable": {
+    "target_truth": false,
+    "episode_window": false,
+    "envelope": false
+   },
+   "note": "ADR-0022：可见率分母 = **自首个 active 拍起固定 window_s 秒内的拍数**（不随终态截断；消除早成功臂的饱和 / 选择效应）；tgt_age = 该拍时刻 − 目标 header.stamp。"
+  }
+ },
+ "run-162101-7315": {
+  "run_id": "20261102-s02_linear_none_nominal_track-0-162101-7315",
+  "artifacts": {
+   "summary": "/home/chen/AGC/experiments/w6-task-eval/20261102-s02_linear_none_nominal_track-0-162101-7315/metrics/summary.json",
+   "manifest": "/home/chen/AGC/experiments/w6-task-eval/20261102-s02_linear_none_nominal_track-0-162101-7315/config/scene_manifest.json"
+  },
+  "identity": {
+   "git_commit": "49e099ccbead0cd222e06edce29acbf78b8d3c58",
+   "episode_id": 2,
+   "wall_start_unix_s": 1793607661.7097068,
+   "wall_end_unix_s": 1793607849.479963,
+   "duration_s": 173.368,
+   "sim_start_s": 11.608,
+   "sim_end_s": 178.956
+  },
+  "config": {
+   "perception_path": "vision",
+   "detector_backend": "synthetic_color",
+   "target_source": "air_fusion",
+   "sensors_file": "perception_sensors.yaml",
+   "world_map": "minimal",
+   "world_obstacles": "none",
+   "observe_yaw_mode": {
+    "effective": "velocity",
+    "source": "air_yaml",
+    "scene_default": null,
+    "cli_override": null
+   },
+   "cruise_alt_m": 2.0,
+   "cruise_alt_source": "scene",
+   "vision_plane_z": 2.0,
+   "vision_plane_source": "scene",
+   "scene": "s02_linear_none_nominal_track",
+   "seed": 0,
+   "backend": "full",
+   "seed_protocol": {
+    "name": "agc-px4-sim-seed-v1",
+    "master_seed": 0,
+    "px4_sim_seeds": {
+     "own": 2462723854,
+     "intruder": 38592188,
+     "warmup": 1700723251
+    }
+   },
+   "spawn_distances": {
+    "car_target_m": 30.14962686336267,
+    "own_uav_target_m": 26.1725046566048,
+    "car_own_uav_m": 4.0
+   },
+   "goal": {
+    "x": 6.5,
+    "y": 2.5,
+    "source": "scene",
+    "offset_m": {
+     "dx": -2.5,
+     "dy": 0.0
+    }
+   },
+   "geometry_sha256": "0db269a10bd226c765c54d50257e67a947988d1f7c019a419d5506a38fa82fa1",
+   "spawn_layout_sha256": "27e155fcf91386a8958bdfab249701175216a714a311807b76ac40d028652ab6"
+  },
+  "terminal": {
+   "terminal_state": "MISSION_FAILED",
+   "reason_code": "TIMEOUT",
+   "shield_infeasible_rate": 0.63913,
+   "ticks_infeasible": 588,
+   "ticks_total": 5004,
+   "ticks_triggered": 920,
+   "true_shield_infeasible_rate": 0.125,
+   "collision_count": 1,
+   "stopping_margin_min_m": 1.873057,
+   "stopping_margin_negative_ticks": 0
+  },
+  "episode_window_metrics": {
+   "window_count": 1,
+   "ticks_total": 3601,
+   "ticks_valid": 3601,
+   "ticks_invalid_scan": 0,
+   "ticks_invalid_action": 0,
+   "ticks_missing_ratio_scan": 0.0,
+   "ticks_missing_ratio_action": 0.0,
+   "triggered_ticks": 914,
+   "infeasible_ticks": 588,
+   "scan_samples": 1200,
+   "ticks_intervened": 2028,
+   "vis_ticks_total": 3601,
+   "vis_ticks_visible": 3268,
+   "ticks_fire_control_opportunity": 714,
+   "first_fire_control_opportunity_s": 50.1,
+   "envelope_in_ticks": 906,
+   "envelope_in_rate": 0.251597,
+   "first_envelope_in_s": 50.1,
+   "visibility_rate": 0.907526,
+   "intervention_ticks_ratio": 0.563177,
+   "shield_infeasible_rate": 0.643326
+  },
+  "command_attribution": {
+   "definition_version": "raw_effective_v2",
+   "semantics": "raw = 安全层输入（命令源原创）；effective = 安全层输出（唯一执行口值）；同拍=同一 odom 采样拍两话题快照均新鲜；净空可'已知'= 该拍有新鲜 scan 帧（无回波 = 范围内无遮挡）",
+   "shield_layer_enabled": true,
+   "raw_msgs_received": 3353,
+   "effective_msgs_received": 3341,
+   "ticks_total": 5004,
+   "ticks_paired": 5004,
+   "same_stamp_ticks": 779,
+   "stamp_delta_abs_max_s": 0.104,
+   "intervened_ticks": 2030,
+   "intervention_segments": 15,
+   "intervention_duration_s": 99.528,
+   "max_abs_delta_v_mps": 1,
+   "max_abs_delta_w_radps": 1,
+   "clearance_min_m": 1.873057,
+   "clearance_min_at_intervention_m": 1.873057,
+   "clearance_ticks": 5002,
+   "clearance_no_return_ticks": 2539,
+   "clearance_at_intervention_ticks": 2030,
+   "clearance_at_intervention_no_return_ticks": 840,
+   "not_applicable": {
+    "raw": false,
+    "effective": false,
+    "paired_ticks": false,
+    "clearance": false
+   },
+   "note": "无 shield 臂（shield_layer_enabled=false）时 effective≡raw → intervened_ticks=0；纯仿真对照臂，**不**用于实际部署（ADR-0022）；净空口径 scan_fresh_v2（ADR-0016 修订）：无回波拍记入 clearance_no_return_ticks（范围内无遮挡），clearance_min_m 仅取有限回波最小值"
+  },
+  "visibility_metrics": {
+   "definition_version": "window_fixed_v1",
+   "window_s": 60,
+   "visibility_max_age_s": 0.5,
+   "ticks_total": 1800,
+   "ticks_visible": 1671,
+   "visibility_rate": 0.928333,
+   "ticks_fire_control_opportunity": 75,
+   "fire_control_opportunity_rate": 0.041667,
+   "longest_outage_s": 0.3,
+   "recovery_time_last_s": 0.2,
+   "not_applicable": {
+    "target_truth": false,
+    "episode_window": false,
+    "envelope": false
+   },
+   "note": "ADR-0022：可见率分母 = **自首个 active 拍起固定 window_s 秒内的拍数**（不随终态截断；消除早成功臂的饱和 / 选择效应）；tgt_age = 该拍时刻 − 目标 header.stamp。"
+  }
+ },
+ "_comparability": {
+  "note": "三次 run 的 params_applied.yaml 逐键比对亦为 0 差异（154 键），见 report §B1",
+  "identical_fields": {
+   "perception_path": true,
+   "target_source": true,
+   "sensors_file": true,
+   "world_map": true,
+   "world_obstacles": true,
+   "observe_yaw_mode": true,
+   "cruise_alt_m": true,
+   "cruise_alt_source": true,
+   "vision_plane_z": true,
+   "vision_plane_source": true,
+   "scene": true,
+   "seed": true,
+   "backend": true,
+   "seed_protocol": true,
+   "geometry_sha256": true,
+   "spawn_layout_sha256": true
+  },
+  "differing_fields": {
+   "detector_backend": {
+    "values": [
+     null,
+     "synthetic_color",
+     "synthetic_color"
+    ],
+    "reason": "155603 是 W7-b 的 C 项（detector_backend 入 summary）落地**之前**的 run，summary 无该键；161832 与 162101 均为 synthetic_color，二者相同"
+   }
+  }
+ }
+}

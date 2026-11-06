@@ -12,7 +12,7 @@ episode 的 `summary_path` → 读该 run 的 `metrics/summary.json` 的 `comman
   * **无 shield 臂**（false）→ `intervened_ticks` == 0 且 `max_abs_delta_v_mps` / `max_abs_delta_w_radps`
     在 epsilon 量级（恒等透传：effective ≡ raw）。
 
-判据依据 [ADR-0070](docs/adr/0070-w7b-research-propositions-and-rl-role-adjudication.md)(d)（E1）与
+判据依据 [ADR-0022](docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)(d)（E1）与
 [F-06](docs/reviews/agc-review-2026-10-14/30-未来.md#f-06)。
 
 用法：

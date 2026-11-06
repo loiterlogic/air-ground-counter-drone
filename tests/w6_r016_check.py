@@ -22,7 +22,7 @@ epoch 干扰；故本 check **自包含，无需起 launch**：自己充当「�
 （否则重锚时刻机体已在飞行途中，origin 随漂移使多回合起点不一致），本 harness 在「发 epoch → 下一帧
 odom 重锚」这一瞬把运动模型**冻结**（moves=False），使 origin 精确等于 spawn；随后解冻让机体飞向起始位姿。
 
-用例（结果落 `experiments/w6-task-eval/<run_id>/metrics/r016.json`，ADR-0007）：
+用例（结果落 `experiments/w6-task-eval/<run_id>/metrics/r016.json`，ADR-0006）：
   a 延迟启动不提前推进：不发 epoch 等 4.0 s → setpoint 悬停极差 < 0.05；发 epoch=1 → ~3 s 内开始推进
     （推进轴极差 > 0.5）且首个推进样本与起始点连续（|Δ| < 0.1）；观测到 ARM 命令。
   b 多回合起点一致：maneuver；epoch=1 后记录推进前稳定 setpoint S1；复位 → epoch=2 → 记录 S2；

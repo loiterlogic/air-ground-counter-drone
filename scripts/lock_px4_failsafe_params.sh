@@ -48,6 +48,7 @@ cot = cfg['com_of_loss_t']
 cob = cfg['com_obl_rc_act']
 dll = cfg['nav_dll_act']
 synct = cfg.get('uxrce_dds_synct')
+magsim = cfg.get('sensor_en_magsim')
 lines = (
     "# 本文件由 scripts/lock_px4_failsafe_params.sh 生成（R-019 / ADR-0034）。\n"
     "# 单一真源：src/agc_task/config/px4_failsafe_lock.yaml（勿手改本文件）。\n"
@@ -60,6 +61,12 @@ if synct is not None:
     # W7-b 取证（2026-10-19）：仿真下关闭 uXRCE-DDS 桥时间同步 → `/clock` 为唯一时间源
     # （否则 PX4 时间戳尺度跳变 → 产生离奇/负 stamp，见 px4_failsafe_lock.yaml 注释）。
     lines += "param set UXRCE_DDS_SYNCT %s\n" % synct
+if magsim is not None:
+    # 2026-11-03：gz x500 机型无 magnetometer 传感器；sensor_mag_sim 默认不启动（定义值 0）
+    # → EKF 无航向约束 → `Yaw estimate error` → 不发布 odometry → 目标机永不 ARM。
+    # 本行必须在 `px4-rc.simulator` 被 source **之前**生效：rcS 第 232 行 source 本文件、
+    # 第 239 行才 source px4-rc.simulator，故此处注入的时机是对的。
+    lines += "param set SENS_EN_MAGSIM %s\n" % magsim
 with open(out_path, 'w') as f:
     f.write(lines)
 print("COM_OF_LOSS_T=%s" % cot)
@@ -67,4 +74,6 @@ print("COM_OBL_RC_ACT=%s" % cob)
 print("NAV_DLL_ACT=%s" % dll)
 if synct is not None:
     print("UXRCE_DDS_SYNCT=%s" % synct)
+if magsim is not None:
+    print("SENS_EN_MAGSIM=%s" % magsim)
 PY

@@ -48,7 +48,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument('--topic', default='/agc/sim/target_cmd_vel')
     ap.add_argument('--mode', choices=['line', 'circle'], default='circle')
-    ap.add_argument('--speed', type=float, default=1.0, help='目标巡航速度 m/s（ADR-0019：1.0）')
+    ap.add_argument('--speed', type=float, default=1.0, help='目标巡航速度 m/s（ADR-0008：1.0）')
     ap.add_argument('--radius', type=float, default=6.0, help='circle 模式半径 m')
     ap.add_argument('--heading-deg', type=float, default=0.0,
                     help='line 模式航向（world ENU，度；0 = +x）')

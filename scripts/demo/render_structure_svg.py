@@ -37,7 +37,7 @@
 ## 一致性守卫（`scripts/tests/test_structure_diagram.py`）
 
 1. 包集合 == 包边界#1-包清单 的 8 个业务包 ∪ 内联第三方 `px4_msgs`，可用时再与 `colcon list` 对齐；
-2. ② 库链接边**只有** `agc_air→agc_control` 与 `agc_ground→agc_control`（ADR-0018 唯一例外）；
+2. ② 库链接边**只有** `agc_air→agc_control` 与 `agc_ground→agc_control`（ADR-0004 唯一例外）；
 3. `agc_msgs` 是叶依赖（无出边、不被 ②/③ 指向）；
 4. `agc_task` 对域包只能 ③（起进程），不得 ②（链接库）；
 5. 图里每条边都必须在 `src/*/package.xml` 有声明（图不得凭空多画依赖）；
@@ -114,7 +114,7 @@ SEP = ' · '
 def _atoms(text):
     """切成语义原子：` · ` 与括号都是不可再分的边界。
 
-    `Nav2 collision_monitor` / `（ADR-0018 唯一例外）` 一旦被拆到两行，读者会把一对概念读成两个，
+    `Nav2 collision_monitor` / `（ADR-0004 唯一例外）` 一旦被拆到两行，读者会把一对概念读成两个，
     或让一对括号跨行——所以原子内部不允许自动换行。
     """
     parts, buf, depth, i = [], '', 0, 0
@@ -231,7 +231,7 @@ PACKAGE_EDGES = [
     ('agc_ground', 'agc_msgs', 1),
     ('agc_rl', 'agc_msgs', 1),
     ('agc_task', 'agc_msgs', 1),
-    # ② 库链接：仅 agc_control 这一处例外（ADR-0018）
+    # ② 库链接：仅 agc_control 这一处例外（ADR-0004）
     ('agc_air', 'agc_control', 2),
     ('agc_ground', 'agc_control', 2),
     # ③ 运行组合（launch 起进程，exec_depend，不链接实现库）
@@ -259,7 +259,7 @@ EXT_RELATIONS = [
     ('Nav2 组件', 'agc_task', 'start', 'exec_depend：lifecycle_manager 编排'),
 ]
 
-LEGAL_LINK_TARGET = 'agc_control'   # ② 的唯一合法例外（ADR-0018）
+LEGAL_LINK_TARGET = 'agc_control'   # ② 的唯一合法例外（ADR-0004）
 
 # ======================================================================================
 # 3. 版式常量
@@ -549,7 +549,7 @@ def validate():
         if dst not in names:
             errors.append('边的目标不在包表里：%s' % dst)
         if kind == 2 and dst != LEGAL_LINK_TARGET:
-            errors.append('非法②库链接：%s → %s（只允许 → agc_control，ADR-0018）' % (src, dst))
+            errors.append('非法②库链接：%s → %s（只允许 → agc_control，ADR-0004）' % (src, dst))
         if kind == 1 and src == 'agc_msgs':
             errors.append('agc_msgs 是叶依赖，不得有①消息出边')
         if kind == 3 and src == 'agc_msgs':
@@ -847,7 +847,7 @@ def detail_sections():
              + ['不在此列（易错）：agc_sim 只经 ros_gz 桥发标准消息；agc_control 是纯实现库。']),
         dict(no=2, title='② 库链接依赖（%d 条 · 唯一例外）' % len(kinds[2]),
              rule='编译期链接实现库：仅 agc_control 允许被 air / ground 链接同一实现'
-                  '（ADR-0018）；除此禁止业务库互链。',
+                  '（ADR-0004）；除此禁止业务库互链。',
              items=['%s  →  agc_control（INTERFACE 共享库 + pluginlib 插件）' % s
                     for s, _d in kinds[2]]
              + ['两侧 CMakeLists 均 find_package(agc_control)。']),

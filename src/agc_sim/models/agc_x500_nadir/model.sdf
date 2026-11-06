@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  agc_x500_nadir —— 己方无人机 + **正下视（nadir）**机载相机（opt-in，ADR-0030）
+
+  用途：视觉测绘 / 取证能力。**无消费者**——目标识别仍靠真值（`gt_adapter`），
+  图像**不**接入任务链。默认机型 `gz_x500` 不含本模型，行为逐字不变。
+
+  怎么被选中（机型解析**不改工具链**，见 ADR-0030）：
+    己方 PX4 进程注入 `PX4_SYS_AUTOSTART=4001`（rcS:41-44 优先于按名匹配）+ `PX4_SIM_MODEL=gz_agc_x500_nadir`
+    → rcS 按 SYS_AUTOSTART 选中 `4001_gz_x500`（旋翼/参数集与默认臂**完全相同**）
+    → `px4-rc.simulator:117` `gz_bridge start -m "${PX4_SIM_MODEL#*gz_}"` = `agc_x500_nadir`
+    → `GZBridge.cpp:73-77` `set_sdf_filename("agc_x500_nadir/model.sdf")`，由 **gz 服务器**经
+      `GZ_SIM_RESOURCE_PATH`（含 `install/agc_sim/share/agc_sim/models`）解析到本文件
+    → 实体名 = `<model_sim>_<instance>` = `agc_x500_nadir_0`（GZBridge.cpp:313-320）
+
+  **挂载范式**（照 PX4 官方 `x500_mono_cam` / `x500_depth`，以及本仓 `intruder_uav` 注释里的四种失败写法）：
+    * `<include merge="true">` 的**子元素只允许** `uri/pose/plugin/name/static/placement_frame`；
+      往 merge 里塞 `<link>` 会被**静默丢弃**（sdformat14 spec，实测只留一条
+      `XML Element[link], child of element[include], not defined in SDF` 警告，展开后 hl=0）；
+    * include 之后再写一个同名 `<link name="base_link">` 会**硬失败**
+      `Error Code 2: link with name[base_link] already exists.`（合并不按名字并 link）；
+    * 故相机只能挂在**新增的独立 link** 上，用 **fixed joint** 连到 `base_link`。
+
+  **相机姿态**：正下视 ⇒ 光轴指向机体 −Z。
+    gz 相机光学轴 = 传感器系 **+X**（PX4 `mono_cam`/`OakD-Lite` 的 `<pose>` 全为 0，而二者是**前视**相机）。
+    SDF 纯 pitch 旋转 `R_y(θ)·x̂ = (cosθ, 0, −sinθ)`：
+      θ = **+90°** → (0, 0, −1) = **正下方** ✓
+      θ = −90°   → (0, 0, +1) = 正上方（拍天空，**错**）
+    ⇒ `pitch = +1.5708 rad`。"90°" 是**下俯量**，SDF `pitch` 字段是 **+1.5708**（ADR-0030 写明此区分）。
+
+  **相机参数**（取值理由见 ADR-0030）：
+    hfov 100°（1.745 rad）：与 §7.1 的 GSD 验算口径一致；640×480：与 mono_cam 同档，640/2/tan(50°)=268.5 px 焦距；
+    clip near 0.1 / far 3000：near 取 mono_cam 同值，far 覆盖 14 m 高度下的地平线以远（虽正下视用不到）；
+    update_rate 30：与 mono_cam 同档，实测桥侧可达 ≥10 Hz。
+  **话题命名**：不复用 PX4 的 `camera`（避免与将来 mono_cam 冲突）。gz 侧 `/agc/air/nadir`。
+  `camera_info` 默认按 `<topic>_info` 派生（会得到 `/agc/air/nadir_info`，与期望的 `/agc/air/nadir/camera_info`
+  不符）⇒ **显式** 写 `<camera_info_topic>`，使桥两侧逐字一致（ADR-0030）。
+-->
+<sdf version="1.9">
+  <model name="agc_x500_nadir">
+    <!-- PX4 官方 x500（机体/旋翼/电机插件全部来自这里，本文件不改其任何 link） -->
+    <include merge="true">
+      <uri>model://x500</uri>
+    </include>
+
+    <!-- 相机载荷：独立 link，**无 collision**（不参与接触/测距/物理求解） -->
+    <link name="nadir_cam_link">
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.050</mass>
+        <inertia>
+          <ixx>0.00004</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.00004</iyy>
+          <iyz>0</iyz>
+          <izz>0.00004</izz>
+        </inertia>
+      </inertial>
+      <gravity>true</gravity>
+      <velocity_decay/>
+
+      <sensor name="nadir_camera" type="camera">
+        <!-- 传感器相对本 link：只加 pitch = +90°（光轴 +X → −Z） -->
+        <pose>0 0 0 0 1.5708 0</pose>
+        <camera>
+          <!-- camera_info 默认按 <topic>_info 派生（→ /agc/air/nadir_info，不符期望）；
+               显式指定使 gz 侧与 bridge.yaml 逐字一致。注意：本元素是 <camera> 的子元素，
+               **不是** <sensor> 的子元素（sdformat14 spec：camera 元素下 camera_info_topic）。 -->
+          <camera_info_topic>agc/air/nadir/camera_info</camera_info_topic>
+          <horizontal_fov>1.745</horizontal_fov>
+          <image>
+            <width>640</width>
+            <height>480</height>
+          </image>
+          <clip>
+            <near>0.1</near>
+            <far>3000</far>
+          </clip>
+        </camera>
+        <always_on>1</always_on>
+        <update_rate>30</update_rate>
+        <visualize>true</visualize>
+        <topic>agc/air/nadir</topic>
+      </sensor>
+    </link>
+
+    <!-- 安装位：相对 base_link 的 x/y 取 0（足迹居中），z 沿用 mono_cam 的 0.242 m 高度面 -->
+    <joint name="nadir_cam_joint" type="fixed">
+      <parent>base_link</parent>
+      <child>nadir_cam_link</child>
+      <pose relative_to="base_link">0 0 0.242 0 0 0</pose>
+    </joint>
+  </model>
+</sdf>

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """w7c_worker_run —— W7-c 单 worker 启动器（rootless netns + 归属环境）。
 
-ADR-0077：每个 worker 跑在独立的 user+net namespace（`unshare -Urn`），统一
+ADR-0024：每个 worker 跑在独立的 user+net namespace（`unshare -Urn`），统一
 `ROS_DOMAIN_ID=0`；`/dev/shm` 不随 netns 隔离，故所有 worker 进程设
 `FASTDDS_BUILTIN_TRANSPORTS=UDPv4`，并用唯一 `GZ_PARTITION` 隔离 gz 话题。
 调用方须已 `source /opt/ros/jazzy/setup.bash` 与 `source install/setup.bash`。
@@ -102,7 +102,7 @@ def main():
     ap.add_argument('--probe-at-s', type=float, default=70.0,
                     help='在该 worker 内 t=<s> 执行 ros2 node/topic list 与 gz topic -l；0=不做')
     ap.add_argument('--repo-root', default='/home/chen/AGC')
-    # W7-c（ADR-0095）：PX4 每实例可写运行根；空 = 自动用 <worker_dir>/px4（与共享 build 隔离）。
+    # W7-c（ADR-0024）：PX4 每实例可写运行根；空 = 自动用 <worker_dir>/px4（与共享 build 隔离）。
     ap.add_argument('--px4-run-root', default='')
     args = ap.parse_args()
 
@@ -113,12 +113,20 @@ def main():
     px4_run_root = Path(args.px4_run_root).resolve() if args.px4_run_root else (worker_dir / 'px4')
 
     env = os.environ.copy()
+    # DDS：先按本机能力探测（单一真源 scripts/demo/dds_transport.py），**再**按
+    # ADR-0024 worker 隔离要求覆盖。
+    #
+    # worker 的硬要求只是「**禁 SHM**」（`/dev/shm` 不随 netns 隔离，否则跨 worker
+    # 会通过共享段互发现），并不要求 LOCALHOST；发现范围沿用探测结果即可。
+    # 这样在 `lo` 无组播的机器上也不会因写死 LOCALHOST 而整条 worker 链零送达。
+    sys.path.insert(0, str(root / 'scripts' / 'demo'))
+    import dds_transport  # noqa: E402
+    dds_transport.apply(env)
     env.update({
         'AGC_WORKER_ID': str(args.worker_id),
         'GZ_PARTITION': 'agc_w_%d' % args.worker_id,
-        'FASTDDS_BUILTIN_TRANSPORTS': 'UDPv4',
+        'FASTDDS_BUILTIN_TRANSPORTS': 'UDPv4',   # 隔离要求：禁 SHM
         'ROS_DOMAIN_ID': '0',
-        'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST',
     })
 
     runner = [
@@ -161,7 +169,7 @@ def main():
     print('[w7c] worker=%d run_id=%s dir=%s px4_run_root=%s' % (
         args.worker_id, args.run_id, worker_dir, px4_run_root), flush=True)
 
-    # W7-c（ADR-0095）：共享 build 可写文件前后快照——证明 worker 未写入共享 build。
+    # W7-c（ADR-0024）：共享 build 可写文件前后快照——证明 worker 未写入共享 build。
     shared_build = root / 'toolchain' / 'PX4-Autopilot' / 'build' / 'px4_sitl_default'
     shared_before = _shared_snapshot(shared_build)
     proc = None

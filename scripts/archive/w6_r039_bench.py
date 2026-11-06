@@ -15,7 +15,7 @@
   4. `time_jump`   发布 future stamp（age<0）→ 期望 `clock_anomaly` → `valid=false`（**不**钳 0）。
 
 只回收**本进程组**子进程（`start_new_session` + `killpg`）；**不**用裸名 `pkill -f`、**不**做递归删除。
-证据落 `experiments/w6-task-eval/<run_id>/r039/bench.json`（ADR-0007）。
+证据落 `experiments/w6-task-eval/<run_id>/r039/bench.json`（ADR-0006）。
 
 ⚠ 范围标注：本台架为**节点行为台架**（真实 odom 发布二进制 + 合成真值流，**非**整链 / **非**双 PX4 / **非** GUI）。
 """

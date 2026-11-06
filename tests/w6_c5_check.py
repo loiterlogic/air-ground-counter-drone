@@ -10,7 +10,7 @@
 **注意**：本脚本与 tracker 均不使用仿真时钟（默认 use_sim_time=false，走墙钟），
 否则无 /clock 时 now() 冻结、相位不推进。
 
-结果落 `experiments/w6-task-eval/<run_id>/metrics/c5.json`（ADR-0007）。
+结果落 `experiments/w6-task-eval/<run_id>/metrics/c5.json`（ADR-0006）。
 """
 
 import argparse

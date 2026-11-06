@@ -8,6 +8,7 @@ import json
 import os
 import signal
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -15,6 +16,23 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 LOGGER = ROOT / 'install/agc_task/lib/agc_task/run_logger'
+
+
+def _dds_env():
+    """DDS 发现范围 / 传输的**单一真源**（与 run_demo.sh / episode_runner 同源）。
+
+    本测试原先写死 `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`。在 `lo` 无 IFF_MULTICAST
+    的机器上（本机 WSL2 即如此）该值让发现 1:1 拓扑稳定零送达——**13 个话题全 0 匹配**，测试必挂，
+    却看起来像"记录器逻辑错"。改为按能力探测：能 LOCALHOST 就用 LOCALHOST（原生 Linux
+    行为不变），不能则退 `SUBNET`+`SHM`。判据见 docs/conventions/整链排障速查.md#dds-transport。
+    """
+    sys.path.insert(0, str(ROOT / 'scripts' / 'demo'))
+    import dds_transport as sel
+    env = {}
+    for key, value in sel.env_for().items():
+        if value is not None:
+            env[key] = value
+    return env
 
 
 def _stamp(t):
@@ -57,12 +75,15 @@ def _run_logger(tmp_path):
         '-p', 'cmd_topic:=/agc_test/cmd',
         '-p', 'cmd_raw_topic:=/agc_test/cmd_raw',
         '-p', 'episode_topic:=/agc_test/episode',
+        '-p', 'reset_retries_topic:=/agc_test/reset_retries',
+        '-p', 'reset_failed_topic:=/agc_test/reset_failed',
         '-p', 'contact_topic:=/agc_test/contact',
         '-p', 'mission_fco_budget_s:=60.0',
         '-p', 'mission_fco_max_gap_s:=1.0',
     ]
     env = dict(os.environ)
-    env['ROS_AUTOMATIC_DISCOVERY_RANGE'] = 'LOCALHOST'
+    # 子进程与发布侧必须用**同一**发现范围 / 传输，否则两端互相看不见。
+    env.update(_dds_env())
     env.setdefault('ROS_DOMAIN_ID', '0')
     log_path = tmp_path / 'run_logger.log'
     with open(log_path, 'w', encoding='utf-8') as log_file:
@@ -89,7 +110,8 @@ def _publish_case():
     from geometry_msgs.msg import TwistStamped
     from agc_msgs.msg import AgcTaskState, TargetTrackArray, TargetTrack
 
-    os.environ['ROS_AUTOMATIC_DISCOVERY_RANGE'] = 'LOCALHOST'
+    # 必须在 rclpy.init() **之前**设好：发现范围在 init 时读取，之后再改无效。
+    os.environ.update(_dds_env())
     if not rclpy.ok():
         rclpy.init()
     node = Node('agc_test_publisher_%d' % os.getpid())
@@ -163,6 +185,27 @@ def _publish_case():
         msg.header.stamp = _stamp(t)
         pubs[pub].publish(msg)
 
+    # 先等关键发布者被 run_logger 订阅，再开跑。t=0.05 的若干消息是**只发一次**的：
+    # `odom_valid` 是 VOLATILE + depth=10 → 那一刻若还没匹配上就**永久丢失**，`odom_valid_ratio`
+    # 的分母照常增长而分子永不增，指标静默变 0（不报错、难定位）。
+    # 注：`episode` / `reset_retries` / `reset_failed` 是 TRANSIENT_LOCAL，晚订阅者仍能收到
+    # 最后一次值（2026-11-04 实测），故它们不是丢失源；但同样等齐，保证本 60 s 预算账从
+    # 完整匹配开始，避免把发现时延记进 mission 区间。
+    # 只等**会真正发布**的关键话题；`contact` 本测试从不发布（run_logger 侧有
+    # `if (!contact_topic_.empty())` 才订阅），等它必然超时。
+    key_topics = ('clock', 'episode', 'state')
+    deadline = time.monotonic() + 5.0
+    matched = False
+    while time.monotonic() < deadline:
+        rclpy.spin_once(node, timeout_sec=0.02)   # 不 spin，发现事件不会被处理
+        if all(pubs[k].get_subscription_count() >= 1 for k in key_topics):
+            matched = True
+            break
+    if not matched:
+        # 超时只告警不 fail：环境慢不等于记录器逻辑错，别掩盖真正的断言失败位置。
+        print('WARN: 关键发布者 5 s 内未全部匹配：%r'
+              % {k: pubs[k].get_subscription_count() for k in key_topics})
+
     end_sim = 6.0
     step = 0.01
     start = time.monotonic()
@@ -180,6 +223,9 @@ def _publish_case():
         if abs(t - 0.5) < 1e-6 or abs(t - 0.55) < 1e-6:
             state(t, AgcTaskState.TARGET_ACQUIRED, 'TARGET_ACQUIRED', 'target_acquired')
         if abs(t - 1.0) < 1e-6:
+            # 诊断用快照。注意 `reset_retries`/`reset_failed` 的发布端在 t=0.05 已发过且此后
+            # **不再重发**，所以这里读到 0 不代表链路坏；只有 `clock`/`episode`/`state` 等
+            # 周期性或重复发布的话题为 0 才说明 DDS 没通。contact 无发布者，恒为 0 属预期。
             print('publisher matches:', {k: p.get_subscription_count() for k, p in pubs.items()})
         if 0.95 <= t <= 1.05:
             state(t, AgcTaskState.GROUND_APPROACH, 'GROUND_APPROACH', 'ground_approach')

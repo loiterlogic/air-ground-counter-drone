@@ -1,6 +1,6 @@
 # W4 地图几何（供 map_adapter 构建 OccupancyGrid；契约参数见 perception.yaml）
 #
-# ---- 几何真源（S-06；ADR-0062）----
+# ---- 几何真源（S-06；ADR-0007）----
 # 作业区几何的唯一真源为所选地图文件的 `work_area`（`minimal` = `agc_sim/config/world_geometry.yaml`；
 # 其余地图见 `agc_sim/config/maps/`，清单 `agc_sim/launch/world_map.py`）。本文件是
 # **standalone 回退副本**，**只与 `minimal` 真源一致**（由 `tests/w6_geometry_check.py` 断言 (c) 校验）。

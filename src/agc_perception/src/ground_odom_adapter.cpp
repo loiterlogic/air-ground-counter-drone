@@ -4,7 +4,7 @@
 // 归一为 world 系 `/agc/ground/odom`（`world`→`car/base_link`）+ TF + `/agc/ground/odom_valid`
 // + 诊断 `/agc/ground/odom_diag`。
 //
-// R-039（口径见 docs/adr/0054-ground-odom-source-time-and-reset-epoch-velocity.md）修复三项时间口径缺口：
+// R-039（口径见 docs/adr/0017-time-budget-and-clock-sources.md#top）修复三项时间口径缺口：
 //   * **源采样时刻 = 发布时刻**：`Header.stamp` 采用 `gt` 样本自带 `Header.stamp`，且**仅在有新样本时**
 //     发布 odom / TF；**不**用 `now()` 冒充测量时刻（本实现**无静默外推**——TF 连续性由「源率 = odom 率」
 //     承载，无新样本时停发并由 `valid=false` 显式表达，符合 tf2「缺变换即显式错误」惯例）。

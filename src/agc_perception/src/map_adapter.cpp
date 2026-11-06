@@ -5,7 +5,7 @@
 // 另发布 /agc/map/version_hash（std_msgs/String，latched）、/agc/map/update_seq（std_msgs/UInt64，latched）
 //   与 /agc/map/valid（Bool，latched）。
 //
-// R-040 地图内容身份与单调更新序号（评审风险 R-040；见 ADR-0055）：
+// R-040 地图内容身份与单调更新序号（评审风险 R-040；见 ADR-0007）：
 //   * **内容身份 hash**（/agc/map/version_hash 的内容）= FNV-1a(frame_id, 障碍源版本, 场景版本,
 //     resolution, width, height, origin_x, origin_y, data) —— **不只** data 字节串：相同 data 在
 //     不同几何 / 源版本下身份**不同**（消除「同 data 可代表不同地图」）。
@@ -18,21 +18,26 @@
 //
 // R-006 三分语义（评审风险 R-006 地图知识保留）：
 //   * 静态先验 static_prior_：**无论** obstacles_source 取何值，均从 obstacles.yaml 加载，
-//     作为地图的 static 层（场景作者给定的静止障碍，与 agc_world.sdf 一致、真值派生 ADR-0020，
+//     作为地图的 static 层（场景作者给定的静止障碍，与 agc_world.sdf 一致、真值派生 ADR-0009，
 //     即 **非**实时传感器；假设一次 run 内场景静止家具已知且不变）。空/丢观测数组 **SHALL NOT**
 //     清除它——立柱可见→遮挡→恢复时静态立柱永不被清除。
-//   * 动态观测 live_：仅 obstacles_source==air_fusion 时由 /agc/obstacles 更新；每条 track 记
+//   * 动态观测 live_：**2026-11-04 起不可达**——唯一动态源 air_fusion 已退役，
+//     故 live_ 恒为空（见下方构造函数）。保留成员是为了将来有障碍观测源时可直接接上；
+//     届时须按 docs/conventions/路线分支治理.md 2.2 节四项重新立项。
+//     （历史：曾由 obstacles_source==air_fusion 时订阅 /agc/obstacles 更新；每条 track 记
+//     2026-11-04：air_fusion 已退役 → 该分支**当前不可达**（/agc/obstacles 无发布者）。
+//     代码保留是为了将来有障碍观测源时可直接接上；届时须按路线分支治理 2.2 节重新立项。
 //     last_seen_s = Header.stamp（最后真实观测时刻）。动态轨按「最后观测年龄 > dynamic_max_age_s_」
 //     过期 -> 其覆盖格标记 unknown（而非自由），并从 live_ 移除（不即时遗忘、也不永久驻留）。
 //   * 未知 unknown_idx_：已过期动态轨曾覆盖、且当前无来源支撑的栅格单元（值 -1）。
 //   可见（新鲜）时用实测几何，遮挡/过期时静态先验回退。
 //
 // /agc/map/valid = geometry_ok_ && knowledge_current()：
-//   config 模式 -> 静态先验即来源，知识恒新鲜；air_fusion 模式 -> 收到过 /agc/obstacles 且
+//   （历史）config 模式 -> 静态先验即来源，知识恒新鲜；air_fusion 模式 -> 收到过 /agc/obstacles 且
 //   源静默不超过 source_max_age_s_。**SHALL NOT** 仅因几何可栅格化即 true。知识不新鲜时仍
 //   照常发布静态层地图，只是 valid=false。
 //
-// 分层语义（ADR-0008 W4 落点）：本节点承载 costmap 的 **static / obstacle** 语义（数据契约）；
+// 分层语义（ADR-0003 W4 落点）：本节点承载 costmap 的 **static / obstacle** 语义（数据契约）；
 //   **inflation / voxel** 层与 costmap 组装归 **W5**。W4 **不引入** nav2_map_server /
 //   nav2_costmap_2d 运行时进程（仅对齐其数据/格式约定）。相同障碍去重，避免融合噪声引发重规划风暴。
 
@@ -131,19 +136,13 @@ public:
     loadMapGeometry();
     // 静态先验（static 层）：无论 obstacles_source 取何值都加载为已知静态事实（R-006）
     loadStaticObstacles();
-    // R-038（见 ADR-0053）：地图几何 / 障碍几何 / 角度**启动期合法性校验**，非法即**拒绝启动**
+    // R-038（见 ADR-0009）：地图几何 / 障碍几何 / 角度**启动期合法性校验**，非法即**拒绝启动**
     //   （**不**带非法配置运行；与既有 rebuild() 运行期守卫并存）。
     validateStartupOrThrow();
-    if (obstacle_source_ == "air_fusion") {
-      sub_obstacles_ = create_subscription<agc_msgs::msg::ObstacleTrackArray>(
-        "/agc/obstacles", rclcpp::QoS(1),
-        std::bind(&MapAdapter::onObstacles, this, std::placeholders::_1));
-      RCLCPP_INFO(get_logger(), "map_adapter：obstacles/source=air_fusion，动态轨由 /agc/obstacles 提供，静态先验来自 %s",
-        obstacles_file_.c_str());
-    } else {
-      RCLCPP_INFO(get_logger(), "map_adapter：obstacles/source=config，静态先验来自 %s",
-        obstacles_file_.c_str());
-    }
+    // 2026-11-04：air_fusion 退役 → `/agc/obstacles` 无发布者，**不再订阅**。
+    //   静态先验是本节点的唯一障碍来源（与既有 config 模式等价）。
+    RCLCPP_INFO(get_logger(), "map_adapter：静态先验来自 %s（动态障碍源已退役，不再订阅 /agc/obstacles）",
+      obstacles_file_.c_str());
     rebuild();
     publishMap();
 
@@ -160,7 +159,7 @@ private:
     double last_seen_s{0.0};   // 最后真实观测时刻（track Header.stamp）
   };
 
-  // R-038（见 ADR-0053）：启动期几何 / 角度合法性校验，非法**明确拒绝**（抛错使节点 configure 失败；
+  // R-038（见 ADR-0009）：启动期几何 / 角度合法性校验，非法**明确拒绝**（抛错使节点 configure 失败；
   //   **不**静默以默认值运行）。既有 rebuild() 的 `res_<=0 || width<=0 || height<=0` 运行期守卫保留。
   void validateStartupOrThrow() const
   {
@@ -204,7 +203,7 @@ private:
     if (r["origin_y"]) {oy_ = r["origin_y"].as<double>();}
   }
 
-  // 静态先验（场景静止障碍，static 层）——与 air_fusion/config 模式无关，始终加载
+  // 静态先验（场景静止障碍，static 层）——唯一来源，始终加载
   void loadStaticObstacles()
   {
     if (obstacles_file_.empty()) {RCLCPP_WARN(get_logger(), "obstacles_file 未设置：地图仅含静态几何"); return;}
@@ -235,11 +234,13 @@ private:
     }
   }
 
-  // 动态观测：整集合不再整体替换；逐 track 记录最后观测时刻，静态 id 也记（可见时用实测几何）
+  // 动态观测：整集合不再整体替换；逐 track 记录最后观测时刻，静态 id 也记（可见时用实测几何）。
+  //
+  // **2026-11-04：当前无调用方**——air_fusion 退役后 `/agc/obstacles` 无发布者，构造函数
+  // 不再建该订阅。保留本函数与 `live_` / `expireDynamic()` 是为了将来有动态障碍源时能直接接上
+  // （届时须按 docs/conventions/路线分支治理.md 2.2 节四项重新立项，并**同时**恢复订阅）。
   void onObstacles(const agc_msgs::msg::ObstacleTrackArray & msg)
   {
-    last_msg_s_ = now().seconds();
-    got_msg_ = true;
     for (const auto & t : msg.tracks) {
       Obstacle o;
       o.id = t.obstacle_id;
@@ -306,10 +307,9 @@ private:
   // 知识时效：源是否仍支撑当前障碍内容
   bool knowledge_current()
   {
-    if (obstacle_source_ == "air_fusion") {
-      return got_msg_ && (now().seconds() - last_msg_s_) <= source_max_age_s_;
-    }
-    return true;   // config：静态先验即来源
+    // 2026-11-04：唯一来源是静态先验（配置声明的事实）→ 知识恒新鲜。
+    //   原 air_fusion 模式的时效判定（收到过消息 && 年龄 <= source_max_age_s_）已随该节点退役删除。
+    return true;
   }
 
   bool rebuild()
@@ -378,7 +378,7 @@ private:
   }
 
   // R-040 内容身份 hash：把**几何元数据与源版本**与 data 字节一并折叠（**不只** data 字节串）。
-  //   组装顺序（须与核查脚本一致，见 ADR-0055）：
+  //   组装顺序（须与核查脚本一致，见 ADR-0007）：
   //     frame_id/NUL, obstacles_source/NUL, scenario_version/NUL,
   //     resolution(8B), width(8B), height(8B), origin_x(8B), origin_y(8B), data...
   //   double/uint64 按**本机 IEEE-754 binary64 / little-endian 内存字节**直接喂入（本项目全链同机
@@ -402,7 +402,7 @@ private:
         appendRaw(b, sizeof(b));
       };
     appendStr(world_frame_);       // frame_id
-    appendStr(obstacle_source_);   // 障碍源版本（config / air_fusion）
+    appendStr(obstacle_source_);   // 障碍源版本（恒 config；参数保留仅为 hash 兼容）
     appendStr(scenario_version_);  // 场景版本（run config）
     appendDouble(res_);            // resolution
     const uint64_t w = static_cast<uint64_t>(width), h = static_cast<uint64_t>(height);
@@ -480,8 +480,6 @@ private:
   std::set<size_t> unknown_idx_;                   // 未知单元（过期动态轨覆盖格）
   bool built_{false};
   bool geometry_ok_{false};
-  bool got_msg_{false};
-  double last_msg_s_{-1e9};
   uint64_t update_seq_{0};                         // R-040：单调更新序号（实质重建 +1）
   Grid grid_;
   std::string last_hash_;
@@ -490,7 +488,6 @@ private:
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr hash_pub_;
   rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr seq_pub_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr valid_pub_;
-  rclcpp::Subscription<agc_msgs::msg::ObstacleTrackArray>::SharedPtr sub_obstacles_;
   rclcpp::TimerBase::SharedPtr timer_;
 };
 

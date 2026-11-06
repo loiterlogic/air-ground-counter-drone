@@ -31,6 +31,9 @@ scenes:
     params:
       task_manager: {goal_follow_target: true, goal_x: 6.5, goal_y: 2.5}
       run_logger: {scenario: "s02_linear_none_nominal_track"}
+      # 高度**不在场景层声明**：ADR-0007 把权威来源改为**地图**（`flight_altitude.target_cruise_m`，
+      # manifest `source=map`）。H0 时代的「场景显式声明、source=scene」要求**已作废**，
+      # 在这里写 `cruise_alt_m` 会被 `tests/test_scene_config_invariants.py` 判失败。
       intruder_driver: {motion: linear, speed_mps: 0.5}
 
   s03_maneuver_none_nominal_track:
@@ -53,7 +56,20 @@ scenes:
       # `config/spawn_layout.yaml`（世界 spawn / 复位 / 己方机起飞参考的单一真源）。
       # 保留旧坐标的覆盖会把主场景钉死在旧布局，且让"改了布局、演示还是旧位"静默通过。
       run_logger: {scenario: "s04_static_static_obs_track"}
+      # 高度随**地图**派生（ADR-0007）；此处**不得**硬编码 `cruise_alt_m`。
       intruder_driver: {motion: static}
+      # ---- H0 round-5（2026-11-02，用户授权）：本场景的**观测偏航场景级默认** = track ----
+      # 为什么是本场景而不是全局：round-4 实测证明 s04 的 TIMEOUT 主因是相机 `behind` 门
+      # （目标落在 boresight 之后），而默认 `velocity`（机头随速度）掠过目标后不再指向目标。
+      # 把默认设为 `track` 后 `gate_ok≈280 / behind=0`，s04 达 TRACKING_SUCCESS。
+      #
+      # 口径边界（不得误读）：
+      #   * 这是**场景级观测配置**，不是传感器能力提升，也不是自主逃逸/自主控制成果；
+      #   * 感知量程 / FOV / 噪声、`air.yaml` 的全局默认（仍为 `velocity`）**均未改动**；
+      #   * **显式 CLI `observe_yaw_mode:=<mode>` 仍优先**（w6.launch.py 先合并场景、再用非空 CLI 覆盖），
+      #     故历史对照臂/消融实验可用 CLI 强制回 `velocity` 复现旧行为。
+      # 仅本场景设置；s02 及其余场景的 yaw 不受影响。
+      trajectory_tracker: {observe_yaw_mode: track}
 
   s05_linear_dynamic_obs_track:
     axes: {target_motion: linear, obstacle: dynamic, perception: nominal, outcome: tracking}
@@ -88,8 +104,8 @@ scenes:
     expected_reason: CAPTURE_NET
     params:
       scenario_reset: {target_x: 4.5, target_y: 3.0}
-      task_manager: {goal_follow_target: false, goal_x: 4.5, goal_y: 3.0,
-                     # ADR-0076：capture 场景**不**以跟踪里程碑锁存终态——否则捕获裁决的交火窗口
+      task_manager: {goal_follow_target: false, goal_x: 5.5, goal_y: 3.0,
+                     # ADR-0014：capture 场景**不**以跟踪里程碑锁存终态——否则捕获裁决的交火窗口
                      # （GROUND_APPROACH）被提前关闭，`INTERCEPT_CONFIRMED` 永不发生（实测 20/20
                      # 均提前落 TRACKING_SUCCESS）。里程碑仍记入 `tracking_milestone_met` 供指标使用。
                      tracking_milestone_is_terminal: false}
@@ -120,6 +136,29 @@ scenes:
       run_logger: {scenario: "s10_maneuver_none_fov_timeout"}
       intruder_driver: {motion: maneuver, speed_mps: 0.5, radius_m: 4.0}
 
+  # N3 回归矩阵 · **无目标负例**（2026-11-04 新立；此前从未跑过）
+  # 目标真值仍在世界里，但感知视场收窄到近零 → 永不出航迹 → 不得导向成功。
+  # "无目标"的期望是**停在 AIR_SEARCH 直到 T_max，落 MISSION_FAILED(TIMEOUT)**（C4）；
+  # 若出现 TRACKING_SUCCESS / INTERCEPT_CONFIRMED，即为**假成功回归**。
+  s17_static_none_no_target_timeout:
+    axes: {target_motion: static, obstacle: none, perception: no_target, outcome: timeout}
+    # ⚠ 2026-11-04 修正：本场景**当前不可运行**。
+    #   原载体是 `air_perception` 的 FOV 收窄（`perception_sensors_no_target.yaml`，hfov/vfov=0.1°），
+    #   但 `air_fusion` 退役后 `/agc/air/obs` **无人订阅**，故该门控不再影响 `/agc/targets`。
+    #   `/agc/targets` 的发布者 `gt_adapter` **无几何门控**（不分远近），因此本场景的
+    #   「看不见」**造不出来**；旧实跑能得到 `TIMEOUT` 只是因为 `t_max_s=40` 到点，
+    #   **不是**被感知拒——`visibility_rate` 那项证据在当时也因通道无消费者而失真。
+    #   ⇒ 如实标 unsupported（`carrier_entry()` 会在启动期**拒绝运行**，不以命名推定已覆盖）。
+    #   恢复方式（**属新决策，未立项**）：给 `gt_adapter` 加可致盲的开关（如 `confidence < confidence_min`
+    #   或 `drop_prob = 1.0`），见 `scenario_carriers.yaml` 的 `no_target.reason`。
+    support_status: "unsupported:perception"
+    expected_terminal: MISSION_FAILED
+    expected_reason: TIMEOUT
+    params:
+      task_manager: {goal_follow_target: false, t_max_s: 40.0}
+      run_logger: {scenario: "s17_static_none_no_target_timeout"}
+      intruder_driver: {motion: static}
+
   s11_static_static_none_unreachable:
     axes: {target_motion: static, obstacle: static, perception: nominal, outcome: unreachable}
     support_status: supported
@@ -146,8 +185,8 @@ scenes:
       run_logger: {scenario: "s12_linear_dynamic_nominal_capture"}
       intruder_driver: {motion: linear, speed_mps: 0.3}
 
-  # —— W7-b P1 机制激活候选（ADR-0085）：s08 的"固定目标 + 静态 + 标称"使 α（观测指向 + 跟踪参考）
-  #    的因果链被旁路（ADR-0084(f)）。以下两个场景为该命题的**固定条件候选**，先经 pilot 选一。
+  # —— W7-b P1 机制激活候选（ADR-0023）：s08 的"固定目标 + 静态 + 标称"使 α（观测指向 + 跟踪参考）
+  #    的因果链被旁路（ADR-0022）。以下两个场景为该命题的**固定条件候选**，先经 pilot 选一。
   s13_linear_none_nominal_capture:
     axes: {target_motion: linear, obstacle: none, perception: nominal, outcome: capture}
     support_status: supported
@@ -156,7 +195,7 @@ scenes:
     params:
       scenario_reset: {target_x: 4.5, target_y: 3.0}
       task_manager: {goal_follow_target: true, goal_x: 4.5, goal_y: 3.0,
-                     # ADR-0076 不变量：capture 场景不以跟踪里程碑锁存终态
+                     # ADR-0014 不变量：capture 场景不以跟踪里程碑锁存终态
                      tracking_milestone_is_terminal: false}
       run_logger: {scenario: "s13_linear_none_nominal_capture"}
       intruder_driver: {motion: linear, speed_mps: 0.5}
@@ -175,7 +214,7 @@ scenes:
       intruder_driver: {motion: linear, speed_mps: 0.5}
       capture_adjudicator: {interception_authorized: true}
 
-  # —— 第 2 轮 pilot 候选（ADR-0085(e)）：静态目标 ⇒ 无"追不上 + C10 hold 自锁"混淆，
+  # —— 第 2 轮 pilot 候选（ADR-0023）：静态目标 ⇒ 无"追不上 + C10 hold 自锁"混淆，
   #    难度只落在观测通道（窄视场 / 丢包），用于分离"指向 / 跟踪"本身的机制效应。
   s15_static_none_fov_capture:
     axes: {target_motion: static, obstacle: none, perception: fov, outcome: capture}
@@ -202,3 +241,30 @@ scenes:
       run_logger: {scenario: "s16_static_none_dropout_capture"}
       intruder_driver: {motion: static}
       capture_adjudicator: {interception_authorized: true}
+
+  # ---- ADR-0031（2026-11-04）：目标机**漂移轨道**（`epicycle`）的活跃消费者 ----
+  # 为什么需要这个场景（不是可选项）：`scenario_carriers.yaml` 的 `target_motion.epicycle`
+  #   必须"**当前有消费者**"才不是空登记（路线分支治理 §2.2②）。本场景就是那个消费者。
+  #
+  # 为什么是 tracking（不是 capture）：本运动要证明的是"目标**真的在动**且下游四条链仍成立"，
+  #   不是再验一次网弹道。捕获仍由 s08（static）/ s13（linear）覆盖（A4 用它们，不改动）。
+  #
+  # 为什么 `goal_follow_target: true`：目标质心会漂移，固定任务目标会让车停在原地等——
+  #   那证明不了"跟随能力"。这与 s02（linear）/ s03（maneuver）同口径。
+  #
+  # 为什么 `world_map: yard`：与 s04 同图，使 `target_cruise_m=12.0`、网弹道派生值、
+  #   己方机高度三者与主演示一致——否则量出来的节奏不能与 s04 基线对照（A6 要求对照表）。
+  #
+  # 参数取值见 `w6_base.yaml` 的 `intruder_driver` 段（那里有完整的推导链与命名纪律）：
+  #   speed_mps 1.0 / radius_m 1.8 / drift_amplitude_m 0.6 / drift_period_s 30.0
+  #   峰值速度上界 1.126 ≤ 1.206（火控提前量上界）；位移上界 2.40 + goal_tol 0.3 = 2.70 < d_track 3.0。
+  s18_epicycle_none_nominal_track:
+    axes: {target_motion: epicycle, obstacle: none, perception: nominal, outcome: tracking}
+    support_status: supported
+    expected_terminal: TRACKING_SUCCESS
+    world_map: yard
+    params:
+      task_manager: {goal_follow_target: true, goal_x: 12.5, goal_y: -2.0}
+      run_logger: {scenario: "s18_epicycle_none_nominal_track"}
+      intruder_driver: {motion: epicycle, speed_mps: 1.0, radius_m: 1.8,
+                        drift_amplitude_m: 0.6, drift_period_s: 30.0}

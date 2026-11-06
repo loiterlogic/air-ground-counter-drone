@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w7b_p1_decompose_fco —— **描述性**拆解 P1 的 primary DV（FCO）组成（ADR-0086/0087）。
+"""w7b_p1_decompose_fco —— **描述性**拆解 P1 的 primary DV（FCO）组成（ADR-0022/0087）。
 
 **定位**：本脚本**不**参与判定、**不**改写任何 verdict；只把既有 run 产物（`metrics/arms.json` +
 各 episode `summary.json` + 逐 episode 日志）重排为可解释的分解表，回答：

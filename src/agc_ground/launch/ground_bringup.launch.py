@@ -10,20 +10,35 @@
 命令源（`command_source`，互斥；同一时刻仅一路下发，spec R7/R8）：
   * `rl`       —— `agc_rl` 的 RL 推理节点（主控，ADR-0004）。RL **不消费** costmap
                   （仅订 odom/scan/goal/state，见 `agc_rl.inference_node` / `agc_rl.interface`），
-                  故**不**起独立 costmap 进程（按命令源裁剪，[ADR-0060](../../../docs/adr/0060-nav2-absorption-applicability-and-command-source-trimming.md)）；
+                  故**不**起独立 costmap 进程（按命令源裁剪，[ADR-0003](../../../docs/adr/0003-nav2-paradigm-absorption.md#top)）；
                   仅安全层 + 唯一执行口中继。
   * `baseline` —— `agc_ground` 的离线对照基线（Nav2 planner 插件 + `agc_control` LQR 插件）；
                   基线自持内建 costmap（同一 `config/costmap.yaml` 参数源），故不再单起 costmap 节点。
-  * `train`    —— W7-a（R6）：W7 **外部训练 / 评估适配层**（`agc_rl` env / runner）作命令源，独占发布
-                  `/agc/ground/cmd_vel_raw`；本链路**不**起 rl / baseline 发布者，仅安全层 + 中继。
+  * ~~`train`~~ / ~~`rl_high`~~ —— **2026-11-04 已删除**：两者都服务 W7-a / W7-b 的研究臂，
+    而 W7 已结档（[ADR-0023](../../../docs/adr/0023-w7b-adjudication-record-and-exit.md#top)：
+    P1 inconclusive / P2 falsified）。研究复跑须用 `scripts/research/` 自带的参数文件，
+    **不得**在主链保留"外部进程作命令源"的分支。见
+    [路线分支治理](../../../docs/conventions/路线分支治理.md#rule) 5.3。
 
-安全层开关（`shield`，W7-b T1/E1，[ADR-0070](../../../docs/adr/0070-w7b-research-propositions-and-rl-role-adjudication.md)(d)）：
-  * `true`（缺省）—— 起 Nav2 `collision_monitor`（既有行为不变）；
-  * `false` —— **无 shield 对照臂**（纯仿真，**不**用于部署）：不起安全层，改由 `cmd_vel_passthrough`
-                 把 `cmd_vel_raw` 恒等转发到唯一执行口（仍只一路命令者）。
+安全层（`shield`）：**2026-11-04 起恒定启用**，launch 开关已删除。
+`collision_monitor` 是唯一安全层（[ADR-0004](../../../docs/adr/0004-ground-control-rl-primary-and-nav2-safety-layer.md#top)）；
+"无 shield 对照臂"属 W7-b 消融研究，演示与验收**永远不该关安全层**。
 
 参数单一来源：`config/ground.yaml`（安全层 / 中继）、`config/costmap.yaml`（分层 costmap，基线自持）、
 `config/baseline.yaml`（基线）、`agc_rl/config/rl.yaml`（RL）（契约 #params）。
+
+路径输入与命令源的关系（2026-11-01，ADR-0013）：
+  * `/agc/ground/path`（`nav_msgs/Path`，`frame_id=world`）是地面侧占位规划器发布的**路径数据**，
+    不是命令，因此**不进** `command_source` 的互斥域。
+    **参数边界**：路径相关参数全部是**节点本地 config**（`agc_rl/config/rl.yaml` 的 `path.*`、
+    `agc_ground/config/ground.yaml` 的 `placeholder_path_planner.*`），由既有 launch 透传；
+    **未新增契约全局入口**（`#params` 无新条目），也**未新增 launch 级开关**——
+    goal-only 对照只用节点本地 `path.enabled`。
+  * 路径的消费侧质量门（从未收到 / 空 / 单点 / 帧不一致 / 过期）与"失效即零速、禁止静默退回
+    goal-only"由消费方实现（ADR-0013(e)）；G2 负责接线并给出行为证据。
+  * **启动边界**：`collision_monitor` 的 `process()` 只由 `cmd_vel_in` 回调触发，**命令源完全缺失时
+    它不主动发零速**（ADR-0013）。`command_source=rl` 下由 RL 节点按 20 Hz 定频出命令，天然满足。
+  * 本注释**不改变任何有效逻辑或参数值**：`command_source` 分支、managed 编排均原样。
 """
 
 import os
@@ -50,11 +65,10 @@ GZ_LIDAR_FRAME = 'agc_car/car/lidar_link/lidar3d'
 def _nodes(context, *args, **kwargs):
     command_source = LaunchConfiguration('command_source').perform(context)
     use_sim_time = LaunchConfiguration('use_sim_time')
-    # W7-b（T1/E1，ADR-0070(d)）：`shield` 单一开关——缺省 true（既有行为不变）。
-    # false = **无 shield 对照臂**（纯仿真，**不**用于部署）：不起 collision_monitor，
-    # 改由 `cmd_vel_passthrough` 把 cmd_vel_raw 恒等转发到唯一执行口。
-    shield_enabled = str(LaunchConfiguration('shield').perform(context)).lower() not in (
-        'false', '0', 'no')
+    # 2026-11-04：安全层**恒定启用**（launch 开关已删，见 docs/conventions/路线分支治理.md 5.3）。
+    # 原 `shield=false` 是无 shield 消融臂，属 W7-b 研究（ADR-0023 已结档）；
+    # 研究复跑须在 scripts/research/ 里自带参数，不得在主链开口子。
+    shield_enabled = True
 
     ground_share = get_package_share_directory('agc_ground')
     rl_share = get_package_share_directory('agc_rl')
@@ -123,40 +137,29 @@ def _nodes(context, *args, **kwargs):
             output='screen',
         ))
         managed.append('ground_baseline')
-    elif command_source == 'train':
-        # W7-a（R6）：命令源 = W7 **外部训练 / 评估适配层**（`agc_rl` env / runner，非本图内节点）。
-        # 适配层独占发布 `/agc/ground/cmd_vel_raw`；本链路**不**起 rl / baseline 发布者，
-        # 仅保留安全层 + 唯一执行口中继——链路语义与 `rl` 一致（安全层仍是唯一 shield，ADR-0004）。
-        pass
-    elif command_source == 'rl_high':
-        # W7-b（P2 臂 B，ADR-0070(b)(f)）：**高层（拦截点）+ 成熟低层**——
-        # 高层节点（`agc_rl`）只出目标点 `/agc/ground/goal_hl`；低层 = `ground_baseline`
-        # （Navfn 规划 + 自研 LQR，[R-012] 准确命名），由它写 `/agc/ground/cmd_vel_raw`。
-        actions.append(IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                os.path.join(rl_share, 'launch', 'rl_inference.launch.py')),
-            launch_arguments={'use_sim_time': use_sim_time, 'mode': 'high_level'}.items(),
-        ))
-        actions.append(Node(
-            package='agc_ground', executable='ground_baseline',
-            name='ground_baseline',
-            parameters=[baseline_file, costmap_file,
-                        {'use_sim_time': use_sim_time,
-                         'goal_topic': '/agc/ground/goal_hl'}],
-            output='screen',
-        ))
-        managed.append('ground_baseline')
     else:
         # W5-b：命令源 = agc_rl 推理节点（include agc_rl 的 launch）。
-        # S-04（ADR-0060）：RL 主控**不消费** costmap → **不**起闲置的独立 `nav2_costmap_2d` 进程；
+        # S-04（ADR-0003）：RL 主控**不消费** costmap → **不**起闲置的独立 `nav2_costmap_2d` 进程；
         # 分层 costmap 仅由离线基线（`command_source=baseline`）自持（见上分支）。
+        #
+        # G2（ADR-0013/0109）：`rl` 拓扑**按既定链路**起几何/直连占位全局规划器。
+        #   * 它**只发路径、不发速度** → 不产生第二 `cmd_vel_raw` 生产者；
+        #   * 不进 `command_source` 互斥域（路径是数据，不是命令）；
+        #   * 不接 Navfn / planner_server、不起 costmap。
+        #   * **不提供 launch 级开关**：是否消费路径只由节点本地 `path.enabled` 决定
+        #     （显式对照模式）；本文件**不为它新增任何 launch 参数**，也不新增契约全局入口。
+        #   顺序上先起规划器（发布方），再 include RL（订阅方），避免启动瞬间无发布者。
+        actions.append(Node(
+            package='agc_ground', executable='placeholder_path_planner',
+            name='placeholder_path_planner', parameters=common, output='screen',
+        ))
         actions.append(IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 os.path.join(rl_share, 'launch', 'rl_inference.launch.py')),
             launch_arguments={'use_sim_time': use_sim_time}.items(),
         ))
 
-    # lifecycle 编排：复用 Nav2 lifecycle_manager 统一 configure→activate（ADR-0008 吸收点）
+    # lifecycle 编排：复用 Nav2 lifecycle_manager 统一 configure→activate（ADR-0003 吸收点）
     if managed:
         actions.append(Node(
             package='nav2_lifecycle_manager', executable='lifecycle_manager',
@@ -175,12 +178,8 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'command_source', default_value='rl',
             description='命令源（互斥）：rl（RL 主控，ADR-0004）| baseline（离线对照基线，R8）'
-                        '| train（W7-a 外部训练 / 评估适配层作命令源）'
-                        '| rl_high（W7-b P2 臂 B：高层拦截点 + 成熟低层 Navfn+LQR）'),
-        # W7-b（T1/E1）：安全层开关——缺省 true（既有行为不变）；false = 无 shield 对照臂（纯仿真）。
-        DeclareLaunchArgument(
-            'shield', default_value='true',
-            description='安全层开关：true=起 collision_monitor（默认）；'
-                        'false=无 shield 对照臂（恒等透传，纯仿真，不用于部署）'),
+                        '（train / rl_high 已于 2026-11-04 随 W7 结档清退，'
+                        '见 docs/conventions/路线分支治理.md 5.3）'),
+        # 2026-11-04 清退：`shield` 开关已删除——安全层恒定启用。
         OpaqueFunction(function=_nodes),
     ])

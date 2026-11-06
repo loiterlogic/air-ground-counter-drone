@@ -1,6 +1,8 @@
 # ADR 写法（本仓库）
 
-ADR 放在 `docs/adr/`，编号连续：`0001-slug.md`、`0002-slug.md`…… 现状索引见 [ADR 索引](../../../docs/adr/README.md#adr-index)，由 `scripts/adr_index.py` 从每篇的标题与状态生成。
+ADR 放在 `docs/adr/`，编号连续：`0001-project-positioning-and-execution-scope.md#top`、`0002-docs-source-of-truth-and-reference-discipline.md#top`…… 现状索引见 [ADR 索引](../../../docs/adr/README.md#adr-index)，由 `scripts/adr_index.py` 从每篇的标题与状态生成。
+
+> **2026-11-02 合并过一轮（112 → 27）**：同域旧 ADR 归并为一篇多子节，编号重新连续。索引末尾有「合并映射」表回答「旧 `ADR-00NN` 现在归哪篇」。合并是**一次性显式例外**，不改「只追加、不重写历史结论」的纪律——归并只做去重，逐条结论保留。
 
 ## 本仓库的实际格式
 
@@ -52,7 +54,7 @@ accepted（{日期}，来源：用户裁定——"{原话}"）   <!-- 需要时�
 - 状态写在 `## Status` **节里**，不是 YAML frontmatter（`--` 分隔的头部）——本仓库全部 ADR 都是节形式。
 - **不要替别人猜状态**：不确定就写 `deferred` 并写明未决点，不要默认写成 `accepted`。
 - **暂停 ≠ 废止**：被暂停的路线其 ADR 仍是 `accepted`（决策曾经有效），暂停事实记在 plan 的方向索引里。
-- 修订历史：不改旧 ADR 的结论，新增"适用关系"节或直接新开一篇并标明 `superseded by`（[ADR-0066](../../../docs/adr/0066-decision-applicability-and-reference-discipline.md)）。
+- 修订历史：不改旧 ADR 的结论，新增"适用关系"节或直接新开一篇并标明 `superseded by`（[ADR-0002](../../../docs/adr/0002-docs-source-of-truth-and-reference-discipline.md#top)）。
 
 ## 编号
 

@@ -38,7 +38,7 @@ _Avoid_: 被否的同义词、容易混淆的说法
 
 ## 新增术语的流程
 
-1. 先在 `GLOSSARY.md`、`docs/`、[规格归档索引](../../../docs/archive/specs/README.md#specs-index) 里查是否已有名字；
+1. 先在 `GLOSSARY.md`、`docs/`、[ADR 索引](../../../docs/adr/README.md#adr-index) 里查是否已有名字；
 2. 已有的就复用，不要造同义新词；
 3. 确实新的才加，并写清与相邻概念的**边界**；
 4. 加完检查释义里有没有把约束复述了一遍——有就改成引用。

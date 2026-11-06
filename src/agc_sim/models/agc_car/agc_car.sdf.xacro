@@ -221,6 +221,60 @@
       </visual>
     </link>
 
+    <!-- ===== GUI 辨识高亮球（2026-11-05，用户裁定）=====
+         **纯视觉**：独立 link + fixed joint（与 `car/capture_net` / `car/jammer` 同一装饰范式、
+         与 `intruder_uav` 的 `target_highlight` 同口径），**无 collision** → 不参与接触 / 测距 /
+         物理求解，不改任何既有 link 的 inertial / collision / visual / sensor / plugin。
+
+         为什么需要：用户实测"GUI 里看不见车"。50 m 正俯视下 1.0 m 的车只有约 14 px，
+         加上深灰车体压在灰地面上，人眼难辨。1.2 m 高亮球把它抬到约 17 px 且高对比。
+
+         **几何放置（关键，不可随意改）——两条互相夹逼的硬约束**：
+
+         ① 下界：球**不得**挡住激光。`gpu_lidar` 对 **visual** 求交（见本文件 `capture_net`
+            注释里的实测），且本机激光是 **3D**（16 束、垂直 ±15°、range 20 m）——
+            上行光束在水平距离 d 处的高度是 `0.48 + d·tan(15°)`，到 20 m 处已到 **5.84 m**。
+            所以"球底高于 0.48 扫描面"**并不够**（2026-11-05 实测踩过这个坑：球心 1.15 时，
+            球体 z[0.55,1.75] 仍被 0.3~2 m 处的上行束扫到）。
+            正确的下界是 **球心 − 0.6 ≥ 5.84 m** 才能完全避开扫掠——那会让球悬在车上 6 m，
+            俯视下荒谬。
+            实测结论：球心 1.15 时的假回波**全部落在 `scan_self_filter` 矩形内**
+            （`|x|≤0.6037, |y|≤0.38545`；球水平半径 0.6 与该矩形同量级，逐束逐方位枚举
+            16×360 束确认 **0 条**未被滤除的假回波）→ **安全层无感**，故下界实际由自滤矩形
+            兜底，不靠几何回避。
+
+         ② 上界：球**不得**被 `car/capture_net` 遮挡。网面是 z=**1.60**、水平半径 **1.0** 的
+            圆盘，而正俯视视线是自上而下：球若整体或部分在网面之上，视线先撞网、球被盖住
+            （2026-11-05 实测：球心 1.15 时球只渲染出 3~10 px，理论应为 17 px，即被网切掉大半）。
+            故球顶必须**低于**网面：`球心 + 0.6 < 1.60` → 球心 < 1.00。
+
+         取 **球心 z = 0.95**（球 z[0.35,1.55]）：球顶 1.55 < 网面 1.60（留 0.05 m 余量），
+         球底 0.35 落在自滤矩形覆盖的范围内（不产生未滤除回波），且与机体同心。
+         该值与 `agc_x500` 的 `own_highlight`（球心 0.95）**一致**，两者俯视观感相同。
+
+         **重标定义务**：若将来改动以下任一量，`scan_self_filter` 矩形口径、`w5` 自滤/净空
+         断言、以及本条两条边界**必须**重新标定，不得沿用：
+           * `capture_net` 的 z（当前 1.60）或其半径（当前 1.0）；
+           * 球半径（当前 0.6）或球心高度（当前 0.95）；
+           * 激光垂直 FOV / range（当前 ±15° / 20 m）。 -->
+    <link name="car/highlight">
+      <pose>0 0 0.95 0 0 0</pose>
+      <inertial>
+        <mass>0.000001</mass>
+        <inertia><ixx>1e-9</ixx><ixy>0</ixy><ixz>0</ixz><iyy>1e-9</iyy><iyz>0</iyz><izz>1e-9</izz></inertia>
+      </inertial>
+      <visual name="car_highlight_visual">
+        <cast_shadows>false</cast_shadows>
+        <transparency>0.45</transparency>
+        <geometry><sphere><radius>0.6</radius></sphere></geometry>
+        <material>
+          <ambient>0.05 0.85 0.95 1</ambient>
+          <diffuse>0.10 0.90 1.00 1</diffuse>
+          <emissive>0.02 0.40 0.50 1</emissive>
+        </material>
+      </visual>
+    </link>
+
     <!-- 关节：后两轮驱动（DiffDrive），前两轮自由从动。关节系与子 link 系重合（不写 joint pose）。
          轮位（Husky 布局）：x=±0.256，y=±wheel_separation/2=±0.285475，z=0.035 -->
     <joint name="left_wheel_joint" type="revolute">
@@ -254,6 +308,11 @@
     <joint name="jammer_joint" type="fixed">
       <parent>car/base_link</parent>
       <child>car/jammer</child>
+    </joint>
+    <!-- GUI 辨识高亮球（纯视觉，无 collision；球心 z=0.95 使球顶 1.55 低于捕获网面 1.60，避免被网遮挡） -->
+    <joint name="highlight_joint" type="fixed">
+      <parent>car/base_link</parent>
+      <child>car/highlight</child>
     </joint>
 
     <!-- 差速驱动（真实物理；后两轮驱动，Husky 尺度参数，ADR-0010 / ADR-0021） -->

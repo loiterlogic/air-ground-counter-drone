@@ -6,7 +6,7 @@
 
 检查六话题频率（air/obs 20、targets 10、obstacles 10、ground/odom 30、map 2、gt/* 30）
 与 header.frame_id（须 world、无裸 base_link）。结果打印并落
-experiments/w4-perception/<run_id>/metrics/frequency.json（ADR-0007）。
+experiments/w4-perception/<run_id>/metrics/frequency.json（ADR-0006）。
 """
 import argparse
 import json

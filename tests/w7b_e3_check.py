@@ -10,7 +10,7 @@
   * `not_applicable.target_truth == false`（目标真值可得）；
   * `longest_outage_s` / `recovery_time_last_s` 为有限非负。
 
-判据依据 [F-10](docs/reviews/agc-review-2026-10-14/30-未来.md#f-10) 与 [ADR-0070](docs/adr/0070-w7b-research-propositions-and-rl-role-adjudication.md)(d)（E3）。
+判据依据 [F-10](docs/reviews/agc-review-2026-10-14/30-未来.md#f-10) 与 [ADR-0022](docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)(d)（E3）。
 
 用法：
   python3 tests/w7b_e3_check.py --report experiments/w7-rl-b/<run_id>/metrics/report.json

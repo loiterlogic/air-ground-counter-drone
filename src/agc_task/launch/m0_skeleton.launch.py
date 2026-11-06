@@ -69,7 +69,7 @@ def generate_launch_description():
             # R-026：传感器通道 / 障碍真值文件按场景轴由上层选择并单一注入
             'sensors_file': LaunchConfiguration('sensors_file'),
             'obstacles_file': LaunchConfiguration('obstacles_file'),
-            # S-06（ADR-0062）：地图几何文件由上层经单一真源派生注入
+            # S-06（ADR-0007）：地图几何文件由上层经单一真源派生注入
             'map_file': LaunchConfiguration('map_file'),
         }.items(),
     )
@@ -83,7 +83,6 @@ def generate_launch_description():
             'use_sim_time': LaunchConfiguration('use_sim_time'),
             'command_source': LaunchConfiguration('command_source'),
             # W7-b（T1/E1）：安全层开关透传（缺省 true；false = 无 shield 对照臂，纯仿真）
-            'shield': LaunchConfiguration('shield'),
         }.items(),
     )
 
@@ -105,11 +104,11 @@ def generate_launch_description():
                  # R-026：scene_manifest（声明轴 + 承载者 + 实际生效参数）与合并后参数文件
                  # 经 run_logger 拷入 run 的 config/（缺省空 = 不拷贝，不影响既有调用方）
                  {'scene_manifest_file': LaunchConfiguration('scene_manifest_file'),
-                  # R-029（ADR-0044）：世界模型文件 → run_logger 记 sha256（工具链身份）
+                  # R-029（ADR-0006）：世界模型文件 → run_logger 记 sha256（工具链身份）
                   'world_file': LaunchConfiguration('world_file'),
                   'params_file': LaunchConfiguration('params_file'),
                   # W7-b（T1/E1）：安全层开关（字符串承载→节点内解析）——false 时 action 新鲜度门不适用
-                  'shield_layer_enabled': LaunchConfiguration('shield')}],
+                  'shield_layer_enabled': True}],
              output='screen'),
     ]
 
@@ -126,14 +125,12 @@ def generate_launch_description():
         description='W5 地面命令源（互斥）：rl | baseline'))
     ld.add_action(DeclareLaunchArgument(
         'target_source', default_value='gt_adapter',
-        description='W7-b P1：观测来源（air_fusion / gt_adapter）'))
+        description='观测来源（gt_adapter；air_fusion 已退役）'))
     ld.add_action(DeclareLaunchArgument(
         'seed', default_value='0',
         description='感知随机种子（由 w6 顶层注入；默认 0）'))
-    # W7-b（T1/E1）：安全层开关透传（缺省 true；false = 无 shield 对照臂，纯仿真）
-    ld.add_action(DeclareLaunchArgument(
-        'shield', default_value='true',
-        description='安全层开关：true=起 collision_monitor（默认）；false=无 shield 对照臂'))
+    # 2026-11-04 清退：`shield` 开关已删除——安全层恒定启用
+    # （见 docs/conventions/路线分支治理.md 5.3）。
     # R-026：场景轴承载者接线（缺省 = 既有行为：static 世界 + 标称通道 + 默认障碍 + 无 manifest）
     ld.add_action(DeclareLaunchArgument(
         'world_obstacles', default_value='static',

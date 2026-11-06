@@ -153,9 +153,11 @@ def case_history(tmp: Path) -> None:
 def case_local_only(tmp: Path) -> None:
     print("\n[12] 本机保留路径：本地存在则单列，不计断链也不算通过")
     root = make_project(tmp / "localonly")
-    # 造一个"本机保留"目录并在里面放文件
-    write(root / "docs" / "archive" / "specs" / "w1" / "spec.md", "# S\n")
-    write(root / "docs" / "page.md", "# P\n\n[规格](archive/specs/w1/spec.md)\n")
+    # 造一个"本机保留"目录并在里面放文件。用 `toolchain/`：它在 LOCAL_ONLY_PREFIXES 里，
+    # 且不像 `experiments/` 那样被"证据引用"规则提前跳过。
+    # （原示例 `docs/archive/specs/` 已于 2026-11-03 删除。）
+    write(root / "toolchain" / "PX4-Autopilot" / "README.md", "# T\n")
+    write(root / "docs" / "page.md", "# P\n\n[工具链](../toolchain/PX4-Autopilot/README.md)\n")
     result = run(LINK_CHECK, "--root", str(root))
     check("退出码 0（本地可解析）", result.returncode == 0, result.stdout)
     check("单列为本机保留", "指向本机保留路径" in result.stdout, result.stdout)
@@ -163,7 +165,7 @@ def case_local_only(tmp: Path) -> None:
     check("标为本地可解析 1 条", "本地可解析 1 条" in result.stdout, result.stdout)
 
     # 同类路径但本地也缺 -> 报为需复核，而不是静默通过
-    write(root / "docs" / "page2.md", "# P2\n\n[缺](archive/specs/w9/spec.md)\n")
+    write(root / "docs" / "page2.md", "# P2\n\n[缺](../toolchain/missing/README.md)\n")
     missing = run(LINK_CHECK, "--root", str(root))
     check("本地也缺失时退出码 0 但单列", missing.returncode == 0, missing.stdout)
     check("提示本地也缺失", "本地也缺失 1 条" in missing.stdout, missing.stdout)

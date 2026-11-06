@@ -1,4 +1,4 @@
-# AGC 场景几何单一真源 · 地图 `minimal`（评审 S-06；ADR-0062；P1-1）
+# AGC 场景几何单一真源 · 地图 `minimal`（评审 S-06；ADR-0007；P1-1）
 #
 # 本文件是**静态障碍实体几何 + 作业区几何**的**唯一真源**（按地图分文件，见下）。物理世界 /
 # 空中安全列表 / 感知先验 / 感知地图 / `scenario_reset` 校验均由所选地图文件**派生**（launch
@@ -48,8 +48,8 @@
 #   * 修改几何**只改对应地图文件**；各域随之派生（`python3 tests/w6_geometry_check.py` 可复核，
 #     对三张地图逐一断言）。
 #   * 本真源为**物理 / 真值**事实——**不等于**「所有算法都可读真值」；感知静态先验仍受
-#     ADR-0020 成文假设约束（见 agc_perception/config/obstacles.yaml 头部）。
-#   * 障碍族边界（ADR-0052）：地面激光为 z≈0.48 m 的**单一水平面**扫描。本文件三张地图的
+#     ADR-0009 成文假设约束（见 agc_perception/config/obstacles.yaml 头部）。
+#   * 障碍族边界（ADR-0009）：地面激光为 z≈0.48 m 的**单一水平面**扫描。本文件三张地图的
 #     障碍在 z=0.48 处**均有水平截面**（即对地面激光可见，核查 (h) 静态断言）；若新增
 #     **矮墙 / 悬空结构 / 薄片**，必须在 `docs/plan/p1-1-地图与场景资产.md` 如实标注
 #     「该障碍对地面激光不可见」，不得假装能避。
@@ -63,8 +63,36 @@ work_area:
   origin_x: -50.0
   origin_y: -50.0
 
+# ---- 飞行高度（ADR-0007；用户 2026-11-02 裁定「高度和地图绑定」）----
+# 本节是**本图固定飞行高度的唯一真源**。运行期由 `w6_composition.apply_flight_altitude()`
+# 派生注入 `air.yaml` / `w6_base.yaml` 的同名参数；`air.yaml` 里的同名键只作 standalone /
+# 单测兜底，**运行期一律被本节覆盖**（与 `safety.obstacle_*` 的派生处理同款）。
+#
+# 为什么高度是**地图属性**（不是场景参数）：用户原话「这是和地图绑定的，因为后面会做
+# 小障碍高密度和大障碍低密度等图」。换图即换高度，**代码一行不动**。
+#
+# 五键语义（与 `docs/conventions/飞行高度分层与按地图定高.md` 的 L2a/L2b/L2c 对应）：
+#   own_track_m        —— 己方机跟踪高度（L2b → standoff_follower.height）
+#   own_takeoff_m      —— 己方机起飞高度（L2c → takeoff_controller.takeoff_altitude_m）
+#   target_cruise_m    —— 目标机巡航高度（L2a → intruder_driver.cruise_alt_m 的**默认值**）
+#   own_clearance_min_m—— 垂直净空下限 c_clear（K3）
+#   derived            —— 本图几何的派生量（只读；由 `height_survey` 同口径算出，供断言比对）
+flight_altitude:
+  own_track_m: 2.5
+  own_takeoff_m: 2.5
+  target_cruise_m: 2.0
+  own_clearance_min_m: 0.5
+  derived:
+    h_max_map_m: 3.0            # pole_1 / pole_2
+    h_max_map_id: pole_1
+    h_max_env_m: 0.0            # 两柱距目标 14.14 / 17.82 m，均在 11.2 m 环带外
+    h_max_env_id: null
+    rule_version: 1
+  # 取值依据：本图**维持既有值不变**。作业包络内无任何障碍（H_max_env=0），
+  #   抬高只会恶化 dz（K1/K2），无收益。C1 真八字 / 历史证据基线依赖 2.5，不得改动。
+
 obstacles:
-  # ---- 基线双柱（geometry 逐值不变；ADR-0062 决策 1）----
+  # ---- 基线双柱（geometry 逐值不变；ADR-0007 决策 1）----
   - id: pole_1
     shape: box
     x: 0.0

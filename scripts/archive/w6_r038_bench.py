@@ -11,7 +11,7 @@
   5. `air_perception_invalid_seed`  seed="abc" → **拒绝启动**（旧实现静默退回默认基种子）
 
 只回收**本进程组**的子进程（`start_new_session` + `killpg`）；**不**用裸名 `pkill -f`、**不**做递归删除。
-证据落 `experiments/w6-task-eval/<run_id>/r038/bench.json`（ADR-0007）。
+证据落 `experiments/w6-task-eval/<run_id>/r038/bench.json`（ADR-0006）。
 
 ⚠ 范围标注：本台架为**节点启动期校验逻辑台架**（真实节点 + 真实 YAML 参数，**非**整链 / **非**双 PX4 / **非** GUI）。
 """

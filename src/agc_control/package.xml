@@ -3,7 +3,7 @@
 <package format="3">
   <name>agc_control</name>
   <version>0.0.0</version>
-  <description>AGC 通用控制层（W3）：pluginlib 轨迹生成器 + LQR 控制器，接口 state+ref → acc，供 air / ground 共用（ADR-0018）</description>
+  <description>AGC 通用控制层（W3）：pluginlib 轨迹生成器 + LQR 控制器，接口 state+ref → acc，供 air / ground 共用（ADR-0004）</description>
   <maintainer email="agc@example.com">AGC Dev</maintainer>
   <license>Proprietary</license>
 

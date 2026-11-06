@@ -20,7 +20,7 @@ find_package(px4_msgs REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
-# 生命周期失联检测：复用 Nav2 bond 惯用法（topic "bond" / id=节点名；ADR-0049）
+# 生命周期失联检测：复用 Nav2 bond 惯用法（topic "bond" / id=节点名；ADR-0019）
 find_package(bond REQUIRED)
 find_package(bondcpp REQUIRED)
 
@@ -31,7 +31,7 @@ set(DEPS
 # 共享：PX4 uORB 语义映射（R2）＋ offboard 接口 ＋ 最小安全层（R7）
 # 注：agc_air_lib 为**纯内部实现**（仅本包节点 / 测试使用），不对外承诺公共接口，
 # 不安装、不导出（对齐 Nav2 惯例：公共库需同时安装 include 并 ament_export_*；
-# 纯内部 / 仅 launch 的包零导出）。共享通用控制以 agc_control 为唯一公共库家（ADR-0018）。
+# 纯内部 / 仅 launch 的包零导出）。共享通用控制以 agc_control 为唯一公共库家（ADR-0004）。
 add_library(agc_air_lib STATIC
   src/offboard_interface.cpp
   src/safety_shield.cpp)
@@ -58,7 +58,7 @@ foreach(node ${NODES})
 endforeach()
 
 install(DIRECTORY launch config DESTINATION share/${PROJECT_NAME})
-# ADR-0080：lifecycle 服务预热（manager 启动前执行；仅预热，不改节点状态）
+# ADR-0019：lifecycle 服务预热（manager 启动前执行；仅预热，不改节点状态）
 install(PROGRAMS scripts/air_lifecycle_prewarm.py
   DESTINATION lib/${PROJECT_NAME} RENAME air_lifecycle_prewarm)
 
@@ -69,8 +69,11 @@ if(BUILD_TESTING)
   # R-038：安全层障碍配置**失败型**验证（平行数组长度一致 / 几何合法性；不写镜像实现测试）
   ament_add_gtest(test_safety_shield_validation test/test_safety_shield_validation.cpp)
   target_link_libraries(test_safety_shield_validation agc_air_lib rclcpp::rclcpp)
+  # ADR-0010「垂直门控」：圆盘集经生产函数 deriveRings() 取得，只断言生效 / 移除 / 归因。
+  ament_add_gtest(test_safety_shield_vertical_gate test/test_safety_shield_vertical_gate.cpp)
+  target_link_libraries(test_safety_shield_vertical_gate agc_air_lib rclcpp::rclcpp)
 endif()
 
 # agc_air 不对外承诺公共接口：不安装 include/，不 ament_export_*（纯内部实现 + 节点可执行 + launch/config）。
-# 下游无对本包的 ament 消费者（find_package 本包者为零）；共享控制经 agc_control（唯一公共库家，ADR-0018）。
+# 下游无对本包的 ament 消费者（find_package 本包者为零）；共享控制经 agc_control（唯一公共库家，ADR-0004）。
 ament_package()

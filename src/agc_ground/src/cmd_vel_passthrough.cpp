@@ -1,6 +1,6 @@
 // cmd_vel_passthrough —— W7-b（T1 / E1）「无 shield 对照臂」的恒等透传（**纯仿真**）。
 //
-// 用途：对照臂 `shield:=false`（[ADR-0070](../../../docs/adr/0070-w7b-research-propositions-and-rl-role-adjudication.md)(d)(f)）
+// 用途：对照臂 `shield:=false`（[ADR-0022](../../../docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)(d)(f)）
 // ——把安全层**输入** `/agc/ground/cmd_vel_raw` **原样**转发到唯一执行口 `/agc/ground/cmd_vel`
 // （**保持** header.stamp / frame_id），使「无安全层修正」臂与「有安全层」臂在**同一命令链结构**下可比。
 //

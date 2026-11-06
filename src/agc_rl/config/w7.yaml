@@ -12,7 +12,7 @@ w7:
   control_dt_s: 0.1
   # 训练 horizon（step 数；0 = 不设，交由任务预算 / 墙钟看门狗）→ truncated 语义。
   max_steps: 0
-  # episode 墙钟看门狗（秒；[ADR-0039](../../docs/adr/0039-time-budget-kinds-and-rtf-record.md) 的
+  # episode 墙钟看门狗（秒；[ADR-0017](../../docs/adr/0017-time-budget-and-clock-sources.md#top) 的
   # `episode_wall_watchdog` 口径；超时判 infra、**不算成功**）。
   wall_watchdog_s: 150.0
   # 训练视图（R3 噪声流）：观测噪声 σ（0 = 关；由 `sensor` 流驱动）。

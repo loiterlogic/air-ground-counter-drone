@@ -1,14 +1,16 @@
 # intruder_uav（目标）参数（W2-min）
 #
 # 目标为被动刚体（失重、无插件）；本文件是其模型与 spawn 位的唯一参数来源。
-# spawn：W3 打补丁后作业区放大（80×80 → 2026-10-29 用户裁定 100×100），目标与车分离 ~30 m（ADR-0019）。
+# spawn：W3 打补丁后作业区放大（80×80 → 2026-10-29 用户裁定 100×100），目标与车分离 ~30 m（ADR-0008）。
 
 agc_sim:
   target:
     spawn:
       x: 15.0
       y: 0.0
-      z: 2.0
+      # 2026-11-05：2.0 → 0.12（与 `agc_task/config/spawn_layout.yaml` 的 target.z 同步）。
+      # 本文件是 standalone `world_bringup` 的缺省；w6 入口一律以 spawn_layout.yaml 为准。
+      z: 0.12
       yaw: 0.0
     model:
       body_length: 0.32

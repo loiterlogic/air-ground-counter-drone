@@ -43,7 +43,7 @@
   direction: GZ_TO_ROS
   qos_profile: SENSOR_DATA
 
-# R-027（ADR-0042）：地面车接触真值（GZ contact sensor → ROS）。
+# R-027（ADR-0010）：地面车接触真值（GZ contact sensor → ROS）。
 # 车模 agc_car.sdf.xacro 的 car/base_link 挂 contact sensor（监测 base_collision 与其它碰撞体）。
 # **实测**（gz topic -l）：gz-sim-contact-system 的话题由其作用域名决定，**不**取 SDF <topic> 值——
 # 实际为 /world/agc_world/model/agc_car/link/car/base_link/sensor/contact/contact（本条目据实采用）。
@@ -55,7 +55,7 @@
   gz_type_name: "gz.msgs.Contacts"
   direction: GZ_TO_ROS
 
-# 机载相机图像（GZ → ROS；P1-4 / ADR-0103）。**仅当**己方机型为 `gz_x500_mono_cam` 时存在——
+# 机载相机图像（GZ → ROS；P1-4 / ADR-0009）。**仅当**己方机型为 `gz_x500_mono_cam` 时存在——
 # launch 参数 `px4_sim_model`；用默认 `gz_x500` 时 gz 侧无这两条话题，桥条目会等话题而不影响其它条目。
 #
 # **实测**（2026-10-30，`gz topic -l`，机型 gz_x500_mono_cam、实例 0、实体 x500_mono_cam_0）：
@@ -86,8 +86,39 @@
   direction: GZ_TO_ROS
   qos_profile: SENSOR_DATA
 
+# 机载**正下视（nadir）**相机（GZ → ROS；ADR-0030）。**仅当**己方机型为 `gz_agc_x500_nadir` 时存在——
+# launch 参数 `px4_sim_model`；默认 `gz_x500` 下 gz 侧无这两条话题，桥条目等话题而不影响其它条目。
+#
+# ⚠ **本相机无消费者，仅取证/测绘**：`/agc/targets` 的发布者仍是 `gt_adapter`（真值），
+#   图像**不**接入任务链、不供任何识别/定位节点订阅。视觉定位路径已于 2026-11-04 退役。
+#
+# **gz 侧话题名**（由模型 SDF 决定，见 src/agc_sim/models/agc_x500_nadir/model.sdf）：
+#   图像取 `<topic>agc/air/nadir</topic>` → gz `/agc/air/nadir`；
+#   内参**显式**取 `<camera>` 内的 `<camera_info_topic>agc/air/nadir/camera_info</camera_info_topic>`。
+#   若不显式写该元素，gz-sensors 会按 `<topic>_info` 派生 → `/agc/air/nadir_info`（**与本桥不符**）。
+#   两者都必须与 SDF 逐字一致；`scripts/tests/test_nadir_camera_contract.py` 静态守护这一点。
+#
+# ⚠ **话题存在 ≠ 有帧**（P1-4 round-2 实测，见 experiments/p1-4/round-2/evidence/camera-ownership-finding.md）：
+#   `gz topic -l` 会列出**只有订阅者**的话题，而本文件正是以订阅方式桥接 —— 默认臂（无相机）里
+#   `/agc/air/nadir*` 照样会出现在 `gz topic -l` / `ros2 topic list`，但**一帧都没有**。
+#   判「相机是否真的在发布」必须用 `ros2 topic hz`（≥10 Hz）、累计帧数（≥30）、
+#   或 `gz topic -f -t /agc/air/nadir` 看到真实帧；**不得**只看话题列表。
+- ros_topic_name: "/agc/air/nadir/image_raw"
+  gz_topic_name: "/agc/air/nadir"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+
+- ros_topic_name: "/agc/air/nadir/camera_info"
+  gz_topic_name: "/agc/air/nadir/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+
 # 地面车速度命令（ROS→GZ；由 M0 的执行中继发布）
-# R-009（ADR-0025）：ROS 侧话题名**不变**（/model/agc_car/cmd_vel，中继与验收脚本照旧），
+# R-009（ADR-0010）：ROS 侧话题名**不变**（/model/agc_car/cmd_vel，中继与验收脚本照旧），
 # 但 gz 侧改桥到「意图」话题 /agc/sim/cmd_intent；GZ 侧的 agc_cmd_deadman 插件订阅该意图，
 # fresh→转发、stale→归零，再写 DiffDrive 默认订阅的 gz 话题 /model/agc_car/cmd_vel。
 # 即：DiffDrive 命令口（gz /model/agc_car/cmd_vel）的唯一写入者是插件（本桥不再直写）。

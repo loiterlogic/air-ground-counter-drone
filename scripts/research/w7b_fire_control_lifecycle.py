@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w7b_fire_control_lifecycle —— 逐 shot 火控生命周期分析（ADR-0091 / FL-5）。
+"""w7b_fire_control_lifecycle —— 逐 shot 火控生命周期分析（ADR-0011 / FL-5）。
 
 输入：`experiments/<campaign>/<run_id>/log/ep_*.log`。
 输出：同 run `metrics/fire_control_lifecycle.{json,md}`。
@@ -101,7 +101,7 @@ def analyze(run_dir):
 
 def markdown(a):
     lines = [
-        '# 火控生命周期逐 shot 分析（ADR-0091）', '',
+        '# 火控生命周期逐 shot 分析（ADR-0011）', '',
         '> **诊断 / 非确证**；不改 P1 / P2 verdict。', '',
         '## 汇总', '',
         f"- run：`{a['run_id']}`",
@@ -127,7 +127,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--campaign', default='w7-rl-b')
     ap.add_argument('--run-id', required=True)
-    # W7-c（ADR-0077）：worker 产物位于 <run_id>/worker_<id>/；缺省路径不变。
+    # W7-c（ADR-0024）：worker 产物位于 <run_id>/worker_<id>/；缺省路径不变。
     ap.add_argument('--worker-id', type=int, default=None)
     args = ap.parse_args()
     run_dir = ROOT / 'experiments' / args.campaign / args.run_id

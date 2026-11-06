@@ -5,10 +5,10 @@
 
 1. **图与真源漂移**：旧图把 `agc_sim → agc_msgs` 画成①消息依赖，而 `src/agc_sim/package.xml`
    与源码里**都没有** `agc_msgs`（它只经 ros_gz 桥发标准消息）。读者会据此以为仿真是接口层消费者。
-2. **②库链接被放宽**：`agc_control` 是 [ADR-0018](../../docs/adr/0018-shared-control-layer-and-lqr-plugin.md)
+2. **②库链接被放宽**：`agc_control` 是 [ADR-0004](../../docs/adr/0004-ground-control-rl-primary-and-nav2-safety.md#top)
    允许的**唯一**共享库例外；出现第二条库链接边即边界被悄悄改。
 3. **`agc_msgs` 不再是叶依赖**：它若有①出边，依赖图成环或分层失效。
-4. **`agc_task → 域包`被画成②**：[ADR-0059](../../docs/adr/0059-package-dependency-taxonomy-and-boundary-revision.md)
+4. **`agc_task → 域包`被画成②**：[ADR-0020](../../docs/adr/0020-package-boundaries-and-runtime-topology.md#top)
    的核心澄清是「起进程 ≠ 链接库」。
 5. **版式不可读**：旧图 1844 px 宽在 README 里按 820 显示 → 缩放 0.44，12 px 正文实际 5.3 px；
    19 条中心到中心直线穿过框体与文字。**"看起来还行"不是判据**，故本文件同时断言几何与光栅。
@@ -184,7 +184,7 @@ def test_declared_package_xml_matches_edges():
 
 
 def test_control_is_the_only_library_link_target():
-    """②库链接边**只允许** air→control 与 ground→control（ADR-0018 唯一例外）。"""
+    """②库链接边**只允许** air→control 与 ground→control（ADR-0004 唯一例外）。"""
     link_edges = [(s, d) for s, d, k in R.PACKAGE_EDGES if k == 2]
     assert link_edges == [('agc_air', 'agc_control'), ('agc_ground', 'agc_control')], (
         '②库链接边必须恰好是 air→control 与 ground→control，实际 %r' % (link_edges,))
@@ -220,7 +220,7 @@ def test_sim_does_not_depend_on_msgs():
 
 
 def test_task_edges_are_run_composition_not_link():
-    """`agc_task` 对其它域包只能是③运行组合（ADR-0059 核心澄清）。"""
+    """`agc_task` 对其它域包只能是③运行组合（ADR-0020 核心澄清）。"""
     for src, dst, kind in R.PACKAGE_EDGES:
         if src != 'agc_task' or kind == 1:
             continue

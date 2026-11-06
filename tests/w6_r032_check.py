@@ -82,7 +82,7 @@ def case_e_scripts_hygiene():
 
 
 def case_f_adr():
-    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0047-*.md')))
+    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0017-time-budget-and-clock-sources.md')))
     res = {'path': matches[0] if matches else None, 'exists': bool(matches)}
     if matches:
         t = _read(matches[0]) or ''

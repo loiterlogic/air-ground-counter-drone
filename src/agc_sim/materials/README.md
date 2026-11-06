@@ -3,8 +3,8 @@
 ## 这是什么
 
 地面 / 场坪 / 沥青路的 **albedo 贴图**，由 [`gen_textures.py`](gen_textures.py) 生成。
-**自产、不引外部素材**（守 [ADR-0062](../../../docs/adr/0062-scene-geometry-single-source-and-derivation.md)
-的"不引入外部资产"与 [ADR-0068](../../../docs/adr/0068-third-party-asset-provenance-license-and-hash-manifest.md)
+**自产、不引外部素材**（守 [ADR-0007](../../../docs/adr/0007-scene-geometry-single-source-and-layout.md#top)
+的"不引入外部资产"与 [ADR-0005](../../../docs/adr/0005-px4-toolchain-and-link.md#top)
 的 provenance 纪律）。
 
 ## 生成与复现

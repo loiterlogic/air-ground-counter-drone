@@ -12,7 +12,7 @@
   * 提供假服务 `/agc/scenario/reset`（`Trigger`，成功且 epoch++）。
   * 订阅 `/agc/task/state`（`AgcTaskState`）、`/agc/task/dwell_event`（`String`，depth 10，收集到列表）。
 
-用例（结果落 `experiments/w6-task-eval/<run_id>/metrics/r023.json`，ADR-0007）：
+用例（结果落 `experiments/w6-task-eval/<run_id>/metrics/r023.json`，ADR-0006）：
   a 抵近→空数组 > t_dwell→重获 → 不判 TRACKING_SUCCESS；再续 ≥ t_dwell → 成功（旧逻辑会跨失联段直接成功）。
   b 换 target_id → dwell 清零（出现过 TARGET_ID_CHANGED 中断）；不早成功，续时后成功。
   c 车 odom 消失 / 超龄 → 中断（CAR_ODOM_STALE / CAR_ODOM_MISSING）；不早成功，续时后成功。

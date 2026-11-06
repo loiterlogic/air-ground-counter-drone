@@ -13,7 +13,7 @@
   <text x="54" y="211" font-size="12" fill="#3d4b59">agc_task  →  agc_msgs</text>
   <text x="54" y="228" font-size="12" fill="#3d4b59">不在此列（易错）：agc_sim 只经 ros_gz 桥发标准消息；agc_control 是纯实现库。</text>
   <text x="38" y="260" font-size="14" fill="#1f2933" font-weight="bold">② 库链接依赖（2 条 · 唯一例外）</text>
-  <text x="38" y="277" font-size="12" fill="#3d4b59">编译期链接实现库：仅 agc_control 允许被 air / ground 链接同一实现（ADR-0018）；除此禁止业务库互链。</text>
+  <text x="38" y="277" font-size="12" fill="#3d4b59">编译期链接实现库：仅 agc_control 允许被 air / ground 链接同一实现（ADR-0004）；除此禁止业务库互链。</text>
   <text x="54" y="294" font-size="12" fill="#3d4b59">agc_air  →  agc_control（INTERFACE 共享库 + pluginlib 插件）</text>
   <text x="54" y="311" font-size="12" fill="#3d4b59">agc_ground  →  agc_control（INTERFACE 共享库 + pluginlib 插件）</text>
   <text x="54" y="328" font-size="12" fill="#3d4b59">两侧 CMakeLists 均 find_package(agc_control)。</text>

@@ -1,0 +1,1071 @@
+{
+  "command": "ros2 launch agc_task w6.launch.py backend:=full scene:=s02_linear_none_nominal_track seed:=0 gz_args:=-s -r -v 3 /home/chen/AGC/install/agc_sim/share/agc_sim/worlds/agc_world.sdf px4_sim_model:=gz_x500_mono_cam perception_path:=vision vision_detector:=true detector_backend:=synthetic_color gui_render_backend:=auto",
+  "label": "headless",
+  "started_at": "2026-11-02T15:55:47+0800",
+  "launch_pid": 13407,
+  "start_service_ready": true,
+  "ready_gate_ok": true,
+  "ready_after_s": 30.182,
+  "start_call": {
+    "success": true,
+    "message": "started: AIR_SEARCH [evid] reset_done=21.216 now=21.268 prev_clock=20.900 world=agc_world odom_valid_rx=21.256(age=0.012,val=1) ground_odom_rx=21.256(age=0.012) cmd_rx=21.268(age=0.000)"
+  },
+  "terminal_state": null,
+  "terminal_after_s": 380.095,
+  "node_info_camera_tf": {
+    "cmd": "ros2 node info /camera_tf",
+    "rc": 0,
+    "out": "/camera_tf\n  Subscribers:\n    /agc/air/odom: nav_msgs/msg/Odometry\n    /clock: rosgraph_msgs/msg/Clock\n    /parameter_events: rcl_interfaces/msg/ParameterEvent\n  Publishers:\n    /parameter_events: rcl_interfaces/msg/ParameterEvent\n    /rosout: rcl_interfaces/msg/Log\n    /tf: tf2_msgs/msg/TFMessage\n    /tf_static: tf2_msgs/msg/TFMessage\n  Service Servers:\n    /camera_tf/describe_parameters: rcl_interfaces/srv/DescribeParameters\n    /camera_tf/get_parameter_types: rcl_interfaces/srv/GetParameterTypes\n    /camera_tf/get_parameters: rcl_interfaces/srv/GetParameters\n    /camera_tf/get_type_description: type_description_interfaces/srv/GetTypeDescription\n    /camera_tf/list_parameters: rcl_interfaces/srv/ListParameters\n    /camera_tf/set_parameters: rcl_interfaces/srv/SetParameters\n    /camera_tf/set_parameters_atomically: rcl_interfaces/srv/SetParametersAtomically\n  Service Clients:\n\n  Action Servers:\n\n  Action Clients:\n\n",
+    "err": ""
+  },
+  "node_info_vision_target": {
+    "cmd": "ros2 node info /vision_target",
+    "rc": 0,
+    "out": "/vision_target\n  Subscribers:\n    /agc/air/camera/camera_info: sensor_msgs/msg/CameraInfo\n    /agc/vision/detections: vision_msgs/msg/Detection2DArray\n    /clock: rosgraph_msgs/msg/Clock\n    /parameter_events: rcl_interfaces/msg/ParameterEvent\n  Publishers:\n    /agc/targets: agc_msgs/msg/TargetTrackArray\n    /agc/vision/target_status: std_msgs/msg/String\n    /parameter_events: rcl_interfaces/msg/ParameterEvent\n    /rosout: rcl_interfaces/msg/Log\n  Service Servers:\n    /vision_target/describe_parameters: rcl_interfaces/srv/DescribeParameters\n    /vision_target/get_parameter_types: rcl_interfaces/srv/GetParameterTypes\n    /vision_target/get_parameters: rcl_interfaces/srv/GetParameters\n    /vision_target/get_type_description: type_description_interfaces/srv/GetTypeDescription\n    /vision_target/list_parameters: rcl_interfaces/srv/ListParameters\n    /vision_target/set_parameters: rcl_interfaces/srv/SetParameters\n    /vision_target/set_parameters_atomically: rcl_interfaces/srv/SetParametersAtomically\n  Service Clients:\n\n  Action Servers:\n\n  Action Clients:\n\n",
+    "err": ""
+  },
+  "node_info_vision_detector": {
+    "cmd": "ros2 node info /vision_detector",
+    "rc": 0,
+    "out": "/vision_detector\n  Subscribers:\n    /agc/air/camera/camera_info: sensor_msgs/msg/CameraInfo\n    /agc/air/camera/image_raw: sensor_msgs/msg/Image\n  Publishers:\n    /agc/vision/detections: vision_msgs/msg/Detection2DArray\n    /agc/vision/status: std_msgs/msg/String\n    /parameter_events: rcl_interfaces/msg/ParameterEvent\n    /rosout: rcl_interfaces/msg/Log\n  Service Servers:\n    /vision_detector/describe_parameters: rcl_interfaces/srv/DescribeParameters\n    /vision_detector/get_parameter_types: rcl_interfaces/srv/GetParameterTypes\n    /vision_detector/get_parameters: rcl_interfaces/srv/GetParameters\n    /vision_detector/get_type_description: type_description_interfaces/srv/GetTypeDescription\n    /vision_detector/list_parameters: rcl_interfaces/srv/ListParameters\n    /vision_detector/set_parameters: rcl_interfaces/srv/SetParameters\n    /vision_detector/set_parameters_atomically: rcl_interfaces/srv/SetParametersAtomically\n  Service Clients:\n\n  Action Servers:\n\n  Action Clients:\n\n",
+    "err": ""
+  },
+  "topic_info_dets": {
+    "cmd": "ros2 topic info /agc/vision/detections -v",
+    "rc": 0,
+    "out": "Type: vision_msgs/msg/Detection2DArray\n\nPublisher count: 1\n\nNode name: vision_detector\nNode namespace: /\nTopic type: vision_msgs/msg/Detection2DArray\nTopic type hash: RIHS01_214274120007f4a683866481336b70310268cfa107aebe9d594a6acf75bda968\nEndpoint type: PUBLISHER\nGID: 01.0f.73.a3.c7.34.05.7d.00.00.00.00.00.00.15.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nSubscription count: 2\n\nNode name: n1_round5_probe\nNode namespace: /\nTopic type: vision_msgs/msg/Detection2DArray\nTopic type hash: RIHS01_214274120007f4a683866481336b70310268cfa107aebe9d594a6acf75bda968\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.73.a3.4c.34.c8.5a.00.00.00.00.00.00.15.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: vision_target\nNode namespace: /\nTopic type: vision_msgs/msg/Detection2DArray\nTopic type hash: RIHS01_214274120007f4a683866481336b70310268cfa107aebe9d594a6acf75bda968\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.73.a3.6f.34.a9.e6.00.00.00.00.00.00.1e.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\n",
+    "err": ""
+  },
+  "topic_info_targets": {
+    "cmd": "ros2 topic info /agc/targets -v",
+    "rc": 0,
+    "out": "Type: agc_msgs/msg/TargetTrackArray\n\nPublisher count: 1\n\nNode name: vision_target\nNode namespace: /\nTopic type: agc_msgs/msg/TargetTrackArray\nTopic type hash: RIHS01_364908f8f1b9c2caccbd1ecb71bd7463180b4b092bf8334568f9ec6e51e7cbd8\nEndpoint type: PUBLISHER\nGID: 01.0f.73.a3.6f.34.a9.e6.00.00.00.00.00.00.15.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nSubscription count: 6\n\nNode name: n1_round5_probe\nNode namespace: /\nTopic type: agc_msgs/msg/TargetTrackArray\nTopic type hash: RIHS01_364908f8f1b9c2caccbd1ecb71bd7463180b4b092bf8334568f9ec6e51e7cbd8\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.73.a3.4c.34.c8.5a.00.00.00.00.00.00.16.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: trajectory_tracker\nNode namespace: /\nTopic type: agc_msgs/msg/TargetTrackArray\nTopic type hash: RIHS01_364908f8f1b9c2caccbd1ecb71bd7463180b4b092bf8334568f9ec6e51e7cbd8\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.73.a3.ac.34.3f.e7.00.00.00.00.00.00.2b.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: standoff_follower\nNode namespace: /\nTopic type: agc_msgs/msg/TargetTrackArray\nTopic type hash: RIHS01_364908f8f1b9c2caccbd1ecb71bd7463180b4b092bf8334568f9ec6e51e7cbd8\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.73.a3.ad.34.48.c1.00.00.00.00.00.00.21.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: task_manager\nNode namespace: /\nTopic type: agc_msgs/msg/TargetTrackArray\nTopic type hash: RIHS01_364908f8f1b9c2caccbd1ecb71bd7463180b4b092bf8334568f9ec6e51e7cbd8\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.73.a3.b8.34.2c.32.00.00.00.00.00.00.17.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: run_logger\nNode namespace: /\nTopic type: agc_msgs/msg/TargetTrackArray\nTopic type hash: RIHS01_364908f8f1b9c2caccbd1ecb71bd7463180b4b092bf8334568f9ec6e51e7cbd8\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.73.a3.bc.34.26.89.00.00.00.00.00.00.18.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: capture_adjudicator\nNode namespace: /\nTopic type: agc_msgs/msg/TargetTrackArray\nTopic type hash: RIHS01_364908f8f1b9c2caccbd1ecb71bd7463180b4b092bf8334568f9ec6e51e7cbd8\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.73.a3.c3.34.b9.60.00.00.00.00.00.00.1c.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\n",
+    "err": ""
+  },
+  "topic_info_gt_intruder": {
+    "cmd": "ros2 topic info /agc/gt/intruder_uav -v",
+    "rc": 0,
+    "out": "Type: geometry_msgs/msg/PoseStamped\n\nPublisher count: 1\n\nNode name: gt_bypass\nNode namespace: /\nTopic type: geometry_msgs/msg/PoseStamped\nTopic type hash: RIHS01_10f3786d7d40fd2b54367835614bff85d4ad3b5dab62bf8bca0cc232d73b4cd8\nEndpoint type: PUBLISHER\nGID: 01.0f.73.a3.69.34.1a.92.00.00.00.00.00.00.16.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nSubscription count: 2\n\nNode name: n1_round5_probe\nNode namespace: /\nTopic type: geometry_msgs/msg/PoseStamped\nTopic type hash: RIHS01_10f3786d7d40fd2b54367835614bff85d4ad3b5dab62bf8bca0cc232d73b4cd8\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.73.a3.4c.34.c8.5a.00.00.00.00.00.00.1e.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: scenario_reset\nNode namespace: /\nTopic type: geometry_msgs/msg/PoseStamped\nTopic type hash: RIHS01_10f3786d7d40fd2b54367835614bff85d4ad3b5dab62bf8bca0cc232d73b4cd8\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.73.a3.b2.34.6f.2a.00.00.00.00.00.00.17.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\n",
+    "err": ""
+  },
+  "topic_info_gt_car": {
+    "cmd": "ros2 topic info /agc/gt/agc_car -v",
+    "rc": 0,
+    "out": "Type: geometry_msgs/msg/PoseStamped\n\nPublisher count: 1\n\nNode name: gt_bypass\nNode namespace: /\nTopic type: geometry_msgs/msg/PoseStamped\nTopic type hash: RIHS01_10f3786d7d40fd2b54367835614bff85d4ad3b5dab62bf8bca0cc232d73b4cd8\nEndpoint type: PUBLISHER\nGID: 01.0f.73.a3.69.34.1a.92.00.00.00.00.00.00.15.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nSubscription count: 3\n\nNode name: n1_round5_probe\nNode namespace: /\nTopic type: geometry_msgs/msg/PoseStamped\nTopic type hash: RIHS01_10f3786d7d40fd2b54367835614bff85d4ad3b5dab62bf8bca0cc232d73b4cd8\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.73.a3.4c.34.c8.5a.00.00.00.00.00.00.1d.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: ground_odom_adapter\nNode namespace: /\nTopic type: geometry_msgs/msg/PoseStamped\nTopic type hash: RIHS01_10f3786d7d40fd2b54367835614bff85d4ad3b5dab62bf8bca0cc232d73b4cd8\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.73.a3.6c.34.d5.f5.00.00.00.00.00.00.19.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: scenario_reset\nNode namespace: /\nTopic type: geometry_msgs/msg/PoseStamped\nTopic type hash: RIHS01_10f3786d7d40fd2b54367835614bff85d4ad3b5dab62bf8bca0cc232d73b4cd8\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.73.a3.b2.34.6f.2a.00.00.00.00.00.00.16.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\n",
+    "err": ""
+  },
+  "node_list": {
+    "cmd": "ros2 node list",
+    "rc": 0,
+    "out": "/camera_tf\n/capture_adjudicator\n/car_lidar_gz_frame_tf\n/car_lidar_tf\n/collision_monitor\n/ground_drive_relay\n/ground_odom_adapter\n/ground_policy_rl\n/gt_bypass\n/intruder_driver\n/jammer\n/lifecycle_manager_air\n/lifecycle_manager_ground\n/map_adapter\n/n1_round5_probe\n/placeholder_path_planner\n/px4_adapter\n/ros_gz_bridge\n/run_logger\n/scan_self_filter\n/scenario_reset\n/scenario_reset\n/set_pose_bridge\n/standoff_follower\n/takeoff_controller\n/task_manager\n/task_manager\n/trajectory_tracker\n/transform_listener_impl_5ccfd5bed130\n/vision_detector\n/vision_target\n",
+    "err": "WARNING: Be aware that there are nodes in the graph that share an exact name, which can have unintended side effects.\n"
+  },
+  "hz_image": {
+    "cmd": "timeout 6 ros2 topic hz /agc/air/camera/image_raw",
+    "rc": 124,
+    "out": "average rate: 14.303\n\tmin: 0.011s max: 0.143s std dev: 0.04236s window: 15\naverage rate: 16.861\n\tmin: 0.011s max: 0.143s std dev: 0.03572s window: 35\naverage rate: 16.251\n\tmin: 0.011s max: 0.231s std dev: 0.04264s window: 50\n",
+    "err": ""
+  },
+  "hz_dets": {
+    "cmd": "timeout 6 ros2 topic hz /agc/vision/detections",
+    "rc": 124,
+    "out": "average rate: 7.583\n\tmin: 0.099s max: 0.189s std dev: 0.03034s window: 9\naverage rate: 8.137\n\tmin: 0.099s max: 0.189s std dev: 0.02677s window: 18\naverage rate: 8.087\n\tmin: 0.099s max: 0.189s std dev: 0.02492s window: 26\n",
+    "err": ""
+  },
+  "hz_targets": {
+    "cmd": "timeout 6 ros2 topic hz /agc/targets",
+    "rc": 124,
+    "out": "WARNING: topic [/agc/targets] does not appear to be published yet\naverage rate: 8.089\n\tmin: 0.000s max: 0.393s std dev: 0.10813s window: 9\naverage rate: 7.247\n\tmin: 0.000s max: 0.393s std dev: 0.08869s window: 16\n",
+    "err": ""
+  },
+  "tf_queries": [
+    {
+      "stamp": 394.98,
+      "ok": true,
+      "trans": [
+        28.827252766423545,
+        -0.5722911839086482,
+        3.495003826587516
+      ],
+      "rot": [
+        -0.698512461732047,
+        0.11557594972668282,
+        -0.1224691882886174,
+        0.6955025798440564
+      ]
+    },
+    {
+      "stamp": 395.012,
+      "ok": true,
+      "trans": [
+        28.82767677758265,
+        -0.5721991996352782,
+        3.4946095255972507
+      ],
+      "rot": [
+        -0.698342505338245,
+        0.11546718735138459,
+        -0.12255730349525876,
+        0.6956757730746662
+      ]
+    },
+    {
+      "stamp": 395.044,
+      "ok": true,
+      "trans": [
+        28.82973816438304,
+        -0.5732886791380281,
+        3.4937605954476743
+      ],
+      "rot": [
+        -0.6981235130061423,
+        0.115445282332662,
+        -0.1225559502310244,
+        0.6958994082754096
+      ]
+    },
+    {
+      "stamp": 395.08,
+      "ok": true,
+      "trans": [
+        28.831691732615216,
+        -0.5744761719793052,
+        3.4933451760824106
+      ],
+      "rot": [
+        -0.6978716190029906,
+        0.11548472285725452,
+        -0.1224796662863251,
+        0.6961588996221469
+      ]
+    },
+    {
+      "stamp": 395.112,
+      "ok": true,
+      "trans": [
+        28.833362761496364,
+        -0.5756477639433607,
+        3.4933577037053194
+      ],
+      "rot": [
+        -0.6976654017905105,
+        0.1155375215623126,
+        -0.12238229626643495,
+        0.6963739238485874
+      ]
+    },
+    {
+      "stamp": 395.176,
+      "ok": true,
+      "trans": [
+        28.83663313808378,
+        -0.5752542120580624,
+        3.4948611378530505
+      ],
+      "rot": [
+        -0.6974460595303866,
+        0.11557010418989358,
+        -0.12227819583714253,
+        0.6966064799338914
+      ]
+    },
+    {
+      "stamp": 395.244,
+      "ok": true,
+      "trans": [
+        28.8392208234151,
+        -0.5741897126385533,
+        3.497626947304121
+      ],
+      "rot": [
+        -0.697310879324553,
+        0.11543316088789765,
+        -0.12238013003602051,
+        0.6967466015097699
+      ]
+    },
+    {
+      "stamp": 395.276,
+      "ok": true,
+      "trans": [
+        28.8401868731134,
+        -0.5752630527683373,
+        3.4993925636728322
+      ],
+      "rot": [
+        -0.6972354290600347,
+        0.11531682365219319,
+        -0.12249641299933403,
+        0.6968209349958818
+      ]
+    },
+    {
+      "stamp": 395.308,
+      "ok": true,
+      "trans": [
+        28.84105996577693,
+        -0.5774055884080924,
+        3.501369314320605
+      ],
+      "rot": [
+        -0.6971495839029644,
+        0.11518530448281983,
+        -0.12261699973205623,
+        0.6969073644838549
+      ]
+    },
+    {
+      "stamp": 395.376,
+      "ok": true,
+      "trans": [
+        28.842177877884044,
+        -0.581557454892599,
+        3.5057488683755547
+      ],
+      "rot": [
+        -0.6971139151375944,
+        0.11495352780002005,
+        -0.1228494667733914,
+        0.6969403735480951
+      ]
+    },
+    {
+      "stamp": 395.408,
+      "ok": true,
+      "trans": [
+        28.840513550000523,
+        -0.5831327291145685,
+        3.5068816644304683
+      ],
+      "rot": [
+        -0.6972220500425894,
+        0.11489276528990298,
+        -0.12294485833438397,
+        0.6968253922092581
+      ]
+    },
+    {
+      "stamp": 395.44,
+      "ok": true,
+      "trans": [
+        28.838686430735745,
+        -0.5846805336310763,
+        3.508028971919158
+      ],
+      "rot": [
+        -0.6974072818132886,
+        0.1148872001428988,
+        -0.12298596150793713,
+        0.6966336682856306
+      ]
+    },
+    {
+      "stamp": 395.476,
+      "ok": true,
+      "trans": [
+        28.83689818255073,
+        -0.5862206523706297,
+        3.509248375505873
+      ],
+      "rot": [
+        -0.6976633740513052,
+        0.11499335526535204,
+        -0.12291616203949149,
+        0.6963719996249466
+      ]
+    },
+    {
+      "stamp": 395.508,
+      "ok": true,
+      "trans": [
+        28.835307444353205,
+        -0.5875487313692649,
+        3.510426608664182
+      ],
+      "rot": [
+        -0.697936292948642,
+        0.11519709233325051,
+        -0.12274957013173758,
+        0.6960941774900474
+      ]
+    },
+    {
+      "stamp": 395.572,
+      "ok": true,
+      "trans": [
+        28.83511180080101,
+        -0.5937495325695699,
+        3.5110687326674914
+      ],
+      "rot": [
+        -0.6986147245813491,
+        0.11593019850533015,
+        -0.12211200870466184,
+        0.6954037050539441
+      ]
+    },
+    {
+      "stamp": 395.604,
+      "ok": true,
+      "trans": [
+        28.83487623291446,
+        -0.596614585332893,
+        3.511577619552798
+      ],
+      "rot": [
+        -0.6989514885623184,
+        0.11634949750321752,
+        -0.12175131639420292,
+        0.6950584349704323
+      ]
+    },
+    {
+      "stamp": 395.64,
+      "ok": true,
+      "trans": [
+        28.833928006337636,
+        -0.5997444889519723,
+        3.511755624471306
+      ],
+      "rot": [
+        -0.6993254035578079,
+        0.11679344738683635,
+        -0.12137385066597423,
+        0.6946737788060819
+      ]
+    },
+    {
+      "stamp": 395.672,
+      "ok": true,
+      "trans": [
+        28.831394031381976,
+        -0.6025614889676882,
+        3.511522449081421
+      ],
+      "rot": [
+        -0.6996489986405716,
+        0.1171360604863631,
+        -0.12109669099450111,
+        0.6943385438423845
+      ]
+    },
+    {
+      "stamp": 395.74,
+      "ok": true,
+      "trans": [
+        28.826260916616416,
+        -0.6077346444245286,
+        3.5120269573305407
+      ],
+      "rot": [
+        -0.7003690302487818,
+        0.11771561821283966,
+        -0.12063704260012209,
+        0.6935942319900348
+      ]
+    },
+    {
+      "stamp": 395.836,
+      "ok": true,
+      "trans": [
+        28.818648029501087,
+        -0.6155010627938585,
+        3.5122199737661446
+      ],
+      "rot": [
+        -0.7012094236996202,
+        0.11851150861623576,
+        -0.11995463377235965,
+        0.6927274011304082
+      ]
+    },
+    {
+      "stamp": 395.872,
+      "ok": true,
+      "trans": [
+        28.816178108035842,
+        -0.6179002345626763,
+        3.512631444160449
+      ],
+      "rot": [
+        -0.7014353478049539,
+        0.11880031239423619,
+        -0.11967363820099781,
+        0.6924977681873872
+      ]
+    },
+    {
+      "stamp": 395.904,
+      "ok": true,
+      "trans": [
+        28.81178691209205,
+        -0.6210832727424996,
+        3.5106927257179863
+      ],
+      "rot": [
+        -0.7016044340927704,
+        0.11906687530438838,
+        -0.11936961373806837,
+        0.6923331514398519
+      ]
+    },
+    {
+      "stamp": 395.936,
+      "ok": true,
+      "trans": [
+        28.807335190768676,
+        -0.6240697947776757,
+        3.508601068649455
+      ],
+      "rot": [
+        -0.701693678832869,
+        0.11930067970436586,
+        -0.11909046381731347,
+        0.6922505257028324
+      ]
+    },
+    {
+      "stamp": 396.0,
+      "ok": true,
+      "trans": [
+        28.799413571633877,
+        -0.6290187381198593,
+        3.5057787159999307
+      ],
+      "rot": [
+        -0.7018191617582199,
+        0.11981240614158939,
+        -0.11849246243135636,
+        0.6921375498197637
+      ]
+    },
+    {
+      "stamp": 396.036,
+      "ok": true,
+      "trans": [
+        28.79692967970595,
+        -0.6285005787949354,
+        3.5036508433307576
+      ],
+      "rot": [
+        -0.701879036023752,
+        0.12014757025226996,
+        -0.1180881982362305,
+        0.6920878250555815
+      ]
+    },
+    {
+      "stamp": 396.1,
+      "ok": true,
+      "trans": [
+        28.793453489432554,
+        -0.6266558523493606,
+        3.5010878987767544
+      ],
+      "rot": [
+        -0.701750945482747,
+        0.12070522827036431,
+        -0.11743077690535395,
+        0.6922325266972615
+      ]
+    },
+    {
+      "stamp": 396.136,
+      "ok": true,
+      "trans": [
+        28.791635587429727,
+        -0.625717289245189,
+        3.5003377698270612
+      ],
+      "rot": [
+        -0.70141438281416,
+        0.1209118086587747,
+        -0.11717822366179155,
+        0.6925802928236999
+      ]
+    },
+    {
+      "stamp": 396.168,
+      "ok": true,
+      "trans": [
+        28.789831992550436,
+        -0.6253769116021729,
+        3.497998174788146
+      ],
+      "rot": [
+        -0.7009825308017001,
+        0.12100321290001657,
+        -0.1170494299519497,
+        0.6930231921996841
+      ]
+    },
+    {
+      "stamp": 396.2,
+      "ok": true,
+      "trans": [
+        28.788193499017307,
+        -0.6249655295993034,
+        3.4962572207196807
+      ],
+      "rot": [
+        -0.7004743781421771,
+        0.12101615782439852,
+        -0.11700741116073564,
+        0.6935416359853338
+      ]
+    },
+    {
+      "stamp": 396.268,
+      "ok": true,
+      "trans": [
+        28.78500327651865,
+        -0.6242697358115431,
+        3.4949372801760195
+      ],
+      "rot": [
+        -0.6992511116210188,
+        0.1208046486253326,
+        -0.11717040730558047,
+        0.6947842941655515
+      ]
+    },
+    {
+      "stamp": 396.3,
+      "ok": true,
+      "trans": [
+        28.783370378110302,
+        -0.6243612277572308,
+        3.4961019458867932
+      ],
+      "rot": [
+        -0.6986861824357421,
+        0.12060961853647806,
+        -0.11735258370518979,
+        0.6953555274013219
+      ]
+    },
+    {
+      "stamp": 396.332,
+      "ok": true,
+      "trans": [
+        28.78195865430566,
+        -0.6243980255593465,
+        3.497501433876441
+      ],
+      "rot": [
+        -0.6981710460500881,
+        0.12035191895576226,
+        -0.11757536046680162,
+        0.6958797602115564
+      ]
+    },
+    {
+      "stamp": 396.364,
+      "ok": true,
+      "trans": [
+        28.78073043983391,
+        -0.6243312928964461,
+        3.4990485757592107
+      ],
+      "rot": [
+        -0.6977424087100186,
+        0.12007426659785152,
+        -0.11782024976807995,
+        0.6963160850742403
+      ]
+    },
+    {
+      "stamp": 396.4,
+      "ok": true,
+      "trans": [
+        28.77972979798671,
+        -0.6251042042562739,
+        3.5001629850261464
+      ],
+      "rot": [
+        -0.6973526279118791,
+        0.11974069210881623,
+        -0.11811369582593487,
+        0.6967141694095481
+      ]
+    },
+    {
+      "stamp": 396.432,
+      "ok": true,
+      "trans": [
+        28.779169684809094,
+        -0.6264536241220064,
+        3.500607426001557
+      ],
+      "rot": [
+        -0.6971165626917286,
+        0.1194516077306082,
+        -0.11837048138114847,
+        0.6969564122447237
+      ]
+    },
+    {
+      "stamp": 396.464,
+      "ok": true,
+      "trans": [
+        28.77864787259664,
+        -0.6276274517116314,
+        3.5012462696703204
+      ],
+      "rot": [
+        -0.6969832379949826,
+        0.11916413114348248,
+        -0.11864195916641097,
+        0.6970927924803154
+      ]
+    },
+    {
+      "stamp": 396.496,
+      "ok": true,
+      "trans": [
+        28.778205882928958,
+        -0.6286051247180653,
+        3.5020802027498785
+      ],
+      "rot": [
+        -0.6969897214879933,
+        0.11888860066506833,
+        -0.11892374485893621,
+        0.6970853403140236
+      ]
+    },
+    {
+      "stamp": 396.596,
+      "ok": true,
+      "trans": [
+        28.777500160435416,
+        -0.6301439148576282,
+        3.5060328956519267
+      ],
+      "rot": [
+        -0.697590441164094,
+        0.11819411305038259,
+        -0.11963628316641992,
+        0.6964803570717859
+      ]
+    },
+    {
+      "stamp": 396.628,
+      "ok": true,
+      "trans": [
+        28.777539704790655,
+        -0.6302715824506925,
+        3.5073452577843716
+      ],
+      "rot": [
+        -0.697810251741813,
+        0.11802924431519263,
+        -0.11983799085340358,
+        0.6962534064538799
+      ]
+    },
+    {
+      "stamp": 396.664,
+      "ok": true,
+      "trans": [
+        28.779592181229404,
+        -0.6291624623101542,
+        3.5068033967982792
+      ],
+      "rot": [
+        -0.6980360853894911,
+        0.11788844375210099,
+        -0.12003235210576117,
+        0.6960173652803364
+      ]
+    }
+  ],
+  "tf_frame_list": {
+    "cmd": "timeout 10 ros2 run tf2_ros tf2_echo world drone/camera_optical_frame --once",
+    "rc": 5,
+    "out": "Usage: tf2_echo source_frame target_frame [options]\n\nThis will echo the transform from the coordinate frame of the source_frame\nto the coordinate frame of the target_frame. \nNote: This is the transform to get data from target_frame into the source_frame.\n\nOptions:\n  -r <rate>       Echo rate in Hz (default: 1.0)\n  -t <time>       Fixed time to do the lookup (in seconds)\n  -p <precision>  Output precision (default: 3)\n[ros2run]: Process exited with failure 5\n",
+    "err": "Unknown argument: --once\n"
+  },
+  "launch_rc": 0,
+  "counts": {
+    "images": 2302,
+    "camera_info": 11459,
+    "detection_arrays": 2857,
+    "detection_arrays_nonempty": 1017,
+    "targets_msgs": 2857,
+    "targets_nonempty": 640,
+    "goal_info": 393,
+    "states": 0
+  },
+  "image_stamps_sample": [
+    288.62,
+    288.688,
+    288.72,
+    288.752,
+    288.784,
+    396.828,
+    396.86,
+    396.892,
+    396.96,
+    396.992
+  ],
+  "camera_info_sample": [
+    {
+      "stamp": 18.956,
+      "frame_id": "x500_mono_cam_0/mono_cam/base_link/imager",
+      "k": [
+        269.96816635131836,
+        0.0,
+        320.0,
+        0.0,
+        269.9681854248047,
+        240.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "d": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "width": 640,
+      "height": 480
+    },
+    {
+      "stamp": 18.976,
+      "frame_id": "x500_mono_cam_0/mono_cam/base_link/imager",
+      "k": [
+        269.96816635131836,
+        0.0,
+        320.0,
+        0.0,
+        269.9681854248047,
+        240.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "d": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "width": 640,
+      "height": 480
+    }
+  ],
+  "detection_sample": [
+    {
+      "stamp": 19.008,
+      "frame_id": "drone/camera_optical_frame",
+      "n": 1,
+      "scores": [
+        1.0
+      ],
+      "boxes": [
+        {
+          "cx": 351.0,
+          "cy": 241.0,
+          "w": 13.0,
+          "h": 7.0
+        }
+      ]
+    },
+    {
+      "stamp": 19.108,
+      "frame_id": "drone/camera_optical_frame",
+      "n": 1,
+      "scores": [
+        1.0
+      ],
+      "boxes": [
+        {
+          "cx": 351.0,
+          "cy": 239.5,
+          "w": 13.0,
+          "h": 6.0
+        }
+      ]
+    },
+    {
+      "stamp": 19.24,
+      "frame_id": "drone/camera_optical_frame",
+      "n": 1,
+      "scores": [
+        1.0
+      ],
+      "boxes": [
+        {
+          "cx": 351.0,
+          "cy": 239.0,
+          "w": 13.0,
+          "h": 7.0
+        }
+      ]
+    },
+    {
+      "stamp": 396.696,
+      "frame_id": "drone/camera_optical_frame",
+      "n": 0,
+      "scores": [],
+      "boxes": []
+    },
+    {
+      "stamp": 396.828,
+      "frame_id": "drone/camera_optical_frame",
+      "n": 0,
+      "scores": [],
+      "boxes": []
+    },
+    {
+      "stamp": 396.924,
+      "frame_id": "drone/camera_optical_frame",
+      "n": 0,
+      "scores": [],
+      "boxes": []
+    }
+  ],
+  "targets_sample": [
+    {
+      "arr_stamp": 21.188,
+      "empty": false,
+      "src": "vision_target",
+      "track_stamp": 21.188,
+      "x": -10.628269397244935,
+      "y": 4.634691831108702,
+      "z": 2.0,
+      "conf": 1.0,
+      "target_id": "intruder_uav",
+      "cov_xx": 0.010546781502928463,
+      "cov_yy": 0.7450524260021909
+    },
+    {
+      "arr_stamp": 21.352,
+      "empty": false,
+      "src": "vision_target",
+      "track_stamp": 21.352,
+      "x": -4.0916645887510095,
+      "y": -0.21361622301015615,
+      "z": 2.0,
+      "conf": 1.0,
+      "target_id": "intruder_uav",
+      "cov_xx": 1.4101896444094084,
+      "cov_yy": 0.05272762614727626
+    },
+    {
+      "arr_stamp": 21.516,
+      "empty": false,
+      "src": "vision_target",
+      "track_stamp": 21.516,
+      "x": 1.976507802581553,
+      "y": -0.9821485674518733,
+      "z": 2.0,
+      "conf": 1.0,
+      "target_id": "intruder_uav",
+      "cov_xx": 6.483501689739583,
+      "cov_yy": 0.1818990263442256
+    },
+    {
+      "arr_stamp": 21.684,
+      "empty": false,
+      "src": "vision_target",
+      "track_stamp": 21.684,
+      "x": 31.932804671094473,
+      "y": -5.123495288360221,
+      "z": 2.0,
+      "conf": 1.0,
+      "target_id": "intruder_uav",
+      "cov_xx": 479.6829184399195,
+      "cov_yy": 10.4986935694284
+    },
+    {
+      "arr_stamp": 26.996,
+      "empty": false,
+      "src": "vision_target",
+      "track_stamp": 26.996,
+      "x": 230.85099360964202,
+      "y": -34.706459181764885,
+      "z": 2.0,
+      "conf": 1.0,
+      "target_id": "intruder_uav",
+      "cov_xx": 353931.65050463617,
+      "cov_yy": 7761.2382583551025
+    },
+    {
+      "arr_stamp": 158.468,
+      "empty": false,
+      "src": "vision_target",
+      "track_stamp": 158.468,
+      "x": 36.62785733660641,
+      "y": -4.806040651486309,
+      "z": 2.0,
+      "conf": 1.0,
+      "target_id": "intruder_uav",
+      "cov_xx": 0.09938098883429254,
+      "cov_yy": 0.028802478084040267
+    },
+    {
+      "arr_stamp": 158.928,
+      "empty": false,
+      "src": "vision_target",
+      "track_stamp": 158.928,
+      "x": 43.5150186600853,
+      "y": -9.813820958838388,
+      "z": 2.0,
+      "conf": 1.0,
+      "target_id": "intruder_uav",
+      "cov_xx": 0.7947434179426128,
+      "cov_yy": 0.3272515629105869
+    },
+    {
+      "arr_stamp": 159.324,
+      "empty": false,
+      "src": "vision_target",
+      "track_stamp": 159.324,
+      "x": 32.88944087236615,
+      "y": -3.168621681137881,
+      "z": 2.0,
+      "conf": 1.0,
+      "target_id": "intruder_uav",
+      "cov_xx": 0.0178003126486741,
+      "cov_yy": 0.006766267200086209
+    },
+    {
+      "arr_stamp": 159.82,
+      "empty": false,
+      "src": "vision_target",
+      "track_stamp": 159.82,
+      "x": 33.815983294700814,
+      "y": -3.51859415107015,
+      "z": 2.0,
+      "conf": 1.0,
+      "target_id": "intruder_uav",
+      "cov_xx": 0.02726604333229603,
+      "cov_yy": 0.009892788009798977
+    },
+    {
+      "arr_stamp": 159.952,
+      "empty": false,
+      "src": "vision_target",
+      "track_stamp": 159.952,
+      "x": 32.792745374536054,
+      "y": -2.002860934144307,
+      "z": 2.0,
+      "conf": 1.0,
+      "target_id": "intruder_uav",
+      "cov_xx": 0.016609614989346547,
+      "cov_yy": 0.002169567443606504
+    }
+  ],
+  "targets_sources": [
+    "vision_target"
+  ],
+  "goal_info_reasons": [
+    "reason=EXPIRED",
+    "reason=HOLD_LAST_VALID",
+    "reason=TARGET_FRESH",
+    "reason=TARGET_LOST"
+  ],
+  "goal_info_sample": [
+    {
+      "t": 1793606165.5653598,
+      "data": "valid=0;reason=TARGET_LOST;target_id=;src_stamp=-1.000000;age=-1.000000"
+    },
+    {
+      "t": 1793606166.5657878,
+      "data": "valid=0;reason=TARGET_LOST;target_id=;src_stamp=-1.000000;age=-1.000000"
+    },
+    {
+      "t": 1793606167.5651426,
+      "data": "valid=0;reason=TARGET_LOST;target_id=;src_stamp=-1.000000;age=-1.000000"
+    },
+    {
+      "t": 1793606168.565162,
+      "data": "valid=0;reason=TARGET_LOST;target_id=;src_stamp=-1.000000;age=-1.000000"
+    },
+    {
+      "t": 1793606169.5661223,
+      "data": "valid=0;reason=TARGET_LOST;target_id=;src_stamp=-1.000000;age=-1.000000"
+    },
+    {
+      "t": 1793606572.5214107,
+      "data": "valid=0;reason=EXPIRED;target_id=intruder_uav;src_stamp=158.468000;age=234.180000"
+    },
+    {
+      "t": 1793606576.057388,
+      "data": "valid=0;reason=EXPIRED;target_id=intruder_uav;src_stamp=158.468000;age=235.008000"
+    },
+    {
+      "t": 1793606577.057211,
+      "data": "valid=0;reason=EXPIRED;target_id=intruder_uav;src_stamp=158.468000;age=235.852000"
+    },
+    {
+      "t": 1793606578.0575294,
+      "data": "valid=0;reason=EXPIRED;target_id=intruder_uav;src_stamp=158.468000;age=236.832000"
+    },
+    {
+      "t": 1793606579.05742,
+      "data": "valid=0;reason=EXPIRED;target_id=intruder_uav;src_stamp=158.468000;age=237.820000"
+    }
+  ],
+  "state_sequence": [],
+  "status_last": {
+    "detector": {
+      "degrade_reason": null,
+      "degraded": false,
+      "detection_frames_out": 2854,
+      "detector_backend": "synthetic_color",
+      "frames_skipped_rate_limit": 5155,
+      "image_age_s": 0.004,
+      "image_topic": "/agc/air/camera/image_raw",
+      "images_in": 8029,
+      "perception_path": "vision",
+      "truth_inputs_subscribed": [],
+      "uptime_s": 392.509,
+      "vision_model_id": "none",
+      "vision_model_name": "",
+      "vision_model_sha256": "",
+      "vision_model_version": ""
+    },
+    "target": {
+      "source": "vision_target",
+      "frames_in": 2857,
+      "cadence": 2857,
+      "detections_empty": 1795,
+      "tracks_out": 640,
+      "skip_total": 422,
+      "skip_info": 290,
+      "skip_k": 0,
+      "skip_tf": 54,
+      "skip_plane": 0,
+      "skip_behind": 78,
+      "skip_range": 0,
+      "skip_score": 0,
+      "skip_ray": 0,
+      "tf_ok": true,
+      "plane_z_m": 2.0,
+      "last_stamp": 396.924,
+      "last_tf_stamp": 396.924,
+      "last_skip_reason": "camera_info_missing_or_stamp_mismatch",
+      "truth_inputs_subscribed": []
+    }
+  },
+  "stamp_passthrough": {
+    "detection_arrays": 2857,
+    "matched_image_stamp": 2221,
+    "match_ratio": 0.7773888694434722
+  },
+  "track_stamp_matches_detection": 640,
+  "track_count": 640,
+  "tf_summary": {
+    "queries": 40,
+    "ok": 40,
+    "fail": 0,
+    "fail_reasons": []
+  }
+}

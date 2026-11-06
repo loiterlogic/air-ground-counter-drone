@@ -22,9 +22,9 @@
 - **消息来源**：任务、报告、审查、状态变更与关键判断必须标明来源（用户/Leader/Worker）。日志、哈希、命令输出是证据引用，不能替代三方结论或冒充来源。
 - **停止与状态完整性**：出现契约硬约束违规、基线未知漂移、guard 拦截、**资源总量或总时间耗尽**、**并行资源冲突**、必要证据缺失、通知失败或越界时，立即停止并回报；不静默重试、不扩大范围、不伪造证据、**不自行改交接状态**、不开下一任务。**建议次数用尽本身不是停止条件**（见 [计数只记账](#counts)），但**它也不授权任何未授权的运行或越界写入**。任务只有经 Leader 独立审查才能验收归档。
 
-真源分层：项目执行以 [项目完成路线](../docs/plan/README.md#plan-index) 为入口；决策归 `docs/adr/`（[索引](../docs/adr/README.md#adr-index)），进度归路线各阶段的出口判据，实验产物归 `experiments/`；历史规格在 [归档](../docs/archive/specs/README.md#specs-index)（不再发布），历史 Runbook 在 [归档](../docs/archive/ROS2迁移步骤.md#top)（**不是**进度真源）。硬约束只引用 [契约真源](../docs/ROS2迁移交接文档.md#hard-constraints)。交接文件用稳定锚点引用，不复制规格或硬约束。
+真源分层：项目执行以 [项目完成路线](../docs/plan/README.md#plan-index) 为入口；决策归 `docs/adr/`（[索引](../docs/adr/README.md#adr-index)），进度归路线各阶段的出口判据，实验产物归 `experiments/`；历史 Runbook 在 [归档](../docs/archive/ROS2迁移步骤.md#top)（**不是**进度真源）。硬约束只引用 [契约真源](../docs/ROS2迁移交接文档.md#hard-constraints)。交接文件用稳定锚点引用，不复制规格或硬约束。
 
-本目录纳入 Git；`experiments/`、`docs/archive/specs/` 沿用本地保留规则（不发布）。纳入 Git 不代表自动提交或推送。
+本目录纳入 Git；`experiments/` 沿用本地保留规则（不发布）。纳入 Git 不代表自动提交或推送。
 
 <a id="files"></a>
 ## 文件与写入归属
@@ -33,8 +33,7 @@
 .coordination/
 ├── README.md  CURRENT.md
 ├── roles/{leader,worker}.md
-├── task/<任务 ID>/round-<轮次>/{request,report,review}.md   # 每条任务链一个目录（可并行多条链）
-└── archive/README.md + <任务 ID>/round-<轮次>/{request,report,review}.md
+└── task/<任务 ID>/round-<轮次>/{request,report,review}.md   # 每条任务链一个目录（可并行多条链）
 ```
 
 - `CURRENT.md`：唯一当前指针与状态；不在别处维护第二份状态表。**由 Leader 独占写入**（含接单/交回后的状态同步），并行批次下可列多行。**Worker 从不在 `CURRENT.md` 里改任何字段**——包括"领取""改执行中""置待审查"，这些一律只写在本轮 `report.md` 头部，由 Leader 据通知同步。
@@ -44,16 +43,16 @@
 
 每轮独立保存，不覆盖上一轮；任务 ID 同日递增且不复用。接单必须同时核对任务 ID 与轮次，不能仅凭路径续旧任务。取消任务由 Leader 记录原因，不伪装为验收通过。
 
-归档由 Leader 在验收或明确关闭后进行，见 [归档说明](archive/README.md#archive)。`执行中/待审查/待返工/阻塞` 均留在 `task/`；**Worker 不归档、不创建下一任务**。**同一任务链**新任务发布前先归档上一任务；并行链之间互不阻塞（见 [并行任务](#parallel)）。禁止覆盖任务或轮次目录。
+**台账归档**：任务验收或明确关闭后，其逐轮 `request/report/review` **不再保留为长期档案**（2026-11-03 起，结论并入 ADR / `docs/` 与 `CURRENT.md`）；`执行中/待审查/待返工/阻塞` 均留在 `task/`；**Worker 不归档、不创建下一任务**。**同一任务链**新任务发布前先归档上一任务；并行链之间互不阻塞（见 [并行任务](#parallel)）。禁止覆盖任务或轮次目录。
 
 <a id="batch"></a>
 ## 批次授权与熔断
 
-来源：用户 2026-10-29 裁定。**动因**：Leader 每次唤醒重付整个会话上下文（原记录"每次约 22 万 `cacheRead`"，2026-10-29 实测校准为**单 step 上下文重读量级**，一次唤醒含多步，见 [P0-5 实测](../docs/archive/completion-20261031/p0-5-协作成本治理.md#p0-5-exit)），单轮审查使唤醒次数与轮数 1:1。W8 验证任务 24 轮 ≈ 530 万 `cacheRead`，其中 6 轮（19–24）在同一根因上空转、无实质进展。
+来源：用户 2026-10-29 裁定。**动因**：Leader 每次唤醒重付整个会话上下文（原记录"每次约 22 万 `cacheRead`"，2026-10-29 实测校准为**单 step 上下文重读量级**，一次唤醒含多步，见 [ADR-0026](../docs/adr/0026-leader-worker-collaboration-and-batch-authorization.md#top)(d)），单轮审查使唤醒次数与轮数 1:1。W8 验证任务 24 轮 ≈ 530 万 `cacheRead`，其中 6 轮（19–24）在同一根因上空转、无实质进展。
 
 > **成本原则**：贵的是**唤醒次数 × 每次唤醒步数 × 当前上下文规模**，不是审查篇幅。压缩手段是"一次授权多轮、一次审查一批"并让**每批少做往返**，**不是**缩短审查、更不是取消独立验收。
 >
-> **2026-10-29 实测校准**（P0-3/P0-4 两任务的 Leader 会话）：一次工程唤醒 = 6–10 step、`cacheRead` 200–370 万；每 step 的 `cacheRead` 随会话上下文从约 2.7 万涨到约 36.8 万。**唤醒次数下降不等于 token 下降**——上下文更长的会话里，少一次唤醒只省一次"重读"，省不掉"写得更多"。`cacheRead` 降 75% 仍是**未验证**指标，见 [P0-5 出口判据](../docs/archive/completion-20261031/p0-5-协作成本治理.md#p0-5-exit)。
+> **2026-10-29 实测校准**（P0-3/P0-4 两任务的 Leader 会话）：一次工程唤醒 = 6–10 step、`cacheRead` 200–370 万；每 step 的 `cacheRead` 随会话上下文从约 2.7 万涨到约 36.8 万。**唤醒次数下降不等于 token 下降**——上下文更长的会话里，少一次唤醒只省一次"重读"，省不掉"写得更多"。`cacheRead` 降 75% 仍是**未验证**指标，见 [ADR-0026](../docs/adr/0026-leader-worker-collaboration-and-batch-authorization.md#top)(d)。
 
 ### N 与 K
 
@@ -62,7 +61,7 @@
 | **N** | **6** | **记录检查点**：累计第 6 轮写一次"本轮小结 + 资源账目"。**不是停止上限、不触发唤醒**；不得因为"到第 6 轮"交回 |
 | **K** | **4** | **熔断**：连续 **K** 轮无**区分性新证据**即触发，Worker 必须停止并提交假设台账 |
 
-> **N 为什么不再是停止条件**（2026-10-31 修订，来源：用户裁定"优化已明确根因却因实验次数不足被迫返工"）：ADR-0104 的成本原则是"贵的是**唤醒次数**"，而轮数只是**记录单位**。用轮数触发唤醒，等于把已废弃的成本单元请回来，还会惩罚"已经查明根因、只差把修复验完"的批次。达到 N 时**继续做**，只补记账。
+> **N 为什么不再是停止条件**（2026-10-31 修订，来源：用户裁定"优化已明确根因却因实验次数不足被迫返工"）：ADR-0026 的成本原则是"贵的是**唤醒次数**"，而轮数只是**记录单位**。用轮数触发唤醒，等于把已废弃的成本单元请回来，还会惩罚"已经查明根因、只差把修复验完"的批次。达到 N 时**继续做**，只补记账。
 
 ### 停止条件是四类，不是次数
 
@@ -194,7 +193,7 @@ Leader 审"摘要 + 抽样证据"；抽样比例与深度由 Leader 定，**独�
 **授权依据链**（三级，缺一不可）：
 
 1. **用户 2026-10-31 明确要求**：优化"已明确根因却因实验次数不足被迫返工"的机制，并明确允许互不影响的任务并行；
-2. **批次层面的落地**：[本批次授权](../docs/plan/README.md#parallel)——四条独立链可同时存在、离线检查次数只记账、明确根因的同范围修复与重验可连续完成、连续 4 轮无区分性新证据才停；
+2. **批次层面的落地**：[本批次授权](#parallel)——四条独立链可同时存在、离线检查次数只记账、明确根因的同范围修复与重验可连续完成、连续 4 轮无区分性新证据才停；
 3. **本协议修订**（本节及 [并行任务](#parallel)、[计数只记账](#counts)、[观测分级](#run-tiers)）：把上两级原则固化为长期规则。
 
 **不追溯历史豁免**（与 [离线/静态检查](#offline-budget) 同源原则）：
@@ -202,14 +201,14 @@ Leader 审"摘要 + 抽样证据"；抽样比例与深度由 Leader 定，**独�
 - 本修订**只适用此后新派的工单**。历史轮次中因次数/轮数用尽而停工、因"有效失败即交回"而返工的记录，**按当时授权如实保留**，不重写、不改判、不宣布为"当时就该继续"。
 - 已归档批次（W8 的 24 轮、P1-4 的 2/2 停工、P2-1 的 4/4 停工）**既不被说成违规，也不被当作新规则的正面例子**；它们是**动因证据**。
 - **不追溯**的含义是"不重判旧账"，**不是**"旧限制仍然有效"——新工单一律按新规则执行，Worker 不得以"以前只能试 3 次"为由提前交回。
-- ADR-0104 正文不改写：其 N=6 / K=4 的**成本推理仍成立**，本次只改"N 的语义"（停止上限 → 记录检查点）。
-  ADR 层面的结论修订**由 Leader 正式追加**，现行内容见 [ADR-0104 修订节](../docs/adr/0104-batch-authorization-and-stall-circuit-breaker.md#adr-0104-amendment)；本协议的对应条款即本节与 [N 与 K](#batch)。两处若不一致，以 ADR 的正式结论为准。
-- **本节的审查来源**：[F3 round-1 独立审查](task/20261031-014-worker-autonomy/round-1/review.md#review)（Leader，2026-10-31）——它对本节六项自洽问题作定点裁定，不改变本节方向。
+- ADR-0026 正文不改写：其 N=6 / K=4 的**成本推理仍成立**，本次只改"N 的语义"（停止上限 → 记录检查点）。
+  ADR 层面的结论修订**由 Leader 正式追加**，现行内容见 [ADR-0026 修订节](../docs/adr/0026-leader-worker-collaboration-and-batch-authorization.md#adr-0104-amendment)；本协议的对应条款即本节与 [N 与 K](#batch)。两处若不一致，以 ADR 的正式结论为准。
+- **本节的审查来源**：F3 round-1 独立审查（Leader，2026-10-31；原始台账已于 2026-11-03 删除，结论已并入本节）。
 
 <a id="parallel"></a>
 ## 并行任务（2026-10-31）
 
-来源：用户 2026-10-31 明确授权"互不影响的任务可并行"，并覆盖旧规则中的全局单任务串行限制。落地约束见 [本批次授权](../docs/plan/README.md#parallel)。
+来源：用户 2026-10-31 明确授权"互不影响的任务可并行"，并覆盖旧规则中的全局单任务串行限制。落地约束见 [本批次授权](#parallel)。
 
 **允许**：多条**独立任务链**同时存在，每条一个任务 ID、一个 Worker、一个独立轮次目录；返工复用原会话。
 
@@ -240,14 +239,14 @@ Leader 审"摘要 + 抽样证据"；抽样比例与深度由 Leader 定，**独�
 ## 一轮交接
 
 1. Leader 读项目入口与实际证据，写完整派工单，状态置 `待执行`。
-2. **任务链首次派工**：Leader 用 `worker` 创建 Worker（执行者路由由 Host 钉死为 workbuddy / `deepseek-v4.1-flash` / `max`，无需传参），把子会话 ID 记入本轮 `report.md`。**后续轮次复用同一子会话**，用 `send_message` 投递新派工，不重新创建。
+2. **任务链首次派工**：Leader **只能用 `worker`** 创建 Worker（执行者路由由 Host 钉死为 workbuddy 分组 `deepseek-v4.1-flash` / `reasoningEffort: high`，无需传参；首选 `@huai_xin/dsh-workbuddy/intl` 不可用时由 `worker-route-fallback` 自动切到 `/cn`，Leader 不干预），把子会话 ID 记入本轮 `report.md`。**后续轮次复用同一子会话**，用 `send_message` 投递新派工，不重新创建；**阻塞**时按 [阻塞处置](#workflow) 结档并开新 Worker 续做。
 3. Worker 先读本规则与当前指针，确认任务 ID、轮次、状态。**只有 `待执行`/`待返工` 可接单**。核对 HEAD、分支、已有改动与文件指纹，**把领取时间、执行者与"执行中"写入本轮 `report.md` 头部**后才开工。一个任务仅由一个执行会话处理。
    > **Worker 不改 `CURRENT.md`、不改任务的交接状态字段**（[写入归属](#files)）；`CURRENT.md` 的状态由 Leader 依据本轮 `report.md` 与 Worker 的交回通知同步。
 4. Worker 追加回报、核对差异，**在本轮 `report.md` 头部写明轮末状态**（批次末/触发事件写 `待审查`），用 `send_message` 通知 Leader；随后**结束本轮，不等待、不轮询、不接下一单**。
    > **批次授权下**（见 [批次授权](#batch)）：批次内不逐轮唤醒，Worker 自写下一轮 `request.md` 并继续；**批次内中间轮既不通知、也不改任何状态标记**，只写 `report.md`。仅四类触发事件才通知。
 5. Leader 亲自读差异与证据，追加审查结论。通过才设 `已验收`；需返工则写明要求、增轮次并设 `待返工`，再 `send_message` 通知同一 Worker。**同一任务链**验收或关闭前不得创建新任务流（**跨链并行**见 [并行任务](#parallel)）。
 6. 无法继续时 Worker 在 `report.md` 写明现场与待裁定项、标注 `阻塞`；由 **Leader** 把 `CURRENT.md` 置 `阻塞`，裁定后才能改 `待返工`/`已关闭`。`执行中` 会话失联不自动重领，先由 Leader 核对进程与已产生改动。
-7. Leader 将已验收/已关闭任务移入 `archive/<任务ID>/` 再发布下一任务；暂无任务时 CURRENT 设 `空闲`、ID 与轮次设 `无` 并链接最近结档。`task/` 可不存在；**空闲不接单**。
+7. Leader 在已验收/已关闭任务**结档**时把结论并入 `docs/`（ADR 或规范）与 `CURRENT.md`，逐轮台账随之删除；暂无任务时 CURRENT 设 `空闲`、ID 与轮次设 `无` 并链接最近结档。`task/` 可不存在；**空闲不接单**。
 
 流转：`待执行 → 执行中 → 待审查 → 已验收`；分支 `待返工`/`阻塞`/`已关闭`。这些仅是交接状态，`已验收` 不代表 workstream 完成或实验 gate 通过。
 
@@ -303,7 +302,7 @@ Leader 审"摘要 + 抽样证据"；抽样比例与深度由 Leader 定，**独�
 
 - 适用范围仅限**只读/离线**动作：`pytest` 类离线测试、链接/索引/语法检查、`grep`/`read`、哈希比对。
 - **不改变** [观测分级](#run-tiers)：`T1` 的"单次 ≤30 s、进程 ≤2、独占 `/tmp`"照旧；`T2` 仍"未派发不启动"，**未授权或明确 0 依然一次都不能启动**。本段只改"记账方式"，不是 T1 放宽，也不是"小规模 T2"。
-- **不追溯豁免**：P0-4 的 32 次检查、7 笔提交、`docs/archive/specs/` 36 处链接写入，仍按**当时**授权记为偏离，保留在[其审查](archive/20261029-004-p0-4-script-curation/round-1/review.md#review)。本段只适用**此后新派的工单**。
+- **不追溯豁免**：P0-4 的 32 次检查、7 笔提交仍按**当时**授权记为偏离（该批次的逐轮台账已于 2026-11-03 删除，见 [ADR-0025](../docs/adr/0025-publishing-boundary-and-retirement.md#top)）。本段只适用**此后新派的工单**。
 - **提交纪律**（同源）：收尾时先完成全部自查与计数核对，**再一次**提交回报；不为修哈希或修账目自增提交，出现事实错误按 [追加自查更正](#self-correction) 如实追加。
 
 <a id="self-correction"></a>
@@ -377,16 +376,18 @@ Leader 派工说明目标、边界与可判定验收，不逐个限制无风险�
 | Leader → Worker（后续轮） | `send_message` | 复用同一子会话，冷恢复并保留上下文 |
 | Worker → Leader | `send_message` | 通知审查，只表示"回报已就绪" |
 
-- **一个任务一个 Worker**：同一任务链内不重新 `spawn`。子会话一轮结束只是 inactive，下轮 `send_message` 会恢复它。
-- **执行者模型钉死**：`worker` 工具在 Host 侧固定 `@huai_xin/dsh-workbuddy/cn` / `deepseek-v4.1-flash` / `reasoningEffort: max`，与 Leader 当下所选模型无关；该路由写进子会话 descriptor，冷恢复沿用。需换模型时才用 `subagent` 显式传参，白名单只放行 workbuddy/trae 两条 `deepseek-v4.1-flash`。
+- **一个任务一个 Worker**：同一任务链内不重新 `spawn`。子会话一轮结束只是 inactive，下轮 `send_message` 会恢复它。**例外**：任务被判 `阻塞`（或执行会话失联/被判死）时，先结档再为该链开新 Worker，见 [阻塞处置](roles/leader.md#blocked-handoff)。
+- **执行者模型钉死**：`worker` 工具在 Host 侧固定 `@huai_xin/dsh-workbuddy/intl` / `deepseek-v4.1-flash` / `reasoningEffort: high`（`intl` 不可用时按 `worker-route-fallback` 链 `intl → cn → codearts(on) → trae` 自动回退，全部 `deepseek-v4.1-flash`），与 Leader 当下所选模型无关；该路由写进子会话 descriptor，冷恢复沿用。**现行值与 `~/.dsh/profiles/web/cordis.patch.yml` 一致；历史上写的 `cn` / `max` 已过期。**
+- **Leader 不得用 `subagent` 派工**（用户 2026-11-02 裁定）：Leader 派生执行者**只走 `worker`**。`subagent` 继承 Leader 当下模型，会让"一般模型 Worker"变成高质量模型，既破坏双模型分层，也会绕过钉死路由（实测：N1 子会话因此跑在 `totokens/gpt-6.1-sol` 上并撞余额不足）。
+- **一次性任务用临时 Worker**：只读调研、单点核查等"原本用 `subagent` 的活儿"，改为开一个**临时 `worker`**（`prompt` 写清一次性范围与"不改文件/不跑仿真"），完成后不续用。临时 Worker 不受"一链一个 Worker"约束，因为它不承载任务链。
 - **孙代路由受守卫约束**：白名单只在派工工具里检查显式选择；`workflow` 的 `agent()` 与裸继承会绕过它。`worker-route-guard` 挂在 `llm/stream`，`delegationDepth >= 2` 的会话只允许白名单路由，其余在发出前拒绝（`ROUTE_NOT_ALLOWED`），不花 token。孙代**可以**继续派，只是模型不能升级到 Leader 级。
 - **只通知不等待**：`send_message` 返回的是"已入队"，不是"已处理"。发出后结束本轮，不读 `review.md`、不轮询、不接下一单。
 - **派工后结束本轮**：`worker`/`subagent` 工具立即返回子会话 ID，不阻塞；子会话跑完由运行时把 `subagent-settled` 消息投进 Leader 收件箱（空闲时 `queue`、忙碌时 `steer`），作为下一步输入。**正确流程是派工即结束本轮**，靠结算通知唤醒；不要用 `sleep` 轮询。
-- **轮询代价（2026-10-28 实测，2026-10-29 校准）**：Leader 每醒一次都要重付整个会话上下文。实测 14 次空转轮询共 4,354 输入 token，但每次 `cacheRead` 约 22 万 token（该数是**单 step 重读量级**；一次唤醒含多步，故实际唤醒成本更高，见 [P0-5 实测](../docs/archive/completion-20261031/p0-5-协作成本治理.md#p0-5-exit)）；而 idle 时零消耗，被结算通知唤醒只需 1 次短请求。空闲等待不是"免费"的，扇出多个任务应在同一条消息里并发派出，而不是串行醒来等。
+- **轮询代价（2026-10-28 实测，2026-10-29 校准）**：Leader 每醒一次都要重付整个会话上下文。实测 14 次空转轮询共 4,354 输入 token，但每次 `cacheRead` 约 22 万 token（该数是**单 step 重读量级**；一次唤醒含多步，故实际唤醒成本更高，见 [ADR-0026](../docs/adr/0026-leader-worker-collaboration-and-batch-authorization.md#top)(d)）；而 idle 时零消耗，被结算通知唤醒只需 1 次短请求。空闲等待不是"免费"的，扇出多个任务应在同一条消息里并发派出，而不是串行醒来等。
 - **不自动接单**：Worker 被唤醒只表示派工已就绪，不构成验收结论，也不代表可以自行开下一任务。
 - **通知失败处置**：`send_message` 失败或状态未知时，如实记录在回报里、保持原状态、结束本轮；不得为了"通知成功"伪造状态推进。Leader 下次与用户讨论时按记录续查。
 - **无跳数限制**：原 Codex/DSH 跨进程链的 4 跳硬闸随外部叫醒一并取消。防无人工回路改由 Leader 在每个审查点亲自裁定；Leader 不得连续自动派工超过用户授权范围。
-- **历史工具已删除**：`coordination_wake.py`、`start_dsh_web.py`、`dsh_workspace.py`、`wake/targets.json`、`wake/chain.json` 及其测试已移除，见 [机制迁移说明](../docs/adr/0102-leader-worker-dual-model-handoff.md)。
+- **历史工具已删除**：`coordination_wake.py`、`start_dsh_web.py`、`dsh_workspace.py`、`wake/targets.json`、`wake/chain.json` 及其测试已移除，见 [机制迁移说明](../docs/adr/0026-leader-worker-collaboration-and-batch-authorization.md#top)。
 
 <a id="wake"></a>
 ## 用户介入用语

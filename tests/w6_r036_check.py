@@ -185,8 +185,8 @@ def case_f_static_source():
 
 
 def case_g_stock_retained():
-    """缺失 stock 材料（/tmp/stock_rec*.csv）在 ADR-0051 **作为未证实归因保留**（不静默删除）。"""
-    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0051-*.md')))
+    """缺失 stock 材料（/tmp/stock_rec*.csv）在 ADR-0008 **作为未证实归因保留**（不静默删除）。"""
+    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0008-air-trajectory-and-tracking-calibration.md')))
     res = {'adr_path': matches[0] if matches else None, 'exists': bool(matches)}
     if matches:
         t = _read(matches[0]) or ''
@@ -224,7 +224,7 @@ def case_h_no_abi_no_second_commander():
 
 
 def case_i_adr_0051():
-    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0051-*.md')))
+    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0008-air-trajectory-and-tracking-calibration.md')))
     res = {'path': matches[0] if matches else None, 'exists': bool(matches)}
     if matches:
         t = _read(matches[0]) or ''

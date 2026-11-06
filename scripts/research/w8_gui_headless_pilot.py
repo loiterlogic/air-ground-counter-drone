@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w8_gui_headless_pilot —— W8-E1 GUI / headless 模式等价 pilot 编排与报告（ADR-0096）。
+"""w8_gui_headless_pilot —— W8-E1 GUI / headless 模式等价 pilot 编排与报告（ADR-0021）。
 
 **定位**：本脚本只做 **GUI ↔ headless 模式等价核验**：
   * `run`：按预声明计划 `src/agc_rl/config/w8_gui_headless_plan.yaml` 逐 attempt 调用

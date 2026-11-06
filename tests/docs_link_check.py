@@ -19,8 +19,7 @@
 排除边界（刻意的，不是忽略）
 ----------------------------
   * 围栏代码块（``` / ~~~）与行内代码 `` `...` `` 内的链接不解析——它们是示例或模板，不是导航。
-  * 含 ``<占位符>`` / ``{占位符}`` 的链接目标视为模板占位，跳过（模板由
-    ``docs/conventions/spec模板.md`` 维护，其正文是代码块，不参与导航校验）。
+  * 含 ``<占位符>`` / ``{占位符}`` 的链接目标视为模板占位，跳过。
   * 外部链接（``http(s)://``、``mailto:``）不做网络请求，只计数。
   * 纯锚点链接（``#anchor``）按同文件校验。
   * 非 markdown 目标只校验文件存在性，不校验锚点（无法解析锚点语义）。
@@ -28,15 +27,15 @@
     与 ``#L<n>`` 同义处理为行锚点；两者都要求目标文件存在且行号在范围内。
   * **绝对路径证据引用**（``/home/...``、``/opt/ros/...``）是评审快照对
     ``file:line`` 的取证记录，指向本机源码树或发行版安装树，不是文档导航。
-    单列为"证据引用"计数，不判为断链（重写即伪造历史证据，见 ADR-0066(d)）。
-  * **``experiments/`` 内的指向**同样是证据引用：该目录按 ADR-0081 本地保留、不入库，
-    大归档按 ADR-0064 移入 ``experiments/_archive/``。文档只能记录"当时的 run 在哪里"，
+    单列为"证据引用"计数，不判为断链（重写即伪造历史证据，见 ADR-0002）。
+  * **``experiments/`` 内的指向**同样是证据引用：该目录按 ADR-0025 本地保留、不入库，
+    大归档按 ADR-0006 移入 ``experiments/_archive/``。文档只能记录"当时的 run 在哪里"，
     不能因为本机清理过就判文档错误。计入证据引用，不判为断链。
 
 历史缺失清单
 ------------
-归档文档（``docs/archive/``、``.coordination/archive/``）的断链属**历史事实**：
-归档文档反映当时路径，重写会伪造记录（见 ADR-0066 与 ADR-0105）。
+归档文档（``docs/archive/``）的断链属**历史事实**：
+归档文档反映当时路径，重写会伪造记录（见 ADR-0002 与 ADR-0025）。
 因此历史范围的断链**逐条列名**输出，不计入退出码；``--strict-history`` 可把它
 们也变成失败，用于将来真正清理时的一次性核查。**不提供**"整段忽略"的宽泛开关。
 """
@@ -69,8 +68,7 @@ ACTIVE_GLOBS = (
     "toolchain/README.md",
     ".coordination/*.md",
     ".coordination/roles/*.md",
-    ".coordination/archive/**/*.md",
-    # 迁移后的规格归档：链接必须与迁移前同等有效（见 P0-3 出口判据）
+    # 归档只剩 Runbook 与 ROS1 基线（规格与过程台账已于 2026-11-03 删除）
     "docs/archive/**/*.md",
     # 项目级技能：技能资源本身也是文档，其相对链接必须可解析
     # （P0-3 round-2 修正：只检查"别人指向技能"会漏掉技能内部的断链）
@@ -87,8 +85,7 @@ ACTIVE_GLOBS = (
 # 指向这些路径的链接在**本地完整检出**里有效，但在公开 clone 里必然缺失：
 # 单独归类，既不判断链，也不声称公开 clone 可导航。
 LOCAL_ONLY_PREFIXES = (
-    "docs/archive/specs/",   # 历史规格：保持不发布（ADR-0081 / ADR-0105）
-    "experiments/",          # 实验产物与证据（ADR-0081 / ADR-0064）
+    "experiments/",          # 实验产物与证据（ADR-0025 / ADR-0006）
     "reference/",            # 旧树归档（只读）
     "toolchain/",            # 外部工具链（仅 README 入库）
     ".trae/",                # 已退役；残留即异常，但语义仍是"本机"
@@ -98,7 +95,6 @@ LOCAL_ONLY_PREFIXES = (
 # 历史范围：断链只列名，不计入失败。
 HISTORICAL_PREFIXES = (
     "docs/archive/",
-    ".coordination/archive/",
 )
 
 # 永不扫描（生成物 / 外部树 / 实验证据）。
@@ -327,7 +323,7 @@ def run(root: Path, strict_history: bool, extra_globs: list[str] | None = None) 
                     stats.evidence += 1
                     continue
                 if "experiments/" in raw_target:
-                    # 实验产物本地保留（ADR-0081）/ 大归档（ADR-0064），是证据不是导航
+                    # 实验产物本地保留（ADR-0025）/ 大归档（ADR-0006），是证据不是导航
                     stats.evidence += 1
                     continue
                 if is_template_placeholder(raw_target):
@@ -356,7 +352,7 @@ def run(root: Path, strict_history: bool, extra_globs: list[str] | None = None) 
                                    "仅本地保留（不被 git 跟踪），公开 clone 中缺失", historical)
                         )
                 if not resolved.exists():
-                    # 本机保留、不入库的目标（如 docs/archive/specs/）：在**本地完整检出**里
+                    # 本机保留、不入库的目标（如 experiments/ / toolchain/）：在**本地完整检出**里
                     # 可解析，但在公开 clone 里必然缺失。单独计数，判为"仅本地存在"，
                     # 既不算断链（本地是对的），也不谎称公开 clone 可导航。
                     try:
@@ -441,7 +437,7 @@ def main(argv: list[str] | None = None) -> int:
             f"\n指向本机保留路径的链接（不计入断链，也**不**代表公开 clone 可导航）：{total_local}"
         )
         print("  口径：这些目标被 `.gitignore` 精确排除（规格/实验/旧树/工具链），")
-        print("        本地完整检出里存在，公开 clone 中必然缺失——属既有发布边界（ADR-0081/0105）。")
+        print("        本地完整检出里存在，公开 clone 中必然缺失——属既有发布边界（ADR-0025/0105）。")
         print(f"  本地可解析 {len(stats.local_only_present)} 条；本地也缺失 {len(stats.local_only_missing)} 条")
         if stats.local_only_missing:
             print("  ⚠ 本地也缺失（本机路径不存在，需复核，属真断链）：")

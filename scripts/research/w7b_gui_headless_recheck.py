@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w7b_gui_headless_recheck —— **只读**的 GUI / headless 同口径复核（ADR-0095 R5）。
+"""w7b_gui_headless_recheck —— **只读**的 GUI / headless 同口径复核（ADR-0024 R5）。
 
 **定位**：只用既有产物复核 GUI / headless，**不**新增 GUI run、**不**改写既有 B 报告、
 **不**参与 P1 / P2 判定。全部尝试保留（含 P1 GUI 首跑 `MISSION_FAILED(TIMEOUT)`），

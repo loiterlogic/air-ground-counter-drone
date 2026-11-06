@@ -13,7 +13,7 @@ server），随后对每个用例按参数重启一个 `scenario_reset` 节点�
   f. 随机可合法（重采样找到合法）→ 收
 
 服务调用走 `ros2 service call` CLI（规避同名节点重启后的客户端端点缓存）。结果落
-`experiments/w6-task-eval/<run_id>/metrics/r014.json`（ADR-0007）。
+`experiments/w6-task-eval/<run_id>/metrics/r014.json`（ADR-0006）。
 
 注：清理**禁止** pkill -f "<名字>"（会匹配 shell 自身命令行 → 自杀）；用 "[x]xx" 写法规避。
 """
@@ -57,7 +57,7 @@ _CAR_X_MAX = float(_geom['origin_x']) + float(_geom['size_x']) - _CAR_EXTENT_M
 OUT_OF_BOUNDS_CAR_X = round(_CAR_X_MAX + 0.5, 4)
 OUT_OF_BOUNDS_TARGET = (0.0, 0.0)   # 车越界时目标放原点：两门都会命中，故须断言**具体原因**
 
-# 场景实体几何事实（决策依据见 ADR-0029）：立柱 pole_1(0,-6) / pole_2(6,6)，0.3×0.3；
+# 场景实体几何事实（决策依据见 ADR-0012）：立柱 pole_1(0,-6) / pole_2(6,6)，0.3×0.3；
 # 默认 spawn 取自 `spawn_layout.yaml`（现为 car(−15, 1) / target(15, −2)）。
 CASES = [
     {

@@ -77,7 +77,7 @@ def case_e_scripts_hygiene():
 
 
 def case_f_adr():
-    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0048-*.md')))
+    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0010-safety-thresholds-and-failsafe.md')))
     res = {'path': matches[0] if matches else None, 'exists': bool(matches)}
     if matches:
         t = _read(matches[0]) or ''

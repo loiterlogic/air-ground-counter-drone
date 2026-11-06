@@ -178,21 +178,14 @@ def test_c8_guard_actually_fires():
 
 
 def test_c8_wording_table_matches_plan_document():
-    """文案表与 P1-3 计划第 1 节逐行一致（防止代码与文档各说各话）。
+    """文案表与 [演示可观测性与产物语义] 文档逐行一致（防止代码与文档各说各话）。
 
-    计划文件位置：2026-10-31 批次已把旧计划从 `docs/plan/` **归档**到
-    `docs/archive/completion-20261031/`。本测试原先硬编码 `docs/plan/…`，归档后
-    直接 FileNotFoundError——那是**路径漂移**，不是文案不一致。
-    现按「归档位置 → 现役位置」顺序解析：归档是既成事实，但若该计划日后重新启用，
-    本测试也仍能工作，不把某个路径写死成唯一真相。
+    真源：`docs/conventions/演示可观测性与产物语义.md` 的「状态文案表」。
+    该计划文件原先在 `docs/plan/`，2026-10-31 归档、2026-11-03 随归档清理删除；
+    语义已迁到上述 convention（结论未变），本测试随之改指现役真源。
     """
-    candidates = [
-        os.path.join(ROOT, 'docs', 'archive', 'completion-20261031',
-                     'p1-3-任务可观测与演示呈现.md'),
-        os.path.join(ROOT, 'docs', 'plan', 'p1-3-任务可观测与演示呈现.md'),
-    ]
-    path = next((p for p in candidates if os.path.exists(p)), None)
-    assert path is not None, '找不到 P1-3 计划文档（已查：%s）' % candidates
+    path = os.path.join(ROOT, 'docs', 'conventions', '演示可观测性与产物语义.md')
+    assert os.path.exists(path), '找不到语义真源文档：%s' % path
     doc = open(path, encoding='utf-8').read()
     for _n, name, text, _audience in status_map.STATE_ROWS:
         assert '`%s`' % name in doc or name in doc, 'P1-3 文档缺状态 %s' % name
@@ -526,16 +519,18 @@ def test_terminal_set_is_single_sourced():
 
 
 def test_default_arm_unchanged_and_annotated():
-    """默认演示口径仍是 full + yard + s04 + observe_yaw_mode=target（显式 oracle 指向臂）。"""
+    """默认演示口径仍是 full + yard + s04；指向臂由场景覆盖（track），不经 launch 参数。"""
     import common
     import start as demo_start
+    # 2026-11-04：指向臂如实反映**场景覆盖值** `track`（原写 target 与实际生效值不符）
     assert (common.DEFAULT_BACKEND, common.DEFAULT_MAP, common.DEFAULT_SCENE,
             common.DEFAULT_OBSERVE_YAW_MODE) == (
-        'full', 'yard', 's04_static_static_obs_track', 'target')
+        'full', 'yard', 's04_static_static_obs_track', 'track')
     joined = ' '.join(demo_start.launch_argv(backend=common.DEFAULT_BACKEND,
                                              scene=common.DEFAULT_SCENE,
                                              world_map=common.DEFAULT_MAP, headless=False))
-    assert 'observe_yaw_mode:=target' in joined
+    assert 'observe_yaw_mode:=' not in joined, (
+        '该 launch 参数已清退，不得再传（会被静默忽略）')
     assert 'oracle' in _read('start.py') or '指向臂' in _read('start.py')
 
 

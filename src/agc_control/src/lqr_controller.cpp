@@ -1,6 +1,6 @@
 // agc_control/lqr_controller.cpp —— LQR 控制器插件实现
 //
-// R-038（数值模型暴露与配置合法性启动校验；见 ADR-0053）：
+// R-038（数值模型暴露与配置合法性启动校验；见 ADR-0009）：
 //   ① 精确离散化（Bd 补上位置 0.5·dt² 项）；② DARE 收敛 / 残差 / 有限性检查，失败即抛错；
 //   ③ 关键正数 / 有限性 / 权重可行域**集中校验**，非法配置**拒绝**（不静默兜底）。
 
@@ -59,7 +59,7 @@ void LqrController::configure(ParamReader & p)
   r_ = p.getDouble("r", 1.0);
   dt_ = p.getDouble("dt", 0.02);
   acc_max_ = p.getDouble("acc_max", 4.0);
-  max_iter_ = p.getInt("max_iter", 2000);   // R-038：预算需 ≥ ~559 方达 tol=1e-10（见 ADR-0053 取证）
+  max_iter_ = p.getInt("max_iter", 2000);   // R-038：预算需 ≥ ~559 方达 tol=1e-10（见 ADR-0009 取证）
   tol_ = p.getDouble("tol", 1e-10);
 
   validateParameters();   // R-038：非法 Q/R/dt/max_iter/tol → 明确拒绝（删除静默兜底 dt=0.02/r=1.0）

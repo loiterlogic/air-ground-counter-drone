@@ -223,10 +223,10 @@ def case_h_abi_single_commander_section():
 
 
 # =====================================================================================
-# (i) ADR-0052
+# (i) ADR-0009
 # =====================================================================================
 def case_i_adr():
-    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0052-*.md')))
+    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0009-perception-truth-derived-and-vision-path.md')))
     res = {'path': matches[0] if matches else None, 'exists': bool(matches)}
     if matches:
         t = _read(matches[0]) or ''
@@ -284,7 +284,7 @@ def main():
     args = ap.parse_args()
     run_dir = os.path.join(args.experiments_root, 'w6-task-eval', args.run_id)
 
-    adr = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0052-*.md')))
+    adr = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0009-perception-truth-derived-and-vision-path.md')))
     adr_t = _read(adr[0]) if adr else ''
     xacro_t = _read(XACRO) or ''
     car_t = _read(CAR_YAML) or ''

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w7b_fire_control_lifecycle_check —— FL-1..FL-4 节点级合成话题回归（ADR-0091）。
+"""w7b_fire_control_lifecycle_check —— FL-1..FL-4 节点级合成话题回归（ADR-0011）。
 
 **只起** `capture_adjudicator`（不启 GZ / PX4 / 整链 launch），用合成话题驱动：
   /agc/ground/odom      nav_msgs/Odometry（车世界位姿）
@@ -26,9 +26,15 @@ import subprocess
 import sys
 import time
 
-# 本机 DDS 发现偶发抖动：测试节点与子进程都固定到 LOCALHOST / domain 0。
+# 本机 DDS：测试节点与子进程必须用**同一**发现范围 / 传输（否则互相看不见）。
+# 走单一真源 scripts/demo/dds_transport.py，不再写死 LOCALHOST——
+# `lo` 无 IFF_MULTICAST 时写死它就是整条收发链零送达（见整链排障速查#dds-transport）。
 os.environ['ROS_DOMAIN_ID'] = '0'
-os.environ['ROS_AUTOMATIC_DISCOVERY_RANGE'] = 'LOCALHOST'
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'scripts', 'demo'))
+import dds_transport  # noqa: E402
+
+dds_transport.apply(os.environ)
 
 import rclpy  # noqa: E402
 from rclpy.node import Node  # noqa: E402
@@ -385,7 +391,8 @@ def start_child():
     ]
     env = dict(os.environ)
     env['ROS_DOMAIN_ID'] = '0'
-    env['ROS_AUTOMATIC_DISCOVERY_RANGE'] = 'LOCALHOST'
+    # 子进程必须与本文件的测试节点用同一发现范围 / 传输（见文件头说明）。
+    dds_transport.apply(env)
     return subprocess.Popen(
         args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         start_new_session=True, env=env)
@@ -440,7 +447,7 @@ def print_results(results):
 
 
 def main():
-    ap = argparse.ArgumentParser(description='火控在飞生命周期节点级回归（ADR-0091）')
+    ap = argparse.ArgumentParser(description='火控在飞生命周期节点级回归（ADR-0011）')
     ap.add_argument('--attempts', type=int, default=2,
                     help='首个用例未收到 SHOT_FIRED 时的总尝试次数（含首次，默认 2）')
     args = ap.parse_args()

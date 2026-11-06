@@ -1,6 +1,6 @@
 // agc_air/agc_lifecycle_node.hpp —— 生命周期节点薄基类（Nav2 吸收点：lifecycle managed node）
 //
-// 对齐 Nav2 `nav2_util::LifecycleNode` 的用法（ADR-0008 吸收矩阵；口径见 ADR-0049）：
+// 对齐 Nav2 `nav2_util::LifecycleNode` 的用法（ADR-0003 吸收矩阵；口径见 ADR-0019）：
 //   - 四段语义：`on_configure / on_activate / on_deactivate / on_cleanup`，骨架统一转发；
 //   - **可重复资源状态机**：configure **幂等**（声明参数前先 `has_parameter`），cleanup **释放并注销**
 //     （`undeclare_parameter`）→ `configure→activate→deactivate→cleanup→configure` 可重复；
@@ -35,7 +35,7 @@ public:
   {
     // bond 心跳周期（0 = 禁用 bond）；由 launch 单一设置（契约 [参数入口]）。
     // **不**置 `bond_disable_heartbeat_timeout`（留给 bondcpp 默认 false）→ 节点侧亦检测
-    // manager 失联（与 nav2_util 默认「server 侧不超时」不同，为空中失效停机语义，见 ADR-0049）。
+    // manager 失联（与 nav2_util 默认「server 侧不超时」不同，为空中失效停机语义，见 ADR-0019）。
     if (!has_parameter("bond_heartbeat_period")) {
       declare_parameter("bond_heartbeat_period", 0.1);
     }
@@ -109,7 +109,7 @@ protected:
 private:
   CallbackReturn on_configure(const rclcpp_lifecycle::State &) final
   {
-    // ADR-0080：bond **不**在 configure 创建——Nav2 manager 只在 activate 时才建立其侧 bond；
+    // ADR-0019：bond **不**在 configure 创建——Nav2 manager 只在 activate 时才建立其侧 bond；
     //   在 configure 开始计时会在"配置→激活"间隔 > 4 s 时误触发 broken → 失效停机。
     return on_configure_impl();
   }

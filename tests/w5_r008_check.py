@@ -9,7 +9,7 @@
 （`/opt/ros/jazzy/include/nav2_collision_monitor/source.hpp`：`@return false if an invalid source should block the robot`）。
 本脚本以「持续发 v_max 且 cmd_vel_out 归零 + 真值速度→0」实证该语义。
 
-标定值（ADR-0021 追加节 · R-008）：T = source_timeout = 0.3 s；本车实测 v_max = 1.5 m/s、a ≈ 0.9 m/s²。
+标定值（ADR-0010 追加节 · R-008）：T = source_timeout = 0.3 s；本车实测 v_max = 1.5 m/s、a ≈ 0.9 m/s²。
   失源盲行 d_blind = v_max·T = 0.45 m；制动 s_brake = v_max²/(2a) = 1.25 m；总停距 1.70 m < 碰撞档 2.0 m。
 
 子测：

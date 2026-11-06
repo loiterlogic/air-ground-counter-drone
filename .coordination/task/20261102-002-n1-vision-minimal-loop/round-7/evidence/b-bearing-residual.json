@@ -1,0 +1,574 @@
+{
+ "note": "同一平面 z=2.0 下，报告点与\"真值方位射线交点\"的距离。平面假设的误差只能把点沿射线移动，不能改变射线方向；因此本残差**不是**平面假设误差，而是**方位（像素）侧**的不一致。",
+ "plane_z_m": 2.0,
+ "n": 40,
+ "bearing_residual_p50_m": 10.14,
+ "bearing_residual_p95_m": 54.98,
+ "bearing_residual_max_m": 65.43,
+ "elev_true_min_deg": -43.7,
+ "elev_true_max_deg": -34.5,
+ "vfov_half_deg": 35.0,
+ "n_true_sight_below_vfov": 37,
+ "rows": [
+  {
+   "t": 177.28,
+   "reported": [
+    36.89,
+    -2.81
+   ],
+   "true_ray_at_same_plane": [
+    28.6,
+    -1.87
+   ],
+   "bearing_residual_m": 8.35,
+   "elev_true_deg": -34.5,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.31,
+   "reported": [
+    36.36,
+    -2.74
+   ],
+   "true_ray_at_same_plane": [
+    28.62,
+    -1.87
+   ],
+   "bearing_residual_m": 7.8,
+   "elev_true_deg": -34.8,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.34,
+   "reported": [
+    35.83,
+    -2.67
+   ],
+   "true_ray_at_same_plane": [
+    28.64,
+    -1.87
+   ],
+   "bearing_residual_m": 7.24,
+   "elev_true_deg": -35.2,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.38,
+   "reported": [
+    35.3,
+    -2.61
+   ],
+   "true_ray_at_same_plane": [
+    28.66,
+    -1.87
+   ],
+   "bearing_residual_m": 6.68,
+   "elev_true_deg": -35.6,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.41,
+   "reported": [
+    34.77,
+    -2.54
+   ],
+   "true_ray_at_same_plane": [
+    28.69,
+    -1.87
+   ],
+   "bearing_residual_m": 6.12,
+   "elev_true_deg": -36.0,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.44,
+   "reported": [
+    34.33,
+    -2.49
+   ],
+   "true_ray_at_same_plane": [
+    28.72,
+    -1.87
+   ],
+   "bearing_residual_m": 5.65,
+   "elev_true_deg": -36.6,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.48,
+   "reported": [
+    33.94,
+    -2.44
+   ],
+   "true_ray_at_same_plane": [
+    28.75,
+    -1.87
+   ],
+   "bearing_residual_m": 5.23,
+   "elev_true_deg": -37.2,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.51,
+   "reported": [
+    33.55,
+    -2.39
+   ],
+   "true_ray_at_same_plane": [
+    28.78,
+    -1.88
+   ],
+   "bearing_residual_m": 4.8,
+   "elev_true_deg": -37.7,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.54,
+   "reported": [
+    38.32,
+    -3.05
+   ],
+   "true_ray_at_same_plane": [
+    28.81,
+    -1.88
+   ],
+   "bearing_residual_m": 9.58,
+   "elev_true_deg": -38.4,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.58,
+   "reported": [
+    42.55,
+    -3.63
+   ],
+   "true_ray_at_same_plane": [
+    28.83,
+    -1.88
+   ],
+   "bearing_residual_m": 13.83,
+   "elev_true_deg": -38.9,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.61,
+   "reported": [
+    46.78,
+    -4.21
+   ],
+   "true_ray_at_same_plane": [
+    28.86,
+    -1.88
+   ],
+   "bearing_residual_m": 18.08,
+   "elev_true_deg": -39.4,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.64,
+   "reported": [
+    51.02,
+    -4.79
+   ],
+   "true_ray_at_same_plane": [
+    28.88,
+    -1.88
+   ],
+   "bearing_residual_m": 22.32,
+   "elev_true_deg": -39.9,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.68,
+   "reported": [
+    62.67,
+    -6.47
+   ],
+   "true_ray_at_same_plane": [
+    28.91,
+    -1.88
+   ],
+   "bearing_residual_m": 34.08,
+   "elev_true_deg": -40.5,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.74,
+   "reported": [
+    83.4,
+    -9.46
+   ],
+   "true_ray_at_same_plane": [
+    28.95,
+    -1.89
+   ],
+   "bearing_residual_m": 54.98,
+   "elev_true_deg": -41.4,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.77,
+   "reported": [
+    93.76,
+    -10.96
+   ],
+   "true_ray_at_same_plane": [
+    28.97,
+    -1.89
+   ],
+   "bearing_residual_m": 65.43,
+   "elev_true_deg": -41.9,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.8,
+   "reported": [
+    75.11,
+    -8.33
+   ],
+   "true_ray_at_same_plane": [
+    28.99,
+    -1.89
+   ],
+   "bearing_residual_m": 46.57,
+   "elev_true_deg": -42.4,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.84,
+   "reported": [
+    54.13,
+    -5.38
+   ],
+   "true_ray_at_same_plane": [
+    29.01,
+    -1.89
+   ],
+   "bearing_residual_m": 25.36,
+   "elev_true_deg": -43.0,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.87,
+   "reported": [
+    35.48,
+    -2.75
+   ],
+   "true_ray_at_same_plane": [
+    29.03,
+    -1.89
+   ],
+   "bearing_residual_m": 6.51,
+   "elev_true_deg": -43.4,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.9,
+   "reported": [
+    35.19,
+    -2.71
+   ],
+   "true_ray_at_same_plane": [
+    29.03,
+    -1.89
+   ],
+   "bearing_residual_m": 6.21,
+   "elev_true_deg": -43.5,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.94,
+   "reported": [
+    34.86,
+    -2.65
+   ],
+   "true_ray_at_same_plane": [
+    29.04,
+    -1.89
+   ],
+   "bearing_residual_m": 5.87,
+   "elev_true_deg": -43.7,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 177.97,
+   "reported": [
+    34.56,
+    -2.61
+   ],
+   "true_ray_at_same_plane": [
+    29.04,
+    -1.89
+   ],
+   "bearing_residual_m": 5.57,
+   "elev_true_deg": -43.7,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 178.07,
+   "reported": [
+    33.65,
+    -2.47
+   ],
+   "true_ray_at_same_plane": [
+    29.01,
+    -1.88
+   ],
+   "bearing_residual_m": 4.68,
+   "elev_true_deg": -42.9,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 178.1,
+   "reported": [
+    33.35,
+    -2.42
+   ],
+   "true_ray_at_same_plane": [
+    28.99,
+    -1.88
+   ],
+   "bearing_residual_m": 4.39,
+   "elev_true_deg": -42.6,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 178.14,
+   "reported": [
+    34.81,
+    -2.65
+   ],
+   "true_ray_at_same_plane": [
+    28.98,
+    -1.88
+   ],
+   "bearing_residual_m": 5.88,
+   "elev_true_deg": -42.3,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 178.17,
+   "reported": [
+    36.27,
+    -2.88
+   ],
+   "true_ray_at_same_plane": [
+    28.96,
+    -1.87
+   ],
+   "bearing_residual_m": 7.37,
+   "elev_true_deg": -42.0,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 178.24,
+   "reported": [
+    39.37,
+    -3.36
+   ],
+   "true_ray_at_same_plane": [
+    28.93,
+    -1.87
+   ],
+   "bearing_residual_m": 10.55,
+   "elev_true_deg": -41.3,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 178.27,
+   "reported": [
+    39.25,
+    -3.35
+   ],
+   "true_ray_at_same_plane": [
+    28.91,
+    -1.86
+   ],
+   "bearing_residual_m": 10.44,
+   "elev_true_deg": -40.9,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 178.3,
+   "reported": [
+    39.13,
+    -3.34
+   ],
+   "true_ray_at_same_plane": [
+    28.89,
+    -1.86
+   ],
+   "bearing_residual_m": 10.34,
+   "elev_true_deg": -40.5,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 178.34,
+   "reported": [
+    38.99,
+    -3.33
+   ],
+   "true_ray_at_same_plane": [
+    28.87,
+    -1.86
+   ],
+   "bearing_residual_m": 10.22,
+   "elev_true_deg": -40.1,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 178.37,
+   "reported": [
+    38.87,
+    -3.32
+   ],
+   "true_ray_at_same_plane": [
+    28.86,
+    -1.86
+   ],
+   "bearing_residual_m": 10.11,
+   "elev_true_deg": -39.9,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 178.4,
+   "reported": [
+    38.74,
+    -3.31
+   ],
+   "true_ray_at_same_plane": [
+    28.85,
+    -1.85
+   ],
+   "bearing_residual_m": 10.0,
+   "elev_true_deg": -39.7,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 178.43,
+   "reported": [
+    38.91,
+    -3.35
+   ],
+   "true_ray_at_same_plane": [
+    28.84,
+    -1.85
+   ],
+   "bearing_residual_m": 10.18,
+   "elev_true_deg": -39.5,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 178.5,
+   "reported": [
+    39.28,
+    -3.42
+   ],
+   "true_ray_at_same_plane": [
+    28.81,
+    -1.85
+   ],
+   "bearing_residual_m": 10.59,
+   "elev_true_deg": -38.8,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 178.53,
+   "reported": [
+    39.45,
+    -3.46
+   ],
+   "true_ray_at_same_plane": [
+    28.78,
+    -1.85
+   ],
+   "bearing_residual_m": 10.79,
+   "elev_true_deg": -38.3,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 178.56,
+   "reported": [
+    39.62,
+    -3.49
+   ],
+   "true_ray_at_same_plane": [
+    28.75,
+    -1.84
+   ],
+   "bearing_residual_m": 10.99,
+   "elev_true_deg": -37.8,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 178.6,
+   "reported": [
+    39.52,
+    -3.48
+   ],
+   "true_ray_at_same_plane": [
+    28.72,
+    -1.83
+   ],
+   "bearing_residual_m": 10.92,
+   "elev_true_deg": -37.2,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 178.63,
+   "reported": [
+    39.42,
+    -3.46
+   ],
+   "true_ray_at_same_plane": [
+    28.69,
+    -1.83
+   ],
+   "bearing_residual_m": 10.86,
+   "elev_true_deg": -36.6,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 178.66,
+   "reported": [
+    39.33,
+    -3.45
+   ],
+   "true_ray_at_same_plane": [
+    28.65,
+    -1.82
+   ],
+   "bearing_residual_m": 10.81,
+   "elev_true_deg": -35.9,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 178.7,
+   "reported": [
+    39.24,
+    -3.43
+   ],
+   "true_ray_at_same_plane": [
+    28.61,
+    -1.82
+   ],
+   "bearing_residual_m": 10.75,
+   "elev_true_deg": -35.3,
+   "vfov_half_deg": 35.0
+  },
+  {
+   "t": 178.73,
+   "reported": [
+    38.22,
+    -3.27
+   ],
+   "true_ray_at_same_plane": [
+    28.59,
+    -1.81
+   ],
+   "bearing_residual_m": 9.75,
+   "elev_true_deg": -34.8,
+   "vfov_half_deg": 35.0
+  }
+ ]
+}

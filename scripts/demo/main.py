@@ -12,7 +12,7 @@
 
 为什么 shell + Python 分工：预检要 source ROS 环境、管进程组、调 `colcon`，shell 最直接；
 预检项与状态轮询逻辑复杂，拆 Python 模块由 shell 调用
-（[P1-2 plan](../../docs/archive/completion-20261031/p1-2-一键演示入口.md#p1-2-goal) 的设计原则 1）。
+（设计原则 1）。
 """
 
 import argparse
@@ -92,6 +92,12 @@ def cmd_start(args):
     if wmap not in ('yard', 'open_field', 'minimal'):
         return common.fail('未知地图：%s' % wmap, ['可用：yard（默认）| open_field | minimal'])
     scene = (args.scene or '').strip() or common.DEFAULT_SCENE
+    # GUI 渲染后端（ADR-0021(d)）：空 → auto。取值校验交给 gui_render_backend 模块的
+    # 单一真源（它 raise ValueError），此处只做早失败，避免把非法值传到 launch 才炸。
+    gui_render_backend = (args.gui_render_backend or '').strip() or 'auto'
+    if gui_render_backend not in ('auto', 'd3d12', 'software'):
+        return common.fail('未知 gui_render_backend：%s' % gui_render_backend,
+                           ['可用：auto（默认）| d3d12 | software'])
 
     extra = list(args.extra or [])
     opts = {
@@ -100,6 +106,7 @@ def cmd_start(args):
         'map': wmap,
         'scene': scene,
         'duration': (args.duration or '').strip() or None,
+        'gui_render_backend': gui_render_backend,
         'ready_timeout_s': 180.0,
         'start_timeout_s': 90.0,
         'follow_timeout_s': 300.0,
@@ -116,6 +123,15 @@ def cmd_start(args):
             opts['start_timeout_s'] = float(e.split(':', 1)[1])
         elif e.startswith('follow-timeout:'):
             opts['follow_timeout_s'] = float(e.split(':', 1)[1])
+        elif e == 'escape':
+            # 目标逃逸（plan.md 出口判据 1）：显式参数才逃逸，默认 static 语义不变。
+            # `target_motion:=epicycle` 走 ADR-0031 的漂移轨道（参数由
+            # w6_composition.apply_target_motion_override 单一真源补齐 radius_m=1.8 等）；
+            # `goal_follow_target:=true` 让任务目标跟随感知目标——否则 s04 的固定 goal
+            # 在目标漂移后恒 RANGE_EXCEEDED（d_track=3.0），必然 TIMEOUT。
+            # 两者都是既有 launch 参数（数值 / 任务语义），不新增路线分支。
+            opts['extra'].append('target_motion:=epicycle')
+            opts['extra'].append('goal_follow_target:=true')
         else:
             opts['extra'].append(e)
     if opts['duration']:
@@ -125,13 +141,13 @@ def cmd_start(args):
             return common.fail('--duration 需要秒数：%r' % opts['duration'],
                                ['例：./run_demo.sh --duration 120'])
 
-    # 横幅：**必须**显式打出 oracle 指向臂，不能让人误以为默认 velocity 或真实视觉
+    # 横幅：**必须**如实打出观测指向臂（实际由场景覆盖决定，不是 CLI 传入）
     print('=' * 74)
     print('[run_demo] AGC 一键演示 · 后端=%s 地图=%s 场景=%s 形态=%s'
           % (backend, wmap, scene, 'headless' if opts['headless'] else 'GUI'))
-    print('[run_demo] 观测指向臂：observe_yaw_mode=%s（显式 oracle 指向臂：机头对准真值方位）'
+    print('[run_demo] 观测指向臂：observe_yaw_mode=%s（场景覆盖值：机头对准 /agc/targets 感知航迹）'
           % common.DEFAULT_OBSERVE_YAW_MODE)
-    print('[run_demo]   这不是默认 velocity，也不代表真实视觉识别；目标测量仍走 air_fusion')
+    print('[run_demo]   **非** oracle 臂（不读 /agc/gt/*）；目标测量由 gt_adapter 直取真值')
     print('[run_demo] 停止：Ctrl-C 或另一个终端 ./run_demo.sh stop')
     print('=' * 74, flush=True)
 
@@ -170,6 +186,7 @@ def main(argv=None):
     p.add_argument('--scene', default='')
     p.add_argument('--duration', default='')
     p.add_argument('--backend', default='')
+    p.add_argument('--gui-render-backend', default='')
     p.add_argument('--argv', default='')
     p.add_argument('extra', nargs='*')
     p.set_defaults(fn=cmd_start)

@@ -2,7 +2,8 @@
 
 守护 P1-2 的五条硬性质——全部可在无 GUI / 无 ROS 图的情况下判定：
 
-1. **默认口径**：不带参数时必须是 `full + yard + s04 + observe_yaw_mode=target`，
+1. **默认口径**：不带参数时必须是 `full + yard + s04`；观测指向臂由**场景覆盖**决定
+   （`s04` → `track`），**不**经 launch 参数传入，
    且 `target` 是**显式**写在命令行里的（不能靠 `air.yaml` 的默认 `velocity` 蒙过去）；
 2. **不新增命令者**：演示代码不发布 `/agc/ground/cmd_vel`、不写模型位姿
    （[#execution-port](../../docs/ROS2迁移交接文档.md#execution-port)）；
@@ -29,6 +30,7 @@ sys.path.insert(0, DEMO)
 
 import common    # noqa: E402
 import compare   # noqa: E402
+import dds_transport  # noqa: E402
 import doctor    # noqa: E402
 import evidence  # noqa: E402
 import start as demo_start   # noqa: E402
@@ -43,8 +45,8 @@ def test_defaults_are_locked_to_verified_arm():
     assert common.DEFAULT_MAP == 'yard'
     assert common.DEFAULT_SCENE == 's04_static_static_obs_track'
     assert common.DEFAULT_SEED == 0
-    # 显式 oracle 指向臂：不得回退成 '' 或 'velocity'
-    assert common.DEFAULT_OBSERVE_YAW_MODE == 'target'
+    # 2026-11-04：指向臂改为如实反映**场景覆盖值**（s04 → track），不再声称 target
+    assert common.DEFAULT_OBSERVE_YAW_MODE == 'track'
 
 
 def test_default_launch_argv_passes_oracle_mode_explicitly():
@@ -52,11 +54,13 @@ def test_default_launch_argv_passes_oracle_mode_explicitly():
                                   world_map=common.DEFAULT_MAP, headless=False)
     joined = ' '.join(argv)
     for token in ('backend:=full', 'scene:=s04_static_static_obs_track',
-                  'world_map:=yard', 'seed:=0', 'observe_yaw_mode:=target',
+                  'world_map:=yard', 'seed:=0',
                   'viz:=true', 'agc_task', 'w6.launch.py'):
         assert token in joined, '默认命令行缺少 %s：%s' % (token, joined)
-    # 不得出现空覆盖（空串会让 launch 回落到 air.yaml 的 velocity）
-    assert 'observe_yaw_mode:=' not in joined.replace('observe_yaw_mode:=target', '')
+    # 2026-11-04：该 launch 参数已清退 → **不得**再传。ros2 launch 对未声明参数静默忽略，
+    # 继续传会让产物声称一个并未生效的模式（实测过的假象）。
+    assert 'observe_yaw_mode:=' not in joined, (
+        'observe_yaw_mode 的 launch 参数已删除，不得再传（会被静默忽略）：%s' % joined)
 
 
 # --------------------------------------------------------------------------------------
@@ -115,9 +119,60 @@ def test_gz_args_differs_only_by_headless_flag():
     assert gui.replace('-r -v 3 ', '').strip() == head.replace('-s -r -v 3 ', '').strip()
 
 
+# --------------------------------------------------------------------------------------
+# 1c. PX4 每实例运行根隔离（ADR-0024 (d)；2026-11-03 EKF 失锁的主因）
+# --------------------------------------------------------------------------------------
+
+def test_demo_passes_px4_run_root_under_run_dir():
+    """demo 必须传 `px4_run_root`，且落点在本 run 目录内（不与共享 build 抢 `rootfs/`）。
+
+    根因：不隔离时 own(0) / intruder(1) 共用 `build/px4_sitl_default/rootfs/` 这一个工作
+    目录（PX4 见 `PX4_BINARY_DIR/etc` 存在就落 `rootfs/` 且**不**追加实例号），两实例
+    互相覆写同一份 `parameters.bson` / `dataman` → `px4_1` EKF 间歇报
+    `Preflight Fail: Yaw estimate error` → 不发布 `vehicle_odometry` → `intruder_driver`
+    收不到 odom → 不 ARM → 目标机停地面 → 全程 `AIR_SEARCH` 失败。
+    """
+    run_dir = os.path.join(common.DEMO_ROOT, '20990101-000000')
+    root = common.px4_run_root(run_dir)
+    assert root == os.path.join(run_dir, 'px4')
+    argv = demo_start.launch_argv(backend='full', scene=common.DEFAULT_SCENE,
+                                  world_map=common.DEFAULT_MAP, headless=True,
+                                  px4_run_root=root)
+    joined = ' '.join(argv)
+    assert ('px4_run_root:=%s' % root) in joined, joined
+    # 必须在本 run 目录内 —— 否则证据会散到别处，且不同 run 之间仍互相污染。
+    assert root.startswith(run_dir), '运行根必须落本 run 目录：%s' % root
+
+
+def test_px4_run_root_is_opt_in_not_forced():
+    """缺省 `None` 时**不传**该参数——既有调用方（episode_runner / research）命令行逐字不变。"""
+    argv = demo_start.launch_argv(backend='full', scene=common.DEFAULT_SCENE,
+                                  world_map=common.DEFAULT_MAP, headless=True)
+    assert 'px4_run_root' not in ' '.join(argv)
+
+
+def test_gui_headless_differ_only_in_gz_s_and_viz_even_with_px4_root():
+    """带上 `px4_run_root` 后，GUI / headless 仍只差 `-s` 与 `viz`（隔离不引入形态差异）。"""
+    root = '/tmp/agc-demo/px4'
+    gui = demo_start.launch_argv(backend='full', scene=common.DEFAULT_SCENE,
+                                 world_map=common.DEFAULT_MAP, headless=False,
+                                 px4_run_root=root)
+    head = demo_start.launch_argv(backend='full', scene=common.DEFAULT_SCENE,
+                                  world_map=common.DEFAULT_MAP, headless=True,
+                                  px4_run_root=root)
+    diff = [(a, b) for a, b in zip(gui, head) if a != b]
+    assert len(gui) == len(head)
+    assert {a.split(':=')[0] for a, _b in diff} == {'gz_args', 'viz'}, diff
+
+
 def test_launch_env_fills_python_and_gz_prerequisites():
     env = demo_start.launch_env({})
-    assert env['ROS_AUTOMATIC_DISCOVERY_RANGE'] == 'LOCALHOST'
+    # 发现范围 / 传输改为按本机能力探测（2026-11-04）：不再无条件写死 LOCALHOST——
+    # `lo` 无 IFF_MULTICAST 时 LOCALHOST 在 1:1 拓扑下稳定零送达。此处只断言"由选择器决定且自洽"。
+    expected = dds_transport.env_for()
+    assert env['ROS_AUTOMATIC_DISCOVERY_RANGE'] == expected['ROS_AUTOMATIC_DISCOVERY_RANGE']
+    if expected.get('FASTDDS_BUILTIN_TRANSPORTS') is not None:
+        assert env['FASTDDS_BUILTIN_TRANSPORTS'] == expected['FASTDDS_BUILTIN_TRANSPORTS']
     assert env['ROS_DOMAIN_ID'] == '0'
     assert common.GZ_PLUGIN_DIR in env['GZ_SIM_SYSTEM_PLUGIN_PATH']
     # 不覆盖使用者已设的（只追加）

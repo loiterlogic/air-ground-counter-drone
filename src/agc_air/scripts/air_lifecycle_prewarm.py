@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""air_lifecycle_prewarm —— 启动期预热空中 lifecycle 服务连接（ADR-0080）。
+"""air_lifecycle_prewarm —— 启动期预热空中 lifecycle 服务连接（ADR-0019）。
 
 背景：Nav2 `lifecycle_manager` 的 `change_state` 走阻塞调用（默认无限超时）；本机 DDS 发现
 存在"首个服务调用超时"的已知特性。若 manager 在节点 lifecycle 服务尚未完成发现时发起

@@ -146,7 +146,7 @@ def case_f_no_abi_no_second_commander():
 
 
 def case_g_adr():
-    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0050-*.md')))
+    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0010-safety-thresholds-and-failsafe.md')))
     res = {'path': matches[0] if matches else None, 'exists': bool(matches)}
     if matches:
         t = _read(matches[0]) or ''

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  agc_x500 —— 己方无人机（PX4 官方 x500）+ **GUI 辨识高亮球**（纯视觉）
+
+  ## 为什么存在
+
+  用户实测：`./run_demo.sh` 的 Gazebo GUI 里**看不见我方无人机**（车与目标可见）。
+  真因不是渲染坏掉——我做过隔离实验，把 `x500` 单独 spawn 后把相机降到 3 m 俯视，
+  机体**清晰可见**；问题是**像素尺寸**：
+
+    50 m 正俯视、默认 FOV 60° → 视野地面宽 ≈58 m、≈14.4 px/m；
+    x500 对角仅 ≈0.35 m → **约 5 px**；85 m 时只有 **3 px**。
+    对照：车（Husky 1.0 m）≈14 px、目标高亮球（1.2 m）≈17 px。
+
+  本项目**早有同样判断**：`intruder_uav.sdf.xacro` 的 `target_highlight` 注释原文——
+  "x500 原厂是白机身 + 碳纤维臂，100×100 m 场站俯视下只有 3~4 px，**不可辨识**"。
+  那次只给**目标**加了球，没给我方机加。本文件补上这一半（2026-11-05，用户裁定）。
+
+  ## 与 `agc_x500_nadir` 的关系（重要，避免重复维护）
+
+  `agc_x500_nadir`（ADR-0030）是**另一条** opt-in 机型，挂正下视相机、仅取证/测绘、无消费者。
+  本文件是**默认臂**的替代物，**不带**任何传感器，只多一个视觉球。
+  两者都 `<include merge="true"><uri>model://x500</uri>`，**均不改 x500 任何原有 link**。
+  刻意**不**把球塞进 `agc_x500_nadir`：那会让"取景可用性"绑死在"要不要相机"上，
+  且会让 ADR-0030 的验收基线（相机帧数）与视觉装饰混在一起。
+
+  ## 挂载范式（照 `agc_x500_nadir` / `intruder_uav` 已验证的写法）
+
+  * `<include merge="true">` 的子元素**只允许** `uri/pose/plugin/name/static/placement_frame`；
+    往 merge 里塞 `<link>` 会被**静默丢弃**（sdformat14 spec，实测展开后 hl=0）。
+  * include 之后再写一个同名 `<link name="base_link">` 会**硬失败**
+    `Error Code 2: link with name[base_link] already exists.`（合并不按名字并 link）。
+  * 故唯一可行注入点 = **新增独立 link + fixed joint**。这正是本仓 `agc_car` 的
+    `capture_net` / `jammer` 与 `intruder_uav` 的 `target_highlight` 的同一范式。
+
+  ## 物理影响为零（逐项锁死）
+
+  * 高亮 link **无 `<collision>`** → 不参与接触 / 测距 / 物理求解；
+  * 质量 1e-6 kg（**不是 0**：dartsim 对零质量 body 行为未定义）挂 fixed joint，
+    x500 总质量 2.0 + 4×0.016 的量级不受影响；
+  * **不**改任何 plugin / 话题 / pose / 关节；PX4 attach 的模型名仍是 `x500`（见下）；
+  * 球体是 **visual**，而 PX4 的 gz_bridge 按 link/joint 名寻址——本 link 不参与控制。
+
+  ## 实体名与机型解析（与默认臂逐字一致，只有模型名不同）
+
+  己方 PX4 进程注入 `PX4_SYS_AUTOSTART=4001`（rcS:41-44 优先于按名反查 rcS:52-63）
+  → rcS 仍 source 官方 `4001_gz_x500`（旋翼 / 参数集与默认臂**完全相同**）；
+  `PX4_SIM_MODEL=gz_agc_x500` 只决定 spawn 给 gz 的**模型名**
+  → `GZBridge.cpp:73-77` `set_sdf_filename("agc_x500/model.sdf")`，由 **gz 服务器**经
+     `GZ_SIM_RESOURCE_PATH`（含 `install/agc_sim/share/agc_sim/models`）解析到本文件；
+  → 实体名 = `<model_sim>_<instance>` = **`agc_x500_0`**（GZBridge.cpp:313-320）。
+
+  ## 几何放置（关键，不可随意改）
+
+  球心 `z = 0.95`（相对 `base_link`），半径 0.6 → 球顶 1.55、球底 0.35。
+  我方机没有机载激光，故**不受**本仓"gpu_lidar 对 visual 求交"那条约束（那是 `agc_car`
+  的限制，见其 `capture_net` 注释）；但保持球心在机体上方仍是必要的视觉语义
+  （俯视下球正好套住机体，不与桨叶穿插）。
+-->
+<sdf version="1.9">
+  <model name="agc_x500">
+    <!-- PX4 官方 x500（机体 / 旋翼 / 电机插件全部来自这里，本文件不改其任何 link） -->
+    <include merge="true">
+      <uri>model://x500</uri>
+    </include>
+
+    <!-- 辨识高亮球：独立 link，**无 collision**（不参与接触 / 测距 / 物理求解）。
+         视觉参数与 `intruder_uav` 的 `target_highlight` 同口径（直径 1.2 m、transparency 0.45、
+         cast_shadows=false、自发光），只把配色换成**青色**以区分"我方"（目标为橙色）。 -->
+    <link name="own_highlight">
+      <pose>0 0 0.95 0 0 0</pose>
+      <inertial>
+        <mass>0.000001</mass>
+        <inertia>
+          <ixx>1e-9</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>1e-9</iyy><iyz>0</iyz>
+          <izz>1e-9</izz>
+        </inertia>
+      </inertial>
+      <visual name="own_highlight_visual">
+        <cast_shadows>false</cast_shadows>
+        <transparency>0.45</transparency>
+        <geometry>
+          <sphere>
+            <radius>0.6</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <ambient>0.05 0.85 0.95 1</ambient>
+          <diffuse>0.10 0.90 1.00 1</diffuse>
+          <emissive>0.02 0.40 0.50 1</emissive>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 安装位：x/y 取 0（机体足迹居中），z = 0.95 使球心落在机体上方 -->
+    <joint name="own_highlight_joint" type="fixed">
+      <parent>base_link</parent>
+      <child>own_highlight</child>
+    </joint>
+  </model>
+</sdf>

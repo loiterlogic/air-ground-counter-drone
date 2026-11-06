@@ -2,9 +2,9 @@
 """`run_demo.sh` 的启动编排：组装 `ros2 launch` → 独立进程组 → 进度呈现 → 跟到终态 → 落 summary。
 
 **薄封装**：不复制任何 launch 编排，参数一律透传给
-[`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)（[ADR-0061](../../docs/adr/0061-w6-runtime-topology-backend-identity-and-single-parameterized-entry.md) 的唯一参数化入口）。
+[`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)（[ADR-0020](../../docs/adr/0020-package-boundaries-and-runtime-topology.md#top) 的唯一参数化入口）。
 
-对外只映射 5 个参数（[P1-2 参数收敛](../../docs/archive/completion-20261031/p1-2-一键演示入口.md#p1-2-goal)）：
+对外只映射 5 个参数（参数收敛口径）：
 
   | 对外 | 内部 launch 参数 | 默认 |
   |---|---|---|
@@ -14,13 +14,14 @@
   | `--duration` | 到时触发 stop | 不限（跟终态） |
   | `--backend` | `backend` | `full` |
 
-**脚本固定**（不暴露）：`seed=0`、`observe_yaw_mode=target`、`viz:=true`、`command_source=rl`、
+**脚本固定**（不暴露）：`seed=0`、`viz:=true`、`command_source=rl`、
 `shield=true`、`agent0_port=8888` / `agent1_port=8889`、PX4 错峰默认值。
 
-⚠ `observe_yaw_mode:=target` 是 **P1-1 round-7 已验收的显式 oracle 指向臂**（机头对准真值方位），
+⚠ 观测指向臂由**场景覆盖**决定（`s04` → `track`，机头对准 `/agc/targets` 感知航迹，**非** oracle）；
+`observe_yaw_mode` 的 launch 参数已清退，本脚本**不再**传它——
 不是默认 `velocity`，也不代表真实视觉识别。启动横幅必须显式打出这一行。
 
-**P1-3 呈现层**（[可观测与演示呈现](../../docs/archive/completion-20261031/p1-3-任务可观测与演示呈现.md#p1-3-goal)）：
+**P1-3 呈现层**（[演示可观测性与产物语义](../../docs/conventions/演示可观测性与产物语义.md#top)）：
 
   | 产物 | 谁写 | 内容 |
   |---|---|---|
@@ -45,6 +46,7 @@ import subprocess
 import time
 
 import common
+import dds_transport
 import panel
 import status_map
 import timeline as timeline_mod
@@ -58,8 +60,20 @@ CMD_FRESH_S = 1.0
 # P1-3 前这里是本文件自己的一份副本；现在收敛到映射模块，避免"两处终态集合"漂移。
 TERMINALS = status_map.TERMINAL_NAMES
 
-# 期望终态（主场景）——与 scenarios.yaml 的 expected_terminal 一致；演示只做**呈现**与**核对**，
-# 不改判定口径（判定真源仍是 `agc_rl.termination` + `episode_runner`）。
+def expected_terminal_for_scene(scene):
+    """读取场景登记的期望终态；缺失时保守回退跟踪成功。"""
+    try:
+        import yaml
+        path = os.path.join(common.ROOT, 'src', 'agc_task', 'config', 'scenarios.yaml')
+        with open(path, encoding='utf-8') as f:
+            doc = yaml.safe_load(f) or {}
+        return ((doc.get('scenes') or {}).get(scene) or {}).get(
+            'expected_terminal', 'TRACKING_SUCCESS')
+    except Exception:
+        return 'TRACKING_SUCCESS'
+
+
+# 期望终态由 scenarios.yaml 场景登记提供
 EXPECTED_TERMINAL = 'TRACKING_SUCCESS'
 
 # PX4 错峰窗口（w6.launch.py 默认值；进度提示必须覆盖，否则使用者以为卡死）
@@ -87,7 +101,7 @@ def gz_args(headless):
 def viz_enabled(headless):
     """RViz 叠加层是否该起：**只有 GUI 形态需要**。
 
-    依据 [P1-2 §3 状态呈现](../../docs/archive/completion-20261031/p1-2-一键演示入口.md#p1-2-goal)：
+    依据状态呈现口径：
     "脚本用 `ros2 topic echo --once` 或轻量 Python 订阅（**不要**起 RViz 才能看状态）"。
     headless 用于经济快跑 / 服务器，本来就没有窗口可看，再起 `viz_markers` + `rviz2` +
     `static_tf`（[`w6.launch.py::_viz_actions`](../../src/agc_task/launch/w6.launch.py)）
@@ -98,28 +112,45 @@ def viz_enabled(headless):
     return not headless
 
 
-def launch_argv(*, backend, scene, world_map, headless, extra=()):
-    """组装 `ros2 launch agc_task w6.launch.py …`（**不改**任何参数语义，只透传）。"""
+def launch_argv(*, backend, scene, world_map, headless, extra=(), px4_run_root=None,
+                gui_render_backend='auto'):
+    """组装 `ros2 launch agc_task w6.launch.py …`（**不改**任何参数语义，只透传）。
+
+    `px4_run_root`：PX4 每实例可写运行根（[ADR-0024 (d)](../../docs/adr/0024-w7c-multi-worker-isolation.md#top)）。
+    demo 传入本 run 的 `<run_dir>/px4`，让 own / intruder 各占独立 `-w` 目录；缺省 `None`
+    时**不传**该参数，保持既有命令行逐字不变（`scripts/episode_runner.py` 等调用方不受影响）。
+
+    `gui_render_backend`：GUI 渲染后端（[ADR-0021(d)](../../docs/adr/0021-w8-gui-headless-equivalence.md#d)），
+    透传 `w6.launch.py` 的同名参数。2026-11-05 前此处**写死 `auto`**，导致 `run_demo.sh`
+    **无任何途径**切换后端——既不能做渲染对照，出问题也不能回退 software 让演示可见。
+    """
     argv = ['ros2', 'launch', 'agc_task', 'w6.launch.py',
             'backend:=%s' % backend,
             'scene:=%s' % scene,
             'seed:=%d' % common.DEFAULT_SEED,
             'world_map:=%s' % world_map,
             'gz_args:=%s' % gz_args(headless),
-            # 显式 oracle 指向臂（不得依赖 air.yaml 默认 velocity）
-            'observe_yaw_mode:=%s' % common.DEFAULT_OBSERVE_YAW_MODE,
+            # 2026-11-04：`observe_yaw_mode:=...` **不再传**——该 launch 参数已清退，
+            #   现由场景覆盖决定（s04 → `track`）。ros2 launch 会**静默忽略**未声明参数，
+            #   继续传会让产物声称一个并未生效的模式（实测过的假象）。
             # P1-1 的 RViz 叠加能力（GUI 纯场景 + RViz 语义层）；headless 不需要 → false
             'viz:=%s' % ('true' if viz_enabled(headless) else 'false'),
-            'gui_render_backend:=auto',
+            'gui_render_backend:=%s' % gui_render_backend,
             'agc_root:=%s' % common.ROOT]
+    if px4_run_root:
+        argv.append('px4_run_root:=%s' % px4_run_root)
     argv.extend(extra)
     return argv
 
 
 def launch_env(base=None):
-    """启动环境：显式补齐两处**会直接抛异常**的前置（不覆盖使用者已设的值）。"""
+    """启动环境：显式补齐两处**会直接抛异常**的前置（不覆盖使用者已设的值）。
+
+    DDS 发现范围 / 传输按本机能力探测（单一真源 `dds_transport`）：原先无条件写死
+    `LOCALHOST`，在 `lo` 无 IFF_MULTICAST 的机器上（本机 WSL2 即如此）整链零送达。
+    """
     env = dict(base or os.environ)
-    env['ROS_AUTOMATIC_DISCOVERY_RANGE'] = 'LOCALHOST'
+    dds_transport.apply(env)
     if 'ROS_DOMAIN_ID' not in env:
         env['ROS_DOMAIN_ID'] = '0'
     # world_bringup 用 `EnvironmentVariable('GZ_SIM_SYSTEM_PLUGIN_PATH')` 做追加，未定义即抛错
@@ -227,7 +258,7 @@ def launch_log_path(run_dir):
 class TaskMonitor:
     """轻量订阅：`/agc/task/state` + 就绪所需的新鲜度信号 + `/clock`。
 
-    数据源全部是**既有**话题（[P1-2 状态呈现数据源](../../docs/archive/completion-20261031/p1-2-一键演示入口.md#p1-2-goal)）：
+    数据源全部是**既有**话题（状态呈现数据源口径）：
     `/agc/task/state`（`AgcTaskState`）、`/clock`、真值旁路、`/agc/ground/cmd_vel`、
     `/agc/ground/odom_valid`、`/agc/air/odom`。**不**用 `ros2 topic echo` 起子进程（省一次 DDS 发现）。
     """
@@ -451,6 +482,7 @@ class DemoRun:
         self.panel = None
         self.timeline = None
         self._last_panel_state = None
+        self.expected_terminal = expected_terminal_for_scene(opts.get('scene'))
         self.result = {
             'schema': 'demo-run-v1',
             'stamp': self.stamp,
@@ -459,12 +491,13 @@ class DemoRun:
             'options': dict(opts),
             'mode': 'headless' if opts.get('headless') else 'gui',
             'backend': opts.get('backend'),
+            'expected_terminal': self.expected_terminal,
             'scene': opts.get('scene'),
             'world_map': opts.get('map'),
             'seed': common.DEFAULT_SEED,
             'observe_yaw_mode': common.DEFAULT_OBSERVE_YAW_MODE,
-            'oracle_arm_note': ('observe_yaw_mode=target 是显式 oracle 指向臂（机头对准真值方位），'
-                                '非默认 velocity，也不代表真实视觉识别；目标测量仍走 air_fusion'),
+            'yaw_arm_note': ('观测指向臂由场景覆盖决定（s04 → track：机头对准 /agc/targets 感知航迹，'
+                             '非 oracle）；目标测量由 gt_adapter 直取真值（无几何门控、不分远近）'),
             'exit_reason': None,
             'phases': {},
         }
@@ -483,13 +516,13 @@ class DemoRun:
         self.timeline = timeline_mod.Timeline(
             os.path.join(self.run_dir, 'timeline.txt'))     # 只落盘：终端已有面板 + 进度行
         self.timeline.note('run_demo 启动：%s' % ' '.join(self.opts.get('_argv') or []))
-        self.timeline.note('形态 %s / 后端 %s / 场景 %s / 地图 %s / seed %s / observe_yaw_mode=%s'
+        self.timeline.note('形态 %s / 后端 %s / 场景 %s / 地图 %s / seed %s / observe_yaw_mode=%s（场景覆盖值）'
                            % ('headless' if self.opts.get('headless') else 'GUI',
                               self.opts.get('backend'), self.opts.get('scene'),
                               self.opts.get('map'), common.DEFAULT_SEED,
                               common.DEFAULT_OBSERVE_YAW_MODE))
-        self.timeline.note('观测指向臂：observe_yaw_mode=%s 是显式 oracle 指向臂'
-                           '（机头对准真值方位），非默认 velocity，也不代表真实视觉识别'
+        self.timeline.note('观测指向臂：observe_yaw_mode=%s（场景覆盖值，机头对准 '
+                           '/agc/targets 感知航迹，**非** oracle 臂）'
                            % common.DEFAULT_OBSERVE_YAW_MODE)
 
     def _open_panel(self):
@@ -594,7 +627,7 @@ class DemoRun:
         elif self.result.get('exit_reason') == 'duration_limit':
             code = 0 if self.result.get('terminal_state') in TERMINALS else 3
         else:
-            code = 0 if self.result.get('terminal_state') == EXPECTED_TERMINAL else 2
+            code = 0 if self.result.get('terminal_state') == self.expected_terminal else 2
         self._finalize(exit_code=code)
         return code
 
@@ -607,10 +640,17 @@ class DemoRun:
                 self._renderer_snapshot = evidence.snapshot_renderer_log()
             except Exception:                       # noqa: BLE001
                 self._renderer_snapshot = None
+        # PX4 每实例可写运行根固定落本 run 目录：own(0)/intruder(1)/warmup(3) 各占独立 `-w`
+        # 目录，不再共用共享 build 的 `rootfs/`（否则 parameters.bson 互相覆写 → EKF 失锁 →
+        # 目标机不 ARM）。见 common.px4_run_root 的证据说明。
+        self.px4_run_root = common.px4_run_root(self.run_dir)
         argv = launch_argv(backend=self.opts['backend'], scene=self.opts['scene'],
                           world_map=self.opts['map'], headless=self.opts['headless'],
-                          extra=self.opts.get('extra') or ())
+                          extra=self.opts.get('extra') or (),
+                          px4_run_root=self.px4_run_root,
+                          gui_render_backend=self.opts.get('gui_render_backend') or 'auto')
         self.result['launch_argv'] = argv
+        self.result['px4_run_root'] = self.px4_run_root
         self.result['launch_env'] = {
             k: v for k, v in launch_env().items()
             if k in ('ROS_AUTOMATIC_DISCOVERY_RANGE', 'ROS_DOMAIN_ID',
@@ -642,7 +682,7 @@ class DemoRun:
                            % (self.opts['backend'], self.opts['scene'],
                               self.opts['map'], self.pgid))
         if self.opts['backend'] == 'full':
-            self.progress.raw('# PX4 错峰：own %.0fs / intruder %.0fs（ADR-0094）'
+            self.progress.raw('# PX4 错峰：own %.0fs / intruder %.0fs（ADR-0027）'
                               % (PX4_OWN_DELAY_S, PX4_INTRUDER_DELAY_S))
 
     def _phase_wait_ready(self):
@@ -874,8 +914,8 @@ class DemoRun:
         self.result['exit_code'] = code
         # 4) P1-3 终态判定说明（**指标只来自 summary，阈值只来自本 run 的 params_applied.yaml**）
         self._final_explanation(path, doc, code)
-        self.result['verdict'] = (EXPECTED_TERMINAL
-                                  if self.result.get('terminal_state') == EXPECTED_TERMINAL
+        self.result['verdict'] = (self.expected_terminal
+                                  if self.result.get('terminal_state') == self.expected_terminal
                                   else 'not_met')
         common.write_json(os.path.join(self.run_dir, 'result.json'), self.result)
         self._write_markdown(code)
@@ -940,8 +980,9 @@ class DemoRun:
                  '- 形态：`%s` · 后端：`%s` · 场景：`%s` · 地图：`%s` · seed `%d`' % (
                      r['mode'], r.get('backend'), r.get('scene'), r.get('world_map'),
                      r.get('seed')),
-                 '- **观测指向臂**：`observe_yaw_mode=%s`（显式 oracle 指向臂，非默认 velocity；'
-                 '目标测量仍走 `air_fusion`）' % r.get('observe_yaw_mode'),
+                 '- **观测指向臂**：`%s`（`air.yaml` 真源值；s04 场景覆盖为 `track`）'
+                 '；目标测量由 `gt_adapter` 直取真值（无几何门控、不分远近）' % (
+                     (r.get('summary') or {}).get('observe_yaw_mode') or 'track'),
                  '- 终态：`%s` / `%s`（期望 `%s`）' % (
                      r.get('terminal_state'), r.get('terminal_reason_code') or '-',
                      EXPECTED_TERMINAL),

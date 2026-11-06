@@ -9,7 +9,7 @@ R-024 关键新增：本 harness **自己发布 `/clock`**（`rosgraph_msgs/Cloc
 时钟（用例 a 传 `use_sim_time: True`），从而演示「暂停仿真（停 `/clock` / RTF→0）→ `mission_sim_budget`
 （C4 仿真秒）不触发，而 `episode_wall_watchdog`（墙钟）触发并判 infra」。
 
-用例（结果落 `experiments/w6-task-eval/<run_id>/metrics/r024.json`，ADR-0007）：
+用例（结果落 `experiments/w6-task-eval/<run_id>/metrics/r024.json`，ADR-0006）：
   a 暂停仿真 → mission 超时（`t_max_s`，仿真秒）**不**触发；wall watchdog 分类 infra（**核心**）；
     恢复 `/clock` 后 C4 才触发 `MISSION_FAILED(TIMEOUT)`（对照：C4 走 ROS 时钟）。
   b RTF 与起止事件：加速（rtf≈2.0）/ 减速（rtf≈0.5）两 run 按仿真时间可比；无仿真时钟 → rtf=None。

@@ -4,8 +4,9 @@
 #   ./run_demo.sh                 # 默认：full 后端 + yard 地图 + 主场景 s04 + GUI
 #   ./run_demo.sh --headless      # 无头（快跑 / 服务器）
 #   ./run_demo.sh --map open_field
-#   ./run_demo.sh --duration 120  # 到时自动停
+#   ./run_demo.sh --escape       # 显式启用目标逃逸
 #   ./run_demo.sh --backend lightweight
+#   ./run_demo.sh --gui-render-backend software   # GUI 渲染后端：auto（默认）| d3d12 | software
 #   ./run_demo.sh stop            # 停掉本脚本起的全部进程（可在另一个终端执行）
 #   ./run_demo.sh status          # 看当前实例与残留（只读）
 #   ./run_demo.sh doctor          # 只做环境预检，不启动任何仿真
@@ -19,7 +20,7 @@
 #       依据：.coordination/archive/20261029-006-p1-1-scene-assets/round-7/review.md#p1-1-r7-acceptance
 #
 # 纪律：
-#   * 薄封装：不复制 launch 编排，参数一律透传 w6.launch.py（ADR-0061）；
+#   * 薄封装：不复制 launch 编排，参数一律透传 w6.launch.py（ADR-0020）；
 #   * 不新增命令者：不写 /agc/ground/cmd_vel、不写模型位姿（#execution-port）；
 #   * 进程组回收只按记录的 PID/PGID，**禁止 pkill -f**（整链排障速查#0-三条环境铁律）；
 #   * stop 不删除任何证据目录。
@@ -61,6 +62,7 @@ WORLD_MAP=""
 SCENE=""
 DURATION=""
 BACKEND=""
+GUI_RENDER_BACKEND=""
 EXTRA=()
 DOCTOR_ONLY=""
 ARGS_REST=()
@@ -78,7 +80,9 @@ while [ $# -gt 0 ]; do
     --scene) SCENE="${2:-}"; shift 2 ;;
     --duration) DURATION="${2:-}"; shift 2 ;;
     --backend) BACKEND="${2:-}"; shift 2 ;;
-    --dry-run) EXTRA+=("dry-run"); shift ;;
+    --gui-render-backend) GUI_RENDER_BACKEND="${2:-}"; shift 2 ;;
+     --escape) EXTRA+=("escape"); shift ;;
+     --dry-run) EXTRA+=("dry-run"); shift ;;
     --follow-timeout) EXTRA+=("follow-timeout:$2"); shift 2 ;;
     --ready-timeout) EXTRA+=("ready-timeout:$2"); shift 2 ;;
     --start-timeout) EXTRA+=("start-timeout:$2"); shift 2 ;;
@@ -110,7 +114,27 @@ source_ros
 source_ws
 
 # 两处会**直接抛异常**的前置：脚本负责补齐，不让使用者背 export（MAP_DESIGN_PLAYBOOK 14.2）
-export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+# DDS 发现范围 / 传输**不再写死 LOCALHOST**：本机 `lo` 无 IFF_MULTICAST，LOCALHOST 在
+# 1:1 拓扑下稳定零送达（多进程偶通 → 历史"忽好忽坏"的来源）。选择依据改为探测，单一真源：
+#   scripts/demo/dds_transport.py（判据 / 实测矩阵见 docs/conventions/整链排障速查.md#dds-transport）
+# 需要钉死时：AGC_DDS_TRANSPORT_POLICY=localhost-udp|subnet-shm|subnet-udp
+_dds_env="$(python3 -c '
+import os, sys
+sys.path.insert(0, os.path.join("'"${ROOT}"'", "scripts", "demo"))
+import dds_transport as d
+try:
+    print(d.describe())
+    resolved = d.resolve()
+except ValueError as exc:
+    sys.stderr.write("[run_demo] 错误：%s\n" % exc); raise SystemExit(2)
+for key, value in d.env_for(resolved).items():
+    print("%s=%s" % (key, "" if value is None else value))
+')" || exit 2
+echo "[run_demo] ${_dds_env%%$'\n'*}"
+unset ROS_AUTOMATIC_DISCOVERY_RANGE FASTDDS_BUILTIN_TRANSPORTS
+while IFS= read -r _line; do
+  case "$_line" in *=*) export "${_line?}";; esac
+done <<< "${_dds_env#*$'\n'}"
 if [ -z "${ROS_DOMAIN_ID:-}" ]; then export ROS_DOMAIN_ID=0; fi
 export GZ_SIM_SYSTEM_PLUGIN_PATH="${ROOT}/install/agc_sim/lib${GZ_SIM_SYSTEM_PLUGIN_PATH:+:${GZ_SIM_SYSTEM_PLUGIN_PATH}}"
 
@@ -158,5 +182,6 @@ exec python3 "${DEMO_PY}/main.py" start \
   --scene "${SCENE}" \
   --duration "${DURATION}" \
   --backend "${BACKEND}" \
+  --gui-render-backend "${GUI_RENDER_BACKEND}" \
   --argv "${ORIG_ARGV}" \
   ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"}

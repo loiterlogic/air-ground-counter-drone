@@ -10,7 +10,7 @@ command_source:=train scene:=<scene> seed:=<spawn_seed> spawn_randomize:=true`�
 **外生随机流 / spawn / 噪声序列 / 确定性策略动作序列**是否一致，并**记录**实时异步调度导致的
 **物理轨迹 / 终态分叉边界**（R3：不承诺 bitwise 物理一致）。
 
-产物（[ADR-0007](../../docs/adr/0007-experiment-artifacts-convention.md) 唯一落点，`run_id` 不可覆盖）：
+产物（[ADR-0006](../../docs/adr/0006-experiment-artifacts-and-evidence-discipline.md#top) 唯一落点，`run_id` 不可覆盖）：
 `experiments/w7-rl/<run_id>/{config/*.json, episodes/ep_a*.json, metrics/replay.json, log/*.log}`。
 
 用法：
@@ -223,7 +223,7 @@ def main():
                       'rtf': e.get('rtf'), 'wall_elapsed_s': e.get('wall_elapsed_s')}
                      for e in episodes],
         'reproducibility_note': '可复现量 = seed 计划 / spawn / 外生噪声序列 / 动作序列；'
-                                '物理轨迹分叉为已知边界（ADR-0069(b)）。',
+                                '物理轨迹分叉为已知边界（ADR-0021）。',
     }
     with open(os.path.join(out_dir, 'metrics', 'replay.json'), 'w', encoding='utf-8') as f:
         json.dump(report, f, indent=2, ensure_ascii=False)

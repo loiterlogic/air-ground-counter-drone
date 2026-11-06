@@ -60,7 +60,17 @@ protected:
     target_sub_ = create_subscription<agc_msgs::msg::TargetTrackArray>(
       target_topic_, rclcpp::QoS(rclcpp::KeepLast(1)).reliable(),
       [this](agc_msgs::msg::TargetTrackArray::SharedPtr m) {
-        if (m->tracks.empty()) {have_target_ = false; return;}
+        // 空数组 = **本拍无新观测**（感知侧门控 / 丢包），**不是**目标消失（ADR-0009）。
+        //   2026-11-03（N4）修正：旧实现 `have_target_ = false` 把"没新数据"当成"目标丢了"——
+        //   `drop_prob=0.1` 在 10 Hz 下每 ~10 拍就有一次空数组，每次都会立刻把航迹判死 →
+        //   `targetFresh()` 返回 false → 冻结（hold）。**丢包被放大成航迹中断**（实测 nominal 档
+        //   3 次 hold，全部对应空数组拍；ideal 档 0 次）。
+        //   正确语义：保持上一有效航迹不动，由**年龄**判定失效（`ref_max_age_s=0.5`）——
+        //   那才是契约 C10 的"过期即冻结"。空数组只是"这一拍没送来新东西"。
+        if (m->tracks.empty()) {
+          ++diag_empty_;
+          return;
+        }
         const auto & tr = m->tracks.front();
         const auto & p = tr.pose.pose.position;
         target_pos_ = agc_air::Vector3(p.x, p.y, p.z);
@@ -201,6 +211,8 @@ private:
   bool acquired_{false};   // 是否曾捕获过目标（决定是否占用跟踪参考）
   bool frozen_{false};
   bool approaching_{false};
+  // 诊断：空数组拍数（"本拍无新观测"，不是"目标丢失"）——不静默吞掉
+  unsigned long long diag_empty_{0};
   agc_control::Reference last_ref_;
 };
 

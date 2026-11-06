@@ -1,0 +1,99 @@
+{
+  "inputs": {
+    "gt_samples": 5081,
+    "detection_arrays": 1263,
+    "tracks": 1078,
+    "image_stamps": 4249,
+    "goal_records": 171
+  },
+  "recall": {
+    "definition": "正样本 = GT 该档位内的样本；命中 = 其源时刻 ±0.100 s 内存在视觉航迹",
+    "bands": {
+      "near_plane": {
+        "gt_frames": 85,
+        "hit": 54,
+        "recall": 0.6352941176470588
+      },
+      "mid_deviation": {
+        "gt_frames": 1271,
+        "hit": 1217,
+        "recall": 0.957513768686074
+      },
+      "far_deviation": {
+        "gt_frames": 3725,
+        "hit": 3032,
+        "recall": 0.8139597315436241
+      },
+      "all": {
+        "gt_frames": 5081,
+        "hit": 4303,
+        "recall": 0.8468805353276914
+      }
+    }
+  },
+  "precision": {
+    "definition": "分母 = **可评估**视觉航迹（能在 GT 里 ±0.100 s 内找到时间配对者）；分子 = 其中与 GT 的 3D 距离 <= 2.00 m 者。仅做时间配对不算命中——GT 连续 30 Hz，任何时刻都有样本。",
+    "tracks_total": 1078,
+    "tracks_time_paired": 1078,
+    "tracks_within_gate": 257,
+    "precision": 0.23840445269016697,
+    "precision_gate_m": 2.0
+  },
+  "error_3d": {
+    "note": "**单平面假设**：`z=plane_z` 求交。目标高度偏离 2.000 m 时误差主要沿径向，不是检测器精度。结论只能用 `near_plane` 档。",
+    "plane_z_m": 2.0,
+    "bands_m": {
+      "near_plane": [
+        0.0,
+        0.1
+      ],
+      "mid_deviation": [
+        0.1,
+        0.5
+      ],
+      "far_deviation": [
+        0.5,
+        null
+      ]
+    },
+    "all": {
+      "n": 1078,
+      "p50": 3.4642994793593114,
+      "p95": 16.308967851510406
+    },
+    "near_plane": {
+      "n": 13,
+      "p50": 4.856218170161628,
+      "p95": 5.508932621033629
+    },
+    "mid_deviation": {
+      "n": 316,
+      "p50": 4.0639996753526155,
+      "p95": 13.772594500417023
+    },
+    "far_deviation": {
+      "n": 749,
+      "p50": 3.230493504799032,
+      "p95": 16.994991235993393
+    }
+  },
+  "image_to_track_latency_s": {
+    "definition": "delay = 航迹消息到达时的 /clock sim 时刻 − 源图像 sim stamp（同一 sim 时钟，不含 sim↔wall 偏差）",
+    "n": 1078,
+    "p50": 0.016000000000005343,
+    "p95": 0.023999999999993804,
+    "min": 0.008000000000009777,
+    "max": 0.036000000000001364
+  },
+  "pairing_chain": {
+    "image_stamps": 4249,
+    "detection_stamps": 1263,
+    "detection_stamp_is_image_stamp": 1151,
+    "track_stamps": 1078,
+    "track_stamp_is_detection_stamp": 1078,
+    "goal_records": 171,
+    "goal_TARGET_FRESH": 139,
+    "goal_fresh_src_stamp_matches_track": 139,
+    "note": "目标源时刻本就**大于** image stamp：检测有降频 + TF/几何计算耗时，故 `track_stamp` 等于 `detection_stamp`（检测器透传），而 `detection_stamp` 是某个**被采纳**的图像 stamp。"
+  }
+}

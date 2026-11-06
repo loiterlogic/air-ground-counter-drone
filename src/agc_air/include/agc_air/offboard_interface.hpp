@@ -70,7 +70,7 @@ public:
   void sendOffboardMode();
 
   /// setpoint 发布者计数（图 API 内省）——R-035：**仅作告警**（含静默 publisher / DDS 发现延迟），
-  /// **不**单独决定控制权威（权威由 `trajectory_tracker` 的显式控制许可判定，见 ADR-0050）。
+  /// **不**单独决定控制权威（权威由 `trajectory_tracker` 的显式控制许可判定，见 ADR-0010）。
   std::size_t countSetpointPublishers() const;
 
   /// R-035：setpoint 写入记账（**诊断**，非 ABI）——回答「谁在写、写了多久、频率」。

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""w7b_p2_arm_b_diagnose —— P2 臂 B（`p2_rl_high`）**负向结果**的诊断（ADR-0087(b)）。
+"""w7b_p2_arm_b_diagnose —— P2 臂 B（`p2_rl_high`）**负向结果**的诊断（ADR-0023）。
 
 **定位**：**描述性 / 归因**（用既有产物），**不改** verdict、**不**以"调到 B 赢"为目标。
 
 拆解四类组件（A = `p2_c2_low_level` 对照）：
   1. **重规划**：逐回合统计 `ground_baseline` 的 `重规划触发：…`（按原因分类）——B 的低层消费高层拦截点，
-     目标跳动会触发重规划（ADR-0083(g) 已修一版，本脚本量**残留**）；
+     目标跳动会触发重规划（ADR-0023 已修一版，本脚本量**残留**）；
   2. **抵近过程**：active 窗口时长 / 开火时刻（`SHOT_FIRED t=`，回合时基）/ 首次开火相对窗口开始的延迟；
   3. **预测**：`SHOT_FIRED` 的 `pred=(x,y,z)` 与**目标真值**的水平偏差（s08 目标静止于 (4.5, 3.0)，
      理想提前量 = 0）与发射时的 `h`（相对高度）分布；
@@ -240,7 +240,7 @@ def main():
         '若前者明显更高，才支持“单位时间控制更差”。窗口占比/每秒干预拍为归一化主量，'
         '整段累计只作补充。')
 
-    out = {'kind': 'descriptive_diagnosis（ADR-0087(b)；不改 verdict）',
+    out = {'kind': 'descriptive_diagnosis（ADR-0023；不改 verdict）',
            'run_id': args.run_id, 'campaign': args.campaign,
            'scene': SCENE, 'target_truth_xy': list(TARGET_XY),
            'rate_hz': RATE_HZ,
@@ -249,7 +249,7 @@ def main():
            'episodes': eps}
 
     md = ['# P2 臂 B 负向诊断 · %s' % args.run_id, '',
-          '> 描述性归因（ADR-0087(b)）：**不**改 verdict、**不**以“调到 B 赢”为目标。', '',
+          '> 描述性归因（ADR-0023）：**不**改 verdict、**不**以“调到 B 赢”为目标。', '',
           '## 按臂汇总（A = c2 / B = 规则高层）', '',
           '| 量 | A `p2_c2_low_level` | B `p2_rl_high` |', '|---|---|---|']
     A, B = out['per_arm'][ARMS[0]], out['per_arm'][ARMS[1]]

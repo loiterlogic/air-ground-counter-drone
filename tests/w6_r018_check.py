@@ -18,7 +18,7 @@
     `/agc/ground/cmd_vel`（TwistStamped）/`/agc/targets`（TargetTrackArray）；订 `/agc/task/state`；
     client `/agc/task/start`（`air_present=false`，跳过相位复位）。
 
-用例（结果落 `experiments/w6-task-eval/<run_id>/metrics/r018.json`，ADR-0007）：
+用例（结果落 `experiments/w6-task-eval/<run_id>/metrics/r018.json`，ADR-0006）：
   a 无 VehicleStatus → 不确认，负例 `JAM_FAIL_TARGET_ABSENT`（或 `JAM_FAIL_NO_FEEDBACK`）。
   b 命令被拒 / 无状态流：
     b1 `target_system` 不匹配（假 PX4 仅认 sysid=2，jammer 发 99）→ 模式不达 → `MODE_UNREACHED`。

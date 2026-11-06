@@ -8,7 +8,7 @@ trajectory_tracker` 起**真实** tracker（configure/activate），订阅
 `/agc/air/tracking_status`（R-032 配套诊断）。
 
 只回收**本进程组的 tracker 子进程**（terminate → wait → kill）；**不** 用裸名模式批杀、**不**做递归删除。
-证据落 `experiments/w6-task-eval/<run_id>/r032/bench.json`（ADR-0007）。
+证据落 `experiments/w6-task-eval/<run_id>/r032/bench.json`（ADR-0006）。
 
 场景（与评审 R-032 / spec 场景一一对应）：
   a_follower_death  —— 已获目标后停发 tracking_ref → 显式 hold（保持位置、**不**回落八字）

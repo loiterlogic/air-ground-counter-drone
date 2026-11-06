@@ -5,7 +5,7 @@
 规则真源：`src/agc_rl/config/w7b_prereg.yaml`（**单一来源**——阈值 / 样本量 / 显著性**不**在本脚本硬编码；
 本脚本只**读取**并执行，防事后改阈值，[F-13](../../docs/reviews/agc-review-2026-10-14/30-未来.md#f-13)）。
 
-判定（预注册 **v4** 口径，ADR-0084）：
+判定（预注册 **v4** 口径，ADR-0022）：
   * DV primary = `fire_control_opportunity_rate_active`（**active 窗口**：GROUND_APPROACH→终态；
     不含终态后停泊）；DV secondary = `min_clearance_m`。
     v1 的 `fire_control_opportunity_rate`（`window_fixed_v1`，60 s 固定窗）降为 legacy/描述量，
@@ -15,9 +15,9 @@
   * **超时一律失败**（契约 C4）→ 失败 / infra / 未达终态 的回合，其 **primary DV 一律按 0**
     （失败即无有效火控机会），**计入分母**（`keep_all_failures_and_infra`）；**缺值**同样按 0
     （旧版对缺值整对剔除 → infra 常缺值 ⇒ 被排除在分母外，与预注册不一致，2026-10-20 已修正）。
-    infra 数**单列**如实报告（`infra_listed_separately` + `infra_report`，含 ADR-0075 的重试分布）。
+    infra 数**单列**如实报告（`infra_listed_separately` + `infra_report`，含 ADR-0027 的重试分布）。
   * **secondary DV**（最小净空）失败回合仍有真实净空，记 0 会误表「碰撞」→ 缺值配对**剔除**并计数。
-  * 判定（**v6 三态**，ADR-0086）= 按 95% CI 与 **MME**（`decision.p1.minimum_meaningful_effect`，
+  * 判定（**v6 三态**，ADR-0022）= 按 95% CI 与 **MME**（`decision.p1.minimum_meaningful_effect`，
     决策门槛）的关系：CI 下限 > MME → `supported`；CI 上限 < MME → `falsified`（可排除达到门槛的效应）；
     **CI 覆盖 MME → `inconclusive`（未通过门槛；既未支持也未排除）**。
     **不**再把 `mean(Δ) ≥ MDE` 当判定门槛——那是 v1–v5 的 legacy 口径（一并输出 `holds_legacy_criterion`
@@ -101,7 +101,7 @@ def main():
     mde = float(stat.get('min_detectable_effect',
                          pre['statistics'].get('min_detectable_effect', 0.10)))
     n_req = int(stat['n_paired_episodes_per_arm'])
-    # ADR-0086：v6 三态判据（CI vs MME）与 v1–v5 legacy 口径（版本守卫，互不冒充）。
+    # ADR-0022：v6 三态判据（CI vs MME）与 v1–v5 legacy 口径（版本守卫，互不冒充）。
     criterion = p1d.get('criterion', 'p < alpha AND mean(delta) >= MDE')
     mme = p1d.get('minimum_meaningful_effect')
     mme = float(mme) if (criterion == 'three_state_ci_vs_mme' and mme is not None) else None
@@ -188,7 +188,7 @@ def main():
             'threshold_legacy_mde': mde,
             'holds_legacy_criterion': holds, 'rows': rows,
         }
-        # v6（ADR-0086）：三态（CI vs MME）——只对参与判定的 DV（primary）计算。
+        # v6（ADR-0022）：三态（CI vs MME）——只对参与判定的 DV（primary）计算。
         if role == 'primary' and mme is not None:
             t_vs_mme = (mean_d - mme) / sem
             p_one = float(stats.t.sf(t_vs_mme, n - 1))     # H0: Δ <= MME vs H1: Δ > MME
@@ -234,14 +234,14 @@ def main():
     out['criterion'] = criterion
     out['decision_rule'] = p1d.get('rule', '')
     out['falsification_rule'] = p1d.get('falsification', pre['decision']['falsification']['p1'])
-    # ADR-0075：infra 率与重试分布**须随报告一并报出**（机器特性，不得读作臂效应）
+    # ADR-0027：infra 率与重试分布**须随报告一并报出**（机器特性，不得读作臂效应）
     p1_rows = [r for r in arms['arms'] if r['arm'] in (args.coop_arm, args.noncoop_arm)]
     out['infra_report'] = {
         'n_runs_infra_terminal': sum(1 for r in p1_rows if r['terminal_state'] == 'INFRA_FAILURE'),
         'n_runs_final_infra': sum(1 for r in p1_rows if is_infra(r)),
         'n_runs_used_infra_retry': sum(1 for r in p1_rows if (r.get('infra_retries_used') or 0) > 0),
         'max_infra_retries_used': max([(r.get('infra_retries_used') or 0) for r in p1_rows] or [0]),
-        'policy': 'ADR-0075（分类判据=agc_rl.termination；infra 重试上限见 arms.json 的 infra_retry_protocol）',
+        'policy': 'ADR-0027（分类判据=agc_rl.termination；infra 重试上限见 arms.json 的 infra_retry_protocol）',
     }
     out['integrity'] = {
         'n_paired_matches_prereg': prim.get('n_paired') == n_req,

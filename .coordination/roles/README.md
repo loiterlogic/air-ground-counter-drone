@@ -18,7 +18,7 @@
 <a id="verification"></a>
 ## 配置核查与边界
 
-2026-10-28：机制从 Codex+DSH 跨进程交接改为 Leader/Worker 同进程双模型，决策与实测依据见 [ADR-0102](../../docs/adr/0102-leader-worker-dual-model-handoff.md#decision)。已删除 `codex.md`、`deepseek.md` 及根目录 `AGENTS.override.md`；历史轮次署名保留原样。
+2026-10-28：机制从 Codex+DSH 跨进程交接改为 Leader/Worker 同进程双模型，决策与实测依据见 [ADR-0026](../../docs/adr/0026-leader-worker-collaboration-and-batch-authorization.md#top)。已删除 `codex.md`、`deepseek.md` 及根目录 `AGENTS.override.md`；历史轮次署名保留原样。
 
 2026-10-26 记录（历史，保留供追溯）：本机 `codex-cli 0.164.0` 程序包含 `AGENTS.override.md → AGENTS.md → 配置的后备文件名` 的项目指令优先级说明。该入口机制已随 Codex 退役，不再适用。
 

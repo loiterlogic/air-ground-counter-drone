@@ -9,9 +9,9 @@
 
   * **任务终态**（`/agc/task/state` ∈ `TERMINALS`）→ `terminated=True`（**含超时失败**，契约 C4）；
   * **外部截断**（墙钟看门狗 / 训练 horizon / 无终态）→ `truncated=True`（须 bootstrap）；
-  * `INFRA_FAILURE` → `terminated=True` 且 `info.classification='infra'`（**不吞**入成功率，ADR-0046）。
+  * `INFRA_FAILURE` → `terminated=True` 且 `info.classification='infra'`（**不吞**入成功率，ADR-0018）。
 
-架构（与 [ADR-0069](../../docs/adr/0069-w7-entry-and-exit-definition.md) 决定一致）：
+架构（与 [ADR-0021](../../docs/adr/0021-w8-gui-headless-equivalence.md#top) 决定一致）：
   * 环境 = **外部命令源**：本适配层独占发布 `/agc/ground/cmd_vel_raw`；由 `w6.launch.py`
     `command_source:=train` 保证图内**不**另起 rl / baseline 发布者（安全层仍是唯一 shield）。
   * 链路与 `rl` 同构：`适配层 → cmd_vel_raw → collision_monitor → cmd_vel → 中继 → GZ`。
@@ -47,7 +47,7 @@ from agc_rl import obs_spec
 from agc_rl import seeding
 from agc_rl import termination
 
-# action → cmd_vel 映射默认参数（与 `agc_rl/config/rl.yaml` 的 control 段一致，[ADR-0026]）。
+# action → cmd_vel 映射默认参数（与 `agc_rl/config/rl.yaml` 的 control 段一致，[ADR-0004]）。
 DEFAULT_CONTROL = {
     'reference_speed': 1.0, 'fast_speed': 1.3, 'min_offset': 0.3, 'max_offset': 1.0,
     'k_heading': 1.5, 'k_lateral': 0.8, 'max_yaw_rate': 1.0, 'clearance_ref_m': 1.0,
@@ -339,7 +339,7 @@ class GroundAgcEnv:
         self._spin_until(lambda: self._fresh_inputs(n), float(self.cfg['wall_watchdog_s']))
         fresh = self._fresh_inputs(n)
         self._t_reset_sim = n.sim_s
-        self._ep_wall_start = time.monotonic()   # episode 墙钟起点（看门狗口径，ADR-0039）
+        self._ep_wall_start = time.monotonic()   # episode 墙钟起点（看门狗口径，ADR-0017）
         obs, dist = self._build_obs(n)
         info = self._info(n, {'started': ok, 'start_message': msg, 'service_ready': ready,
                               'fresh_gate': fresh, 'reset': True, 'dist_to_goal': dist})

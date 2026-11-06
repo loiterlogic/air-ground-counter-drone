@@ -27,7 +27,7 @@
 |---|---|---|
 | 空中平台（PX4 四旋翼） | 常开跟踪目标、保持安全间距、自身避障 | `agc_air` |
 | 地面平台（差速 UGV） | 自主规划接近、Nav2 安全层、RL 主控链路 | `agc_ground` |
-| 感知 | 真值派生 / 视觉两条**互斥**路径 | `agc_perception` |
+| 感知 | 真值派生（目标源：`gt_adapter`，**无几何门控、不分远近**） | `agc_perception` |
 | 任务 | 确定性状态机、终态裁决、指标落盘 | `agc_task` |
 
 **当前状态**：主场景 `s04_static_static_obs_track` 在 `yard` 地图上**可复现跑通**，
@@ -55,7 +55,7 @@
 > 已实测克隆到 `/tmp/agc-r10-clone` 后从零构建并跑到终态。`toolchain/` 仍需按上条单独准备。
 
 > **默认演示要等 45–60 秒才开始动**：`backend:=full` 有 PX4 己方 25 s / 入侵者 35 s 错峰
-> （[ADR-0094](docs/adr/0094-uxrce-participant-warmup-and-px4-stagger.md)）。脚本分段打印进度，
+> （[ADR-0027](docs/adr/0027-uxrce-startup-reproducibility.md#top)）。脚本分段打印进度，
 > 不是卡死。快速看效果用 `./run_demo.sh --backend lightweight`（几秒起，无空中链路）。
 
 ## 演示看到什么
@@ -85,9 +85,9 @@
 跑完在 `experiments/demo/<时间戳>/` 落：`timeline.txt`（事件流）、`panel.txt`（面板副本）、
 `terminal_explanation.txt`（**为什么成功/失败**——阈值取本 run 实际生效参数，指标只读
 `summary.json`）、`metrics/summary.json`（机器可读指标）。语义见
-[P1-3 可观测与演示呈现](docs/archive/completion-20261031/p1-3-任务可观测与演示呈现.md#p1-3-goal)。
+[演示可观测性与产物语义](docs/conventions/演示可观测性与产物语义.md#top)。
 
-真实运行画面（`full + yard + s04 + observe_yaw_mode=target`，**自然运行**、正俯视）：
+真实运行画面（`full + yard + s04`，**自然运行**、正俯视；观测指向臂 = `track`）：
 
 <p align="center">
   <img src="docs/plan/assets/demo-start.png" width="560" alt="启动：任务开始，无人机搜索">
@@ -142,7 +142,7 @@ PX4 SITL + uXRCE-DDS Agent               /agc/ground/cmd_vel（唯一执行口�
 | [`run_demo.sh`](run_demo.sh) | 一键入口：`doctor` / 演示 / `stop` / `status` / `test` / `compare` |
 | [`scripts/`](scripts/README.md#top-tools) | 长期工程工具（批量实验、证据归档、索引核对） |
 | [`tests/`](tests/README.md) | 验收核查（按风险项编号，多数需整链环境） |
-| [`docs/plan/`](docs/plan/README.md#plan-index) | **当前方向**：候选后续索引 + 历史批次归档导航 |
+| [`docs/plan/`](docs/plan/README.md#plan-index) | **任务计划规则**：临时工作区，写完就删；结论归宿表见该文件 |
 | [`docs/adr/`](docs/adr/README.md#adr-index) | 决策记录（编号 / 标题 / 结论索引） |
 | [`docs/conventions/`](docs/conventions/包边界.md) | 工程规范：包边界、目录命名、排障速查 |
 
@@ -170,34 +170,57 @@ PX4 SITL + uXRCE-DDS Agent               /agc/ground/cmd_vel（唯一执行口�
 
 这些是**当前版本的能力边界**，不是缺陷清单——知道边界才能正确解读结果：
 
-1. **捕获裁决为闭式占位**：现口径"入包络即命中"只产出终态与指标，物理网发射模型尚未接入
-   （[ADR-0024](docs/adr/0024-capture-adjudication-fire-control-window.md)）。阶段 B 的
+1. **捕获裁决：脚本弹道预演，非真实网物理**：现行口径是「**预演弹道能命中才开火**」——
+   `capture_adjudicator` 用 `net_v0_mps` / `net_angle_deg` / `net_g` 预测网到达时刻的目标位置并判可达
+   （[ADR-0011](docs/adr/0011-interception-and-fire-control.md#top) (g)(h)）。
+   历史「入包络即命中」的**闭式占位口径已作废**（引用旧 `CAPTURE_NET` 数据时须标注口径）。
+   仍属**脚本化**弹道与命中判定，**不建模**网的柔性变形、风阻与真实气动 ⇒
    `INTERCEPT_CONFIRMED` 可演示，但**不代表**真实网捕获的物理可行性。
-2. **感知为真值派生**：默认 `perception_path=truth`，目标位姿来自仿真真值经噪声 / 量程 / 视场建模，
-   不是从像素识别出来的（[ADR-0020](docs/adr/0020-perception-as-truth-derived-simulation.md)）。
+2. **感知为真值派生**：目标位姿来自仿真真值，**不是**从像素识别出来的
+   （[ADR-0009](docs/adr/0009-perception-truth-derived-and-vision-path.md#top)）。
    结论对"感知算法本身"不成立，只对**下游决策与控制**成立。
+   目标源只有一条（`/agc/target/source`）：`gt_adapter` 直取真值，**无几何门控、不分远近**
+   （`air_fusion` 已于 2026-11-04 退役）。`air_perception` 的 30 m 量程 / FOV 门控**保留但无消费者**，
+   故它们**不构成**当前的目标可见距离限制。
 3. **无实机验证**：全部结论来自纯仿真，接口为实机预留但未验证
-   （[ADR-0009](docs/adr/0009-sim-first-with-hardware-hooks.md)）。仿真里成立的时序裕度在实机上不保证。
-4. **视觉识别可插拔、默认无模型**：`perception_path=vision` 的链路（相机 → 桥 → 识别 → 降级）
-   已打通，但**默认不带模型**（`vision_model.id=none`，输出空检测并显式标注降级）。
-   `vision_model.id=none` 的成功 run **不得**当作视觉识别能力
-   （[ADR-0103](docs/adr/0103-vision-perception-decision-path.md)）。
+   （[ADR-0001](docs/adr/0001-project-positioning-and-execution-scope.md#top)）。仿真里成立的时序裕度在实机上不保证。
+4. **视觉定位路径已删除**：`perception_path=vision`（相机 → 识别 → 像素反推位置）连同
+   `camera_tf` / `vision_target` / 检测器桩已于 **2026-11-04 整体退役**
+   （[ADR-0009](docs/adr/0009-perception-truth-derived-and-vision-path.md#top)）。
+   `/agc/targets` 的发布者恒为 `gt_adapter`（`air_fusion` 亦已于同日退役），**没有第二条路**。
+   > `summary.json` 里仍带 `perception_path` / `vision_model` / `detector_backend` 三键，
+   > 值恒为 `truth` / `none` / `none`——那是**产物 schema 不漂移**，不表示存在可选路径。
 5. **换用相机机型对跟踪动力学的量化影响未知**：相机内参 / 安装位变化会改变观测噪声与视场，
    进而可能影响跟踪误差分布；本项目只测了 `gz_x500_mono_cam` 一种机型，**未做**跨机型的
-   跟踪动力学量化对比（P1-4 第 4 项以风险登记收口，见
-   [P1-4 结档裁定](docs/archive/completion-20261031/p1-4-视觉算法接入.md#p1-4-closure)）。
-6. **演示用显式 oracle 指向臂**：默认 `observe_yaw_mode=target` 让机头对准**真值方位**，
-   是为隔离"指向问题"而设的**显式 oracle 臂**，不是默认 `velocity`，**也不代表**真实视觉识别。
-   引用本仓结果时须同时标注该臂（[P1-2 观测指向臂](docs/archive/completion-20261031/p1-2-一键演示入口.md#p1-2-oracle-arm)）。
+   跟踪动力学量化对比。
+   > **为什么不做**（判据本身不可用，不是没跑）：两臂 `err_eff` p95 为 `0.100946 m` / `0.100939 m`，
+   > 相对差 −0.01%（预登记容差 20%）→ 表面 PASS，但 `standoff_follower.max_step_m=0.1` 把 p75–p95
+   > 整段**饱和在 ≈0.1 m**，两臂 p95 必然相等，判据**没有判别力**；真正有区分力的是 p50（−42.41%）
+   > 与 p99（−22.62%），两者均超容差。故判**完成（带已知缺口）**：不事后更换判据，若将来要下
+   > "等价 / 不等价"结论须**新任务 + 新预登记**（p50+p99 / 剔除饱和样本 / C1 速度·高度误差）。
+6. **观测指向臂 = `track`（感知航迹指向，非 oracle）**：`observe_yaw_mode` 的 **launch 参数已于
+   2026-11-04 清退**（W7-b 对照臂结档），现在**只由 `air.yaml` 真源 + 场景覆盖**决定：
+   `air.yaml` 缺省 `velocity`，`s04` 场景覆盖为 **`track`**（机头对准 `/agc/targets` 感知航迹）。
+   ⇒ 主场景**不是** oracle 臂，机头指向消费的是与任务同源的感知航迹，**不读** `/agc/gt/*`。
+   `target`（oracle 真值指向）与 `velocity` 两档仍保留在节点里供研究臂使用，
+   但**没有** run 级 CLI 覆盖口。引用结果时须标注实际生效档（见 manifest / `summary.json`）
+   （[ADR-0010](docs/adr/0010-safety-thresholds-and-failsafe.md#top) 的 oracle 臂边界）。
 7. **可移植性验证有明确边界**：演示入口、评测产物与 Git 身份已实测支持克隆到任意路径；
    `toolchain/` 不入库，仍须按 `toolchain/README` 单独构建，克隆复验中借用了主仓已构建工具链，
    因此不能把该次耗时当作全新机器的完整部署耗时。研究 / 历史脚本不在本次可移植性保证范围内。
+
+8. **机载俯视相机（opt-in，2026-11-04）**：`px4_sim_model:=gz_agc_x500_nadir` 时己方机挂一台**正下视**
+   相机，桥出 `/agc/air/nadir/image_raw` + `/agc/air/nadir/camera_info`
+   （[ADR-0030](docs/adr/0030-nadir-camera-capability.md#top)）。
+   **仅取证/测绘，无消费者**——识别仍靠真值（`gt_adapter`），图像**不**接入任务链；
+   默认 `gz_x500` 行为逐字不变（无相机）。实测 `yard` 14 m 下中心 GSD 5.30 cm/px、画幅 33.9×25.5 m。
+   单目正俯视只能拿 **XY 足迹**，**拿不到高度 Z**（需双视差 + 专门航线）。
 
 ## 文档
 
 | 入口 | 内容 |
 |---|---|
-| [当前方向](docs/plan/README.md#plan-index) | **当前方向**：候选后续索引（进度真源） |
+| [任务计划规则](docs/plan/README.md#plan-index) | **临时工作区**：结论归宿表与 plan 最小结构 |
 | [契约真源](docs/ROS2迁移交接文档.md#hard-constraints) | 不可变约束、坐标系、终态语义、接口语义（**唯一**约束来源） |
 | [ADR 索引](docs/adr/README.md#adr-index) | 全部决策的编号 / 标题 / 状态 / 结论 |
 | [包边界](docs/conventions/包边界.md) | 8 包职责与四类依赖方向 |
@@ -206,11 +229,11 @@ PX4 SITL + uXRCE-DDS Agent               /agc/ground/cmd_vel（唯一执行口�
 | [术语表](GLOSSARY.md) | 项目特有概念与边界 |
 | [协作规则](.coordination/README.md#protocol) | Leader / Worker 交接与批次授权 |
 
-> README **不复述**契约条款，只给链接（[ADR-0002](docs/adr/0002-docs-source-of-truth-layering.md)：
+> README **不复述**契约条款，只给链接（[ADR-0002](docs/adr/0002-docs-source-of-truth-and-reference-discipline.md#top)：
 > 每类信息只有一个家，下游只引用）。要改约束请改契约真源，不要改这里。
 
 ## 许可与第三方资产
 
 第三方资产（PX4、`px4_msgs`、Nav2、Gazebo、地图纹理）的来源、版本 pin、许可与哈希清单见
-[ADR-0068](docs/adr/0068-third-party-asset-provenance-license-and-hash-manifest.md) 与
+[ADR-0005](docs/adr/0005-px4-toolchain-and-link.md#top) 与
 [第三方资产与许可](docs/conventions/第三方资产与许可.md)。

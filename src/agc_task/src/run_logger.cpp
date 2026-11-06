@@ -1,6 +1,6 @@
 // run_logger —— run 产物落盘（W6 加厚 / C9）
 //
-// 按 ADR-0007 落 experiments/<campaign>/<run_id>/{config,metrics}：
+// 按 ADR-0006 落 experiments/<campaign>/<run_id>/{config,metrics}：
 //   * config/：参数快照 + git commit hash
 //   * metrics/summary.json：见下 finalize()。
 // C9 两指标（契约 #hard-constraints）：
@@ -10,7 +10,7 @@
 //   * reset_failure_rate —— 本 episode 复位重试耗尽（>3）或复位服务调用失败 → 1.0，否则 0.0
 //     （跨 episode 的比率由评估 runner 汇总）。
 //
-// R-027（ADR-0042）—— 安全不可行率**诚实口径**与**真实接触证据**：
+// R-027（ADR-0010）—— 安全不可行率**诚实口径**与**真实接触证据**：
 //   本节点同时输出**两套口径**并显式标注，互不冒充：
 //   ① **proxy_v1**（历史口径，保留字段不动）：`shield_infeasible_rate` / `ticks_*` ——
 //      「安全层触发且前向扫描 ≤ contact_dist_m」的**触发拍代理**，**不要求**实际接触 / 制动失败。
@@ -24,7 +24,7 @@
 //   **不**用 scan≤contact 去推导 collision）。缺数据段以 `not_applicable` 掩码如实标注，**不**以 0 冒充。
 //   新增订阅 / 参数（`contact_topic` / `a_brake_mps2`）均为**诊断类**，非 ROS 命令者；**不改**冻结 9 消息 ABI。
 //
-// W7-b 修订（2026-10-19，ADR-0043「修订」节）—— scan 有效样本掩码 `scan_frame_fresh_v2`：
+// W7-b 修订（2026-10-19，ADR-0016「修订」节）—— scan 有效样本掩码 `scan_frame_fresh_v2`：
 //   v1 把 `scan_fresh` 与「前向锥**有有限回波**」绑定 → **无障碍物场景**（如 s01/s08）前向锥全 inf，
 //   整窗被误判为「无效 scan」（实测 `ticks_invalid_scan = ticks_total`）、净空 `null`。修订后：
 //   * `scan_fresh` = **收到过 scan 帧**且未超龄（回波有无与数据可得性分离）；
@@ -33,7 +33,7 @@
 //   * 口径版本入 `definition_version`（`scan_valid_mask` / `command_attribution` → `raw_effective_v2`），
 //     `metrics_comparability` 显式标注与 v1 **不可逐值对照**。
 //
-// W7-b 修订二（2026-10-19，ADR-0043「修订二」节）—— 窗口有效样本掩码 `window_valid_v2`（action 档）：
+// W7-b 修订二（2026-10-19，ADR-0016「修订二」节）—— 窗口有效样本掩码 `window_valid_v2`（action 档）：
 //   v1 要求 `collision_monitor_state` **逐拍新鲜**（≤ `action_max_age_s`）。实证：Nav2 的 `state_topic`
 //   是**边沿（动作变化）发布**、**非心跳**——动作长期不变时不发（full 无障碍场景整窗实测 **0 条**），
 //   于是整窗被判「无效 action」（`ticks_invalid_action = ticks_total`、`ticks_valid = 0`）。
@@ -51,6 +51,7 @@
 #include <fstream>
 #include <iomanip>
 #include <limits>
+#include <map>
 #include <memory>
 #include <random>
 #include <sstream>
@@ -70,6 +71,8 @@
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/int32.hpp>
+#include <std_msgs/msg/string.hpp>
+#include <trajectory_msgs/msg/multi_dof_joint_trajectory.hpp>
 
 #include "agc_task/epoch_seconds.hpp"
 #include "agc_task/mission_fco_fixed_budget.hpp"
@@ -103,30 +106,46 @@ public:
     cmd_max_age_s_ = declare_parameter<double>("cmd_max_age_s", 0.5);
     attr_delta_epsilon_ = declare_parameter<double>("attr_delta_epsilon", 1e-3);
     attr_max_gap_s_ = declare_parameter<double>("attr_max_gap_s", 1.0);
-    // shield_layer_enabled=false = 无 shield 对照臂（纯仿真范围声明，见 ADR-0070(d)）：
+    // shield_layer_enabled=false = 无 shield 对照臂（纯仿真范围声明，见 ADR-0022）：
     // 该臂**无** collision_monitor → 安全层相关的 action 新鲜度门**不适用**（不误判为无效样本）。
     // launch 传入的 'true'/'false' 由 launch_ros 归一为 **bool**，故此处按 bool 声明。
     shield_layer_enabled_ = declare_parameter<bool>("shield_layer_enabled", true);
-    // —— P1-4（ADR-0103）：感知路径与视觉模型标识 ——
-    // **新增键，不改既有字段语义**。ADR-0103「证据必须可区分」：没有这个字段的实验产物
-    // 不得用于 truth / vision 的比较或论文结论。默认 truth / none = 既有行为不变。
-    //   perception_path     —— truth（真值派生链，ADR-0020，默认）| vision（视觉驱动）
-    //   vision_model_id     —— 识别模型标识；`none` = 无模型（该臂为显式降级，不得冒充有模型）
-    //   vision_model_name / _version / _sha256 —— 名称 / 版本 / 权重哈希（可空 = 未提供）
-    perception_path_ = declare_parameter<std::string>("perception_path", "truth");
-    vision_model_id_ = declare_parameter<std::string>("vision_model_id", "none");
-    vision_model_name_ = declare_parameter<std::string>("vision_model_name", "");
-    vision_model_version_ = declare_parameter<std::string>("vision_model_version", "");
-    vision_model_sha256_ = declare_parameter<std::string>("vision_model_sha256", "");
+    // —— 感知路径与视觉模型标识：**2026-11-04 起不再读参数，恒写固定值** ——
+    // 历史：P1-4 用这五个键区分 truth / vision 产物（ADR-0009「证据必须可区分」）。
+    // 现状：视觉定位路径**整体退役**（项目不做目标识别，目标位置始终由真值给出），
+    //   `perception_path` 恒 `truth`、`detector_backend` / `vision_model.id` 恒 `none`。
+    //
+    // 为什么**保留字段而不删**：`summary.json` 是对外产物 schema，历史 run 都带这些键。
+    //   删键会让新旧 run 不可直接对比，也违反「产物字段只增不改语义」的既有纪律。
+    //   保留后审查看到的仍是明确值，而不是"忘了记"。
+    //
+    // 语义边界：这几个字段是**标签**，不参与任何终态 / 安全 / 评估计算。
+    perception_path_ = "truth";
+    detector_backend_ = "none";
+    vision_model_id_ = "none";
+    vision_model_name_.clear();
+    vision_model_version_.clear();
+    vision_model_sha256_.clear();
     // —— W7-b（T3 / E3，F-10）：可见性度量口径（按 episode active 窗口切分）——
+    // N4（2026-11-04）：空中跟踪误差与 hold 计数的取证输入（纯诊断，非 ABI）。
+    //   为什么必须在 run_logger 里取：N4 出口判据 1 要"逐档记录 hold 次数与跟踪误差 p50/p95"，
+    //   而 summary.json 是唯一落盘产物；此前这些数只能靠 grep 日志（逐拍重复，无法当事件计数）。
+    air_odom_topic_ = declare_parameter<std::string>("air_odom_topic", "/agc/air/odom");
+    air_tracking_ref_topic_ = declare_parameter<std::string>(
+      "air_tracking_ref_topic", "/agc/air/tracking_ref");
+    air_tracking_status_topic_ = declare_parameter<std::string>(
+      "air_tracking_status_topic", "/agc/air/tracking_status");
+    air_metrics_enabled_ = declare_parameter<bool>("air_metrics_enabled", true);
+    // 配对容差：参考与 odom 的时间戳最近邻允许的最大偏差（与 scripts/tracking/track_err_probe.py 同口径）。
+    air_pair_max_dt_s_ = declare_parameter<double>("air_pair_max_dt_s", 0.02);
     const auto target_topic = declare_parameter<std::string>("target_topic", "/agc/targets");
     envelope_topic_ = declare_parameter<std::string>("envelope_topic", "/agc/task/envelope_in");
     visibility_max_age_s_ = declare_parameter<double>("visibility_max_age_s", 0.5);
-    // W7-b（ADR-0074，DV 口径修正）：可见 / 火控机会率改按**固定观测时长**计（自首个 active 拍起
+    // W7-b（ADR-0022，DV 口径修正）：可见 / 火控机会率改按**固定观测时长**计（自首个 active 拍起
     // `obs_window_s` 秒），**不**随"早成功"在终态处截断——否则该 DV 在早成功臂上**饱和**且受
     // "成功需可见"的**选择效应**影响（实测：两臂都 ≈0.98，对"指向"自变量不敏感）。
     obs_window_s_ = declare_parameter<double>("obs_window_s", 60.0);
-    // ADR-0099：新固定预算任务 FCO 记录器（独立字段，不改旧 visibility_metrics）。
+    // ADR-0021：新固定预算任务 FCO 记录器（独立字段，不改旧 visibility_metrics）。
     // T 沿用 60 s 尺度；预算与旧固定窗相互独立，可分别配置。
     mission_fco_cfg_.budget_s = declare_parameter<double>("mission_fco_budget_s", 60.0);
     mission_fco_cfg_.visibility_max_age_s = visibility_max_age_s_;
@@ -149,10 +168,10 @@ public:
     contact_dist_m_ = declare_parameter<double>("contact_dist_m", 2.0);
     ttc_min_s_ = declare_parameter<double>("ttc_min_s", 1.0);
     forward_cone_rad_ = declare_parameter<double>("forward_cone_rad", 0.9);
-    // R-027（ADR-0042）：接触真值话题（GZ contact sensor → ROS，ros_gz_interfaces/Contacts）；
+    // R-027（ADR-0010）：接触真值话题（GZ contact sensor → ROS，ros_gz_interfaces/Contacts）；
     // **空字符串 = 接触真值不可用**（not_applicable.collision_truth=true）。由 launch 单一注入。
     contact_topic_ = declare_parameter<std::string>("contact_topic", "/agc/ground/contact");
-    // R-027：锁轮制动减速度（m/s^2）——取自 ADR-0021(C) 实测锁轮制动；供剩余停车裕度
+    // R-027：锁轮制动减速度（m/s^2）——取自 ADR-0010 实测锁轮制动；供剩余停车裕度
     // brake_d = v^2/(2a)、margin = scan_min_forward - brake_d（可标定量，非保证）。
     a_brake_mps2_ = declare_parameter<double>("a_brake_mps2", 0.9);
     // R-028：有效样本掩码的采样新鲜度上限（s）——odom 拍时刻与最近 scan / 安全层存活证据的年龄
@@ -163,7 +182,7 @@ public:
     // 即唯一执行口 `/agc/ground/cmd_vel`（collision_monitor 的 `cmd_vel_out`）最近一次到达的年龄。
     scan_max_age_s_ = declare_parameter<double>("scan_max_age_s", 0.5);
     action_max_age_s_ = declare_parameter<double>("action_max_age_s", 0.5);
-    // R-029（ADR-0044）：episode 身份话题（std_msgs/Int32，transient_local；task_manager start 成功后发布）。
+    // R-029（ADR-0006）：episode 身份话题（std_msgs/Int32，transient_local；task_manager start 成功后发布）。
     const auto episode_topic = declare_parameter<std::string>("episode_topic", "/agc/task/episode");
     // R-029：世界模型文件（sha256 记入 config/toolchain_world.json；空 = 不记）。
     world_file_ = declare_parameter<std::string>("world_file", "");
@@ -209,6 +228,18 @@ public:
       [this](std_msgs::msg::Bool::SharedPtr m) {
         envelope_in_ = m->data; envelope_rx_s_ = now().seconds(); have_envelope_ = true;
       });
+    // N4（2026-11-04）：空中跟踪误差 / hold 计数取证（纯诊断；disabled 时不建订阅）。
+    if (air_metrics_enabled_) {
+      air_odom_sub_ = create_subscription<nav_msgs::msg::Odometry>(
+        air_odom_topic_, 50,
+        [this](nav_msgs::msg::Odometry::SharedPtr m) {onAirOdom(*m);});
+      air_ref_sub_ = create_subscription<trajectory_msgs::msg::MultiDOFJointTrajectory>(
+        air_tracking_ref_topic_, 20,
+        [this](trajectory_msgs::msg::MultiDOFJointTrajectory::SharedPtr m) {onAirRef(*m);});
+      air_status_sub_ = create_subscription<std_msgs::msg::String>(
+        air_tracking_status_topic_, 20,
+        [this](std_msgs::msg::String::SharedPtr m) {onAirStatus(*m);});
+    }
     state_sub_ = create_subscription<agc_msgs::msg::AgcTaskState>(
       state_topic, 10,
       [this](agc_msgs::msg::AgcTaskState::SharedPtr m) {onState(*m);});
@@ -234,7 +265,7 @@ public:
     reset_failed_sub_ = create_subscription<std_msgs::msg::Bool>(
       reset_failed_topic, rclcpp::QoS(1).transient_local(),
       [this](std_msgs::msg::Bool::SharedPtr m) {reset_failed_ = m->data;});
-    // R-029（ADR-0044）：episode 身份贯穿日志 / config / summary（非命令者，诊断类）。
+    // R-029（ADR-0006）：episode 身份贯穿日志 / config / summary（非命令者，诊断类）。
     episode_sub_ = create_subscription<std_msgs::msg::Int32>(
       episode_topic, rclcpp::QoS(1).transient_local(),
       [this](std_msgs::msg::Int32::SharedPtr m) {
@@ -244,7 +275,7 @@ public:
         writeText(run_dir_ / "config" / "episode_id.txt", std::to_string(episode_id_) + "\n");
         RCLCPP_INFO(get_logger(), "episode_id = %d", episode_id_);
       });
-    // R-027（ADR-0042）：真实接触真值订阅（GZ contact sensor → ROS）。空话题 = 不可用（不订阅）。
+    // R-027（ADR-0010）：真实接触真值订阅（GZ contact sensor → ROS）。空话题 = 不可用（不订阅）。
     if (!contact_topic_.empty()) {
       contact_sub_ = create_subscription<ros_gz_interfaces::msg::Contacts>(
         contact_topic_, 10,
@@ -265,7 +296,7 @@ public:
     wall_end_unix_s_ = std::chrono::duration<double>(
       std::chrono::system_clock::now().time_since_epoch()).count();
     if (now().seconds() > 0.0) {sim_end_s_ = now().seconds(); have_sim_ = true;}
-    // ADR-0099：在写 summary 前闭合新固定预算记录器并落独立区间账。
+    // ADR-0021：在写 summary 前闭合新固定预算记录器并落独立区间账。
     mission_fco_.finalize(have_sim_ ? sim_end_s_ : now().seconds());
     writeMissionFcoLedger();
     const double sim_delta = have_sim_ ? (sim_end_s_ - sim_start_s_) : 0.0;
@@ -275,7 +306,7 @@ public:
     const double shield_rate = triggered_ticks_ > 0 ?
       static_cast<double>(infeasible_ticks_) / triggered_ticks_ : 0.0;
     const double reset_rate = reset_failed_ ? 1.0 : 0.0;
-    // R-027（ADR-0042）：诚实口径量 + 有效样本掩码
+    // R-027（ADR-0010）：诚实口径量 + 有效样本掩码
     const bool scan_derived_na = (total_ticks_ == 0) || (scan_samples_ == 0);
     const bool trigger_derived_na = (trigger_events_ == 0);
     const bool collision_truth_na = contact_topic_.empty();
@@ -285,7 +316,7 @@ public:
       ((in_trigger_ && current_trigger_has_contact_) ? 1 : 0);
     const bool true_shield_infeasible = infeasible_events_total > 0;
 
-    // R-028（ADR-0043）：finalize 时若仍有开窗 → 关闭它，closed=false（显式标注未闭合）。
+    // R-028（ADR-0016）：finalize 时若仍有开窗 → 关闭它，closed=false（显式标注未闭合）。
     if (current_window_ >= 0) {
       EpisodeWindow & w = windows_[current_window_];
       w.leave_s = have_sim_ ? sim_end_s_ : last_tick_sim_s_;
@@ -376,12 +407,13 @@ public:
         << "  \"cmd_vel_rate_hz\": " << rate << ",\n"
         << "  \"reset_retries\": " << reset_retries_ << ",\n"
         << "  \"reset_failed\": " << (reset_failed_ ? "true" : "false") << ",\n"
-        // === P1-4（ADR-0103）新增：感知路径与视觉模型标识（**只增不改**语义）===
-        // 缺这个块的产物不得用于 truth / vision 比较（ADR-0103「证据必须可区分」）。
+        // === 感知路径与视觉模型标识：**值固定**（视觉定位路径已退役，见构造器注释）===
+        // 保留键是为了 schema 不漂移、新旧 run 可直接对比。
         << "  \"perception_path\": \"" << perception_path_ << "\",\n"
         << "  \"vision_model\": {\"id\": \"" << vision_model_id_ << "\", \"name\": \""
         << vision_model_name_ << "\", \"version\": \"" << vision_model_version_
         << "\", \"sha256\": \"" << vision_model_sha256_ << "\"},\n"
+        << "  \"detector_backend\": \"" << detector_backend_ << "\",\n"
         // === 历史口径 proxy_v1（**保留不动**，仅加定义版本标注）===
         << "  \"shield_infeasible_rate\": " << shield_rate << ",\n"
         << "  \"reset_failure_rate\": " << reset_rate << ",\n"
@@ -463,7 +495,7 @@ public:
         << ", \"vis_ticks_total\": " << agg_vis_total
         << ", \"vis_ticks_visible\": " << agg_vis_visible
         << ", \"ticks_fire_control_opportunity\": " << agg_vis_opportunity
-        // === W7-b（T4，ADR-0085(i) 后续诊断）：窗口级机会 / 包络（**只增不改**）===
+        // === W7-b（T4，ADR-0023 后续诊断）：窗口级机会 / 包络（**只增不改**）===
         // first_* 为**相对窗口 enter_s** 的时刻（s）；-1 = 窗口内未发生（输出 null）。
         // envelope_in_* 为**无条件**包络占用（env_ok ∧ envelope_in_，**不**与 visible 取交）；
         // 分母沿用同窗口逐拍计数 agg_vis_total（与 visibility_rate 分母同源）。
@@ -552,10 +584,10 @@ public:
         << ", \"paired_ticks\": " << (attr_ticks_paired_ == 0 ? "true" : "false")
         << ", \"clearance\": " << (attr_clearance_known_ ? "false" : "true") << "},\n"
         << "    \"note\": \"无 shield 臂（shield_layer_enabled=false）时 effective≡raw → intervened_ticks=0；"
-           "纯仿真对照臂，**不**用于实际部署（ADR-0070(d)）；净空口径 scan_fresh_v2（ADR-0043 修订）："
+           "纯仿真对照臂，**不**用于实际部署（ADR-0022）；净空口径 scan_fresh_v2（ADR-0016 修订）："
            "无回波拍记入 clearance_no_return_ticks（范围内无遮挡），clearance_min_m 仅取有限回波最小值\"\n"
         << "  },\n"
-        // === W7-b T3/E3（F-10）· ADR-0074 修订：可见性度量按**固定观测时长**（自首个 active 拍起
+        // === W7-b T3/E3（F-10）· ADR-0022 修订：可见性度量按**固定观测时长**（自首个 active 拍起
         //     `obs_window_s` 秒；**不**随终态截断）——分母与"是否早成功"解耦（消除饱和 / 选择效应）===
         << "  \"visibility_metrics\": {\n"
         << "    \"definition_version\": \"window_fixed_v1\",\n"
@@ -571,9 +603,10 @@ public:
         << "    \"longest_outage_s\": " << obs_gap_longest_ << ",\n"
         << "    \"recovery_time_last_s\": " << obs_recovery_last_ << ",\n"
         << "    \"not_applicable\": {\"target_truth\": " << (target_msgs_ == 0 ? "true" : "false") << ", \"episode_window\": " << (episode_window_na ? "true" : "false") << ", \"envelope\": " << (have_envelope_ ? "false" : "true") << "},\n"
-        << "    \"note\": \"ADR-0074：可见率分母 = **自首个 active 拍起固定 window_s 秒内的拍数**（不随终态截断；"
+        << "    \"note\": \"ADR-0022：可见率分母 = **自首个 active 拍起固定 window_s 秒内的拍数**（不随终态截断；"
            "消除早成功臂的饱和 / 选择效应）；tgt_age = 该拍时刻 − 目标 header.stamp。\"\n"
         << "  },\n"
+        << "  \"tracking_error_metrics\": " << trackingErrorJson() << ",\n"
         << "  \"mission_fco_fixed_budget_v1\": " << missionFcoSummaryJson() << ",\n"
         << "  \"process_metrics_note\": \"duration_s / odom_valid_ratio / cmd_vel_rate_hz / ticks_* / "
            "shield_infeasible_rate 为**进程全时长**口径（含预热 / 关闭），与 episode_window_metrics 的 "
@@ -594,7 +627,7 @@ private:
     double pos_x{0.0}, pos_y{0.0}, pos_z{0.0};  // 该对接触的首个接触点（world 系；无 → null）
   };
 
-  // R-028（ADR-0043）：一次 episode 事件窗口（task 进入 active 开窗、离开 active（终态 / IDLE）关窗）。
+  // R-028（ADR-0016）：一次 episode 事件窗口（task 进入 active 开窗、离开 active（终态 / IDLE）关窗）。
   // 窗口内以**同时间快照 + 有效样本掩码**逐拍计数（陈旧 scan 一律进 ticks_invalid_scan）。
   struct EpisodeWindow
   {
@@ -609,7 +642,7 @@ private:
     long vis_ticks_total{0}, vis_ticks_visible{0}, vis_ticks_opportunity{0};
     double vis_gap_longest_s{0.0}, vis_recovery_last_s{0.0};
     double vis_gap_start_s{-1.0};
-    // W7-b（T4，ADR-0085(i) 后续诊断；**只增不改**）：窗口级机会 / 包络诊断。
+    // W7-b（T4，ADR-0023 后续诊断；**只增不改**）：窗口级机会 / 包络诊断。
     // 相对时刻一律以**本窗口 enter_s**（既有字段）为起点；-1 = 窗口内未发生。
     double first_fire_control_opportunity_s{-1.0};  // 首次 FCO（visible ∧ envelope_in）相对时刻
     long envelope_in_ticks{0};                      // **无条件**包络占用拍数（env_ok ∧ envelope_in_，不与 visible 取交）
@@ -657,8 +690,123 @@ private:
     if (m.tracks.empty()) {target_present_ = false; return;}
     target_present_ = true;
     target_last_stamp_s_ = rclcpp::Time(m.tracks.front().header.stamp).seconds();
+    // N4 判据 2「延迟可测」：交付时刻 − 源采样时刻。track.header.stamp 是**源采样时刻**
+    //   （gt_adapter 明确不刷新为 now），故该差值就是 `latency_s` 链路延迟的实测值。
+    {
+      const double lat = now().seconds() - target_last_stamp_s_;
+      if (lat >= 0.0 && lat < 10.0) {   // 上界剔除时钟跳变造成的伪值
+        target_obs_latency_.push_back(lat);
+      }
+    }
     target_confidence_ = m.tracks.front().confidence;
     target_have_ = true;
+  }
+
+
+  // ================= N4（2026-11-04）：空中跟踪误差 / hold / 观测延迟取证 =================
+  //
+  // ## 为什么在 run_logger 里算
+  // N4 出口判据 1 要求"三档逐档记录 hold 次数与跟踪误差 p50/p95"。这些数此前**不存在**：
+  // `scripts/tracking/track_err_probe.py` 是独立进程，产物不进 summary.json；而日志里的
+  // "冻结跟踪（hold）"是**逐拍重复**的 WARN，grep 出来的行数不是事件次数。
+  // 因此把三件事做进唯一落盘产物：
+  //   * `hold_events` —— 边沿计数（frozen false→true 才算一次）；
+  //   * `track_err_*` —— 生效参考（tracking_ref）与 /agc/air/odom 的最近邻配对误差分位；
+  //   * `target_obs_latency_*` —— 交付时刻 − track.header.stamp（N4 判据 2 的"延迟可测"）。
+  //
+  // ## 口径（不得混读）
+  // * 主指标 `err_eff` = ‖tracking_ref − air_odom‖（水平 XY）。tracking_ref 是 standoff 发布的
+  //   **生效参考**，所以这确实是"跟踪误差"，不是"标称八字偏离"。
+  // * 配对用**仿真时间戳最近邻**（|Δt| ≤ air_pair_max_dt_s），不按到达顺序硬配。
+  // * 全部是**派生诊断**，不是契约 C1 口径，也不进任何验收判定。
+
+  void onAirOdom(const nav_msgs::msg::Odometry & m)
+  {
+    const double t = rclcpp::Time(m.header.stamp).seconds();
+    air_odom_[t] = {m.pose.pose.position.x, m.pose.pose.position.y};
+    ++air_odom_msgs_;
+    pairAirSamples();
+    pruneAirBuffers(t);
+  }
+
+  void onAirRef(const trajectory_msgs::msg::MultiDOFJointTrajectory & m)
+  {
+    if (m.points.empty() || m.points.front().transforms.empty()) {return;}
+    const auto & tr = m.points.front().transforms.front().translation;
+    const double t = rclcpp::Time(m.header.stamp).seconds();
+    air_ref_[t] = {tr.x, tr.y};
+    ++air_ref_msgs_;
+  }
+
+  /// `/agc/air/tracking_status`（std_msgs/String，JSON）：取 `frozen` 字段做**边沿**计数。
+  void onAirStatus(const std_msgs::msg::String & m)
+  {
+    static const std::string key = "\"frozen\"";
+    const auto kp = m.data.find(key);
+    if (kp == std::string::npos) {return;}
+    const auto colon = m.data.find(':', kp + key.size());
+    if (colon == std::string::npos) {return;}
+    auto vp = colon + 1;
+    while (vp < m.data.size() && m.data[vp] == ' ') {++vp;}
+    const bool frozen = (m.data.compare(vp, 4, "true") == 0);
+    ++air_status_msgs_;
+    if (frozen && !air_frozen_prev_) {++air_hold_events_;}
+    air_frozen_prev_ = frozen;
+    if (frozen) {++air_frozen_msgs_;}
+  }
+
+  /// 把 odom 与参考按 stamp 最近邻配对，累积 err_eff。
+  void pairAirSamples()
+  {
+    if (air_ref_.empty() || air_odom_.empty()) {return;}
+    for (auto it = air_odom_.begin(); it != air_odom_.end(); ) {
+      // 找 stamp 最近的参考
+      auto lo = air_ref_.lower_bound(it->first);
+      auto best = air_ref_.end();
+      double best_dt = std::numeric_limits<double>::infinity();
+      if (lo != air_ref_.end()) {best = lo; best_dt = std::abs(lo->first - it->first);}
+      if (lo != air_ref_.begin()) {
+        auto prev = std::prev(lo);
+        const double d = std::abs(prev->first - it->first);
+        if (d < best_dt) {best = prev; best_dt = d;}
+      }
+      if (best == air_ref_.end() || best_dt > air_pair_max_dt_s_) {
+        ++it; continue;   // 等后续参考消息（不清缓冲）
+      }
+      const double dx = best->second.first - it->second.first;
+      const double dy = best->second.second - it->second.second;
+      air_err_.push_back(std::sqrt(dx * dx + dy * dy));
+      it = air_odom_.erase(it);
+    }
+  }
+
+  /// 缓冲上界：避免长时间无参考时无限增长（超出即丢最旧，不静默涨内存）。
+  void pruneAirBuffers(double t)
+  {
+    constexpr size_t kMaxBuf = 4000;
+    while (air_odom_.size() > kMaxBuf) {air_odom_.erase(air_odom_.begin());}
+    while (air_ref_.size() > kMaxBuf) {air_ref_.erase(air_ref_.begin());}
+    if (t - last_air_prune_s_ < 1.0) {return;}
+    last_air_prune_s_ = t;
+    const double horizon = t - 60.0;
+    while (!air_odom_.empty() && air_odom_.begin()->first < horizon) {
+      air_odom_.erase(air_odom_.begin());
+    }
+    while (!air_ref_.empty() && air_ref_.begin()->first < horizon) {
+      air_ref_.erase(air_ref_.begin());
+    }
+  }
+
+  /// 分位（线性插值，与 scripts/tracking/track_err_probe.py 的 aggregate 同口径）。
+  static double quantile(std::vector<double> v, double q)
+  {
+    if (v.empty()) {return std::numeric_limits<double>::quiet_NaN();}
+    std::sort(v.begin(), v.end());
+    const double pos = q * static_cast<double>(v.size() - 1);
+    const size_t lo = static_cast<size_t>(std::floor(pos));
+    const size_t hi = std::min(lo + 1, v.size() - 1);
+    const double frac = pos - static_cast<double>(lo);
+    return v[lo] * (1.0 - frac) + v[hi] * frac;
   }
 
   // W7-b（T3/E3）：按 episode active 窗口逐拍判可见 / 有效火控机会，记最长失联与恢复时长。
@@ -669,7 +817,7 @@ private:
       std::numeric_limits<double>::infinity();
     const bool visible = target_ok && age >= 0.0 && age <= visibility_max_age_s_;
     const bool env_ok = have_envelope_ && (t_now - envelope_rx_s_) <= attr_max_gap_s_;
-    // —— ADR-0074（DV 口径 `window_fixed_v1`）：固定观测时长窗口（自首个 active 拍起 obs_window_s 秒），
+    // —— ADR-0022（DV 口径 `window_fixed_v1`）：固定观测时长窗口（自首个 active 拍起 obs_window_s 秒），
     //    **不**随终态截断 → 消除"早成功→分母截断→饱和 + 选择效应"。这是 `visibility_metrics` 的来源。
     if (obs_start_s_ >= 0.0 && (t_now - obs_start_s_) <= obs_window_s_) {
       ++obs_vis_total_;
@@ -765,7 +913,7 @@ private:
     const double dw = eff_w_ - raw_w_;
     attr_max_abs_dv_ = std::max(attr_max_abs_dv_, std::fabs(dv));
     attr_max_abs_dw_ = std::max(attr_max_abs_dw_, std::fabs(dw));
-    // W7-b 修订（ADR-0043 scan_fresh_v2）：净空可"已知"= 该拍**有新鲜 scan 帧**；有回波取有限最小
+    // W7-b 修订（ADR-0016 scan_fresh_v2）：净空可"已知"= 该拍**有新鲜 scan 帧**；有回波取有限最小
     // 距离，**无回波**（前向锥全 inf）记「范围内无遮挡」——**不**再把"无障碍"当"缺数据"。
     const bool scan_tick_fresh = have_scan_frame_ && (t_now - scan_rx_s_) <= scan_max_age_s_;
     if (scan_tick_fresh) {
@@ -827,7 +975,7 @@ private:
       EpisodeWindow w;
       w.index = static_cast<int>(windows_.size());
       w.enter_s = now().seconds();
-      // ADR-0074：固定观测窗口起点 = **首个** active 拍（此后独立于终态计时）
+      // ADR-0022：固定观测窗口起点 = **首个** active 拍（此后独立于终态计时）
       if (obs_start_s_ < 0.0) {obs_start_s_ = w.enter_s;}
       windows_.push_back(w);
       current_window_ = w.index;
@@ -841,14 +989,14 @@ private:
       closeVisibilityGap(w, w.leave_s);
       current_window_ = -1;
     }
-    // ADR-0099：新固定预算记录器只观察状态转换；t0/终态均保留源 stamp 与接收时刻。
+    // ADR-0021：新固定预算记录器只观察状态转换；t0/终态均保留源 stamp 与接收时刻。
     const double state_stamp_s = rclcpp::Time(m.header.stamp).seconds();
     mission_fco_.onState(
       s == agc_msgs::msg::AgcTaskState::GROUND_APPROACH, isTerminalState(s),
       m.state_name, m.reason_code, state_stamp_s, state_stamp_s > 0.0, now().seconds());
   }
 
-  // R-027（ADR-0042）：GZ contact 真值回调——逐帧判定**车↔非车**接触对，按**上升沿去重**计真实碰撞事件。
+  // R-027（ADR-0010）：GZ contact 真值回调——逐帧判定**车↔非车**接触对，按**上升沿去重**计真实碰撞事件。
   // 车侧：名字含 `agc_car`；另一侧：名字非空且不含 `agc_car`（车↔车 / 非车↔非车 / 名缺失不计）。
   void onContacts(const ros_gz_interfaces::msg::Contacts & m)
   {
@@ -933,7 +1081,7 @@ private:
     const bool scan_fresh = have_scan_frame_ && (t_now - scan_rx_s_) <= scan_max_age_s_;
     // W7-b（T1/E1）：无 shield 对照臂（shield_layer_enabled_=false）**无** collision_monitor →
     // action 档**不适用**（否则整窗判为无效样本，污染评价）。默认 true → 行为不变。
-    // W7-b 修订二（window_valid_v2，ADR-0043）：action 档**不再**要求 `collision_monitor_state`
+    // W7-b 修订二（window_valid_v2，ADR-0016）：action 档**不再**要求 `collision_monitor_state`
     // **逐拍新鲜**——Nav2 的 `state_topic` 是**边沿（动作变化）发布**、**非心跳**：动作长期不变
     // （如整场 DO_NOTHING）时一条都不发；实测 full 无障碍场景整窗 0 条 → 逐拍新鲜门把**有效知识**
     // 误判为**缺数据**（轻量栈有障碍场景因动作频繁跳变而侥幸命中，掩盖了该缺陷）。
@@ -1008,13 +1156,13 @@ private:
     evaluateAttribution(t_now);
     // === W7-b（T3/E3，F-10）：可见性口径（按 episode active 窗口） ===
     evaluateVisibility(t_now);
-    // === ADR-0099：固定预算任务 FCO（独立积分器；predicate 与旧口径同源） ===
+    // === ADR-0021：固定预算任务 FCO（独立积分器；predicate 与旧口径同源） ===
     mission_fco_.onTick({
       t_now, target_have_, target_present_, target_last_stamp_s_,
       have_envelope_, envelope_in_, envelope_rx_s_});
   }
 
-  // === ADR-0099：mission_fco_fixed_budget_v1 的 JSON 证据 ===
+  // === ADR-0021：mission_fco_fixed_budget_v1 的 JSON 证据 ===
   static std::string jsonString(const std::string & s)
   {
     std::string out = "\"";
@@ -1131,7 +1279,7 @@ private:
       os << missionFcoRecordJson(recs[i], false);
     }
     os << "], \"ledger_file\": \"metrics/mission_fco_intervals.json\""
-       << ", \"note\": \"ADR-0099：T=60 仿真秒固定任务预算；每 mission 独立积分，不合并跨回合比例；"
+       << ", \"note\": \"ADR-0021：T=60 仿真秒固定任务预算；每 mission 独立积分，不合并跨回合比例；"
           "终态后预算贡献 0；存在未知区间时点估计 null，保留 [known/T,(known+missing)/T] 识别界；"
           "不把 ticks/window_s 当时间积分；旧 visibility_metrics 与 episode_window_metrics 原语义未改\"}";
     return os.str();
@@ -1237,6 +1385,65 @@ private:
     return h.empty() ? "unknown" : h;
   }
 
+  /// N4（2026-11-04）：跟踪误差 / hold / 观测延迟的 JSON 块。
+  ///
+  /// 三个指标各自的**分母与不适用条件**都显式写出，避免"没有数"被读成"误差为零"：
+  ///   * `hold_events` —— 来自 tracking_status 的 `frozen` 边沿；无该话题 → `applicable=false`。
+  ///   * `track_err_*` —— 需要配对样本；`paired_samples==0` → 分位为 null（不是 0）。
+  ///   * `obs_latency_*` —— 需要 `/agc/targets` 非空样本。
+  std::string trackingErrorJson() const
+  {
+    std::ostringstream o;
+    const bool has_err = !air_err_.empty();
+    const bool has_lat = !target_obs_latency_.empty();
+    o << "{";
+    o << "\"definition_version\": \"n4_tracking_error_v1\", ";
+    o << "\"note\": \"派生诊断，非契约 C1 口径；err_eff = ‖/agc/air/tracking_ref − /agc/air/odom‖"
+         "（水平 XY，仿真时间戳最近邻配对，容差 " << air_pair_max_dt_s_ << " s）。"
+         "hold_events 是 frozen 的**边沿**计数（非逐拍 WARN 行数）。\", ";
+    // ---- hold ----
+    o << "\"hold\": {\"applicable\": " << (air_status_msgs_ > 0 ? "true" : "false")
+      << ", \"events\": " << air_hold_events_
+      << ", \"frozen_msgs\": " << air_frozen_msgs_
+      << ", \"status_msgs\": " << air_status_msgs_
+      << ", \"note\": \"counting false→true edges of tracking_status.frozen\"}, ";
+    // ---- 跟踪误差 ----
+    o << "\"tracking_error_xy_m\": {"
+      << "\"applicable\": " << (has_err ? "true" : "false")
+      << ", \"paired_samples\": " << air_err_.size()
+      << ", \"ref_msgs\": " << air_ref_msgs_
+      << ", \"odom_msgs\": " << air_odom_msgs_;
+    if (has_err) {
+      o << ", \"p50\": " << quantile(air_err_, 0.50)
+        << ", \"p95\": " << quantile(air_err_, 0.95)
+        << ", \"p99\": " << quantile(air_err_, 0.99)
+        << ", \"mean\": " << [this] {
+             double sum = 0.0;
+             for (double v : air_err_) {sum += v;}
+             return sum / static_cast<double>(air_err_.size());
+           }()
+        << ", \"max\": " << *std::max_element(air_err_.begin(), air_err_.end());
+    } else {
+      o << ", \"p50\": null, \"p95\": null, \"p99\": null, \"mean\": null, \"max\": null";
+    }
+    o << "}, ";
+    // ---- 观测延迟（N4 判据 2：latency 可测）----
+    o << "\"target_obs_latency_s\": {"
+      << "\"applicable\": " << (has_lat ? "true" : "false")
+      << ", \"samples\": " << target_obs_latency_.size();
+    if (has_lat) {
+      o << ", \"p50\": " << quantile(target_obs_latency_, 0.50)
+        << ", \"p95\": " << quantile(target_obs_latency_, 0.95)
+        << ", \"max\": " << *std::max_element(
+             target_obs_latency_.begin(), target_obs_latency_.end());
+    } else {
+      o << ", \"p50\": null, \"p95\": null, \"max\": null";
+    }
+    o << ", \"note\": \"now − track.header.stamp（源采样时刻）——即链路交付延迟的实测值\"}";
+    o << "}";
+    return o.str();
+  }
+
   void writeConfig()
   {
     std::ofstream params(run_dir_ / "config" / "params.yaml");
@@ -1250,7 +1457,7 @@ private:
     std::ofstream commit(run_dir_ / "config" / "git_commit.txt");
     commit << git_commit_ << "\n";
     // R-026：把本题的 scene_manifest（声明轴 / 承载者 / 实际生效参数）与合并后参数文件
-    // 拷入 run 的 config/（ADR-0007 唯一落点），使「用的是哪套栈 / 声明轴 / 实际参数」可复核。
+    // 拷入 run 的 config/（ADR-0006 唯一落点），使「用的是哪套栈 / 声明轴 / 实际参数」可复核。
     copyIntoConfig(scene_manifest_file_, "scene_manifest.json");
     copyIntoConfig(params_file_in_, "params_applied.yaml");
     writeEpisodePlaceholder();
@@ -1263,8 +1470,8 @@ private:
     writeText(run_dir_ / "config" / "episode_id.txt", "-1\n");
   }
 
-  // R-029（ADR-0044）：代码身份 / dirty diff / 未跟踪清单 / 内容指纹 + 工具链与世界模型哈希。
-  // 只落 run 的 config/（ADR-0007）；dirty 工作区非禁跑，但 run 可据此重建。
+  // R-029（ADR-0006）：代码身份 / dirty diff / 未跟踪清单 / 内容指纹 + 工具链与世界模型哈希。
+  // 只落 run 的 config/（ADR-0006）；dirty 工作区非禁跑，但 run 可据此重建。
   void writeIdentity() const
   {
     const std::string head = git_commit_;
@@ -1333,13 +1540,13 @@ private:
   bool dir_ok_{true};
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr episode_sub_;
   int seed_{0};
-  // R-028（ADR-0043）：终态锁存——terminal_state_ = **首个**终态 state_name（空=未观测）；
+  // R-028（ADR-0016）：终态锁存——terminal_state_ = **首个**终态 state_name（空=未观测）；
   // last_state_name_ = 最后观测到的 state_name；terminal_latched_ 标注是否已锁存。
   std::string terminal_state_, last_state_name_, terminal_reason_code_, reason_code_;
   bool terminal_latched_{false};
   size_t odom_valid_total_{0}, odom_valid_true_{0}, cmd_count_{0};
   double contact_dist_m_{2.0}, ttc_min_s_{1.0}, forward_cone_rad_{0.9};
-  // R-027（ADR-0042）：接触真值话题（空 = 不可用）+ 锁轮制动减速度
+  // R-027（ADR-0010）：接触真值话题（空 = 不可用）+ 锁轮制动减速度
   std::string contact_topic_;
   double a_brake_mps2_{0.9};
 
@@ -1348,7 +1555,7 @@ private:
   bool reset_failed_{false};
   uint8_t cm_action_{0};
   double vx_body_{0.0}, scan_min_forward_{0.0};
-  // W7-b 修订（ADR-0043 scan_fresh_v2）：`have_scan_frame_` = **收到过 scan 帧**（有效样本掩码只看帧新鲜度）；
+  // W7-b 修订（ADR-0016 scan_fresh_v2）：`have_scan_frame_` = **收到过 scan 帧**（有效样本掩码只看帧新鲜度）；
   // `have_scan_` = 前向锥**有有限回波**（无障碍物时全 inf → 无回波 ≠ 无数据）。
   bool have_odom_{false}, have_scan_frame_{false}, have_scan_{false};
   size_t total_ticks_{0}, triggered_ticks_{0}, infeasible_ticks_{0};
@@ -1364,7 +1571,7 @@ private:
   std::vector<CollisionEvent> collision_events_;
   std::unordered_set<std::string> contact_pairs_prev_;
 
-  // R-028（ADR-0043）：有效样本掩码新鲜度阈值（scan 帧 / 安全层存活证据到达时刻）+ episode 事件窗口。
+  // R-028（ADR-0016）：有效样本掩码新鲜度阈值（scan 帧 / 安全层存活证据到达时刻）+ episode 事件窗口。
   double scan_max_age_s_{0.5}, action_max_age_s_{0.5};
   double scan_rx_s_{0.0};
   bool have_cm_state_{false};
@@ -1375,9 +1582,11 @@ private:
   std::string cmd_raw_topic_;
   double cmd_max_age_s_{0.5}, attr_delta_epsilon_{1e-3}, attr_max_gap_s_{1.0};
   bool shield_layer_enabled_{true};
-  // P1-4（ADR-0103）：感知路径与视觉模型标识（新键；默认 = truth / none，既有行为不变）
+  // P1-4（ADR-0009）：感知路径与视觉模型标识（新键；默认 = truth / none，既有行为不变）
   std::string perception_path_, vision_model_id_, vision_model_name_,
     vision_model_version_, vision_model_sha256_;
+  // 识别后端标签：视觉定位路径退役后恒为 none（字段保留仅为 schema 不漂移）
+  std::string detector_backend_;
   double raw_v_{0.0}, raw_w_{0.0}, raw_stamp_{0.0}, raw_rx_s_{0.0};
   double eff_v_{0.0}, eff_w_{0.0}, eff_stamp_{0.0}, eff_rx_s_{0.0};
   bool have_raw_{false}, have_eff_{false};
@@ -1398,7 +1607,7 @@ private:
   // W7-b（T3/E3，F-10）：可见性口径
   std::string envelope_topic_;
   double visibility_max_age_s_{0.5};
-  // W7-b（ADR-0074）：固定观测时长窗口（自首个 active 拍起）；口径版本 `window_fixed_v1`
+  // W7-b（ADR-0022）：固定观测时长窗口（自首个 active 拍起）；口径版本 `window_fixed_v1`
   double obs_window_s_{60.0};
   double obs_start_s_{-1.0};            // 首个 active 拍时刻（<0 = 未开始）
   long obs_vis_total_{0}, obs_vis_visible_{0}, obs_vis_opportunity_{0};
@@ -1412,7 +1621,23 @@ private:
   bool envelope_in_{false}, have_envelope_{false};
   double envelope_rx_s_{0.0};
 
-  // ADR-0099：新固定预算任务 FCO（独立组件；不参与旧 visibility_metrics）
+  // ---- N4（2026-11-04）：空中跟踪误差 / hold / 观测延迟取证 ----
+  std::string air_odom_topic_, air_tracking_ref_topic_, air_tracking_status_topic_;
+  bool air_metrics_enabled_{true};
+  double air_pair_max_dt_s_{0.02};
+  std::map<double, std::pair<double, double>> air_odom_;   // stamp → (x, y)
+  std::map<double, std::pair<double, double>> air_ref_;    // stamp → (x, y)
+  std::vector<double> air_err_;
+  std::vector<double> target_obs_latency_;   // N4：交付时刻 − track.header.stamp
+  uint64_t air_odom_msgs_{0}, air_ref_msgs_{0}, air_status_msgs_{0};
+  uint64_t air_hold_events_{0}, air_frozen_msgs_{0};
+  bool air_frozen_prev_{false};
+  double last_air_prune_s_{0.0};
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr air_odom_sub_;
+  rclcpp::Subscription<trajectory_msgs::msg::MultiDOFJointTrajectory>::SharedPtr air_ref_sub_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr air_status_sub_;
+
+  // ADR-0021：新固定预算任务 FCO（独立组件；不参与旧 visibility_metrics）
   agc_task::MissionFcoConfig mission_fco_cfg_;
   agc_task::MissionFcoFixedBudget mission_fco_;
 

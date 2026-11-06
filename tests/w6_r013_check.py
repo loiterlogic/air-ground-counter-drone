@@ -13,7 +13,7 @@
      task_manager（复用同一栈的 scenario_reset）→ 拒绝且 reason=single_world_mismatch。
 
 子测顺序见 main()（c 会停掉主 task_manager，故置于最后）。结果落
-`experiments/w6-task-eval/<run_id>/metrics/r013.json`（ADR-0007）。
+`experiments/w6-task-eval/<run_id>/metrics/r013.json`（ADR-0006）。
 
 注：清理**禁止** pkill -f "<名字>"（会匹配 shell 自身命令行 → 自杀）；用 "[x]xx" 写法规避。
 """

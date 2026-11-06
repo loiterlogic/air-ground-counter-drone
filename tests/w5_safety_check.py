@@ -8,7 +8,7 @@
   3. 判据：
      * **C2 顺序 + 承载**：车自巡航速降速（slowdown@安全档）→ 停车（stop@碰撞档）；
      * **C6 真实逃逸**：车**实测停住**（odom 位移极小）、且**未撞柱**（最近距离 ≥ 阈值）。
-  结果落 `experiments/w5-ground-nav-safety/<run_id>/metrics/safety.json`（ADR-0007）。
+  结果落 `experiments/w5-ground-nav-safety/<run_id>/metrics/safety.json`（ADR-0006）。
 
 用法：
   python3 tests/w5_safety_check.py --duration 30 --run-id <YYYYMMDD>-pole-approach-0

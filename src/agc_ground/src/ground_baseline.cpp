@@ -1,16 +1,16 @@
 // ground_baseline —— W5-c 离线对照基线（R8）
 //
-// 依 ADR-0004 / ADR-0018：地面主控维持 RL（agc_rl），Nav2 planner/controller 退为**可切换的离线基线**。
-// 本节点复用 Nav2 的 **plugin 抽象**（ADR-0008 吸收点）：
+// 依 ADR-0004：地面主控维持 RL（agc_rl），Nav2 planner/controller 退为**可切换的离线基线**。
+// 本节点复用 Nav2 的 **plugin 抽象**（ADR-0003 吸收点）：
 //   * planner  = pluginlib 加载 Nav2 `navfn_planner` 插件（真复用 Nav2 planner，非自研）；
-//   * controller = pluginlib 加载 `agc_control` 的 LQR 控制器插件（共用实现，未复制，ADR-0018）。
+//   * controller = pluginlib 加载 `agc_control` 的 LQR 控制器插件（共用实现，未复制，ADR-0004）。
 // 自持内建 costmap（`nav2_costmap_2d::Costmap2DROS`，节点名 `costmap`；参数取 `config/costmap.yaml`
 // 的 `costmap:` 段），与 planner 共用一个 costmap（对齐 Nav2 planner_server 的宿主模式）。
 //
 // 输出 `TwistStamped`（车体系）至 `/agc/ground/cmd_vel_raw`，**SHALL NOT** 直接写唯一执行口。
 // 与 RL 的**互斥**由 ground_bringup 的 `command_source` 单一选择（同一时刻仅一路下发）。
 //
-// R-041：目标失效与重规划抖动（ADR-0056）——**移除** goal 回调「任意浮点变化（>1e-6）即强制重规划」，
+// R-041：目标失效与重规划抖动（ADR-0013）——**移除** goal 回调「任意浮点变化（>1e-6）即强制重规划」，
 //   重规划仅由 needReplan 的位移阈值（replan_displacement_m）/ 地图变化 / 时限 / 周期触发（对齐 Nav2
 //   GoalUpdated 离散事件语义）；仅**首次**获得 goal 时立即规划。消费伴随诊断 /agc/ground/goal_info 的
 //   `valid=`：目标失效（valid=false）→ 安全停车（fail-safe stop，先于路径跟随）。与 C10 空中 freeze 分别定义。
@@ -237,7 +237,7 @@ private:
   // 以屏蔽 obstacle/voxel 层逐帧 raytrace clearing（FREE/UNKNOWN 翻转）与 inflation 传播的噪声：
   // 实测（r012 GUI）全景内容哈希在行驶中会瞬态抖动，而致命占据集在行驶中稳定、增障时即偏离。
   //
-  // 2026-10-24（ADR-0089，P2 重规划审计）：此前的判据是 `cost >= 253`，把
+  // 2026-10-24（ADR-0013，P2 重规划审计）：此前的判据是 `cost >= 253`，把
   //   `NO_INFORMATION=255`（未知 / `track_unknown_space` 下的 -1）与
   //   `INSCRIBED_INFLATED_OBSTACLE=253`（inflation 内切圆环）也计为「硬障碍」——
   //   未知格翻转与膨胀环变化都会造成**伪地图触发**。改为仅 `== 254` 后：
@@ -252,13 +252,13 @@ private:
     unsigned int sx{0}, sy{0};
     double ox{0.0}, oy{0.0};
     size_t hard_cells{0};          // master costmap 全部层的 254 格数（诊断）
-    size_t sig_hard_cells{0};      // 实际参与地图签名的 254 格数（ADR-0092：默认 static 层）
+    size_t sig_hard_cells{0};      // 实际参与地图签名的 254 格数（ADR-0013：默认 static 层）
     bool signature_from_static{false};
     std::vector<std::pair<std::string, size_t>> layers;  // 层名 -> 硬障碍格数
     std::vector<std::string> layer_unavailable;          // 无法拆分的层（inflation）
   };
 
-  // 地图签名（ADR-0089 / ADR-0092）：
+  // 地图签名（ADR-0013）：
   //   只取 **static_layer 自身栅格** 的尺寸 / 原点 / LETHAL_OBSTACLE=254 格索引做 FNV-1a；
   //   obstacle / voxel 层的动态 marking 不参与「地图变化」签名（由周期重规划消费完整 costmap）。
   //   static 层尚不可用时回退 master，并在日志标注 signature_from_static=false。
@@ -323,7 +323,7 @@ private:
     mix(oxb); mix(oyb);
     const unsigned int n = sig_sx * sig_sy;
     for (unsigned int i = 0; i < n; ++i) {
-      if (sig_data[i] == 254) {mix(i); ++info.sig_hard_cells;}   // 仅 LETHAL_OBSTACLE（ADR-0089）
+      if (sig_data[i] == 254) {mix(i); ++info.sig_hard_cells;}   // 仅 LETHAL_OBSTACLE（ADR-0013）
     }
     info.hash = h;
 
@@ -519,7 +519,7 @@ private:
     }
     if (needReplan(now().seconds())) {plan();}
     // 路径失效（规划失败 / 绑定破坏且重规划未成功）：默认 fail-stop，不沿失效旧路径继续 lookaheadRef。
-    // `stop_on_invalid` 为显式 opt-out（默认 True；置 False 才回落到旧路径，见 ADR-0027）。
+    // `stop_on_invalid` 为显式 opt-out（默认 True；置 False 才回落到旧路径，见 ADR-0013）。
     if (!path_valid_ && stop_on_invalid_) {
       publish(0.0, 0.0);
       return;
@@ -540,7 +540,7 @@ private:
     ref.acc = Eigen::Vector3d::Zero();
     const Eigen::Vector3d acc = controller_->computeAcceleration(st, ref);
 
-    // ⚠ R-038（见 ADR-0053）**适用性标注 —— 非完整差速动力学映射**（本批**不**重写控制律）：
+    // ⚠ R-038（见 ADR-0009）**适用性标注 —— 非完整差速动力学映射**（本批**不**重写控制律）：
     //   共享 LQR 输出为**世界系加速度**（3 自由度，holonomic；与 air 同一模型），此处把世界系
     //   期望速度积分后**仅**取车体系前进分量 `bx`（`lin=clamp(bx,0,v_max)`）与航向 `atan2(by,bx)`。
     //   由此**丢弃 / 截断**以下自由度（**不**代表 air 与 ground 同等闭环）：

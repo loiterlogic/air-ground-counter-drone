@@ -7,7 +7,7 @@
           `/agc/ground/cmd_vel` 20、`/agc/ground/cmd_vel_raw` 20（±容差）；
   * 帧名：含 Header 的协同话题 `frame_id=world`（`cmd_vel`/`cmd_vel_raw` 为车体系）；
   * 终态：**不得**为 `TRACKING_SUCCESS`（契约 #terminal-semantics；W5 不裁定成功）。
-结果落 `experiments/w5-ground-nav-safety/<run_id>/metrics/fullchain.json`（ADR-0007）。
+结果落 `experiments/w5-ground-nav-safety/<run_id>/metrics/fullchain.json`（ADR-0006）。
 
 用法：
   python3 tests/w5_fullchain_check.py --duration 8 --run-id <YYYYMMDD>-fullchain-0

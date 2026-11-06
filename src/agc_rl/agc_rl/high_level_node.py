@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""high_level_node —— W7-b P2 臂 B：**高层（拦截点）+ 成熟低层**（[ADR-0070](b)(f)）。
+"""high_level_node —— W7-b P2 臂 B：**高层（拦截点）+ 成熟低层**（[ADR-0022](b)(f)）。
 
 角色（P2「RL 职责分层」的**臂 B**）：本节点只出**高层决策**——把目标预测拦截点作为**目标点**
 发布到低层（`ground_baseline` = Navfn 规划 + 自研 LQR，见 [R-012](docs/reviews/.../10-风险.md#r-012)，
@@ -7,7 +7,7 @@
 
 **诚实标注**：本段的高层策略为**规则实现**（目标线性外推 + 提前量），**非**已训练 RL；
 「臂 B」考察的是**职责分层**（高层决策 + 成熟低层），RL 训练属后续（[F-02]）。
-P2 v1 以规则高层承载的裁定见 [ADR-0082](docs/adr/0082-w7b-p2-arm-b-rule-high-level-first.md)。
+P2 v1 以规则高层承载的裁定见 [ADR-0023](docs/adr/0023-w7b-adjudication-record-and-exit.md#top)。
 
 I/O：订 `/agc/ground/odom`、`/agc/targets`、`/agc/task/state`；发 `PoseStamped`（world）至
 `/agc/ground/goal_hl`（由 `ground_baseline` 的 `goal_topic` 消费；**非**命令者）。
@@ -35,7 +35,7 @@ class HighLevelNode(Node):
         self.lead_s = float(self.declare_parameter('lead_s', 1.0).value)
         self.target_max_age_s = float(self.declare_parameter('target_max_age_s', 0.5).value)
         self.confidence_min = float(self.declare_parameter('confidence_min', 0.5).value)
-        # ADR-0083(g)：感知跳变抑制——目标位置/速度一阶低通 + 前向位移限幅。
+        # ADR-0023：感知跳变抑制——目标位置/速度一阶低通 + 前向位移限幅。
         #   不滤波时 twist 的单帧差分尖峰 × lead_s 会把目标点甩出数米，令低层每 0.25 s 重规划。
         self.target_tau_s = float(self.declare_parameter('target_tau_s', 0.5).value)
         self.target_gap_reset_s = float(self.declare_parameter('target_gap_reset_s', 1.0).value)

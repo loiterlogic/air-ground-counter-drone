@@ -13,7 +13,7 @@ jammer}` + 临时参数文件（`use_sim_time: False`，墙钟，规避无 `/clo
     `/agc/task/envelope_jam`；case c 另订 jammer 的 `/agc/task/jam_state` /
     `/agc/task/jam_confirm` / `/agc/task/jam_evidence`，并发布 `/agc/task/jam_cmd`。
 
-用例（结果落 `experiments/w6-task-eval/<run_id>/metrics/r020.json`，ADR-0007）：
+用例（结果落 `experiments/w6-task-eval/<run_id>/metrics/r020.json`，ADR-0006）：
   a 车体高度计入：`car.z=1.0`、`launcher_height_m=0.0`、目标 `z=1.0` 近距 → 断言 `capture_hit` 命中
     且 `capture_evidence` 里 `h≈0.0`（旧式会得 `1.0`，故可证新式）。
   b 超适用范围 → 不命中并标注：目标 `z=3.0`（>`applicable_max_alt_m`，`car.z=0`）→ 断言**无**
@@ -23,7 +23,7 @@ jammer}` + 临时参数文件（`use_sim_time: False`，墙钟，规避无 `/clo
     起 jammer 发 `RTL`，断言 jammer **未**产出任何 `JAM_*` 授权，且其日志表明因包络不生效被忽略。
   d 可达性核验（**不**倒调参数）：由 `v0·θ` 解析顶点推可达高度，与真实目标高度（场景默认
     `scenario_reset.target_z`）比对，`r020.json` 含 `reachability_check` 块；并断言
-    `docs/adr/0035-*.md` 存在且含占位 / 限制表述。
+    `docs/adr/0011-interception-and-fire-control.md` 存在且含占位 / 限制表述。
 
 注：清理**禁止** pkill -f "<名字>"（会匹配 shell 自身 → 自杀）；用 "[x]xx" 写法规避或 Popen 句柄 kill。
 """
@@ -367,7 +367,7 @@ def case_c(node, share, out_dir):
 
 
 def case_d(node, share, out_dir):
-    """可达性核验（不倒调参数）+ ADR-0035 存在。"""
+    """可达性核验（不倒调参数）+ ADR-0011 存在。"""
     res = {}
     cap = _base_params(share, 'capture_adjudicator')
     v0 = float(cap.get('net_v0_mps'))
@@ -378,7 +378,8 @@ def case_d(node, share, out_dir):
     launcher_h = float(cap.get('launcher_height_m', 0.0))
     vy = v0 * math.sin(theta)
     apex = (vy * vy) / (2.0 * g)                       # 解析顶点高度
-    applicable_max = float(cap.get('applicable_max_alt_m'))
+    # ADR-0011：上限不再是独立参数，由节点按同一式派生（此处复算即为真源）。
+    applicable_max = apex
     # 真实目标高度：场景默认 target_z（w6_base scenario_reset），车体默认 z（car_z）
     scn = _base_params(share, 'scenario_reset')
     real_target_alt = float(scn.get('target_z'))
@@ -407,9 +408,9 @@ def case_d(node, share, out_dir):
         '此结论为**占位**模型结论，未计 t_exp / 网几何 / 瞄准提前量，**不**得据此声称「移动式主动拦截」。'
         % (v0, math.degrees(theta), g, apex, real_target_alt))
     res['reachability_consistent'] = bool(reachable == (real_h <= apex))
-    # ADR-0035
+    # ADR-0011
     root = Path(share).parents[3]
-    adrs = sorted(glob.glob(str(root / 'docs' / 'adr' / '0035-*.md')))
+    adrs = sorted(glob.glob(str(root / 'docs' / 'adr' / '0011-interception-and-fire-control.md')))
     text = open(adrs[0], encoding='utf-8').read() if adrs else ''
     res['adr_paths'] = adrs
     res['adr_exists'] = bool(adrs)

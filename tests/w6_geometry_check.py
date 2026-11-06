@@ -18,7 +18,7 @@ yard / open_field）；**(i)-(m)** 是跨图 / 一次性断言。
       `safety_radius`）== 真源；
   (g) C7 出生净空：车/目标/己方机 ↔ 每个障碍**足迹**净空 ≥ 物体外伸之和（与
       `scenario_reset.validateCandidate` 同一判据），且作业区边界内缩成立；
-  (h) 障碍族可见性：每个实体在 z=0.48（地面激光扫描面）处有水平截面（ADR-0052 口径）；
+  (h) 障碍族可见性：每个实体在 z=0.48（地面激光扫描面）处有水平截面（ADR-0009 口径）；
   (i) 空中安全层**存在可行解**：目标周围 [8,15] m 待机环带上的可行率 / 最大连续阻塞弧，
       且新地图**不新增**阻塞单元（相对 minimal 逐单元比对）；
   (j) 回退副本边界：`perception_bringup` 的 `map_file` / `obstacles_file` 缺省仍指向包内副本，
@@ -51,7 +51,7 @@ import yaml
 # 原来写死 `/home/chen/AGC`，使冒烟 `geometry` 组在别处 clone 时检的是**原仓库**。
 ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
-# ADR-0052：地面激光扫描面高度（`car/lidar_link` z=0.48）。障碍在 z=0.48 处须有水平截面，
+# ADR-0009：地面激光扫描面高度（`car/lidar_link` z=0.48）。障碍在 z=0.48 处须有水平截面，
 # 否则「世界里看得见、安全层和 costmap 看不见」——必须在文档里标注，不得假装能避。
 LASER_PLANE_Z_M = 0.48
 
@@ -543,6 +543,9 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
         'no_obstacle_y': 'obstacle_y' not in safety,
         # P1-1：**定长半径列表已消除**（旧 `obstacle_safety_radius: [2.0, 2.0]`）
         'no_obstacle_safety_radius': 'obstacle_safety_radius' not in safety,
+        # ADR-0010 (j)：顶高与净空同样**不得**在 air.yaml 硬编码（逐障碍 / 逐地图派生）。
+        'no_obstacle_z_top': 'obstacle_z_top' not in safety,
+        'no_vertical_clearance_m': 'vertical_clearance_m' not in safety,
     }
     d['pass'] = all(d.values())
     out['d_air_no_hardcoded_geometry'] = d
@@ -566,15 +569,29 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
             and [float(v) for v in sr['obstacle_y']] == src_ys),
         'compose_bounds_match': all(float(sr[k]) == v for k, v in bounds.items()),
     }
+    # ADR-0010 (j)：安全层几何注入必须含顶高 + 净空（且与真源逐值一致、与 ids 等长）
+    air_inj = {'trajectory_tracker': {}}
+    comp.apply_air_geometry(air_inj, geometry, sim_share=sim_share)
+    inj = air_inj['trajectory_tracker']['safety']
+    fa = geometry.get('flight_altitude') or {}
+    e['air_z_tops_match'] = (
+        [float(v) for v in inj.get('obstacle_z_top', [])]
+        == [world_map_mod.obstacle_z_top(o) for o in obstacles])
+    e['air_clearance_matches_map'] = (
+        abs(float(inj.get('vertical_clearance_m', -1e9))
+            - float(fa.get('own_clearance_min_m', float('nan')))) < 1e-9)
     e['pass'] = all(e.values())
     out['e_w6_base_derived'] = e
 
     # ---- (f) sha256 稳定 + manifest geometry 块 == 真源 ----
     info = comp.load_scene(task_share, perc_share, sim_share,
                            's04_static_static_obs_track', 0, world_map=map_name)
-    asserts = comp.assertions('s04_static_static_obs_track',
-                              comp.compose_params(base_cfg, info['sc'], 'lightweight', 0,
-                                                  geometry=info['geometry']),
+    # ADR-0007：高度随地图派生——核查脚本必须复现 launch 的同一条派生链，
+    # 否则 `flight_altitude_derived_matches_source` 会因"没注入"而失败（假阴性）。
+    _merged_for_assert = comp.compose_params(base_cfg, info['sc'], 'lightweight', 0,
+                                             geometry=info['geometry'])
+    comp.apply_flight_altitude_params(_merged_for_assert, info)
+    asserts = comp.assertions('s04_static_static_obs_track', _merged_for_assert,
                               info, sim_share=sim_share)
     man = comp.build_manifest('lightweight', info, merged, asserts, sim_share=sim_share)
     gb = man.get('geometry') or {}
@@ -588,6 +605,9 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
              else world_map_mod.obstacle_shape(o)) for o in obstacles],
         'manifest_radii_match': [o.get('safety_radius') for o in (gb.get('obstacles') or [])] == [
             world_map_mod.obstacle_safety_radius(o) for o in obstacles],
+        # ADR-0010 (j)：manifest 的 z_top == 真源派生（垂直门控输入，登账可复核）
+        'manifest_z_tops_match': [o.get('z_top') for o in (gb.get('obstacles') or [])] == [
+            world_map_mod.obstacle_z_top(o) for o in obstacles],
         'assertions_all_pass': all(asserts.values()),
         # P1-1：感知先验尺寸 == 真源按**感知可表达**尺寸（cylinder 降级为外接矩形 2r×2r×h）
         'derived_obstacles_size_matches_perception_schema': all(
@@ -613,7 +633,7 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
         worst[name] = round(clear, 6)
     g['min_footprint_clearance_m'] = worst
     g['all_spawns_clear'] = all(v > 0.0 for v in worst.values())
-    # 车↔目标 C7 标定值 6.0 m（ADR-0023）
+    # 车↔目标 C7 标定值 6.0 m（ADR-0012）
     car_target = math.hypot(CAR_XY[0] - TARGET_X, CAR_XY[1] - TARGET_Y)
     own_target = math.hypot(OWN_XY[0] - TARGET_X, OWN_XY[1] - TARGET_Y)
     car_own = math.hypot(CAR_XY[0] - OWN_XY[0], CAR_XY[1] - OWN_XY[1])

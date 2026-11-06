@@ -3,20 +3,20 @@
 
 最小 gz 场景（由 run_w6_r037.sh 起）：
   * `agc_sim/world_bringup.launch.py`  —— 世界 + ros_gz 桥 + spawn **换装后** `agc_car`；
-  * `agc_ground/ground_drive_relay`    —— **唯一执行口** `/agc/ground/cmd_vel` → gz（DiffDrive，保留 ADR-0010）；
+  * `agc_ground/ground_drive_relay`    —— **唯一执行口** `/agc/ground/cmd_vel` → gz（DiffDrive，保留 ADR-0007）；
   * `agc_perception/gt_bypass`         —— gz 真值旁路 `/agc/gt/agc_car`。
 
 本台架**经唯一执行口**下发命令，用 **gz 真值 / 接触证据**标定（**不**仅看「发布零命令」）：
-  1. `brake`   满速（v_max=1.5）稳态 → 命令零 → 测 gz 真值**制动距离 / 制动耗时**（与 ADR-0021
+  1. `brake`   满速（v_max=1.5）稳态 → 命令零 → 测 gz 真值**制动距离 / 制动耗时**（与 ADR-0010
                `a≈0.9`、`s=v²/(2a)=1.25 m` 对拍）。
   2. `turn`    原地 `ω_max=2.0` 测实际偏航率；`(v,ω)` 弧线测**转向半径 / 扫掠净空 + 滑移（摩擦）敏感性**。
   3. `contact` 朝 `pole_1` 满速逼近 → 采 `/agc/ground/contact`（`ros_gz_interfaces/Contacts`）**接触证据**。
 
-**载荷外伸 / 碰撞口径（ADR-0052(b)）**：载荷无 collision → 网/干扰的**物理接触验证 unsupported**；
+**载荷外伸 / 碰撞口径（ADR-0009）**：载荷无 collision → 网/干扰的**物理接触验证 unsupported**；
 本台架**不**做载荷接触验证，仅登记。
 
 若 gz 链路无法就绪（DDS 发现 / 渲染库 / lifecycle 卡死）→ 写 `bench.json` 的 `unsupported` + 失败证据，
-**不**伪造数值。证据落 `experiments/w6-task-eval/<run_id>/r037/bench.json`（ADR-0007）。
+**不**伪造数值。证据落 `experiments/w6-task-eval/<run_id>/r037/bench.json`（ADR-0006）。
 
 ⚠ 范围标注：本台架为**最小 gz 能力台架**（世界 + 唯一执行口中继 + 真值），**非整链** / 非双 PX4 / 非 GUI。
 """
@@ -39,13 +39,13 @@ ROOT = '/home/chen/AGC'
 CMD_TOPIC = '/agc/ground/cmd_vel'          # 契约唯一执行口
 GT_TOPIC = '/agc/gt/agc_car'               # gz 真值旁路（world 系）
 ODOM_TOPIC = '/agc/sim/ground_odom_raw'    # DiffDrive odom（桥）
-CONTACT_TOPIC = '/agc/ground/contact'      # gz 接触真值（R-027/ADR-0042）
+CONTACT_TOPIC = '/agc/ground/contact'      # gz 接触真值（R-027/ADR-0010）
 
 # 换装后模型的事实（agc_car.sdf.xacro / car.yaml）
 FOOTPRINT_HALF_DIAG_M = 0.5789   # sqrt(a²+b²)，a=0.5037、b=0.28545
 V_MAX = 1.5
 W_MAX = 2.0
-A_BRAKE_PRED_MPS2 = 0.9          # ADR-0021(c) 实测锁轮制动
+A_BRAKE_PRED_MPS2 = 0.9          # ADR-0010 实测锁轮制动
 BRAKE_PRED_M = V_MAX ** 2 / (2 * A_BRAKE_PRED_MPS2)   # 1.25 m
 
 ZERO_THRESH = 0.05               # 归零判据（odom 速度 m/s）
@@ -345,7 +345,7 @@ def main():
         'unsupported': [],
         'unsupported_payload_contact': (
             '载荷（capture_net/jammer）无 collision、且不在 z=0.48 扫描面 → 网/干扰的物理接触验证 unsupported'
-            '（ADR-0052(b)）；本台架不做载荷接触验证。'),
+            '（ADR-0009）；本台架不做载荷接触验证。'),
         'scenarios': {},
     }
 

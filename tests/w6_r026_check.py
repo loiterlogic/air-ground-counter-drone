@@ -71,7 +71,7 @@ def case_b_obstacle_none_static(out_dir):
     res = {}
     canonical = _read(os.path.join(ROOT, 'src/agc_sim/worlds/agc_world.sdf'))
     geometry = _read(os.path.join(ROOT, 'src/agc_sim/config/world_geometry.yaml'))
-    # S-06 / ADR-0062：base world 不含 pole_*；几何真源（world_geometry.yaml）含 pole_*；
+    # S-06 / ADR-0007：base world 不含 pole_*；几何真源（world_geometry.yaml）含 pole_*；
     #   none 世界 = base world 副本（无 pole）；static 世界 = 真源注入生成（含 pole）。
     res['base_world_has_no_poles'] = ('<model name="pole_1">' not in canonical and
                                       '<model name="pole_2">' not in canonical)
@@ -221,7 +221,7 @@ def case_e_effective_equals_declared(out_dir):
 
 
 def case_f_adr():
-    p = os.path.join(ROOT, 'docs/adr/0041-scenario-axis-carriers-and-coverage.md')
+    p = os.path.join(ROOT, 'docs/adr/0018-acceptance-and-coverage-matrix.md')
     res = {'exists': os.path.exists(p)}
     if res['exists']:
         t = _read(p)

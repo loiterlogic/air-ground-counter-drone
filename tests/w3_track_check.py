@@ -4,7 +4,7 @@
 订阅归一化 `/agc/air/odom`，录制机体世界系（ENU）位置与速度到 CSV，并按
 契约 [硬约束] C1 判定：**全程恒速 `|v − 2.0| ≤ ε`、无加减速**。
 
-用法（落点须遵 ADR-0007：`experiments/<campaign>/<run_id>/{config,log,metrics,figures}/`）：
+用法（落点须遵 ADR-0006：`experiments/<campaign>/<run_id>/{config,log,metrics,figures}/`）：
   python3 tests/w3_track_check.py --duration 40 \\
       --out experiments/w3-air-link/<run_id>/metrics/c1_figure8.csv
 """
@@ -20,7 +20,7 @@ import rclpy
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
 
-TARGET_SPEED = 2.0   # C1：真八字恒速 v = 2.0 m/s（ADR-0019）
+TARGET_SPEED = 2.0   # C1：真八字恒速 v = 2.0 m/s（ADR-0008）
 
 
 class TrackChecker(Node):

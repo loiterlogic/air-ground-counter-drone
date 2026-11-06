@@ -28,13 +28,9 @@ __pycache__/
 .vscode/
 
 # ===== 本地 Agent 工作流产物（公开仓库不发布，ADR-0081）=====
-# Trae 已于 2026-10-29 退役（ADR-0105）：specs 迁至 docs/archive/specs/、skills 迁至 .agents/skills/。
+# Trae 已于 2026-10-29 退役（ADR-0025）：skills 迁至 .agents/skills/；规格已随迁移结束于 2026-11-03 删除。
 # 保留本行只为不让残留的本地 .trae/ 目录误入库；内容已不在此路径。
 /.trae/
-
-# ===== 历史 workstream 规格：仍不发布，仅本机保留（ADR-0081 / ADR-0105）=====
-# 精确到目录本身，不影响 docs/archive/ 下的其他归档（runbook / ros1 基线）。
-/docs/archive/specs/
 
 # ===== 历史交接叫醒的运行产物：回执与日志（机制已于 2026-10-28 退役，见 ADR-0102）=====
 /.coordination/wake/

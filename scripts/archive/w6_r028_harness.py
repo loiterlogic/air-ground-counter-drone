@@ -14,7 +14,7 @@
 
 时钟：harness 自身 `use_sim_time=false`；20ms wall timer 为拍；每拍发布 `/clock`
 （sec 从 1.0 起，每拍 +0.02），并发布 odom（`twist.twist.linear.x=0.3`）与 cm；按 case 计划发布
-scan 与 state。roscale 与墙钟差异见 ADR-0043。
+scan 与 state。roscale 与墙钟差异见 ADR-0016。
 """
 
 import argparse

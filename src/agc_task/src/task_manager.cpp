@@ -25,7 +25,7 @@
 // R-023：连续跟踪 dwell 逐拍判据——任何不满足「目标新鲜 + 同 target_id + 车地面 odom 有效未超龄 + 包络内」
 //       的拍（含目标数组为空）一律中断清零，成功仍为「连续 t_dwell 有效」（C8 不降级）；新增
 //       car_odom_max_age_s 寿命门与 /agc/task/dwell_event（std_msgs，非命令者）记录分段有效时长。
-// R-041：目标失效策略 =「保留有期限的最后有效目标」(bounded hold-last-valid，ADR-0056)。goal_follow_target 下
+// R-041：目标失效策略 =「保留有期限的最后有效目标」(bounded hold-last-valid，ADR-0013)。goal_follow_target 下
 //       目标失效时**不**反射固定点、**不**刷新时间戳；窗口内（goal_hold_valid_s）保持最后有效目标的**原位置 +
 //       原源时刻**（age 自然增长）；超窗显式失效（valid=false）不发布带新时间戳的 goal 位姿。有效性/身份/时刻
 //       经伴随诊断 /agc/ground/goal_info（std_msgs/String，transient_local，非命令者）传递；新 episode 清缓存。
@@ -77,11 +77,11 @@ public:
     // R-013：复位后门禁数据新鲜度上限（odom_valid / 地面 odom 同族共用；cmd 沿用 0.5）
     odom_valid_max_age_s_ = declare_parameter<double>("odom_valid_max_age_s", 1.0);
     fsm_hz_ = declare_parameter<double>("fsm_hz", 10.0);
-    // W7-b（ADR-0076）：tracking_milestone 是否等价为终态——缺省 true（既有行为不变）；
+    // W7-b（ADR-0014）：tracking_milestone 是否等价为终态——缺省 true（既有行为不变）；
     //   capture 场景置 false 时，里程碑只记指标（tracking_milestone_met_ = true）并发布事件，
     //   **不**进入终态，让 `capture_adjudicator` 仍有机会判定 `INTERCEPT_CONFIRMED`。
     tracking_milestone_is_terminal_ = declare_parameter<bool>("tracking_milestone_is_terminal", true);
-    // 目标发布口径：false=固定 goal（M0/W5 兼容）；true=跟随目标当前 XY（移动式拦截，ADR-0014）
+    // 目标发布口径：false=固定 goal（M0/W5 兼容）；true=跟随目标当前 XY（移动式拦截，ADR-0001）
     goal_follow_target_ = declare_parameter<bool>("goal_follow_target", false);
     // R-041：目标失效策略 =「保留有期限的最后有效目标」(bounded hold-last-valid)。
     //   目标不再新鲜时，在 goal_hold_valid_s_ 窗口内保持**最后一次有效目标的原位置与源时刻**
@@ -154,7 +154,16 @@ public:
     target_sub_ = create_subscription<agc_msgs::msg::TargetTrackArray>(
       target_topic, 10,
       [this](agc_msgs::msg::TargetTrackArray::SharedPtr m) {
-        if (m->tracks.empty()) {have_target_ = false; target_id_.clear(); return;}
+        // 空数组 = **本拍无新观测**（感知侧门控 / 丢包），**不是**目标消失（ADR-0009）。
+        //   2026-11-03（N4）修正，与 `standoff_follower` / `trajectory_tracker` 同款：
+        //   旧实现清 `have_target_` 会让 `targetFresh()` 立刻返回 false，
+        //   于是 `AIR_SEARCH` 永远等不到 fresh → 状态机**卡在 AIR_SEARCH 直到 TIMEOUT**。
+        //   实测（stress 档 drop=0.3）：全程只有 `start OK -> AIR_SEARCH`，再无任何状态迁移。
+        //   正确语义：保持上一有效航迹，由**年龄**（`target_max_age_s`）判定失效。
+        if (m->tracks.empty()) {
+          ++diag_empty_;
+          return;
+        }
         const auto & t = m->tracks.front();
         have_target_ = true;
         target_id_ = t.target_id;
@@ -175,7 +184,7 @@ public:
       air_active_topic, rclcpp::QoS(1).transient_local(),
       [this](std_msgs::msg::String::SharedPtr m) {air_controller_ = m->data;});
     // R-035：**只读**订阅空中控制冲突（transient_local + reliable）——仅记录当前值 + 变化时日志。
-    //   **严禁**改状态机 / 终态 / 语义（冲突非任务终态判据，仅为可观测性，见 ADR-0050）。
+    //   **严禁**改状态机 / 终态 / 语义（冲突非任务终态判据，仅为可观测性，见 ADR-0010）。
     const auto air_conflict_topic =
       declare_parameter<std::string>("air_control_conflict_topic", "/agc/air/control_conflict");
     air_conflict_sub_ = create_subscription<std_msgs::msg::Bool>(
@@ -217,7 +226,7 @@ public:
         const std::string d = m->data;
         const int ep = parseEp(d);
         if (ep < 0 || episode_epoch_ < 0 || ep != episode_epoch_) {
-          // ADR-0078：不再静默——episode 身份错位曾使已发生的 CAPTURE_NET 被整批丢弃（表现为 TIMEOUT）。
+          // ADR-0016：不再静默——episode 身份错位曾使已发生的 CAPTURE_NET 被整批丢弃（表现为 TIMEOUT）。
           RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000,
             "capture_event 拒收：ep=%d episode_epoch=%d（事件与当前 episode 身份不一致）",
             ep, episode_epoch_);
@@ -386,7 +395,7 @@ private:
       return;
     }
     // 1) 先 reset（契约 #lessons 竞态修复：reset 在前，不得先校验 odom，否则自伤 ODOM_INVALID）
-    //    复位失败最多重试 3 次（C7 口径，ADR-0023）；重试不占 episode 预算（episode 计时自 start 成功起）
+    //    复位失败最多重试 3 次（C7 口径，ADR-0012）；重试不占 episode 预算（episode 计时自 start 成功起）
     //    R-022：reset 前记录 epoch（避免 reset 后 epoch 投递竞态）。
     const int ep_before_reset = current_epoch_;
     CallOutcome reset_outcome = CallOutcome::Failed;
@@ -638,6 +647,23 @@ private:
   {
     publishState();
     prev_clock_ = now();
+    // 诊断（N4 出口判据 4「失败模式可解释」）：每秒打印目标门的**各分项**，使
+    //   "卡在 AIR_SEARCH 却不知道是哪一项不过"不再靠猜。
+    //   分项：have_target / age / age<=max / conf / conf>=min / 空数组拍数。
+    if (isActive(state_)) {
+      double age = NAN;
+      const bool fresh = targetFresh(age);
+      const bool age_ok = have_target_ && std::isfinite(age) && age >= 0.0 &&
+        age <= target_max_age_s_;
+      const bool conf_ok = target_conf_ >= confidence_min_;
+      RCLCPP_INFO(get_logger(),
+        "目标门诊断：state=%s have=%d age=%.3f/%.3f age_ok=%d conf=%.3f/%.3f conf_ok=%d "
+        "fresh=%d 空数组=%llu",
+        nameOf(state_), static_cast<int>(have_target_), age, target_max_age_s_,
+        static_cast<int>(age_ok), static_cast<double>(target_conf_), confidence_min_,
+        static_cast<int>(conf_ok), static_cast<int>(fresh),
+        static_cast<unsigned long long>(diag_empty_));
+    }
   }
 
   void publishResetStats()
@@ -732,7 +758,7 @@ private:
         // 3) 连续达阈值才成功（保持 C8 不降级）
         if (dwell_start_.nanoseconds() != 0 && (t - dwell_start_).seconds() >= t_dwell_) {
           tracking_milestone_met_ = true;
-          // ADR-0076：capture 场景（tracking_milestone_is_terminal=false）下**不**锁存 TRACKING_SUCCESS——
+          // ADR-0014：capture 场景（tracking_milestone_is_terminal=false）下**不**锁存 TRACKING_SUCCESS——
           //   否则 `capture_adjudicator` 的 GROUND_APPROACH 交火窗口会被提前关闭，捕获永远不发生。
           //   里程碑仍如实记入 tracking_milestone_met_（随 /agc/task/state 发布），供指标使用；
           //   结局交由捕获裁决（CAPTURE_NET）或 t_max TIMEOUT 决定。
@@ -773,7 +799,7 @@ private:
     state_pub_->publish(msg);
   }
 
-  // R-041：目标失效策略 =「保留有期限的最后有效目标」（bounded hold-last-valid，见 ADR-0056）。
+  // R-041：目标失效策略 =「保留有期限的最后有效目标」（bounded hold-last-valid，见 ADR-0013）。
   //   目标失效时**不**反射固定点、**不**刷新时间戳（新 stamp 会掩盖失联）；在窗口内保持最后有效
   //   目标的**原位置与原源时刻**（age 自然增长，如实暴露陈旧）；超窗即显式失效（valid=false）。
   //   valid=false 时**不发布**带新时间戳的 goal 位姿——仅发伴随诊断，由地面安全停车（fail-safe stop）。
@@ -899,6 +925,8 @@ private:
   double car_odom_max_age_s_{1.0};                         // 车地面 odom 寿命门（s）
 
   bool have_target_{false};
+  // 诊断：空数组拍数（"本拍无新观测"，不是"目标丢失"）——不静默吞掉
+  unsigned long long diag_empty_{0};
   std::string target_id_{};
   double target_x_{0.0}, target_y_{0.0};
   float target_conf_{0.0f};
@@ -916,7 +944,7 @@ private:
   rclcpp::Time capture_rx_{0, 0, RCL_ROS_TIME};
   rclcpp::Time jam_rx_{0, 0, RCL_ROS_TIME};
   bool tracking_milestone_met_{false};
-  // ADR-0076：tracking_milestone 是否等价终态（capture 场景 false → 只记指标、不改终态）
+  // ADR-0014：tracking_milestone 是否等价终态（capture 场景 false → 只记指标、不改终态）
   bool tracking_milestone_is_terminal_{true};
   int reset_retries_{0};
   bool reset_failed_{false};

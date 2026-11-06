@@ -7,7 +7,7 @@
   * 走到终态：`TRACKING_SUCCESS`（抵近并持续跟踪）或 `MISSION_FAILED`(C4 超时)；
   * 全字段如实填（`state_name / reason_code / air_controller / ground_controller /
     target_id / target_xy_distance_m / target_obs_age_s / tracking_milestone_met`）。
-结果落 `experiments/w6-task-eval/<run_id>/metrics/fsm.json`（ADR-0007）。
+结果落 `experiments/w6-task-eval/<run_id>/metrics/fsm.json`（ADR-0006）。
 
 用法（launch 已在运行）：
   python3 tests/w6_fsm_check.py --run-id 20261014-w6-fsm-0

@@ -3,7 +3,7 @@
 
 订阅归一化 `/agc/air/odom`、`/agc/targets`、`/agc/air/tracking_ref`、`/agc/air/control_conflict`，
 按**相位**录制并联立判据（阈值一律从 `--params`（`config/air.yaml`）读取，不复制参数；
-静态障碍**几何**从单一真源 `agc_sim/config/world_geometry.yaml` 读取，见 S-06 / ADR-0062）：
+静态障碍**几何**从单一真源 `agc_sim/config/world_geometry.yaml` 读取，见 S-06 / ADR-0007）：
 
   | 相位     | 判据                                                              |
   |----------|-------------------------------------------------------------------|
@@ -11,7 +11,7 @@
   | `pole`   | 全程不侵入 `pole_1`/`pole_2` 安全半径（`obstacle_safety_radius`）  |
   | `freeze` | 目标过期（`ref_max_age_s`）后**冻结不追**：末端位移 ≤ 阈值，且 `tracking_ref` 仍在发布 |
 
-用法（落点须遵 ADR-0007）：
+用法（落点须遵 ADR-0006）：
   python3 tests/w3_c10_check.py --phase circle --duration 60 \\
       --out experiments/w3-air-link/<run_id>/metrics/c10_p1_circle.csv
 """
@@ -41,7 +41,7 @@ LATCHED = QoSProfile(depth=1, history=HistoryPolicy.KEEP_LAST,
 
 def load_air_params(path: str, geometry_path: str) -> dict:
     """阈值从 air.yaml 读（不复制）；静态障碍**几何**从单一真源 world_geometry.yaml 读
-    （S-06 / ADR-0062：几何已上移，air.yaml 不再硬编码障碍坐标）。"""
+    （S-06 / ADR-0007：几何已上移，air.yaml 不再硬编码障碍坐标）。"""
     with open(path) as f:
         doc = yaml.safe_load(f)
     follower = doc['standoff_follower']['ros__parameters']
@@ -204,7 +204,7 @@ def main() -> None:
     ap.add_argument('--params', default='src/agc_air/config/air.yaml',
                     help='参数唯一来源（阈值从此读，不复制）')
     ap.add_argument('--geometry', default='src/agc_sim/config/world_geometry.yaml',
-                    help='静态障碍几何单一真源（S-06 / ADR-0062；障碍坐标从此读，不复制）')
+                    help='静态障碍几何单一真源（S-06 / ADR-0007；障碍坐标从此读，不复制）')
     ap.add_argument('--prefix', default='/agc/air')
     ap.add_argument('--duration', type=float, default=60.0)
     ap.add_argument('--warmup', type=float, default=3.0)

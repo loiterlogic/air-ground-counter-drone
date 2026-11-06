@@ -8,7 +8,7 @@
   (d) 正例：Phase B `collision_count>=1` 且 `collision_events` 有 `pole` 证据（真实接触计事件）；
   (e) 缺失掩码：Phase B `not_applicable.trigger_derived==true` 且 `true_shield_infeasible_rate is None`；
       Phase A `not_applicable` 键存在；
-  (f) 口径记录于 `docs/adr/0042-*.md`（`Status: accepted`、无 `§` 章节号引用）。
+  (f) 口径记录于 `docs/adr/0010-safety-thresholds-and-failsafe.md`（`Status: accepted`、无 `§` 章节号引用）。
 
 输出 `experiments/w6-task-eval/<run_id>/metrics/r027.json`；`overall_pass` = (a)∧(b)∧(c)∧(d)∧(e)∧(f)。
 """
@@ -113,7 +113,7 @@ def case_e_not_applicable(a_sum, b_sum):
 
 
 def case_f_adr():
-    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0042-*.md')))
+    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0010-safety-thresholds-and-failsafe.md')))
     res = {'path': matches[0] if matches else None, 'exists': bool(matches)}
     if matches:
         t = _read(matches[0])

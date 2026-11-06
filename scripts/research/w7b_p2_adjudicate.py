@@ -6,17 +6,17 @@
 （**单一来源**——阈值 / 样本量 / 显著性**不**在本脚本硬编码；本脚本只读取并执行，
 [F-13](../../docs/reviews/agc-review-2026-10-14/30-未来.md#f-13)）。
 
-判定（预注册 **v3** 口径，[ADR-0082](../docs/adr/0082-w7b-p2-arm-b-rule-high-level-first.md) /[ADR-0083](../docs/adr/0083-w7b-p2-arm-information-equivalence-and-active-window-fco.md)）：
+判定（预注册 **v3** 口径，[ADR-0023](../docs/adr/0023-w7b-adjudication-record-and-exit.md#top)）：
   * 自变量 β = 命令源：臂 A `p2_c2_low_level`（直接出 `cmd_vel`） vs
     臂 B `p2_rl_high`（规则高层拦截点 + 成熟低层 Navfn+LQR）；固定协同（full 链）。
-  * DV primary（v3，ADR-0083）= `fire_control_opportunity_rate_active`（**active 窗口**：
+  * DV primary（v3，ADR-0023）= `fire_control_opportunity_rate_active`（**active 窗口**：
     GROUND_APPROACH→终态；不含终态后停泊）；v2 的 `fire_control_opportunity_rate`
     （`window_fixed_v1`，60 s 固定窗）仅保留为历史/描述量。DV secondary = `min_clearance_m`（只报告）。
   * **同 seed 配对（CRN）**；每臂 `statistics.p2.n_paired_episodes_per_arm` 个 seed。
   * **超时一律失败**（契约 C4）→ 失败 / infra / 未达终态 的回合，其 **primary DV 按 0**
     计入分母（`keep_all_failures_and_infra`）；成功回合缺值 → 剔除该配对并计数。
   * **secondary**（最小净空）失败回合仍有真实净空，记 0 会误表「碰撞」→ 缺值配对剔除并计数。
-  * 判定（**v6 三态**，ADR-0086）= 按 95% CI 与 **MME**（`decision.p2.minimum_meaningful_effect`）的关系：
+  * 判定（**v6 三态**，ADR-0022）= 按 95% CI 与 **MME**（`decision.p2.minimum_meaningful_effect`）的关系：
     CI 下限 > MME → `supported`；CI 上限 < MME → `falsified`；**CI 覆盖 MME → `inconclusive`**。
     `mean(Δ) ≥ MDE` 属 v3 legacy 口径（输出 `holds_legacy_criterion` 仅供历史对照）；
     「样本量可检测效应」属**规划量**（`statistics.p2.planning`），与门槛分列。
@@ -42,7 +42,7 @@ from w7b_p1_adjudicate import dv_value, is_infra  # noqa: E402
 
 # 与 P1 一致的标签 / 失败规约映射；字段名来自预注册 decision.p2。
 DV_META = {
-    # v3 primary（ADR-0083）：active 窗口 FCO（episode_window_metrics 派生，不含终态后停泊）。
+    # v3 primary（ADR-0023）：active 窗口 FCO（episode_window_metrics 派生，不含终态后停泊）。
     'fire_control_opportunity_rate_active': ('fco_rate_active', 'primary', True),
     # v2 历史口径（window_fixed_v1）：保留可复算，不再作为 v3 primary。
     'fire_control_opportunity_rate': ('fco_rate', 'legacy', True),
@@ -75,7 +75,7 @@ def main():
     mde = float(stat.get('min_detectable_effect',
                          pre['statistics'].get('min_detectable_effect', 0.10)))
     n_req = int(stat['n_paired_episodes_per_arm'])
-    # ADR-0086：v6 三态判据（CI vs MME）与 v3 legacy 口径（版本守卫，互不冒充）。
+    # ADR-0022：v6 三态判据（CI vs MME）与 v3 legacy 口径（版本守卫，互不冒充）。
     criterion = p2d.get('criterion', 'p < alpha AND mean(delta) >= MDE')
     mme = p2d.get('minimum_meaningful_effect')
     mme = float(mme) if (criterion == 'three_state_ci_vs_mme' and mme is not None) else None
@@ -164,7 +164,7 @@ def main():
             'threshold_legacy_mde': mde,
             'holds_legacy_criterion': holds, 'rows': rows,
         }
-        # v6（ADR-0086）：三态（CI vs MME）——只对参与判定的 DV（primary）计算。
+        # v6（ADR-0022）：三态（CI vs MME）——只对参与判定的 DV（primary）计算。
         if role == 'primary' and mme is not None:
             t_vs_mme = (mean_d - mme) / sem
             p_one = float(stats.t.sf(t_vs_mme, n - 1))     # H0: Δ <= MME vs H1: Δ > MME
@@ -210,14 +210,14 @@ def main():
     out['decision_rule'] = p2d.get('rule', '')
     out['falsification_rule'] = p2d.get('falsification', '')
 
-    # ADR-0075：infra 率与重试分布须随报告一并报出（机器特性，不得读作臂效应）。
+    # ADR-0027：infra 率与重试分布须随报告一并报出（机器特性，不得读作臂效应）。
     p2_rows = [r for r in arms['arms'] if r['arm'] in (arm_a, arm_b)]
     out['infra_report'] = {
         'n_runs_infra_terminal': sum(1 for r in p2_rows if r['terminal_state'] == 'INFRA_FAILURE'),
         'n_runs_final_infra': sum(1 for r in p2_rows if is_infra(r)),
         'n_runs_used_infra_retry': sum(1 for r in p2_rows if (r.get('infra_retries_used') or 0) > 0),
         'max_infra_retries_used': max([(r.get('infra_retries_used') or 0) for r in p2_rows] or [0]),
-        'policy': 'ADR-0075（分类判据=agc_rl.termination；infra 重试上限见 arms.json 的 infra_retry_protocol）',
+        'policy': 'ADR-0027（分类判据=agc_rl.termination；infra 重试上限见 arms.json 的 infra_retry_protocol）',
     }
     out['integrity'] = {
         'n_paired_matches_prereg': prim.get('n_paired') == n_req,

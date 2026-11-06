@@ -7,9 +7,9 @@
 映射（对齐 Gymnasium v0.26+ 语义，见 spec R1）：
   * **任务终态**（任意 `TERMINALS`）→ MDP **terminated**（含超时失败，契约 C4 超时一律失败）；
   * **外部截断**（墙钟看门狗耗尽 / 训练 horizon / 无终态）→ **truncated**（非任务终态，须 bootstrap）；
-  * `INFRA_FAILURE` → 单列 `infra`，**不**吞入成功率（[ADR-0046](../../docs/adr/0046-runner-three-layer-acceptance-and-integrity-gate.md)）。
+  * `INFRA_FAILURE` → 单列 `infra`，**不**吞入成功率（[ADR-0018](../../docs/adr/0018-acceptance-and-coverage-matrix.md#top)）。
 
-预算口径**复用** [ADR-0039](../../docs/adr/0039-time-budget-kinds-and-rtf-record.md) 三类
+预算口径**复用** [ADR-0017](../../docs/adr/0017-time-budget-and-clock-sources.md#top) 三类
 （`mission_sim_budget` / `episode_wall_watchdog` / `process_wall_duration`），**不产生第三套**。
 
 约束类信息（超时失败 / infra 单列 / 缺失掩码）真源为契约
@@ -19,7 +19,7 @@
 
 from agc_msgs.msg import AgcTaskState
 
-# 任务终态集合（`/agc/task/state` 观测；task_manager 锁存，ADR-0037）。
+# 任务终态集合（`/agc/task/state` 观测；task_manager 锁存，ADR-0014）。
 TERMINALS = {
     AgcTaskState.TRACKING_SUCCESS, AgcTaskState.INTERCEPT_CONFIRMED,
     AgcTaskState.MISSION_FAILED, AgcTaskState.ABORTED, AgcTaskState.INFRA_FAILURE,
@@ -36,7 +36,7 @@ SUCCESS_TERMINALS = {'TRACKING_SUCCESS', 'INTERCEPT_CONFIRMED'}
 
 
 # 三类时间预算口径标签（互不冒充）。clock 标注时钟来源；owner 标注归属节点 / 进程。
-# 复用 ADR-0039，不新增第三套口径。
+# 复用 ADR-0017，不新增第三套口径。
 TIME_BUDGETS = {
     'mission_sim_budget': {
         'clock': 'ros_sim', 'owner': 'task_manager', 'param': 't_max_s',

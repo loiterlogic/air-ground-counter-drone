@@ -43,9 +43,9 @@ Visualization Manager:
     - Class: rviz_default_plugins/Odometry
       Name: 车里程 /agc/ground/odom
       Topic: {Value: /agc/ground/odom}
-      Keep: 1
+      Keep: 200
       Position Tolerance: 0.05
-      Color: {255, 255, 255}
+      Color: {0, 255, 0}
       Enabled: true
   Enabled: true
   Global Options:

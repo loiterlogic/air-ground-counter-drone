@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""w7b_p2_prediction_chain —— P2 射击 `pred` 误差的预测链分解（W7-b T3 / ADR-0087(d)）。
+"""w7b_p2_prediction_chain —— P2 射击 `pred` 误差的预测链分解（W7-b T3 / ADR-0023）。
 
 **定位**：**诊断 / 描述性**，不改 P2 verdict；真值只用于**离线评估**，不进入运行时门。
 
 分解（逐 shot，逐段核对）：
   1. **目标估计**：`est`（TargetMotionFilter 滤波后位置）− 真值；
-  2. **火控提前量**：`pred` − `est`（ADR-0079 的 `p + clamp(v·t_est, max_lead_m)`）；
+  2. **火控提前量**：`pred` − `est`（ADR-0011 的 `p + clamp(v·t_est, max_lead_m)`）；
   3. **高层 lead**：`goal`（`/agc/ground/goal_hl`）− 高层滤波目标（`HL_DIAG est`）；
   4. **飞行 / 命中时序**：`t_est`（predictTarget 迭代后的到达时间）、实际 `flight`、`miss_dist`、
      `SHOT_MISS` / `CAPTURE` 结局。
@@ -483,7 +483,7 @@ def main():
         }
 
     out = {
-        'kind': 'prediction_chain_diagnosis（W7-b T3 / ADR-0087(d)；不改 verdict）',
+        'kind': 'prediction_chain_diagnosis（W7-b T3 / ADR-0023；不改 verdict）',
         'run_id': args.run_id, 'campaign': args.campaign, 'scene': SCENE,
         'target_truth_xy': list(TARGET_XY),
         'net_radius_m': NET_RADIUS_M, 'max_lead_m': MAX_LEAD_M,
@@ -500,7 +500,7 @@ def main():
         json.dump(out, f, ensure_ascii=False, indent=2)
 
     md = ['# P2 预测链分解 · %s' % args.run_id, '',
-          '> 诊断（W7-b T3 / ADR-0087(d)）：**不改** P2 verdict；真值只用于离线评估。',
+          '> 诊断（W7-b T3 / ADR-0023）：**不改** P2 verdict；真值只用于离线评估。',
           '> `pred` = `capture_adjudicator` 的**射击预测**，不直接归因于高层 lead。', '',
           '## 口径', '',
           '- 目标真值（s08 静止）：`(4.5, 3.0)`（水平；只评估）。网有效半径 %.2f m。' % NET_RADIUS_M,

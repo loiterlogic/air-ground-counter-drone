@@ -1,7 +1,7 @@
 # agc_ground 离线对照基线参数（W5-c · R8）—— 由 ground_bringup.launch.py 单一注入
 #
 # 基线 = Nav2 planner 插件（pluginlib 复用 Nav2 `navfn_planner`）+ `agc_control` 的 LQR 控制器插件
-# （共用实现，未复制，ADR-0018 / ADR-0008 吸收点：planner/controller 的 plugin 抽象）。
+# （共用实现，未复制，ADR-0004 / ADR-0003 吸收点：planner/controller 的 plugin 抽象）。
 # 与 RL 主控（agc_rl）**互斥**：由 ground_bringup 的 `command_source` 单一选择，同一时刻仅一路下发。
 #
 # 内建 costmap：ground_baseline 自持 `nav2_costmap_2d::Costmap2DROS`（节点名 `costmap`），

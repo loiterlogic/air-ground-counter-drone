@@ -15,7 +15,7 @@
                           状态回 UNCONFIGURED，setpoint 停发）
 
 只回收**本进程组**的子进程（`start_new_session` + `killpg`）；**不**用裸名 `pkill -f`、**不**做递归删除。
-证据落 `experiments/w6-task-eval/<run_id>/r034/bench.json`（ADR-0007）。
+证据落 `experiments/w6-task-eval/<run_id>/r034/bench.json`（ADR-0006）。
 
 ⚠ 范围标注：本台架为**生命周期逻辑台架**（真实节点 + 真实 manager，**非**整链 / **非**双 PX4 / **非** GUI）。
 """

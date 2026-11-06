@@ -1,0 +1,1150 @@
+[INFO] [launch]: All log files can be found below /home/chen/.ros/log/2026-11-02-15-55-47-843992-chen-13407
+[INFO] [launch]: Default logging verbosity is set to INFO
+[w6] spawn_layout=/home/chen/AGC/install/agc_task/share/agc_task/config/spawn_layout.yaml sha256=27e155fcf91386a8 car=(-15,1) target=(15,-2) own=(-11,1,0.2,0,0,0) [layout]
+[w6] perception_path=vision → vision_detector 进程已纳入编排（backend=synthetic_color）
+[world_bringup] world_map=minimal world_obstacles=none geometry=/home/chen/AGC/install/agc_sim/share/agc_sim/config/world_geometry.yaml
+[world_bringup] gui_render_backend=auto -> d3d12
+[world_bringup] spawn car=(-15.0,1.0,0.143,0.0) target=(15.0,-2.0,2.0,0.0)
+[INFO] [bash-1]: process started with pid [13410]
+[INFO] [bash-1]: process has finished cleanly [pid 13410]
+[INFO] [gazebo-2]: process started with pid [13411]
+[INFO] [parameter_bridge-3]: process started with pid [13412]
+[INFO] [parameter_bridge-4]: process started with pid [13413]
+[INFO] [gt_bypass-5]: process started with pid [13417]
+[INFO] [ground_odom_adapter-6]: process started with pid [13420]
+[INFO] [map_adapter-7]: process started with pid [13421]
+[INFO] [camera_tf-8]: process started with pid [13422]
+[INFO] [vision_target-9]: process started with pid [13423]
+[INFO] [static_transform_publisher-10]: process started with pid [13424]
+[INFO] [static_transform_publisher-11]: process started with pid [13425]
+[INFO] [scan_self_filter-12]: process started with pid [13439]
+[INFO] [collision_monitor-13]: process started with pid [13440]
+[INFO] [ground_drive_relay-14]: process started with pid [13441]
+[INFO] [placeholder_path_planner-15]: process started with pid [13446]
+[INFO] [ground_policy_rl-16]: process started with pid [13453]
+[INFO] [lifecycle_manager-17]: process started with pid [13461]
+[INFO] [MicroXRCEAgent-18]: process started with pid [13464]
+[INFO] [MicroXRCEAgent-19]: process started with pid [13465]
+[INFO] [px4_adapter-20]: process started with pid [13470]
+[INFO] [takeoff_controller-21]: process started with pid [13471]
+[INFO] [trajectory_tracker-22]: process started with pid [13484]
+[INFO] [standoff_follower-23]: process started with pid [13485]
+[INFO] [timeout-24]: process started with pid [13486]
+[INFO] [scenario_reset-25]: process started with pid [13490]
+[INFO] [task_manager-26]: process started with pid [13496]
+[INFO] [run_logger-27]: process started with pid [13500]
+[INFO] [capture_adjudicator-28]: process started with pid [13507]
+[INFO] [jammer-29]: process started with pid [13510]
+[INFO] [python3-30]: process started with pid [13511]
+[bash-1] COM_OF_LOSS_T=1.0
+[bash-1] COM_OBL_RC_ACT=0
+[bash-1] NAV_DLL_ACT=0
+[bash-1] UXRCE_DDS_SYNCT=0
+[MicroXRCEAgent-18] [35m[1793606148.398723][m info     | [34mUDPv4AgentLinux.cpp[m | [37minit                    [m | [32mrunning...[m             | port: 8888
+[MicroXRCEAgent-18] [35m[1793606148.398942][m info     | [34mRoot.cpp          [m | [37mset_verbose_level       [m | [32mlogger setup[m           | verbose_level: 4
+[MicroXRCEAgent-19] [35m[1793606148.419725][m info     | [34mUDPv4AgentLinux.cpp[m | [37minit                    [m | [32mrunning...[m             | port: 8889
+[MicroXRCEAgent-19] [35m[1793606148.420353][m info     | [34mRoot.cpp          [m | [37mset_verbose_level       [m | [32mlogger setup[m           | verbose_level: 4
+[ground_odom_adapter-6] [INFO] [1793606150.571551785] [ground_odom_adapter]: ground_odom_adapter：真值源 /agc/gt/agc_car → /agc/ground/odom（30.0 Hz）；源采样时刻=发布时刻，epoch 源 /agc/scenario/reset_epoch
+[INFO] [create-31]: process started with pid [13638]
+[INFO] [create-32]: process started with pid [13639]
+[gazebo-2] [1;32m[Msg] [0m[1;32mGazebo Sim Server v[0m[1;32m8.15.0[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mLoading SDF world file[[0m[1;32m/home/chen/AGC/install/agc_sim/share/agc_sim/worlds/agc_world.sdf[0m[1;32m].[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mServing entity system service on [[0m[1;32m/[0m[1;32mentity/system/add[0m[1;32m][0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mCreate[0m[1;32m service on [[0m[1;32m/world/agc_world/create_multiple[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mCreate[0m[1;32m service on [[0m[1;32m/world/agc_world/create_multiple/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mRemove[0m[1;32m service on [[0m[1;32m/world/agc_world/remove[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mRemove[0m[1;32m service on [[0m[1;32m/world/agc_world/remove/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mPose[0m[1;32m service on [[0m[1;32m/world/agc_world/set_pose[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mPose[0m[1;32m service on [[0m[1;32m/world/agc_world/set_pose/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mPose[0m[1;32m service on [[0m[1;32m/world/agc_world/set_pose_vector[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mPose[0m[1;32m service on [[0m[1;32m/world/agc_world/set_pose_vector/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mLight configuration[0m[1;32m service on [[0m[1;32m/world/agc_world/light_config[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mLight configuration[0m[1;32m service on [[0m[1;32m/world/agc_world/light_config/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mPhysics[0m[1;32m service on [[0m[1;32m/world/agc_world/set_physics[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mPhysics[0m[1;32m service on [[0m[1;32m/world/agc_world/set_physics/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mSphericalCoordinates[0m[1;32m service on [[0m[1;32m/world/agc_world/set_spherical_coordinates[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mSphericalCoordinates[0m[1;32m service on [[0m[1;32m/world/agc_world/set_spherical_coordinates/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mEnable collision[0m[1;32m service on [[0m[1;32m/world/agc_world/enable_collision[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mEnable collision[0m[1;32m service on [[0m[1;32m/world/agc_world/enable_collision/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mDisable collision[0m[1;32m service on [[0m[1;32m/world/agc_world/disable_collision[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mDisable collision[0m[1;32m service on [[0m[1;32m/world/agc_world/disable_collision/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mMaterial[0m[1;32m service on [[0m[1;32m/world/agc_world/visual_config[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mMaterial[0m[1;32m service on [[0m[1;32m/world/agc_world/visual_config/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mMaterial[0m[1;32m service on [[0m[1;32m/world/agc_world/wheel_slip[0m[1;32m] (async)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mMaterial[0m[1;32m service on [[0m[1;32m/world/agc_world/wheel_slip/blocking[0m[1;32m] (blocking)[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mListening to instantaneous wrench commands in [[0m[1;32m/world/agc_world/wrench[0m[1;32m][0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mListening to persistent wrench commands in [[0m[1;32m/world/agc_world/wrench/persistent[0m[1;32m][0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mListening to wrench clear commands in [[0m[1;32m/world/agc_world/wrench/clear[0m[1;32m][0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mLoaded level [[0m[1;32mdefault[0m[1;32m][0m[1;32m[0m
+[map_adapter-7] [INFO] [1793606152.883744156] [map_adapter]: map_adapter：obstacles/source=config，静态先验来自 /tmp/w6_derived_obstacles_s02_linear_none_nominal_track_0_20261102-155547-13407-0091.yaml
+[map_adapter-7] [INFO] [1793606152.883939087] [map_adapter]: map 重建：200x200 @ 0.500 m, occupied=0, unknown=0, seq=1, hash=e18b50d91f5ae12c（effective=0 static=0 live=0 source=config）
+[static_transform_publisher-11] [INFO] [1793606154.928692447] [car_lidar_gz_frame_tf]: Spinning until stopped - publishing transform
+[static_transform_publisher-11] translation: ('0.000000', '0.000000', '0.000000')
+[static_transform_publisher-11] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[static_transform_publisher-11] from 'car/lidar_link' to 'agc_car/car/lidar_link/lidar3d'
+[static_transform_publisher-10] [INFO] [1793606156.664801139] [car_lidar_tf]: Spinning until stopped - publishing transform
+[static_transform_publisher-10] translation: ('0.000000', '0.000000', '0.480000')
+[static_transform_publisher-10] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[static_transform_publisher-10] from 'car/base_link' to 'car/lidar_link'
+[parameter_bridge-4] [INFO] [1793606156.835157786] [set_pose_bridge]: Creating ROS->GZ service bridge [/world/agc_world/set_pose (ros_gz_interfaces/srv/SetEntityPose -> /)]
+[camera_tf-8] [INFO] [1793606157.102430198] [camera_tf]: camera_tf 生效外参：drone/base_link→drone/camera_link t=(0.120000,0.030000,0.242000) FLU q=(0.000000,0.000000,0.000000,1.000000)（旋转=单位 → 无 FRD↔FLU 换基）；drone/camera_link→drone/camera_optical_frame q=(-0.500000,0.500000,-0.500000,0.500000)（optical 轴换基）
+[camera_tf-8] [INFO] [1793606157.103998104] [camera_tf]: camera_tf：world → drone/base_link 由 /agc/air/odom 逐条转发（odom 自身 stamp）；不订阅真值
+[vision_target-9] [INFO] [1793606157.823972633] [vision_target]: vision_target：source=vision_target plane_z=2.000 m（datum=episode_origin_ned，stacks_on_spawn_z=false） optical=drone/camera_optical_frame → /agc/targets；不订阅真值
+[gt_bypass-5] [INFO] [1793606158.812378182] [gt_bypass]: gt_bypass：gz /world/agc_world/dynamic_pose/info → 2 实体（/agc/gt/**），30.0 Hz
+[scan_self_filter-12] [INFO] [1793606159.206976736] [scan_self_filter]: scan_self_filter：/agc/ground/scan → /agc/ground/scan_filtered（自滤矩形 |x|<=0.6037 m, |y|<=0.3854 m）
+[placeholder_path_planner-15] [INFO] [1793606160.396720555] [placeholder_path_planner]: G2 占位规划器：goal=/agc/ground/goal odom=/agc/ground/odom path=/agc/ground/path frame=world rate=5.0Hz spacing=0.50m replan(period=2.0s disp=1.00m) —— 几何直连，非 Navfn、无 costmap
+[collision_monitor-13] [INFO] [1793606161.196461309] [collision_monitor]: 
+[collision_monitor-13] 	collision_monitor lifecycle node launched. 
+[collision_monitor-13] 	Waiting on external lifecycle transitions to activate
+[collision_monitor-13] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[lifecycle_manager-17] [INFO] [1793606162.120429413] [lifecycle_manager_ground]: Creating
+[lifecycle_manager-17] [INFO] [1793606162.126150458] [lifecycle_manager_ground]: [34m[1mCreating and initializing lifecycle service clients[0m[0m
+[lifecycle_manager-17] [INFO] [1793606162.129624305] [lifecycle_manager_ground]: [34m[1mStarting managed nodes bringup...[0m[0m
+[lifecycle_manager-17] [INFO] [1793606162.129675878] [lifecycle_manager_ground]: [34m[1mConfiguring collision_monitor[0m[0m
+[collision_monitor-13] [INFO] [1793606162.130033660] [collision_monitor]: Configuring
+[collision_monitor-13] [INFO] [1793606162.135045967] [collision_monitor]: [scan]: Creating Scan
+[collision_monitor-13] [INFO] [1793606162.137903287] [collision_monitor]: [SlowSafety]: Creating Polygon
+[collision_monitor-13] [INFO] [1793606162.137973174] [collision_monitor]: [SlowSafety]: Creating VelocityPolygon
+[collision_monitor-13] [INFO] [1793606162.142511494] [collision_monitor]: [StopCollision]: Creating Polygon
+[collision_monitor-13] [INFO] [1793606162.142542021] [collision_monitor]: [StopCollision]: Creating VelocityPolygon
+[collision_monitor-13] [INFO] [1793606162.144443528] [collision_monitor]: [StopEmergency]: Creating Polygon
+[collision_monitor-13] [INFO] [1793606162.144477835] [collision_monitor]: [StopEmergency]: Creating VelocityPolygon
+[lifecycle_manager-17] [INFO] [1793606162.168724584] [lifecycle_manager_ground]: [34m[1mActivating collision_monitor[0m[0m
+[collision_monitor-13] [INFO] [1793606162.168971028] [collision_monitor]: Activating
+[collision_monitor-13] [INFO] [1793606162.169090757] [collision_monitor]: Creating bond (collision_monitor) to lifecycle manager.
+[lifecycle_manager-17] [INFO] [1793606162.279706344] [lifecycle_manager_ground]: Server collision_monitor connected with bond.
+[lifecycle_manager-17] [INFO] [1793606162.279899778] [lifecycle_manager_ground]: [34m[1mManaged nodes are active[0m[0m
+[lifecycle_manager-17] [INFO] [1793606162.279910783] [lifecycle_manager_ground]: [34m[1mCreating bond timer...[0m[0m
+[parameter_bridge-3] [INFO] [1793606163.001566200] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/clock (gz.msgs.Clock) -> /clock (rosgraph_msgs/msg/Clock)] (Lazy 0)
+[parameter_bridge-3] [INFO] [1793606163.007816820] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/model/agc_car/odometry (gz.msgs.Odometry) -> /agc/sim/ground_odom_raw (nav_msgs/msg/Odometry)] (Lazy 0)
+[parameter_bridge-3] [INFO] [1793606163.018686513] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/agc/car_lidar/points (gz.msgs.PointCloudPacked) -> /agc/sim/car_points (sensor_msgs/msg/PointCloud2)] (Lazy 0)
+[parameter_bridge-3] [INFO] [1793606163.021769967] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/agc/car_lidar (gz.msgs.LaserScan) -> /agc/ground/scan (sensor_msgs/msg/LaserScan)] (Lazy 0)
+[parameter_bridge-3] [INFO] [1793606163.024893419] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/world/agc_world/model/agc_car/link/car/base_link/sensor/contact/contact (gz.msgs.Contacts) -> /agc/ground/contact (ros_gz_interfaces/msg/Contacts)] (Lazy 0)
+[parameter_bridge-3] [INFO] [1793606163.028475208] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera (gz.msgs.Image) -> /agc/air/camera/image_raw (sensor_msgs/msg/Image)] (Lazy 0)
+[parameter_bridge-3] [INFO] [1793606163.030258643] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera_info (gz.msgs.CameraInfo) -> /agc/air/camera/camera_info (sensor_msgs/msg/CameraInfo)] (Lazy 0)
+[parameter_bridge-3] [INFO] [1793606163.032690554] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/model/agc_car/cmd_vel (geometry_msgs/msg/Twist) -> /agc/sim/cmd_intent (gz.msgs.Twist)] (Lazy 0)
+[ground_odom_adapter-6] [WARN] [1793606163.038454754] [ground_odom_adapter]: ground odom：等待真值 /agc/gt/agc_car
+[parameter_bridge-3] [INFO] [1793606163.071821491] [ros_gz_bridge]: Passing message from ROS geometry_msgs/msg/Twist to Gazebo gz.msgs.Twist (showing msg only once per type)
+[run_logger-27] [INFO] [1793606163.503538689] [run_logger]: run dir: /home/chen/AGC/experiments/w6-task-eval/20261102-s02_linear_none_nominal_track-0-155603-2790 (git 49e099cc)
+[capture_adjudicator-28] [INFO] [1793606164.392197849] [capture_adjudicator]: capture_adjudicator（最小动态火控）就绪：model_id=net_ballistic_frame_v2 v0=6.50 θ=75.0° d=1.00 drag=0.90 适用高度=[0.000, 2.009] m t_exp=0.20 s cooldown=2.00 s flight_timeout=3.00 s；独立干扰包络模型=behavioral_range_gate 高度=[0.000, 2.000] m 水平≤1.000 m
+[task_manager-26] [WARN] [1793606164.467176494] [rcl.logging_rosout]: Publisher already registered for node name: 'task_manager'. If this is due to multiple nodes with the same name then all logs for the logger named 'task_manager' will go out over the existing publisher. As soon as any node with that name is destructed it will unregister the publisher, preventing any further logs for that name from being published on the rosout topic.
+[scenario_reset-25] [WARN] [1793606164.620319976] [rcl.logging_rosout]: Publisher already registered for node name: 'scenario_reset'. If this is due to multiple nodes with the same name then all logs for the logger named 'scenario_reset' will go out over the existing publisher. As soon as any node with that name is destructed it will unregister the publisher, preventing any further logs for that name from being published on the rosout topic.
+[timeout-24] [prewarm] px4_adapter: ok (attempt 1)
+[timeout-24] [prewarm] takeoff_controller: ok (attempt 1)
+[ground_policy_rl-16] [INFO] [1793606165.373280489] [ground_policy_rl]: agc_rl 推理节点：policy=deterministic_go_to_goal path='/home/chen/AGC/install/agc_rl/share/agc_rl/policies/go_to_goal.json' obs_dim=20 n_actions=5
+[jammer-29] [INFO] [1793606165.384541223] [jammer]: jammer ready: ns=px4_1 cmd=/agc/task/jam_cmd status=/px4_1/fmu/out/vehicle_status confirm=/agc/task/jam_confirm
+[python3-30] [INFO] [1793606165.414146883] [vision_detector]: vision_detector: path=vision backend=synthetic_color model=-/none degraded=False image=/agc/air/camera/image_raw
+[collision_monitor-13] [WARN] [1793606165.429060301] [collision_monitor]: Robot to stop due to invalid source. Either due to data not published yet, or to lack of new data received within the sensor timeout, or if impossible to transform data to base frame
+[create-32] [INFO] [1793606165.764405340] [ros_gz_sim]: Entity creation successful.
+[create-31] [INFO] [1793606165.865022031] [ros_gz_sim]: Entity creation successful.
+[INFO] [create-32]: process has finished cleanly [pid 13639]
+[gazebo-2] [1;33m[Wrn] [SdfEntityCreator.cc:933] [0m[1;33mGazebo does not support Ogre material scripts. See [0m[1;33mhttps://gazebosim.org/api/sim/8/migrationsdf.html#:~:text=Materials [0m[1;33mfor details.[0m[1;33m[0m
+[gazebo-2] [1;33m[Wrn] [SdfEntityCreator.cc:949] [0m[1;33mUsing an internal gazebo.material to parse [0m[1;33mGazebo/DarkGrey[0m[1;33m[0m
+[gazebo-2] [1;33m[Wrn] [SdfEntityCreator.cc:933] [0m[1;33mGazebo does not support Ogre material scripts. See [0m[1;33mhttps://gazebosim.org/api/sim/8/migrationsdf.html#:~:text=Materials [0m[1;33mfor details.[0m[1;33m[0m
+[gazebo-2] [1;33m[Wrn] [SdfEntityCreator.cc:949] [0m[1;33mUsing an internal gazebo.material to parse [0m[1;33mGazebo/DarkGrey[0m[1;33m[0m
+[gazebo-2] [1;33m[Wrn] [SdfEntityCreator.cc:933] [0m[1;33mGazebo does not support Ogre material scripts. See [0m[1;33mhttps://gazebosim.org/api/sim/8/migrationsdf.html#:~:text=Materials [0m[1;33mfor details.[0m[1;33m[0m
+[gazebo-2] [1;33m[Wrn] [SdfEntityCreator.cc:949] [0m[1;33mUsing an internal gazebo.material to parse [0m[1;33mGazebo/DarkGrey[0m[1;33m[0m
+[gazebo-2] [1;33m[Wrn] [SdfEntityCreator.cc:933] [0m[1;33mGazebo does not support Ogre material scripts. See [0m[1;33mhttps://gazebosim.org/api/sim/8/migrationsdf.html#:~:text=Materials [0m[1;33mfor details.[0m[1;33m[0m
+[gazebo-2] [1;33m[Wrn] [SdfEntityCreator.cc:949] [0m[1;33mUsing an internal gazebo.material to parse [0m[1;33mGazebo/DarkGrey[0m[1;33m[0m
+[gazebo-2] [1;33m[Wrn] [MulticopterMotorModel.cc:257] [0m[1;33mNo robotNamespace set using entity name.[0m
+[gazebo-2] [1;33m[Wrn] [MulticopterMotorModel.cc:295] [0m[1;33m<motorNumber> is depricated, [0m[1;33mplease use <actuator_number>.[0m
+[gazebo-2] [1;33m[Wrn] [MulticopterMotorModel.cc:257] [0m[1;33mNo robotNamespace set using entity name.[0m
+[gazebo-2] [1;33m[Wrn] [MulticopterMotorModel.cc:295] [0m[1;33m<motorNumber> is depricated, [0m[1;33mplease use <actuator_number>.[0m
+[gazebo-2] [1;33m[Wrn] [MulticopterMotorModel.cc:257] [0m[1;33mNo robotNamespace set using entity name.[0m
+[gazebo-2] [1;33m[Wrn] [MulticopterMotorModel.cc:295] [0m[1;33m<motorNumber> is depricated, [0m[1;33mplease use <actuator_number>.[0m
+[gazebo-2] [1;33m[Wrn] [MulticopterMotorModel.cc:257] [0m[1;33mNo robotNamespace set using entity name.[0m
+[gazebo-2] [1;33m[Wrn] [MulticopterMotorModel.cc:295] [0m[1;33m<motorNumber> is depricated, [0m[1;33mplease use <actuator_number>.[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mServing world controls on [[0m[1;32m/world/agc_world[0m[1;32m/control], [[0m[1;32m/world/agc_world[0m[1;32m/control/state] and [[0m[1;32m/world/agc_world[0m[1;32m/playback/control][0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mServing GUI information on [[0m[1;32m/world/agc_world[0m[1;32m/[0m[1;32mgui/info[0m[1;32m][0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mWorld [[0m[1;32magc_world[0m[1;32m] initialized with [[0m[1;32mdefault_physics[0m[1;32m] physics profile.[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mServing world SDF generation service on [[0m[1;32m/world/agc_world[0m[1;32m/[0m[1;32mgenerate_world_sdf[0m[1;32m][0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mServing world names on [[0m[1;32m/gazebo/worlds[0m[1;32m][0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mResource path add service on [[0m[1;32m/gazebo/resource_paths/add[0m[1;32m].[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mResource path get service on [[0m[1;32m/gazebo/resource_paths/get[0m[1;32m].[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mResource path resolve service on [[0m[1;32m/gazebo/resource_paths/resolve[0m[1;32m].[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mResource paths published on [[0m[1;32m/gazebo/resource_paths[0m[1;32m].[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mServer control service on [[0m[1;32m/server_control[0m[1;32m].[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mFound no publishers on /stats, adding root stats topic[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mFound no publishers on /clock, adding root clock topic[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mServing scene information on [[0m[1;32m/world/agc_world[0m[1;32m/[0m[1;32mscene/info[0m[1;32m][0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mServing graph information on [[0m[1;32m/world/agc_world[0m[1;32m/[0m[1;32mscene/graph[0m[1;32m][0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mServing full state on [[0m[1;32m/world/agc_world[0m[1;32m/[0m[1;32mstate[0m[1;32m][0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mServing full state (async) on [[0m[1;32m/world/agc_world[0m[1;32m/[0m[1;32mstate_async[0m[1;32m][0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mPublishing scene information on [[0m[1;32m/world/agc_world/scene/info[0m[1;32m][0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mPublishing entity deletions on [[0m[1;32m/world/agc_world/scene/deletion[0m[1;32m][0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mPublishing state changes on [[0m[1;32m/world/agc_world/state[0m[1;32m][0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mPublishing pose messages on [[0m[1;32m/world/agc_world[0m[1;32m/[0m[1;32mpose/info[0m[1;32m][0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mPublishing dynamic pose messages on [[0m[1;32m/world/agc_world[0m[1;32m/[0m[1;32mdynamic_pose/info[0m[1;32m][0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mDiffDrive subscribing to twist messages on [[0m[1;32m/model/agc_car/cmd_vel[0m[1;32m][0m[1;32m[0m
+[gazebo-2] [agc_cmd_deadman] intent='/agc/sim/cmd_intent' -> cmd_vel='/model/agc_car/cmd_vel', timeout=0.3 s
+[gazebo-2] [1;33m[Wrn] [Ogre2RenderEngine.cc:551] [0m[1;33mUnable to open display: [0m[1;33m:0[0m[1;33m. Trying to run in headless mode.[0m[1;33m[0m
+[INFO] [create-31]: process has finished cleanly [pid 13638]
+[collision_monitor-13] [INFO] [1793606167.414630504] [collision_monitor]: Robot to continue normal operation
+[scenario_reset-25] [INFO] [1793606168.652885789] [scenario_reset]: car quiescent: |v|=0.000 < 0.050 (waited=0.000 s)
+[timeout-24] [prewarm] trajectory_tracker: ok (attempt 1)
+[scenario_reset-25] [INFO] [1793606168.816858457] [scenario_reset]: reset ok epoch=1 car=(-15.000,1.000) target=(15.000,-2.000)
+[scenario_reset-25] [INFO] [1793606168.816892874] [scenario_reset]: initial reset (gated): ok
+[ground_odom_adapter-6] [INFO] [1793606168.817602068] [ground_odom_adapter]: ground odom：reset epoch=1 → 速度历史清空，等待新稳定样本
+[timeout-24] [prewarm] standoff_follower: ok (attempt 1)
+[timeout-24] [prewarm] done ok=True
+[INFO] [timeout-24]: process has finished cleanly [pid 13486]
+[INFO] [lifecycle_manager-33]: process started with pid [13987]
+[lifecycle_manager-33] [INFO] [1793606170.537716132] [lifecycle_manager_air]: Creating
+[lifecycle_manager-33] [INFO] [1793606170.544179925] [lifecycle_manager_air]: [34m[1mCreating and initializing lifecycle service clients[0m[0m
+[lifecycle_manager-33] [INFO] [1793606171.212414384] [lifecycle_manager_air]: [34m[1mStarting managed nodes bringup...[0m[0m
+[lifecycle_manager-33] [INFO] [1793606171.212489827] [lifecycle_manager_air]: [34m[1mConfiguring px4_adapter[0m[0m
+[px4_adapter-20] [INFO] [1793606171.234057578] [px4_adapter]: px4_adapter 就绪：/fmu/out/vehicle_odometry → /agc/air/odom
+[lifecycle_manager-33] [INFO] [1793606171.236814852] [lifecycle_manager_air]: [34m[1mConfiguring takeoff_controller[0m[0m
+[takeoff_controller-21] [INFO] [1793606171.928776021] [takeoff_controller]: takeoff_controller 就绪（起飞高度 2.5 m）
+[lifecycle_manager-33] [INFO] [1793606171.930261407] [lifecycle_manager_air]: [34m[1mConfiguring trajectory_tracker[0m[0m
+[trajectory_tracker-22] [INFO] [1793606171.950324458] [trajectory_tracker]: 安全层：enabled=1 障碍余量=2.50 目标余量=1.50 target_min_dist=8.0 静态障碍 2 个
+[trajectory_tracker-22] [INFO] [1793606172.012856739] [agc_control.lqr]: LQR 离散化：Ad=I+A·dt+0.5·A²·dt²（A 幂零 → 恰为**精确**）；Bd=[[0.5·dt²·I],[dt·I]]（**精确**，含位置 0.5·dt² 项）；dt=0.020000 s（适用频率 50.0 Hz）；DARE 迭代 559 次，残差=9.913e-11，已收敛（tol=1.0e-10）
+[trajectory_tracker-22] [INFO] [1793606172.039501939] [trajectory_tracker]: trajectory_tracker 就绪：轨迹 agc_control/Figure8Trajectory + 控制器 agc_control/LqrController
+[lifecycle_manager-33] [INFO] [1793606172.312465778] [lifecycle_manager_air]: [34m[1mConfiguring standoff_follower[0m[0m
+[standoff_follower-23] [INFO] [1793606172.325938770] [standoff_follower]: standoff_follower 就绪：距离带 [8.0, 11.2] m，高度 2.5 m
+[lifecycle_manager-33] [INFO] [1793606172.327788339] [lifecycle_manager_air]: [34m[1mActivating px4_adapter[0m[0m
+[lifecycle_manager-33] [INFO] [1793606172.440130336] [lifecycle_manager_air]: Server px4_adapter connected with bond.
+[lifecycle_manager-33] [INFO] [1793606172.440396524] [lifecycle_manager_air]: [34m[1mActivating takeoff_controller[0m[0m
+[px4_adapter-20] [INFO] [1793606172.440761143] [px4_adapter]: 已与 lifecycle_manager 建立 bond（bond formed）
+[lifecycle_manager-33] [INFO] [1793606172.558399326] [lifecycle_manager_air]: Server takeoff_controller connected with bond.
+[lifecycle_manager-33] [INFO] [1793606172.558462026] [lifecycle_manager_air]: [34m[1mActivating trajectory_tracker[0m[0m
+[takeoff_controller-21] [INFO] [1793606172.558660175] [takeoff_controller]: 已与 lifecycle_manager 建立 bond（bond formed）
+[lifecycle_manager-33] [INFO] [1793606172.675801578] [lifecycle_manager_air]: Server trajectory_tracker connected with bond.
+[lifecycle_manager-33] [INFO] [1793606172.675873573] [lifecycle_manager_air]: [34m[1mActivating standoff_follower[0m[0m
+[trajectory_tracker-22] [INFO] [1793606172.676129804] [trajectory_tracker]: 已与 lifecycle_manager 建立 bond（bond formed）
+[lifecycle_manager-33] [INFO] [1793606172.793440417] [lifecycle_manager_air]: Server standoff_follower connected with bond.
+[lifecycle_manager-33] [INFO] [1793606172.793527991] [lifecycle_manager_air]: [34m[1mManaged nodes are active[0m[0m
+[lifecycle_manager-33] [INFO] [1793606172.793539203] [lifecycle_manager_air]: [34m[1mCreating bond timer...[0m[0m
+[standoff_follower-23] [INFO] [1793606172.793882603] [standoff_follower]: 已与 lifecycle_manager 建立 bond（bond formed）
+[INFO] [px4-34]: process started with pid [14006]
+[px4-34] INFO  [px4] assuming working directory is rootfs, no symlinks needed.
+[px4-34] 
+[px4-34] ______  __   __    ___ 
+[px4-34] | ___ \ \ \ / /   /   |
+[px4-34] | |_/ /  \ V /   / /| |
+[px4-34] |  __/   /   \  / /_| |
+[px4-34] | |     / /^\ \ \___  |
+[px4-34] \_|     \/   \/     |_/
+[px4-34] 
+[px4-34] px4 starting.
+[px4-34] 
+[px4-34] INFO  [px4] startup script: /bin/sh etc/init.d-posix/rcS 0
+[px4-34] INFO  [init] found model autostart file as SYS_AUTOSTART=4010
+[px4-34] INFO  [param] selected parameter default file parameters.bson
+[px4-34] INFO  [param] importing from 'parameters.bson'
+[px4-34] INFO  [parameters] BSON document size 460 bytes, decoded 460 bytes (INT32:17, FLOAT:6)
+[px4-34] INFO  [param] selected parameter backup file parameters_backup.bson
+[px4-34]   SYS_AUTOCONFIG: curr: 0 -> new: 1
+[px4-34] + SYS_AUTOSTART: curr: 4001 -> new: 4010
+[px4-34]   SENS_BOARD_X_OFF: curr: 0.0000 -> new: 0.0000
+[px4-34]   SENS_DPRES_OFF: curr: 0.0000 -> new: 0.0010
+[px4-34]   UXRCE_DDS_SYNCT: curr: 1 -> new: 0
+[px4-34] INFO  [dataman] data manager file './dataman' size is 7872608 bytes
+[px4-34] INFO  [init] Gazebo simulator
+[px4-34] INFO  [init] Standalone PX4 launch, waiting for Gazebo
+[px4-34] INFO  [init] PX4_GZ_MODEL_POSE set, spawning at: -11,1,0.2,0,0,0
+[gazebo-2] [1;33m[Wrn] [SdfEntityCreator.cc:933] [0m[1;33mGazebo does not support Ogre material scripts. See [0m[1;33mhttps://gazebosim.org/api/sim/8/migrationsdf.html#:~:text=Materials [0m[1;33mfor details.[0m[1;33m[0m
+[gazebo-2] [1;33m[Wrn] [SdfEntityCreator.cc:949] [0m[1;33mUsing an internal gazebo.material to parse [0m[1;33mGazebo/DarkGrey[0m[1;33m[0m
+[gazebo-2] [1;33m[Wrn] [SdfEntityCreator.cc:933] [0m[1;33mGazebo does not support Ogre material scripts. See [0m[1;33mhttps://gazebosim.org/api/sim/8/migrationsdf.html#:~:text=Materials [0m[1;33mfor details.[0m[1;33m[0m
+[gazebo-2] [1;33m[Wrn] [SdfEntityCreator.cc:949] [0m[1;33mUsing an internal gazebo.material to parse [0m[1;33mGazebo/DarkGrey[0m[1;33m[0m
+[gazebo-2] [1;33m[Wrn] [SdfEntityCreator.cc:933] [0m[1;33mGazebo does not support Ogre material scripts. See [0m[1;33mhttps://gazebosim.org/api/sim/8/migrationsdf.html#:~:text=Materials [0m[1;33mfor details.[0m[1;33m[0m
+[gazebo-2] [1;33m[Wrn] [SdfEntityCreator.cc:949] [0m[1;33mUsing an internal gazebo.material to parse [0m[1;33mGazebo/DarkGrey[0m[1;33m[0m
+[gazebo-2] [1;33m[Wrn] [SdfEntityCreator.cc:933] [0m[1;33mGazebo does not support Ogre material scripts. See [0m[1;33mhttps://gazebosim.org/api/sim/8/migrationsdf.html#:~:text=Materials [0m[1;33mfor details.[0m[1;33m[0m
+[gazebo-2] [1;33m[Wrn] [SdfEntityCreator.cc:949] [0m[1;33mUsing an internal gazebo.material to parse [0m[1;33mGazebo/DarkGrey[0m[1;33m[0m
+[gazebo-2] [1;33m[Wrn] [MulticopterMotorModel.cc:257] [0m[1;33mNo robotNamespace set using entity name.[0m
+[gazebo-2] [1;33m[Wrn] [MulticopterMotorModel.cc:295] [0m[1;33m<motorNumber> is depricated, [0m[1;33mplease use <actuator_number>.[0m
+[gazebo-2] [1;33m[Wrn] [MulticopterMotorModel.cc:257] [0m[1;33mNo robotNamespace set using entity name.[0m
+[gazebo-2] [1;33m[Wrn] [MulticopterMotorModel.cc:295] [0m[1;33m<motorNumber> is depricated, [0m[1;33mplease use <actuator_number>.[0m
+[gazebo-2] [1;33m[Wrn] [MulticopterMotorModel.cc:257] [0m[1;33mNo robotNamespace set using entity name.[0m
+[gazebo-2] [1;33m[Wrn] [MulticopterMotorModel.cc:295] [0m[1;33m<motorNumber> is depricated, [0m[1;33mplease use <actuator_number>.[0m
+[gazebo-2] [1;33m[Wrn] [MulticopterMotorModel.cc:257] [0m[1;33mNo robotNamespace set using entity name.[0m
+[gazebo-2] [1;33m[Wrn] [MulticopterMotorModel.cc:295] [0m[1;33m<motorNumber> is depricated, [0m[1;33mplease use <actuator_number>.[0m
+[px4-34] INFO  [lockstep_scheduler] setting initial absolute time to 18960000 us
+[px4-34] INFO  [gz_bridge] world: agc_world, model name: x500_mono_cam_0, simulation model: x500_mono_cam
+[px4-34] INFO  [gz_bridge] Requested Model Position: -11,1,0.2,0,0,0
+[gazebo-2] [1;33m[Wrn] [Ogre2Camera.cc:423] [0m[1;33mOgre2Camera::SetVisibilityMask: Mask bits [0m[1;33mc0000000[0m[1;33m are set but will be ignored as they conflict with the [0m[1;33mreserved bits used internally by the ogre2 backend.[0m[1;33m[0m
+[px4-34] INFO  [sensor_gps_sim] GPS simulation RNG seed=2462723854
+[px4-34] WARN  [vehicle_angular_velocity] no gyro selected, using sensor_gyro:0 1310988
+[px4-34] INFO  [commander] LED: open /dev/led0 failed (22)
+[px4-34] WARN  [health_and_arming_checks] Preflight Fail: ekf2 missing data
+[px4-34] WARN  [health_and_arming_checks] Preflight Fail: Compass Sensor 0 missing
+[px4-34] INFO  [tone_alarm] home set
+[px4-34] INFO  [uxrce_dds_client] init UDP agent IP:127.0.0.1, port:8888
+[MicroXRCEAgent-18] [35m[1793606175.971057][m info     | [34mRoot.cpp          [m | [37mcreate_client           [m | [32mcreate[m                 | client_key: 0x00000001, session_id: 0x81
+[MicroXRCEAgent-18] [35m[1793606175.971099][m info     | [34mSessionManager.hpp[m | [37mestablish_session       [m | [32msession established[m    | client_key: 0x00000001, address: 127.0.0.1:31164
+[px4-34] INFO  [mavlink] mode: Normal, data rate: 4000000 B/s on udp port 18570 remote port 14550
+[px4-34] INFO  [mavlink] mode: Onboard, data rate: 4000000 B/s on udp port 14580 remote port 14540
+[px4-34] INFO  [mavlink] mode: Onboard, data rate: 4000 B/s on udp port 14280 remote port 14030
+[px4-34] INFO  [mavlink] mode: Gimbal, data rate: 400000 B/s on udp port 13030 remote port 13280
+[px4-34] INFO  [logger] logger started (mode=all)
+[px4-34] INFO  [logger] Start file log (type: full)
+[px4-34] INFO  [logger] [logger] ./log/2026-11-02/07_56_16.ulg	
+[px4-34] INFO  [logger] Opened full log file: ./log/2026-11-02/07_56_16.ulg
+[px4-34] INFO  [mavlink] MAVLink only on localhost (set param MAV_{i}_BROADCAST = 1 to enable network)
+[px4-34] INFO  [mavlink] MAVLink only on localhost (set param MAV_{i}_BROADCAST = 1 to enable network)
+[px4-34] INFO  [px4] Startup script returned successfully
+[MicroXRCEAgent-18] [35m[1793606176.697022][m info     | [34mProxyClient.cpp   [m | [37mcreate_participant      [m | [32mparticipant created[m    | client_key: 0x00000001, participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.698649][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x800(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.698714][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x800(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.700298][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x800(6), subscriber_id: 0x800(4)
+[MicroXRCEAgent-18] [35m[1793606176.701120][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x801(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.701170][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x801(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.701432][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x801(6), subscriber_id: 0x801(4)
+[MicroXRCEAgent-18] [35m[1793606176.701991][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x802(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.702049][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x802(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.702335][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x802(6), subscriber_id: 0x802(4)
+[MicroXRCEAgent-18] [35m[1793606176.702748][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x803(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.702820][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x803(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.703136][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x803(6), subscriber_id: 0x803(4)
+[MicroXRCEAgent-18] [35m[1793606176.705412][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x804(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.705462][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x804(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.706303][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x804(6), subscriber_id: 0x804(4)
+[MicroXRCEAgent-18] [35m[1793606176.708027][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x805(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.708385][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x805(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.709778][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x805(6), subscriber_id: 0x805(4)
+[MicroXRCEAgent-18] [35m[1793606176.710117][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x806(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.710176][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x806(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.710558][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x806(6), subscriber_id: 0x806(4)
+[MicroXRCEAgent-18] [35m[1793606176.711246][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x807(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.711275][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x807(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.711895][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x807(6), subscriber_id: 0x807(4)
+[MicroXRCEAgent-18] [35m[1793606176.712378][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x808(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.712418][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x808(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.712649][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x808(6), subscriber_id: 0x808(4)
+[MicroXRCEAgent-18] [35m[1793606176.713585][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x809(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.713621][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x809(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.713878][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x809(6), subscriber_id: 0x809(4)
+[MicroXRCEAgent-18] [35m[1793606176.714342][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x80A(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.714578][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x80A(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.714998][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x80A(6), subscriber_id: 0x80A(4)
+[MicroXRCEAgent-18] [35m[1793606176.715392][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x80B(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.715432][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x80B(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.716043][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x80B(6), subscriber_id: 0x80B(4)
+[MicroXRCEAgent-18] [35m[1793606176.716406][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x80C(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.716450][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x80C(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.716670][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x80C(6), subscriber_id: 0x80C(4)
+[MicroXRCEAgent-18] [35m[1793606176.717576][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x80D(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.717620][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x80D(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.717907][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x80D(6), subscriber_id: 0x80D(4)
+[MicroXRCEAgent-18] [35m[1793606176.718464][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x80E(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.718503][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x80E(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.718755][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x80E(6), subscriber_id: 0x80E(4)
+[MicroXRCEAgent-18] [35m[1793606176.719425][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x80F(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.719449][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x80F(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.720090][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x80F(6), subscriber_id: 0x80F(4)
+[MicroXRCEAgent-18] [35m[1793606176.721745][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x810(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.722203][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x810(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.722480][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x810(6), subscriber_id: 0x810(4)
+[MicroXRCEAgent-18] [35m[1793606176.723450][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x811(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.723493][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x811(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.723839][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x811(6), subscriber_id: 0x811(4)
+[MicroXRCEAgent-18] [35m[1793606176.724778][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x812(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.724833][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x812(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.725159][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x812(6), subscriber_id: 0x812(4)
+[MicroXRCEAgent-18] [35m[1793606176.726745][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x813(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.726843][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x813(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.727091][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x813(6), subscriber_id: 0x813(4)
+[MicroXRCEAgent-18] [35m[1793606176.727851][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x814(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.727871][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x814(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.728703][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x814(6), subscriber_id: 0x814(4)
+[MicroXRCEAgent-18] [35m[1793606176.729822][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x815(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.729876][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x815(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.730193][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x815(6), subscriber_id: 0x815(4)
+[MicroXRCEAgent-18] [35m[1793606176.730789][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x816(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.730853][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x816(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.731137][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x816(6), subscriber_id: 0x816(4)
+[MicroXRCEAgent-18] [35m[1793606176.731513][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x817(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.731551][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x817(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.731785][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x817(6), subscriber_id: 0x817(4)
+[MicroXRCEAgent-18] [35m[1793606176.734161][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x818(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.734192][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x818(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.734477][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x818(6), subscriber_id: 0x818(4)
+[MicroXRCEAgent-18] [35m[1793606176.735130][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x819(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.735169][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x819(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.735428][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x819(6), subscriber_id: 0x819(4)
+[MicroXRCEAgent-18] [35m[1793606176.736267][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x81A(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.736306][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x81A(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.736582][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x81A(6), subscriber_id: 0x81A(4)
+[MicroXRCEAgent-18] [35m[1793606176.737204][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x81B(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.737237][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x81B(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.737569][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x81B(6), subscriber_id: 0x81B(4)
+[MicroXRCEAgent-18] [35m[1793606176.737843][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x81C(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.737883][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000001, subscriber_id: 0x81C(4), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.738297][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000001, datareader_id: 0x81C(6), subscriber_id: 0x81C(4)
+[MicroXRCEAgent-18] [35m[1793606176.739849][m info     | [34mProxyClient.cpp   [m | [37mcreate_replier          [m | [32mreplier created[m        | client_key: 0x00000001, requester_id: 0x800(7), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.741839][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x013(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.742466][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000001, publisher_id: 0x013(3), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.742671][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000001, datawriter_id: 0x013(5), publisher_id: 0x013(3)
+[px4-34] INFO  [uxrce_dds_client] successfully created rt/fmu/out/battery_status data writer, topic id: 19
+[MicroXRCEAgent-18] [35m[1793606176.743058][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x057(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.743093][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000001, publisher_id: 0x057(3), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.743265][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000001, datawriter_id: 0x057(5), publisher_id: 0x057(3)
+[px4-34] INFO  [uxrce_dds_client] successfully created rt/fmu/out/estimator_status_flags data writer, topic id: 87
+[MicroXRCEAgent-18] [35m[1793606176.744242][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x05D(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.744267][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000001, publisher_id: 0x05D(3), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.744387][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000001, datawriter_id: 0x05D(5), publisher_id: 0x05D(3)
+[px4-34] INFO  [uxrce_dds_client] successfully created rt/fmu/out/failsafe_flags data writer, topic id: 93
+[MicroXRCEAgent-18] [35m[1793606176.746027][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x08D(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.746056][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000001, publisher_id: 0x08D(3), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.746355][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000001, datawriter_id: 0x08D(5), publisher_id: 0x08D(3)
+[px4-34] INFO  [uxrce_dds_client] successfully created rt/fmu/out/manual_control_setpoint data writer, topic id: 141
+[MicroXRCEAgent-18] [35m[1793606176.746947][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x0B4(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.746964][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000001, publisher_id: 0x0B4(3), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.747073][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000001, datawriter_id: 0x0B4(5), publisher_id: 0x0B4(3)
+[px4-34] INFO  [uxrce_dds_client] successfully created rt/fmu/out/position_setpoint_triplet data writer, topic id: 180
+[MicroXRCEAgent-18] [35m[1793606176.747596][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x0CB(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.747645][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000001, publisher_id: 0x0CB(3), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.747757][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000001, datawriter_id: 0x0CB(5), publisher_id: 0x0CB(3)
+[px4-34] INFO  [uxrce_dds_client] successfully created rt/fmu/out/sensor_combined data writer, topic id: 203
+[MicroXRCEAgent-18] [35m[1793606176.748261][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x0F9(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.748283][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000001, publisher_id: 0x0F9(3), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.748773][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000001, datawriter_id: 0x0F9(5), publisher_id: 0x0F9(3)
+[px4-34] INFO  [uxrce_dds_client] successfully created rt/fmu/out/vehicle_control_mode data writer, topic id: 249
+[MicroXRCEAgent-18] [35m[1793606176.750450][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x0FC(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.750501][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000001, publisher_id: 0x0FC(3), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.750673][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000001, datawriter_id: 0x0FC(5), publisher_id: 0x0FC(3)
+[px4-34] INFO  [uxrce_dds_client] successfully created rt/fmu/out/vehicle_gps_position data writer, topic id: 252
+[MicroXRCEAgent-18] [35m[1793606176.751055][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x100(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.751100][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000001, publisher_id: 0x100(3), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.751229][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000001, datawriter_id: 0x100(5), publisher_id: 0x100(3)
+[px4-34] INFO  [uxrce_dds_client] successfully created rt/fmu/out/vehicle_local_position data writer, topic id: 256
+[MicroXRCEAgent-18] [35m[1793606176.751860][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x105(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.751878][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000001, publisher_id: 0x105(3), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.752150][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000001, datawriter_id: 0x105(5), publisher_id: 0x105(3)
+[px4-34] INFO  [uxrce_dds_client] successfully created rt/fmu/out/vehicle_odometry data writer, topic id: 261
+[MicroXRCEAgent-18] [35m[1793606176.753106][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x10A(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.753132][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000001, publisher_id: 0x10A(3), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606176.753281][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000001, datawriter_id: 0x10A(5), publisher_id: 0x10A(3)
+[px4-34] INFO  [uxrce_dds_client] successfully created rt/fmu/out/vehicle_status data writer, topic id: 266
+[MicroXRCEAgent-18] [35m[1793606177.752382][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x0F2(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606177.752495][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000001, publisher_id: 0x0F2(3), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606177.753252][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000001, datawriter_id: 0x0F2(5), publisher_id: 0x0F2(3)
+[px4-34] INFO  [uxrce_dds_client] successfully created rt/fmu/out/vehicle_attitude data writer, topic id: 242
+[px4_adapter-20] [WARN] [1793606177.793857454] [px4_adapter]: EKF 复位计数 0 → 5：局部原点可能跳变，世界坐标需重新标定（R-003）；同时重锚 PX4→ROS 时间映射
+[camera_tf-8] [INFO] [1793606177.798876187] [camera_tf]: camera_tf：首条动态变换已转发（odom stamp=21.116000）
+[scenario_reset-25] [INFO] [1793606177.812936615] [scenario_reset]: car quiescent: |v|=0.000 < 0.050 (waited=0.000 s)
+[scenario_reset-25] [INFO] [1793606177.897756070] [scenario_reset]: reset ok epoch=2 car=(-15.000,1.000) target=(15.000,-2.000)
+[ground_odom_adapter-6] [INFO] [1793606177.897849222] [ground_odom_adapter]: ground odom：reset epoch=2 → 速度历史清空，等待新稳定样本
+[trajectory_tracker-22] [INFO] [1793606177.898589450] [trajectory_tracker]: 相位复位（/agc/air/reset_phase）：轨迹相位 t0=0
+[run_logger-27] [INFO] [1793606177.898614627] [run_logger]: episode_id = 2
+[px4_adapter-20] [WARN] [1793606177.914233564] [px4_adapter]: EKF 复位计数 5 → 6：局部原点可能跳变，世界坐标需重新标定（R-003）；同时重锚 PX4→ROS 时间映射
+[MicroXRCEAgent-18] [35m[1793606177.945456][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x0FA(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606177.945555][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000001, publisher_id: 0x0FA(3), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606177.945934][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000001, datawriter_id: 0x0FA(5), publisher_id: 0x0FA(3)
+[px4-34] INFO  [uxrce_dds_client] successfully created rt/fmu/out/vehicle_global_position data writer, topic id: 250
+[px4_adapter-20] [WARN] [1793606177.952611298] [px4_adapter]: EKF 复位计数 6 → 9：局部原点可能跳变，世界坐标需重新标定（R-003）；同时重锚 PX4→ROS 时间映射
+[standoff_follower-23] [WARN] [1793606178.576398570] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[px4-34] INFO  [commander] [32mReady for takeoff![0m
+[px4-34] INFO  [commander] Armed by external command	
+[px4-34] INFO  [tone_alarm] arming warning
+[MicroXRCEAgent-18] [35m[1793606179.794965][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000001, topic_id: 0x0F6(2), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606179.795026][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000001, publisher_id: 0x0F6(3), participant_id: 0x001(1)
+[MicroXRCEAgent-18] [35m[1793606179.796720][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000001, datawriter_id: 0x0F6(5), publisher_id: 0x0F6(3)
+[px4-34] INFO  [uxrce_dds_client] successfully created rt/fmu/out/vehicle_command_ack data writer, topic id: 246
+[px4-34] INFO  [commander] Takeoff detected	
+[gazebo-2] [1;32m[Msg] [0m[1;32mContact system publishing on [0m[1;32mworld/agc_world/model/agc_car/link/car/base_link/sensor/contact/contact[0m[1;32m[0m
+[gazebo-2] [1;32m[Msg] [0m[1;32mLoading plugin [[0m[1;32mgz-rendering-ogre2[0m[1;32m][0m[1;32m[0m
+[gazebo-2] NodeShared::Publish() Error: Interrupted system call
+[INFO] [px4-35]: process started with pid [14420]
+[INFO] [intruder_driver-36]: process started with pid [14421]
+[px4-35] INFO  [px4] instance: 1
+[px4-35] INFO  [px4] assuming working directory is rootfs, no symlinks needed.
+[px4-35] 
+[px4-35] ______  __   __    ___ 
+[px4-35] | ___ \ \ \ / /   /   |
+[px4-35] | |_/ /  \ V /   / /| |
+[px4-35] |  __/   /   \  / /_| |
+[px4-35] | |     / /^\ \ \___  |
+[px4-35] \_|     \/   \/     |_/
+[px4-35] 
+[px4-35] px4 starting.
+[px4-35] 
+[px4-35] INFO  [px4] startup script: /bin/sh etc/init.d-posix/rcS 1
+[px4-35] INFO  [init] found model autostart file as SYS_AUTOSTART=4001
+[px4-35] INFO  [param] selected parameter default file parameters.bson
+[px4-35] INFO  [param] importing from 'parameters.bson'
+[px4-35] INFO  [parameters] BSON document size 425 bytes, decoded 425 bytes (INT32:15, FLOAT:6)
+[px4-35] INFO  [param] selected parameter backup file parameters_backup.bson
+[px4-35]   SYS_AUTOCONFIG: curr: 0 -> new: 1
+[px4-35]   MAV_SYS_ID: curr: 1 -> new: 2
+[px4-35]   UXRCE_DDS_KEY: curr: 1 -> new: 2
+[px4-35] + SYS_AUTOSTART: curr: 4010 -> new: 4001
+[px4-35]   SENS_BOARD_X_OFF: curr: 0.0000 -> new: 0.0000
+[px4-35]   SENS_DPRES_OFF: curr: 0.0000 -> new: 0.0010
+[standoff_follower-23] [WARN] [1793606184.126531260] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[standoff_follower-23] [WARN] [1793606185.126614634] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[px4-35]   UXRCE_DDS_SYNCT: curr: 1 -> new: 0
+[px4-35] INFO  [dataman] data manager file './dataman' size is 7872608 bytes
+[px4-35] INFO  [init] Gazebo simulator
+[px4-35] INFO  [init] Standalone PX4 launch, waiting for Gazebo
+[px4-35] INFO  [init] PX4_GZ_MODEL_NAME set, PX4 will attach to existing model
+[intruder_driver-36] [INFO] [1793606187.778419360] [intruder_driver]: intruder_driver: ns=px4_1 motion=linear cruise_alt=2.0m (source=cruise_alt_m(+alt_m 一致)) speed=0.5 radius=6.0 R_run=15.0
+[standoff_follower-23] [WARN] [1793606187.796414091] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[px4_adapter-20] [WARN] [1793606187.857114634] [px4_adapter]: EKF 复位计数 9 → 10：局部原点可能跳变，世界坐标需重新标定（R-003）；同时重锚 PX4→ROS 时间映射
+[px4-35] INFO  [lockstep_scheduler] setting initial absolute time to 28648000 us
+[px4-35] INFO  [gz_bridge] world: agc_world, model name: intruder_uav, simulation model: 
+[px4-35] INFO  [sensor_gps_sim] GPS simulation RNG seed=38592188
+[px4-35] WARN  [vehicle_angular_velocity] no gyro selected, using sensor_gyro:0 1310988
+[px4-35] INFO  [commander] LED: open /dev/led0 failed (22)
+[px4-35] WARN  [health_and_arming_checks] Preflight Fail: ekf2 missing data
+[standoff_follower-23] [WARN] [1793606188.446770382] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[px4-35] INFO  [uxrce_dds_client] init UDP agent IP:127.0.0.1, port:8889
+[MicroXRCEAgent-19] [35m[1793606188.715183][m info     | [34mRoot.cpp          [m | [37mcreate_client           [m | [32mcreate[m                 | client_key: 0x00000002, session_id: 0x81
+[MicroXRCEAgent-19] [35m[1793606188.715346][m info     | [34mSessionManager.hpp[m | [37mestablish_session       [m | [32msession established[m    | client_key: 0x00000002, address: 127.0.0.1:49326
+[takeoff_controller-21] [INFO] [1793606188.845244728] [takeoff_controller]: release_control：控制权移交 trajectory_tracker
+[task_manager-26] [INFO] [1793606188.846365323] [task_manager]: 空中控制权交接：已触发 /agc/air/release_control（takeoff_controller → trajectory_tracker）
+[task_manager-26] [INFO] [1793606188.846656237] [task_manager]: R-013 门禁证据(通过): [evid] reset_done=21.216 now=21.268 prev_clock=20.900 world=agc_world odom_valid_rx=21.256(age=0.012,val=1) ground_odom_rx=21.256(age=0.012) cmd_rx=21.268(age=0.000)
+[task_manager-26] [INFO] [1793606188.846668730] [task_manager]: start OK -> AIR_SEARCH
+[trajectory_tracker-22] [INFO] [1793606188.855540275] [trajectory_tracker]: 接管控制权（唯一授权）：期望轨迹 figure8
+[px4-35] INFO  [mavlink] mode: Normal, data rate: 4000000 B/s on udp port 18571 remote port 14550
+[ground_policy_rl-16] [INFO] [1793606189.068717233] [ground_policy_rl]: G2 路径质量门通过
+[px4-35] INFO  [tone_alarm] home set
+[px4-35] INFO  [mavlink] mode: Onboard, data rate: 4000000 B/s on udp port 14581 remote port 14541
+[px4-35] INFO  [mavlink] mode: Onboard, data rate: 4000 B/s on udp port 14281 remote port 14031
+[px4-35] INFO  [mavlink] mode: Gimbal, data rate: 400000 B/s on udp port 13031 remote port 13281
+[trajectory_tracker-22] [WARN] [1793606189.374909873] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606189.397313684] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[MicroXRCEAgent-19] [35m[1793606189.500214][m info     | [34mProxyClient.cpp   [m | [37mcreate_participant      [m | [32mparticipant created[m    | client_key: 0x00000002, participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.504511][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x800(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.504993][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x800(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.510467][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x800(6), subscriber_id: 0x800(4)
+[MicroXRCEAgent-19] [35m[1793606189.513031][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x801(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.513084][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x801(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.513903][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x801(6), subscriber_id: 0x801(4)
+[MicroXRCEAgent-19] [35m[1793606189.514684][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x802(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.514738][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x802(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.515243][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x802(6), subscriber_id: 0x802(4)
+[MicroXRCEAgent-19] [35m[1793606189.516196][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x803(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.516214][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x803(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.516508][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x803(6), subscriber_id: 0x803(4)
+[MicroXRCEAgent-19] [35m[1793606189.516941][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x804(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.516961][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x804(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.517204][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x804(6), subscriber_id: 0x804(4)
+[MicroXRCEAgent-19] [35m[1793606189.517645][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x805(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.517666][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x805(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.517936][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x805(6), subscriber_id: 0x805(4)
+[MicroXRCEAgent-19] [35m[1793606189.518375][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x806(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.518391][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x806(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.518689][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x806(6), subscriber_id: 0x806(4)
+[MicroXRCEAgent-19] [35m[1793606189.519664][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x807(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.519683][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x807(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.520155][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x807(6), subscriber_id: 0x807(4)
+[MicroXRCEAgent-19] [35m[1793606189.520575][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x808(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.520599][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x808(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.520878][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x808(6), subscriber_id: 0x808(4)
+[MicroXRCEAgent-19] [35m[1793606189.521389][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x809(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.521412][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x809(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.521662][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x809(6), subscriber_id: 0x809(4)
+[MicroXRCEAgent-19] [35m[1793606189.522490][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x80A(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.522508][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x80A(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.522811][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x80A(6), subscriber_id: 0x80A(4)
+[MicroXRCEAgent-19] [35m[1793606189.523890][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x80B(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.523941][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x80B(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.524250][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x80B(6), subscriber_id: 0x80B(4)
+[MicroXRCEAgent-19] [35m[1793606189.524758][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x80C(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.524788][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x80C(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.525065][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x80C(6), subscriber_id: 0x80C(4)
+[MicroXRCEAgent-19] [35m[1793606189.526008][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x80D(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.526087][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x80D(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.526504][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x80D(6), subscriber_id: 0x80D(4)
+[MicroXRCEAgent-19] [35m[1793606189.526979][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x80E(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.527007][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x80E(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.527299][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x80E(6), subscriber_id: 0x80E(4)
+[MicroXRCEAgent-19] [35m[1793606189.527859][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x80F(2), participant_id: 0x001(1)
+[px4-35] INFO  [logger] logger started (mode=all)
+[MicroXRCEAgent-19] [35m[1793606189.529047][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x80F(4), participant_id: 0x001(1)
+[px4-35] INFO  [logger] Start file log (type: full)
+[px4-35] INFO  [logger] [logger] ./log/2026-11-02/07_56_29.ulg	
+[px4-35] INFO  [logger] Opened full log file: ./log/2026-11-02/07_56_29.ulg
+[MicroXRCEAgent-19] [35m[1793606189.531850][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x80F(6), subscriber_id: 0x80F(4)
+[MicroXRCEAgent-19] [35m[1793606189.533209][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x810(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.533239][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x810(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.533538][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x810(6), subscriber_id: 0x810(4)
+[MicroXRCEAgent-19] [35m[1793606189.534924][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x811(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.534964][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x811(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.536403][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x811(6), subscriber_id: 0x811(4)
+[MicroXRCEAgent-19] [35m[1793606189.537356][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x812(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.537421][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x812(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.540073][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x812(6), subscriber_id: 0x812(4)
+[MicroXRCEAgent-19] [35m[1793606189.540534][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x813(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.540565][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x813(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.540899][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x813(6), subscriber_id: 0x813(4)
+[MicroXRCEAgent-19] [35m[1793606189.542343][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x814(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.542370][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x814(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.543571][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x814(6), subscriber_id: 0x814(4)
+[MicroXRCEAgent-19] [35m[1793606189.544896][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x815(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.544919][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x815(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.548375][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x815(6), subscriber_id: 0x815(4)
+[MicroXRCEAgent-19] [35m[1793606189.553145][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x816(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.553180][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x816(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.553499][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x816(6), subscriber_id: 0x816(4)
+[MicroXRCEAgent-19] [35m[1793606189.555371][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x817(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.555715][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x817(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.556309][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x817(6), subscriber_id: 0x817(4)
+[px4-35] INFO  [mavlink] MAVLink only on localhost (set param MAV_{i}_BROADCAST = 1 to enable network)
+[px4-35] INFO  [mavlink] MAVLink only on localhost (set param MAV_{i}_BROADCAST = 1 to enable network)
+[MicroXRCEAgent-19] [35m[1793606189.558282][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x818(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.558321][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x818(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.559147][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x818(6), subscriber_id: 0x818(4)
+[MicroXRCEAgent-19] [35m[1793606189.560040][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x819(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.560418][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x819(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.560714][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x819(6), subscriber_id: 0x819(4)
+[MicroXRCEAgent-19] [35m[1793606189.561860][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x81A(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.561929][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x81A(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.563199][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x81A(6), subscriber_id: 0x81A(4)
+[MicroXRCEAgent-19] [35m[1793606189.564317][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x81B(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.564388][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x81B(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.564780][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x81B(6), subscriber_id: 0x81B(4)
+[MicroXRCEAgent-19] [35m[1793606189.565974][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x81C(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.565992][m info     | [34mProxyClient.cpp   [m | [37mcreate_subscriber       [m | [32msubscriber created[m     | client_key: 0x00000002, subscriber_id: 0x81C(4), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.566774][m info     | [34mProxyClient.cpp   [m | [37mcreate_datareader       [m | [32mdatareader created[m     | client_key: 0x00000002, datareader_id: 0x81C(6), subscriber_id: 0x81C(4)
+[MicroXRCEAgent-19] [35m[1793606189.572630][m info     | [34mProxyClient.cpp   [m | [37mcreate_replier          [m | [32mreplier created[m        | client_key: 0x00000002, requester_id: 0x800(7), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.575013][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x013(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.576958][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000002, publisher_id: 0x013(3), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.577165][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000002, datawriter_id: 0x013(5), publisher_id: 0x013(3)
+[px4-35] INFO  [uxrce_dds_client] successfully created rt/px4_1/fmu/out/battery_status data writer, topic id: 19
+[MicroXRCEAgent-19] [35m[1793606189.578930][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x057(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.578969][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000002, publisher_id: 0x057(3), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.579719][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000002, datawriter_id: 0x057(5), publisher_id: 0x057(3)
+[px4-35] INFO  [uxrce_dds_client] successfully created rt/px4_1/fmu/out/estimator_status_flags data writer, topic id: 87
+[MicroXRCEAgent-19] [35m[1793606189.580602][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x05D(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.580625][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000002, publisher_id: 0x05D(3), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.580791][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000002, datawriter_id: 0x05D(5), publisher_id: 0x05D(3)
+[px4-35] INFO  [uxrce_dds_client] successfully created rt/px4_1/fmu/out/failsafe_flags data writer, topic id: 93
+[MicroXRCEAgent-19] [35m[1793606189.581320][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x08D(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.581335][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000002, publisher_id: 0x08D(3), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.581452][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000002, datawriter_id: 0x08D(5), publisher_id: 0x08D(3)
+[px4-35] INFO  [uxrce_dds_client] successfully created rt/px4_1/fmu/out/manual_control_setpoint data writer, topic id: 141
+[MicroXRCEAgent-19] [35m[1793606189.582153][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x0B4(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.582190][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000002, publisher_id: 0x0B4(3), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.582372][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000002, datawriter_id: 0x0B4(5), publisher_id: 0x0B4(3)
+[px4-35] INFO  [uxrce_dds_client] successfully created rt/px4_1/fmu/out/position_setpoint_triplet data writer, topic id: 180
+[MicroXRCEAgent-19] [35m[1793606189.582699][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x0CB(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.582722][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000002, publisher_id: 0x0CB(3), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.582893][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000002, datawriter_id: 0x0CB(5), publisher_id: 0x0CB(3)
+[px4-35] INFO  [uxrce_dds_client] successfully created rt/px4_1/fmu/out/sensor_combined data writer, topic id: 203
+[MicroXRCEAgent-19] [35m[1793606189.583504][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x0F2(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.583550][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000002, publisher_id: 0x0F2(3), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.583923][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000002, datawriter_id: 0x0F2(5), publisher_id: 0x0F2(3)
+[MicroXRCEAgent-19] [35m[1793606189.585258][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x0F9(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.585281][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000002, publisher_id: 0x0F9(3), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.585453][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000002, datawriter_id: 0x0F9(5), publisher_id: 0x0F9(3)
+[MicroXRCEAgent-19] [35m[1793606189.586089][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x0FC(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.586120][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000002, publisher_id: 0x0FC(3), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.587283][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000002, datawriter_id: 0x0FC(5), publisher_id: 0x0FC(3)
+[MicroXRCEAgent-19] [35m[1793606189.589720][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x100(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.589744][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000002, publisher_id: 0x100(3), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.590866][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000002, datawriter_id: 0x100(5), publisher_id: 0x100(3)
+[MicroXRCEAgent-19] [35m[1793606189.593673][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x105(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.594882][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000002, publisher_id: 0x105(3), participant_id: 0x001(1)
+[px4-35] INFO  [uxrce_dds_client] successfully created rt/px4_1/fmu/out/vehicle_attitude data writer, topic id: 242
+[px4-35] INFO  [uxrce_dds_client] successfully created rt/px4_1/fmu/out/vehicle_control_mode data writer, topic id: 249
+[px4-35] INFO  [uxrce_dds_client] successfully created rt/px4_1/fmu/out/vehicle_gps_position data writer, topic id: 252
+[px4-35] INFO  [uxrce_dds_client] successfully created rt/px4_1/fmu/out/vehicle_local_position data writer, topic id: 256
+[MicroXRCEAgent-19] [35m[1793606189.595310][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000002, datawriter_id: 0x105(5), publisher_id: 0x105(3)
+[px4-35] INFO  [uxrce_dds_client] successfully created rt/px4_1/fmu/out/vehicle_odometry data writer, topic id: 261
+[px4-35] INFO  [uxrce_dds_client] successfully created rt/px4_1/fmu/out/vehicle_status data writer, topic id: 266
+[px4-35] INFO  [px4] Startup script returned successfully
+[MicroXRCEAgent-19] [35m[1793606189.601768][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x10A(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.601849][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000002, publisher_id: 0x10A(3), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606189.602124][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000002, datawriter_id: 0x10A(5), publisher_id: 0x10A(3)
+[trajectory_tracker-22] [WARN] [1793606189.626279242] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606189.649699428] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[standoff_follower-23] [WARN] [1793606189.896338079] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606189.914776608] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[MicroXRCEAgent-19] [35m[1793606190.042991][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x0FA(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606190.043087][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000002, publisher_id: 0x0FA(3), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606190.049460][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000002, datawriter_id: 0x0FA(5), publisher_id: 0x0FA(3)
+[px4-35] INFO  [uxrce_dds_client] successfully created rt/px4_1/fmu/out/vehicle_global_position data writer, topic id: 250
+[intruder_driver-36] [INFO] [1793606190.089933152] [intruder_driver]: episode armed (epoch=2)
+[intruder_driver-36] [INFO] [1793606190.550002055] [intruder_driver]: odom origin (NED) = (0.44608888, -0.008017043, 0.5524476)
+[intruder_driver-36] [WARN] [1793606190.577247212] [intruder_driver]: [tw=30.9s] requesting ARM (armed=False)
+[px4-35] WARN  [commander] Arming denied: Resolve system health failures first	
+[px4-35] INFO  [tone_alarm] notify negative
+[MicroXRCEAgent-19] [35m[1793606190.595846][m info     | [34mProxyClient.cpp   [m | [37mcreate_topic            [m | [32mtopic created[m          | client_key: 0x00000002, topic_id: 0x0F6(2), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606190.596209][m info     | [34mProxyClient.cpp   [m | [37mcreate_publisher        [m | [32mpublisher created[m      | client_key: 0x00000002, publisher_id: 0x0F6(3), participant_id: 0x001(1)
+[MicroXRCEAgent-19] [35m[1793606190.599054][m info     | [34mProxyClient.cpp   [m | [37mcreate_datawriter       [m | [32mdatawriter created[m     | client_key: 0x00000002, datawriter_id: 0x0F6(5), publisher_id: 0x0F6(3)
+[px4-35] INFO  [uxrce_dds_client] successfully created rt/px4_1/fmu/out/vehicle_command_ack data writer, topic id: 246
+[ground_policy_rl-16] [WARN] [1793606190.644322362] [ground_policy_rl]: G2 路径质量门拒绝：goal_mismatch（）→ 持续零速
+[ground_policy_rl-16] [INFO] [1793606190.668424788] [ground_policy_rl]: G2 路径质量门通过
+[px4-35] INFO  [commander] [32mReady for takeoff![0m
+[trajectory_tracker-22] [WARN] [1793606191.434677333] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606191.446916277] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606192.174669109] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606192.196383977] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[ground_policy_rl-16] [WARN] [1793606192.650479551] [ground_policy_rl]: G2 路径质量门拒绝：goal_mismatch（）→ 持续零速
+[ground_policy_rl-16] [INFO] [1793606192.669415903] [ground_policy_rl]: G2 路径质量门通过
+[intruder_driver-36] [WARN] [1793606192.805887299] [intruder_driver]: [tw=33.0s] requesting ARM (armed=False)
+[px4-35] INFO  [commander] Armed by external command	
+[px4-35] INFO  [tone_alarm] arming warning
+[intruder_driver-36] [INFO] [1793606192.852086481] [intruder_driver]: [tw=33.0s] requesting OFFBOARD (nav_state=4)
+[trajectory_tracker-22] [WARN] [1793606193.095254095] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606193.096426371] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[ground_policy_rl-16] [WARN] [1793606193.651697790] [ground_policy_rl]: G2 路径质量门拒绝：goal_mismatch（）→ 持续零速
+[ground_policy_rl-16] [INFO] [1793606193.670522719] [ground_policy_rl]: G2 路径质量门通过
+[px4-35] INFO  [commander] Takeoff detected	
+[ground_policy_rl-16] [WARN] [1793606194.659435311] [ground_policy_rl]: G2 路径质量门拒绝：goal_mismatch（）→ 持续零速
+[ground_policy_rl-16] [INFO] [1793606194.670109747] [ground_policy_rl]: G2 路径质量门通过
+[ground_policy_rl-16] [WARN] [1793606196.659154763] [ground_policy_rl]: G2 路径质量门拒绝：goal_mismatch（）→ 持续零速
+[ground_policy_rl-16] [INFO] [1793606196.668739804] [ground_policy_rl]: G2 路径质量门通过
+[intruder_driver-36] [INFO] [1793606200.182048594] [intruder_driver]: episode t=0 (epoch=2)
+[ground_policy_rl-16] [WARN] [1793606200.638801650] [ground_policy_rl]: G2 路径质量门拒绝：goal_mismatch（）→ 持续零速
+[ground_policy_rl-16] [INFO] [1793606200.668357783] [ground_policy_rl]: G2 路径质量门通过
+[ground_policy_rl-16] [WARN] [1793606201.640054358] [ground_policy_rl]: G2 路径质量门拒绝：goal_mismatch（）→ 持续零速
+[ground_policy_rl-16] [INFO] [1793606201.668484630] [ground_policy_rl]: G2 路径质量门通过
+[trajectory_tracker-22] [WARN] [1793606202.435013068] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606202.446964231] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[ground_policy_rl-16] [WARN] [1793606203.651908058] [ground_policy_rl]: G2 路径质量门拒绝：goal_mismatch（）→ 持续零速
+[ground_policy_rl-16] [INFO] [1793606203.669013672] [ground_policy_rl]: G2 路径质量门通过
+[trajectory_tracker-22] [WARN] [1793606204.434783813] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606204.446332248] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[ground_policy_rl-16] [WARN] [1793606204.651064575] [ground_policy_rl]: G2 路径质量门拒绝：goal_mismatch（）→ 持续零速
+[ground_policy_rl-16] [INFO] [1793606204.669875536] [ground_policy_rl]: G2 路径质量门通过
+[trajectory_tracker-22] [WARN] [1793606205.374813861] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606205.396329645] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[ground_policy_rl-16] [WARN] [1793606205.653629428] [ground_policy_rl]: G2 路径质量门拒绝：goal_mismatch（）→ 持续零速
+[ground_policy_rl-16] [INFO] [1793606205.667992836] [ground_policy_rl]: G2 路径质量门通过
+[trajectory_tracker-22] [WARN] [1793606206.435694342] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606206.447303587] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[ground_policy_rl-16] [WARN] [1793606206.655964884] [ground_policy_rl]: G2 路径质量门拒绝：goal_mismatch（）→ 持续零速
+[ground_policy_rl-16] [INFO] [1793606206.669009460] [ground_policy_rl]: G2 路径质量门通过
+[trajectory_tracker-22] [WARN] [1793606207.574577745] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606207.596391523] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606208.894890583] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606208.896886235] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606209.874568067] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606209.896368533] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606210.974621012] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606210.996379338] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606215.134619564] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606215.146362590] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[ground_policy_rl-16] [WARN] [1793606216.638439869] [ground_policy_rl]: G2 路径质量门拒绝：goal_mismatch（）→ 持续零速
+[ground_policy_rl-16] [INFO] [1793606216.668167738] [ground_policy_rl]: G2 路径质量门通过
+[trajectory_tracker-22] [WARN] [1793606217.234604171] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606217.246596578] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[ground_policy_rl-16] [WARN] [1793606217.651983891] [ground_policy_rl]: G2 路径质量门拒绝：goal_mismatch（）→ 持续零速
+[ground_policy_rl-16] [INFO] [1793606217.668538906] [ground_policy_rl]: G2 路径质量门通过
+[trajectory_tracker-22] [WARN] [1793606217.994764329] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606217.996415809] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606218.717373670] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606218.746944817] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[ground_policy_rl-16] [WARN] [1793606221.701508265] [ground_policy_rl]: G2 路径质量门拒绝：goal_mismatch（）→ 持续零速
+[ground_policy_rl-16] [INFO] [1793606221.717724106] [ground_policy_rl]: G2 路径质量门通过
+[trajectory_tracker-22] [WARN] [1793606221.843568784] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606221.845390812] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606222.263520573] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606222.295350100] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[standoff_follower-23] [WARN] [1793606223.746019719] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606223.763647996] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[trajectory_tracker-22] [WARN] [1793606224.763497299] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606224.795348655] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606225.363501667] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606225.395318404] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606227.324508438] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606227.345365947] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[ground_policy_rl-16] [WARN] [1793606227.701519084] [ground_policy_rl]: G2 路径质量门拒绝：goal_mismatch（）→ 持续零速
+[ground_policy_rl-16] [INFO] [1793606227.716854251] [ground_policy_rl]: G2 路径质量门通过
+[standoff_follower-23] [WARN] [1793606228.495346415] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606228.503933278] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[ground_policy_rl-16] [WARN] [1793606228.705872509] [ground_policy_rl]: G2 路径质量门拒绝：goal_mismatch（）→ 持续零速
+[ground_policy_rl-16] [INFO] [1793606228.716802527] [ground_policy_rl]: G2 路径质量门通过
+[trajectory_tracker-22] [WARN] [1793606229.563560049] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606229.595574498] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606230.544003726] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606230.545459360] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[intruder_driver-36] [ERROR] [1793606232.452268485] [intruder_driver]: [boundary] run region reached R=15.00 (d=15.03)
+[standoff_follower-23] [WARN] [1793606233.595311350] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606233.604684823] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[trajectory_tracker-22] [WARN] [1793606235.263485559] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606235.295296323] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[ground_policy_rl-16] [WARN] [1793606235.712621802] [ground_policy_rl]: G2 路径质量门拒绝：goal_mismatch（）→ 持续零速
+[ground_policy_rl-16] [INFO] [1793606235.716774172] [ground_policy_rl]: G2 路径质量门通过
+[trajectory_tracker-22] [WARN] [1793606236.224610982] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606236.245883629] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[standoff_follower-23] [WARN] [1793606237.295328661] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606237.303502053] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[trajectory_tracker-22] [WARN] [1793606237.583504449] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606237.595324420] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606238.104796047] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606238.146274471] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606238.463492101] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606238.495398461] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606238.965054116] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606238.995330837] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606239.823570504] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606239.845702409] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[ground_policy_rl-16] [WARN] [1793606242.691339937] [ground_policy_rl]: G2 路径质量门拒绝：goal_mismatch（）→ 持续零速
+[ground_policy_rl-16] [INFO] [1793606242.716613673] [ground_policy_rl]: G2 路径质量门通过
+[trajectory_tracker-22] [WARN] [1793606243.343824583] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606243.345387986] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606243.923762695] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606243.945394620] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606245.745283585] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606245.745763361] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[ground_policy_rl-16] [WARN] [1793606246.713558807] [ground_policy_rl]: G2 路径质量门拒绝：goal_mismatch（）→ 持续零速
+[ground_policy_rl-16] [INFO] [1793606246.716691886] [ground_policy_rl]: G2 路径质量门通过
+[trajectory_tracker-22] [WARN] [1793606249.883739266] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606249.895695357] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606250.843493332] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606250.845338999] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[standoff_follower-23] [WARN] [1793606251.295383649] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606251.303556271] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606251.695310415] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606251.703871389] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[trajectory_tracker-22] [WARN] [1793606252.424164504] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606252.445380717] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606252.963843255] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606252.995326947] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606253.385014365] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606253.395312496] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606258.029528295] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606258.031147007] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[standoff_follower-23] [WARN] [1793606258.831196694] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606258.849255167] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606259.331162336] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606259.349346334] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[trajectory_tracker-22] [WARN] [1793606259.870307163] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606259.881110282] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606260.309773992] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606260.331159200] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[gazebo-2] NodeShared::Publish() Error: Interrupted system call
+[trajectory_tracker-22] [WARN] [1793606260.569802249] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606260.581225193] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606269.809299586] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606269.831207022] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606270.649484868] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606270.681260931] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606271.009588808] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606271.031145104] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606273.449392250] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606273.481176533] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[standoff_follower-23] [WARN] [1793606275.681118679] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606275.689350892] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606276.081699242] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606276.089667683] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[trajectory_tracker-22] [WARN] [1793606276.330813805] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606276.331331802] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606277.229792504] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606277.231144738] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606278.009325792] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606278.031186301] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[standoff_follower-23] [WARN] [1793606278.281303644] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606278.289433795] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[trajectory_tracker-22] [WARN] [1793606278.769318389] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606278.781122425] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606279.069403999] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606279.081137397] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606280.069377647] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606280.081154755] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606280.711077170] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606280.731296233] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606281.009326622] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606281.031200646] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606284.869720208] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606284.881152125] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[standoff_follower-23] [WARN] [1793606285.882494284] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606285.889296399] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[trajectory_tracker-22] [WARN] [1793606287.189496941] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606287.231154097] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606291.085361041] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606291.106436181] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606292.404918195] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606292.406448075] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[standoff_follower-23] [WARN] [1793606292.756475019] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606292.764769392] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[trajectory_tracker-22] [WARN] [1793606293.185294397] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606293.206386640] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606297.244606496] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606297.256392073] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606297.846223422] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606297.856385811] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606299.144759462] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606299.156434319] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606300.644576955] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606300.656390854] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606304.324924418] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606304.356390620] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606305.804820846] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606305.806410243] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606306.524558679] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606306.557659681] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[standoff_follower-23] [WARN] [1793606307.657634414] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606307.665039830] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[trajectory_tracker-22] [WARN] [1793606308.004830612] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606308.006403671] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606308.584799336] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606308.606428165] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606308.824782893] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606308.857391480] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606309.304975057] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606309.306401662] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[standoff_follower-23] [WARN] [1793606311.656884111] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606311.664742194] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[trajectory_tracker-22] [WARN] [1793606311.984597834] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606312.006399337] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606313.084564820] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606313.106966394] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606313.344675591] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606313.356388769] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606314.164645986] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606314.206405456] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606315.024604122] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606315.056383936] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606315.404996138] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606315.406821032] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606316.324650295] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606316.356660169] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606316.585419947] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606316.606395004] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606319.264588379] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606319.306385739] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[standoff_follower-23] [WARN] [1793606323.264655161] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606323.272771979] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[trajectory_tracker-22] [WARN] [1793606326.472999669] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606326.514904679] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606326.833088603] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606326.864591414] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606327.313229714] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606327.314884818] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[trajectory_tracker-22] [WARN] [1793606327.813316112] [trajectory_tracker]: 已获目标后参考 / 目标失效（ref_fresh=1 tgt_fresh=0）→ 显式 hold（不回落八字）
+[standoff_follower-23] [WARN] [1793606327.815165172] [standoff_follower]: 目标过期/置信度不足 → 冻结跟踪（hold）
+[ground_odom_adapter-6] [WARN] [1793606575.299220100] [ground_odom_adapter]: ground odom clock_anomaly: age=-0.012 s < 0（future stamp / 时钟回拨）
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[ERROR] [MicroXRCEAgent-18]: process has died [pid 13464, exit code -2, cmd '/home/chen/AGC/toolchain/bin/MicroXRCEAgent udp4 -p 8888'].
+[takeoff_controller-21] [INFO] [1793606579.877226242] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[ERROR] [MicroXRCEAgent-19]: process has died [pid 13465, exit code -2, cmd '/home/chen/AGC/toolchain/bin/MicroXRCEAgent udp4 -p 8889'].
+[INFO] [px4-34]: process has finished cleanly [pid 14006]
+[INFO] [px4-35]: process has finished cleanly [pid 14420]
+[vision_target-9] [INFO] [1793606579.877453891] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[ground_drive_relay-14] [INFO] [1793606579.877504784] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[task_manager-26] [INFO] [1793606579.877561626] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[parameter_bridge-4] [INFO] [1793606579.878791063] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[parameter_bridge-3] [INFO] [1793606579.880810129] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[scenario_reset-25] [INFO] [1793606579.880668888] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[gt_bypass-5] [INFO] [1793606579.884967414] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[static_transform_publisher-11] [INFO] [1793606579.885769806] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[lifecycle_manager-17] [INFO] [1793606579.886268822] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[lifecycle_manager-17] [INFO] [1793606579.886389322] [lifecycle_manager_ground]: Running Nav2 LifecycleManager rcl preshutdown (lifecycle_manager_ground)
+[lifecycle_manager-17] [INFO] [1793606579.886427299] [lifecycle_manager_ground]: [34m[1mTerminating bond timer...[0m[0m
+[lifecycle_manager-33] [INFO] [1793606579.886574077] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[lifecycle_manager-33] [INFO] [1793606579.886688259] [lifecycle_manager_air]: Running Nav2 LifecycleManager rcl preshutdown (lifecycle_manager_air)
+[lifecycle_manager-33] [INFO] [1793606579.886742062] [lifecycle_manager_air]: [34m[1mTerminating bond timer...[0m[0m
+[ground_odom_adapter-6] [INFO] [1793606579.887440875] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[placeholder_path_planner-15] [INFO] [1793606579.888121564] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[scan_self_filter-12] [INFO] [1793606579.888703586] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[camera_tf-8] [INFO] [1793606579.889194282] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[map_adapter-7] [INFO] [1793606579.890886376] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[capture_adjudicator-28] [INFO] [1793606579.890889708] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[collision_monitor-13] [INFO] [1793606579.891354568] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[collision_monitor-13] [INFO] [1793606579.892165697] [collision_monitor]: Running Nav2 LifecycleNode rcl preshutdown (collision_monitor)
+[collision_monitor-13] [INFO] [1793606579.892217340] [collision_monitor]: Deactivating
+[collision_monitor-13] [INFO] [1793606579.892235184] [collision_monitor]: Destroying bond (collision_monitor) to lifecycle manager.
+[static_transform_publisher-10] [INFO] [1793606579.892805293] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[run_logger-27] [INFO] [1793606579.901755892] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[run_logger-27] [INFO] [1793606579.903545839] [run_logger]: mission_fco ledger written: /home/chen/AGC/experiments/w6-task-eval/20261102-s02_linear_none_nominal_track-0-155603-2790/metrics/mission_fco_intervals.json
+[run_logger-27] [INFO] [1793606579.903632453] [run_logger]: summary written: /home/chen/AGC/experiments/w6-task-eval/20261102-s02_linear_none_nominal_track-0-155603-2790/metrics/summary.json
+[standoff_follower-23] [INFO] [1793606579.903585938] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[px4-35] 
+[px4-35] PX4 Exiting...
+[px4-35] Exiting NOW.
+[px4_adapter-20] [INFO] [1793606579.904109701] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[px4-34] 
+[px4-34] PX4 Exiting...
+[px4-34] Exiting NOW.
+[trajectory_tracker-22] [INFO] [1793606579.904726249] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[INFO] [intruder_driver-36]: sending signal 'SIGINT' to process[intruder_driver-36]
+[INFO] [lifecycle_manager-33]: sending signal 'SIGINT' to process[lifecycle_manager-33]
+[INFO] [python3-30]: sending signal 'SIGINT' to process[python3-30]
+[INFO] [jammer-29]: sending signal 'SIGINT' to process[jammer-29]
+[INFO] [capture_adjudicator-28]: sending signal 'SIGINT' to process[capture_adjudicator-28]
+[INFO] [run_logger-27]: sending signal 'SIGINT' to process[run_logger-27]
+[INFO] [task_manager-26]: sending signal 'SIGINT' to process[task_manager-26]
+[INFO] [scenario_reset-25]: sending signal 'SIGINT' to process[scenario_reset-25]
+[INFO] [standoff_follower-23]: sending signal 'SIGINT' to process[standoff_follower-23]
+[INFO] [trajectory_tracker-22]: sending signal 'SIGINT' to process[trajectory_tracker-22]
+[ERROR] [scenario_reset-25]: process has died [pid 13490, exit code -2, cmd '/home/chen/AGC/install/agc_task/lib/agc_task/scenario_reset --ros-args -r __node:=scenario_reset --params-file /tmp/w6_full_s02_linear_none_nominal_track_0_20261102-155547-13407-7882.yaml --params-file /tmp/launch_params_pm7tsraa'].
+[INFO] [takeoff_controller-21]: sending signal 'SIGINT' to process[takeoff_controller-21]
+[ERROR] [task_manager-26]: process has died [pid 13496, exit code -2, cmd '/home/chen/AGC/install/agc_task/lib/agc_task/task_manager --ros-args -r __node:=task_manager --params-file /tmp/w6_full_s02_linear_none_nominal_track_0_20261102-155547-13407-7882.yaml --params-file /tmp/launch_params_atqzkxvu'].
+[ERROR] [trajectory_tracker-22]: process has died [pid 13484, exit code -2, cmd '/home/chen/AGC/install/agc_air/lib/agc_air/trajectory_tracker --ros-args -r __node:=trajectory_tracker --params-file /tmp/w6_full_air_s02_linear_none_nominal_track_0_20261102-155547-13407-9376.yaml --params-file /tmp/launch_params_x884xk9s'].
+[ERROR] [run_logger-27]: process has died [pid 13500, exit code -2, cmd '/home/chen/AGC/install/agc_task/lib/agc_task/run_logger --ros-args -r __node:=run_logger --params-file /tmp/w6_full_s02_linear_none_nominal_track_0_20261102-155547-13407-7882.yaml --params-file /tmp/launch_params_xjim2hv6 --params-file /tmp/launch_params_m3w2ureh --params-file /tmp/launch_params_hc0w08x1 --params-file /tmp/launch_params_bvx_lo74 --params-file /tmp/launch_params_9mt27etk'].
+[INFO] [px4_adapter-20]: sending signal 'SIGINT' to process[px4_adapter-20]
+[INFO] [parameter_bridge-3]: process has finished cleanly [pid 13412]
+[ERROR] [python3-30]: process has died [pid 13511, exit code -2, cmd '/usr/bin/python3 /home/chen/AGC/scripts/vision/vision_detector.py --ros-args -p perception_path:=vision -p detector_backend:=synthetic_color -p vision_model_id:=none -p image_topic:=/agc/air/camera/image_raw -p camera_info_topic:=/agc/air/camera/camera_info -p detections_topic:=/agc/vision/detections -p status_topic:=/agc/vision/status -p camera_frame_map:=x500_mono_cam_0/mono_cam/base_link/imager=drone/camera_optical_frame -p fallback_frame:=drone/camera_optical_frame'].
+[INFO] [lifecycle_manager-17]: sending signal 'SIGINT' to process[lifecycle_manager-17]
+[INFO] [ground_policy_rl-16]: sending signal 'SIGINT' to process[ground_policy_rl-16]
+[INFO] [scan_self_filter-12]: process has finished cleanly [pid 13439]
+[INFO] [placeholder_path_planner-15]: sending signal 'SIGINT' to process[placeholder_path_planner-15]
+[INFO] [static_transform_publisher-10]: process has finished cleanly [pid 13424]
+[ERROR] [lifecycle_manager-17]: process has died [pid 13461, exit code -2, cmd '/opt/ros/jazzy/lib/nav2_lifecycle_manager/lifecycle_manager --ros-args -r __node:=lifecycle_manager_ground --params-file /tmp/launch_params_h7mghb6k'].
+[INFO] [ground_drive_relay-14]: sending signal 'SIGINT' to process[ground_drive_relay-14]
+[INFO] [collision_monitor-13]: sending signal 'SIGINT' to process[collision_monitor-13]
+[ERROR] [placeholder_path_planner-15]: process has died [pid 13446, exit code -2, cmd '/home/chen/AGC/install/agc_ground/lib/agc_ground/placeholder_path_planner --ros-args -r __node:=placeholder_path_planner --params-file /home/chen/AGC/install/agc_ground/share/agc_ground/config/ground.yaml --params-file /tmp/launch_params_msczf8tr'].
+[INFO] [static_transform_publisher-11]: sending signal 'SIGINT' to process[static_transform_publisher-11]
+[ERROR] [ground_drive_relay-14]: process has died [pid 13441, exit code -2, cmd '/home/chen/AGC/install/agc_ground/lib/agc_ground/ground_drive_relay --ros-args -r __node:=ground_drive_relay --params-file /home/chen/AGC/install/agc_ground/share/agc_ground/config/ground.yaml --params-file /tmp/launch_params_hggaivwv'].
+[INFO] [vision_target-9]: sending signal 'SIGINT' to process[vision_target-9]
+[INFO] [camera_tf-8]: sending signal 'SIGINT' to process[camera_tf-8]
+[INFO] [map_adapter-7]: sending signal 'SIGINT' to process[map_adapter-7]
+[INFO] [ground_odom_adapter-6]: sending signal 'SIGINT' to process[ground_odom_adapter-6]
+[ERROR] [vision_target-9]: process has died [pid 13423, exit code -2, cmd '/home/chen/AGC/install/agc_perception/lib/agc_perception/vision_target --ros-args -r __node:=vision_target --params-file /home/chen/AGC/install/agc_perception/share/agc_perception/config/perception.yaml --params-file /tmp/launch_params_071jxsaf --params-file /tmp/launch_params_1jp2ibpp'].
+[ERROR] [static_transform_publisher-11]: process has died [pid 13425, exit code -2, cmd '/opt/ros/jazzy/lib/tf2_ros/static_transform_publisher --x 0 --y 0 --z 0 --roll 0 --pitch 0 --yaw 0 --frame-id car/lidar_link --child-frame-id agc_car/car/lidar_link/lidar3d --ros-args -r __node:=car_lidar_gz_frame_tf --params-file /tmp/launch_params_wz8m61vg'].
+[INFO] [gt_bypass-5]: sending signal 'SIGINT' to process[gt_bypass-5]
+[INFO] [parameter_bridge-4]: process has finished cleanly [pid 13413]
+[ERROR] [map_adapter-7]: process has died [pid 13421, exit code -2, cmd '/home/chen/AGC/install/agc_perception/lib/agc_perception/map_adapter --ros-args -r __node:=map_adapter --params-file /home/chen/AGC/install/agc_perception/share/agc_perception/config/perception.yaml --params-file /tmp/launch_params_b3y6svz0 --params-file /tmp/launch_params_pu6ilm9z'].
+[ERROR] [ground_odom_adapter-6]: process has died [pid 13420, exit code -2, cmd '/home/chen/AGC/install/agc_perception/lib/agc_perception/ground_odom_adapter --ros-args -r __node:=ground_odom_adapter --params-file /home/chen/AGC/install/agc_perception/share/agc_perception/config/perception.yaml --params-file /tmp/launch_params_eb0_fdiv'].
+[ERROR] [camera_tf-8]: process has died [pid 13422, exit code -2, cmd '/home/chen/AGC/install/agc_perception/lib/agc_perception/camera_tf --ros-args -r __node:=camera_tf --params-file /home/chen/AGC/install/agc_perception/share/agc_perception/config/perception.yaml --params-file /tmp/launch_params_2f88r0hz --params-file /tmp/launch_params_2sqo85ai'].
+[INFO] [gazebo-2]: sending signal 'SIGINT' to process[gazebo-2]
+[ERROR] [gt_bypass-5]: process has died [pid 13417, exit code -2, cmd '/home/chen/AGC/install/agc_perception/lib/agc_perception/gt_bypass --ros-args -r __node:=gt_bypass --params-file /home/chen/AGC/install/agc_perception/share/agc_perception/config/perception.yaml --params-file /tmp/launch_params_5a39snd9'].
+[takeoff_controller-21] terminate called after throwing an instance of 'rclcpp::exceptions::RCLError'
+[takeoff_controller-21]   what():  Couldn't initialize rcl timer handle: the given context is not valid, either rcl_init() was not called or rcl_shutdown() was called., at ./src/rcl/guard_condition.c:67
+[standoff_follower-23] terminate called after throwing an instance of 'rclcpp::exceptions::RCLError'
+[standoff_follower-23]   what():  Couldn't initialize rcl timer handle: the given context is not valid, either rcl_init() was not called or rcl_shutdown() was called., at ./src/rcl/guard_condition.c:67
+[px4_adapter-20] terminate called after throwing an instance of 'rclcpp::exceptions::RCLError'
+[px4_adapter-20]   what():  Couldn't initialize rcl timer handle: the given context is not valid, either rcl_init() was not called or rcl_shutdown() was called., at ./src/rcl/guard_condition.c:67
+[lifecycle_manager-17] [INFO] [1793606580.012117659] [lifecycle_manager_ground]: Destroying lifecycle_manager_ground
+[collision_monitor-13] [INFO] [1793606580.015984132] [collision_monitor]: Cleaning up
+[python3-30] Traceback (most recent call last):
+[python3-30]   File "/home/chen/AGC/scripts/vision/vision_detector.py", line 383, in <module>
+[python3-30]     sys.exit(main())
+[python3-30]              ^^^^^^
+[python3-30]   File "/home/chen/AGC/scripts/vision/vision_detector.py", line 377, in main
+[python3-30]     node.destroy_node()
+[python3-30]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/node.py", line 1968, in destroy_node
+[python3-30]     self.__node.destroy_when_not_in_use()
+[python3-30] KeyboardInterrupt
+[collision_monitor-13] [INFO] [1793606580.054837917] [collision_monitor]: [SlowSafety]: Destroying VelocityPolygon
+[collision_monitor-13] [INFO] [1793606580.054872367] [collision_monitor]: [SlowSafety]: Destroying Polygon
+[collision_monitor-13] [INFO] [1793606580.055259708] [collision_monitor]: [StopCollision]: Destroying VelocityPolygon
+[collision_monitor-13] [INFO] [1793606580.055273146] [collision_monitor]: [StopCollision]: Destroying Polygon
+[collision_monitor-13] [INFO] [1793606580.055660422] [collision_monitor]: [StopEmergency]: Destroying VelocityPolygon
+[collision_monitor-13] [INFO] [1793606580.055680480] [collision_monitor]: [StopEmergency]: Destroying Polygon
+[collision_monitor-13] [INFO] [1793606580.076660732] [collision_monitor]: Destroying bond (collision_monitor) to lifecycle manager.
+[collision_monitor-13] [ERROR] [1793606580.079483243] [getTransform]: Failed to get "agc_car/car/lidar_link/lidar3d"->"car/base_link" frame transform: Lookup would require extrapolation into the future.  Requested time 397.040000 but the latest data is at time 397.032000, when looking up transform from frame [world] to frame [car/base_link]
+[collision_monitor-13] [INFO] [1793606580.079503322] [collision_monitor]: [scan]: Destroying Scan
+[jammer-29] Traceback (most recent call last):
+[jammer-29]   File "/home/chen/AGC/install/agc_task/lib/agc_task/jammer", line 329, in <module>
+[jammer-29]     main()
+[jammer-29]   File "/home/chen/AGC/install/agc_task/lib/agc_task/jammer", line 324, in main
+[jammer-29]     node.destroy_node()
+[jammer-29]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/node.py", line 1958, in destroy_node
+[jammer-29]     self.destroy_subscription(self._subscriptions[0])
+[jammer-29]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/node.py", line 1854, in destroy_subscription
+[jammer-29]     subscription.destroy()
+[jammer-29]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/subscription.py", line 101, in destroy
+[jammer-29]     self.handle.destroy_when_not_in_use()
+[jammer-29] KeyboardInterrupt
+[capture_adjudicator-28] [INFO] [1793606580.094411627] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[intruder_driver-36] Traceback (most recent call last):
+[intruder_driver-36]   File "/home/chen/AGC/install/agc_task/lib/agc_task/intruder_driver", line 348, in <module>
+[intruder_driver-36]     main()
+[intruder_driver-36]   File "/home/chen/AGC/install/agc_task/lib/agc_task/intruder_driver", line 343, in main
+[intruder_driver-36]     node.destroy_node()
+[intruder_driver-36]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/node.py", line 1962, in destroy_node
+[intruder_driver-36]     self.destroy_service(self._services[0])
+[intruder_driver-36]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/node.py", line 1886, in destroy_service
+[intruder_driver-36]     service.destroy()
+[intruder_driver-36]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/service.py", line 123, in destroy
+[intruder_driver-36]     self.__service.destroy_when_not_in_use()
+[intruder_driver-36] KeyboardInterrupt
+[ground_policy_rl-16] Traceback (most recent call last):
+[ground_policy_rl-16]   File "/home/chen/AGC/install/agc_rl/lib/python3.12/site-packages/agc_rl/inference_node.py", line 340, in main
+[ground_policy_rl-16]     rclpy.spin(node)
+[ground_policy_rl-16]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+[ground_policy_rl-16]     executor.spin_once()
+[ground_policy_rl-16]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 926, in spin_once
+[ground_policy_rl-16]     self._spin_once_impl(timeout_sec)
+[ground_policy_rl-16]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 907, in _spin_once_impl
+[ground_policy_rl-16]     handler, entity, node = self.wait_for_ready_callbacks(
+[ground_policy_rl-16]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[ground_policy_rl-16]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 877, in wait_for_ready_callbacks
+[ground_policy_rl-16]     return next(self._cb_iter)
+[ground_policy_rl-16]            ^^^^^^^^^^^^^^^^^^^
+[ground_policy_rl-16]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 781, in _wait_for_ready_callbacks
+[ground_policy_rl-16]     wait_set.wait(timeout_nsec)
+[ground_policy_rl-16] KeyboardInterrupt
+[ground_policy_rl-16] 
+[ground_policy_rl-16] During handling of the above exception, another exception occurred:
+[ground_policy_rl-16] 
+[ground_policy_rl-16] Traceback (most recent call last):
+[ground_policy_rl-16]   File "/home/chen/AGC/install/agc_rl/lib/agc_rl/ground_policy_rl", line 33, in <module>
+[ground_policy_rl-16]     sys.exit(load_entry_point('agc-rl==0.0.0', 'console_scripts', 'ground_policy_rl')())
+[ground_policy_rl-16]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[ground_policy_rl-16]   File "/home/chen/AGC/install/agc_rl/lib/python3.12/site-packages/agc_rl/inference_node.py", line 343, in main
+[ground_policy_rl-16]     rclpy.shutdown()
+[ground_policy_rl-16]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 134, in shutdown
+[ground_policy_rl-16]     _shutdown(context=context)
+[ground_policy_rl-16]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/utilities.py", line 82, in shutdown
+[ground_policy_rl-16]     context.shutdown()
+[ground_policy_rl-16]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/context.py", line 129, in shutdown
+[ground_policy_rl-16]     self.__context.shutdown()
+[ground_policy_rl-16] rclpy._rclpy_pybind11.RCLError: failed to shutdown: rcl_shutdown already called on the given context, at ./src/rcl/init.c:333
+[ground_policy_rl-16] Error in sys.excepthook:
+[ground_policy_rl-16] Traceback (most recent call last):
+[ground_policy_rl-16]   File "/usr/lib/python3/dist-packages/apport_python_hook.py", line 228, in partial_apport_excepthook
+[ground_policy_rl-16]     return apport_excepthook(binary, exc_type, exc_obj, exc_tb)
+[ground_policy_rl-16]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[ground_policy_rl-16]   File "/usr/lib/python3/dist-packages/apport_python_hook.py", line 66, in apport_excepthook
+[ground_policy_rl-16]     import apport.report
+[ground_policy_rl-16]   File "/usr/lib/python3/dist-packages/apport/__init__.py", line 7, in <module>
+[ground_policy_rl-16]     from apport.packaging_impl import impl as packaging
+[ground_policy_rl-16]   File "/usr/lib/python3/dist-packages/apport/packaging_impl/__init__.py", line 33, in <module>
+[ground_policy_rl-16]     impl = load_packaging_implementation()
+[ground_policy_rl-16]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[ground_policy_rl-16]   File "/usr/lib/python3/dist-packages/apport/packaging_impl/__init__.py", line 27, in load_packaging_implementation
+[ground_policy_rl-16]     module = importlib.import_module(
+[ground_policy_rl-16]              ^^^^^^^^^^^^^^^^^^^^^^^^
+[ground_policy_rl-16]   File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+[ground_policy_rl-16]     return _bootstrap._gcd_import(name[level:], package, level)
+[ground_policy_rl-16]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[ground_policy_rl-16]   File "/usr/lib/python3/dist-packages/apport/packaging_impl/apt_dpkg.py", line 49, in <module>
+[ground_policy_rl-16]     import apt
+[ground_policy_rl-16]   File "/usr/lib/python3/dist-packages/apt/__init__.py", line 21, in <module>
+[ground_policy_rl-16]     import apt_pkg
+[ground_policy_rl-16] KeyboardInterrupt
+[ground_policy_rl-16] 
+[ground_policy_rl-16] Original exception was:
+[ground_policy_rl-16] Traceback (most recent call last):
+[ground_policy_rl-16]   File "/home/chen/AGC/install/agc_rl/lib/python3.12/site-packages/agc_rl/inference_node.py", line 340, in main
+[ground_policy_rl-16]     rclpy.spin(node)
+[ground_policy_rl-16]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+[ground_policy_rl-16]     executor.spin_once()
+[ground_policy_rl-16]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 926, in spin_once
+[ground_policy_rl-16]     self._spin_once_impl(timeout_sec)
+[ground_policy_rl-16]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 907, in _spin_once_impl
+[ground_policy_rl-16]     handler, entity, node = self.wait_for_ready_callbacks(
+[ground_policy_rl-16]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[ground_policy_rl-16]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 877, in wait_for_ready_callbacks
+[ground_policy_rl-16]     return next(self._cb_iter)
+[ground_policy_rl-16]            ^^^^^^^^^^^^^^^^^^^
+[ground_policy_rl-16]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 781, in _wait_for_ready_callbacks
+[ground_policy_rl-16]     wait_set.wait(timeout_nsec)
+[ground_policy_rl-16] KeyboardInterrupt
+[ground_policy_rl-16] 
+[ground_policy_rl-16] During handling of the above exception, another exception occurred:
+[ground_policy_rl-16] 
+[ground_policy_rl-16] Traceback (most recent call last):
+[ground_policy_rl-16]   File "/home/chen/AGC/install/agc_rl/lib/agc_rl/ground_policy_rl", line 33, in <module>
+[ground_policy_rl-16]     sys.exit(load_entry_point('agc-rl==0.0.0', 'console_scripts', 'ground_policy_rl')())
+[ground_policy_rl-16]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[ground_policy_rl-16]   File "/home/chen/AGC/install/agc_rl/lib/python3.12/site-packages/agc_rl/inference_node.py", line 343, in main
+[ground_policy_rl-16]     rclpy.shutdown()
+[ground_policy_rl-16]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 134, in shutdown
+[ground_policy_rl-16]     _shutdown(context=context)
+[ground_policy_rl-16]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/utilities.py", line 82, in shutdown
+[ground_policy_rl-16]     context.shutdown()
+[ground_policy_rl-16]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/context.py", line 129, in shutdown
+[ground_policy_rl-16]     self.__context.shutdown()
+[ground_policy_rl-16] rclpy._rclpy_pybind11.RCLError: failed to shutdown: rcl_shutdown already called on the given context, at ./src/rcl/init.c:333
+[INFO] [capture_adjudicator-28]: process has finished cleanly [pid 13507]
+[ERROR] [jammer-29]: process has died [pid 13510, exit code -2, cmd '/home/chen/AGC/install/agc_task/lib/agc_task/jammer --ros-args -r __node:=jammer --params-file /tmp/w6_full_s02_linear_none_nominal_track_0_20261102-155547-13407-7882.yaml --params-file /tmp/launch_params_uv6di8_u'].
+[ERROR] [intruder_driver-36]: process has died [pid 14421, exit code -2, cmd '/home/chen/AGC/install/agc_task/lib/agc_task/intruder_driver --ros-args -r __node:=intruder_driver --params-file /tmp/w6_full_s02_linear_none_nominal_track_0_20261102-155547-13407-7882.yaml --params-file /tmp/launch_params_i0k12r0w'].
+[lifecycle_manager-33] [INFO] [1793606580.517739398] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[lifecycle_manager-33] [INFO] [1793606580.518530030] [lifecycle_manager_air]: Destroying lifecycle_manager_air
+[ERROR] [ground_policy_rl-16]: process has died [pid 13453, exit code 1, cmd '/home/chen/AGC/install/agc_rl/lib/agc_rl/ground_policy_rl --ros-args -r __node:=ground_policy_rl --params-file /home/chen/AGC/install/agc_rl/share/agc_rl/config/rl.yaml --params-file /tmp/launch_params_kcr92sdb'].
+[INFO] [lifecycle_manager-33]: process has finished cleanly [pid 13987]
+[ERROR] [takeoff_controller-21]: process has died [pid 13471, exit code -6, cmd '/home/chen/AGC/install/agc_air/lib/agc_air/takeoff_controller --ros-args -r __node:=takeoff_controller --params-file /tmp/w6_full_air_s02_linear_none_nominal_track_0_20261102-155547-13407-9376.yaml --params-file /tmp/launch_params_i6n8xtol'].
+[ERROR] [standoff_follower-23]: process has died [pid 13485, exit code -6, cmd '/home/chen/AGC/install/agc_air/lib/agc_air/standoff_follower --ros-args -r __node:=standoff_follower --params-file /tmp/w6_full_air_s02_linear_none_nominal_track_0_20261102-155547-13407-9376.yaml --params-file /tmp/launch_params_urf1wpr9'].
+[ERROR] [px4_adapter-20]: process has died [pid 13470, exit code -6, cmd '/home/chen/AGC/install/agc_air/lib/agc_air/px4_adapter --ros-args -r __node:=px4_adapter --params-file /tmp/w6_full_air_s02_linear_none_nominal_track_0_20261102-155547-13407-9376.yaml --params-file /tmp/launch_params__4sc41vs'].
+[ERROR] [collision_monitor-13]: process has died [pid 13440, exit code -11, cmd '/opt/ros/jazzy/lib/nav2_collision_monitor/collision_monitor --ros-args -r __node:=collision_monitor --params-file /home/chen/AGC/install/agc_ground/share/agc_ground/config/ground.yaml --params-file /tmp/launch_params_ooqnzgr6'].
+[ERROR] [gazebo-2]: process[gazebo-2] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+[INFO] [gazebo-2]: sending signal 'SIGTERM' to process[gazebo-2]
+[ERROR] [gazebo-2]: process has died [pid 13411, exit code -15, cmd 'ruby /opt/ros/jazzy/opt/gz_tools_vendor/bin/gz sim -s -r -v 3 /home/chen/AGC/install/agc_sim/share/agc_sim/worlds/agc_world.sdf --force-version 8'].

@@ -12,7 +12,7 @@
   E C6 逃逸标定：各动作在**反应窗口 T**（s）内的横向位移（米）；`max(|lateral|) ≥ 配置 max_offset`
               才 PASS，否则记录可达值供下调 `max_offset`（契约 C6：参数须用真实逃逸能力）。
 
-标定口径（先学后做，ADR-0021(b)）：反应窗口 `T = 2.0 s` 取 Nav2 `time_before_collision` 上界
+标定口径（先学后做，ADR-0010）：反应窗口 `T = 2.0 s` 取 Nav2 `time_before_collision` 上界
 （t_before ∈ [1.2, 2.0] s）。理论横向界（常 yaw 率圆弧）：lateral(T) ≈ (v/ω)·(1 − cos(ω·T))。
 车端限幅：GZ DiffDrive `max_angular_velocity = 2.0`；RL 节点另限 `max_yaw_rate = 1.0`（本测 w=0.96 < 1.0 未截）。
 
@@ -39,7 +39,7 @@ RAW = '/agc/ground/cmd_vel_raw'
 OUT = '/agc/ground/cmd_vel'
 ODOM = '/agc/ground/odom'
 
-# 反应窗口（s）：ADR-0021(b) Nav2 time_before_collision 上界（t_before ∈ [1.2, 2.0]）
+# 反应窗口（s）：ADR-0010 Nav2 time_before_collision 上界（t_before ∈ [1.2, 2.0]）
 T_WINDOW = 2.0
 # 开阔区（远离 pole_1 (0,-6) / pole_2 (6,6)，正前方无遮挡 → 安全层不干预）
 OPEN = (20.0, 25.0)
@@ -230,7 +230,7 @@ def main():
         reachable = max((r['lateral_reach_m'] for r in res['runs'].values()), default=0.0)
         res['calibration'] = {
             'reaction_window_T_s': T_WINDOW,
-            'window_basis': 'Nav2 time_before_collision 上界（ADR-0021(b) t_before∈[1.2,2.0]）',
+            'window_basis': 'Nav2 time_before_collision 上界（ADR-0010 t_before∈[1.2,2.0]）',
             'open_area': list(OPEN),
             'configured_min_offset_m': control['min_offset'],
             'configured_max_offset_m': control['max_offset'],

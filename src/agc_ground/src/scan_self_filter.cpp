@@ -11,7 +11,7 @@
 // 输入 `/agc/ground/scan`（桥出）→ 输出 `/agc/ground/scan_filtered`（同类型、同 header 时序/frame），
 // 安全层（collision_monitor）与 costmap obstacle_layer 消费自滤后的扫描（契约 #params 单一注入）。
 //
-// 语言：C++（与 agc_ground 其余节点一致，ADR-0011）。节点**不写文件**（spec R13）。
+// 语言：C++（与 agc_ground 其余节点一致，ADR-0020）。节点**不写文件**（spec R13）。
 //
 // 参数（由 config/ground.yaml 单一注入，节点不得覆写）：
 //   in_topic / out_topic、footprint_half_length_m(0.5037)、footprint_half_width_m(0.28545)、
@@ -39,7 +39,7 @@ public:
     half_len_eff_ = half_len + margin;
     half_wid_eff_ = half_wid + margin;
 
-    // 传感器数据：SENSOR_DATA（best-effort）QoS，对齐 Nav2 scan 源与 ros_gz 桥（ADR-0008 吸收点）
+    // 传感器数据：SENSOR_DATA（best-effort）QoS，对齐 Nav2 scan 源与 ros_gz 桥（ADR-0003 吸收点）
     pub_ = create_publisher<sensor_msgs::msg::LaserScan>(out_topic_, rclcpp::SensorDataQoS());
     sub_ = create_subscription<sensor_msgs::msg::LaserScan>(
       in_topic_, rclcpp::SensorDataQoS(),

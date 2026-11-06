@@ -153,7 +153,7 @@ agc_toolchain_pins:
 
 `local_patches` 与 `git_repos[px4]` 一起标识源版本；上游 HEAD 不变不等于无本地改动。补丁入主仓候选路径，外部工作树仍不入库；许可见 [NOTICE](../docs/toolchain/PX4-NOTICE.md#notice)。在干净的指定 PX4 基准提交上，先 `git apply --check`，再 `git apply` 对应补丁，然后执行下文构建配方；已应用补丁的工作树不能重复应用或重置。
 
-已完成两文件从基准内容应用补丁后的字节级重建核对，见 [证据说明](../docs/adr/0101-w8-seed-evidence-and-p3-execution-boundary.md#evidence)。这不代表完整工具链空目录构建已验证。
+已完成两文件从基准内容应用补丁后的字节级重建核对，见 [证据说明](../docs/adr/0027-uxrce-startup-reproducibility.md#evidence)。这不代表完整工具链空目录构建已验证。
 
 本次只读 pin 核查 **24 PASS / 1 FAIL / 0 SKIP，退出码 1**：PX4 二进制现值为 `0c2be6189fc6a0ee857379127bfc46ce516c509b16605dd5ab6dc0b6aa8863f5`，与 `artifacts` 中保留的历史 pin 不同。当前二进制与补丁源码的构建对应关系**未核验**，禁止仅抄现值更新 pin。P3 前置需留存新构建命令、退出码、输入/产物指纹，之后显式更新 artifact pin 并重跑校验。当前 checker 尚未校验 `local_patches`；P3 必须补上并验证负例，旧 checker 的通过也不足以证明补丁一致。
 
@@ -163,7 +163,7 @@ agc_toolchain_pins:
 ## 从空目录恢复（配方）
 
 > **验证缺口（必须显式声明）**：本清单**本轮未在真正空目录端到端实跑**——不复制现有 `build/` 当重建证明。
-> 因此「已有机器构建成功」**不**等于环境可从空目录独立重建。该验证缺口已在 `docs/adr/0065-*.md` 登记为未决事项。
+> 因此「已有机器构建成功」**不**等于环境可从空目录独立重建。该验证缺口已在 `docs/adr/0005-px4-toolchain-and-link.md` 登记为未决事项。
 
 1. **PX4 源码**：从 Gitee 镜像克隆指定 tag 并初始化所需子模块（pin 块 `git_repos[px4]` 锁定 HEAD 与 9 个子模块 SHA）：
    ```bash

@@ -7,11 +7,11 @@
   * `/agc/task/capture_evidence`（标注串）
   * `/agc/task/capture_hit`（命中值恰为 `CAPTURE_NET`）
 
-判据（[ADR-0070](docs/adr/0070-w7b-research-propositions-and-rl-role-adjudication.md)(c) / [F-11]）：
+判据（[ADR-0022](docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)(c) / [F-11]）：
   * **≥1 次完整射击闭环**：出现 `SHOT_FIRED` **且**随后出现 `SHOT_HIT` 或 `SHOT_MISS`（同一 `shot_id`）；
   * 命中时 `/agc/task/capture_hit` 值**恰为** `CAPTURE_NET`，终态 `INTERCEPT_CONFIRMED`；
   * 证据串携带 `shot=` / `flight_s=` / `miss_dist_m=`（逐帧比对可复核）；
-  * 结果落 `experiments/w7-rl-b/<run_id>/metrics/e2.json`（ADR-0007）。
+  * 结果落 `experiments/w7-rl-b/<run_id>/metrics/e2.json`（ADR-0006）。
 
 用法：
   python3 tests/w7b_e2_check.py --mode headless --campaign w7-rl-b
@@ -175,7 +175,7 @@ def main():
     fired = [l for l in mon.fire if l.startswith('SHOT_FIRED')]
     hit = [l for l in mon.fire if l.startswith('SHOT_HIT')]
     miss = [l for l in mon.fire if l.startswith('SHOT_MISS')]
-    # ADR-0091：SHOT_ABORTED（episode_reset / clock_regression）是**独立结局**，
+    # ADR-0011：SHOT_ABORTED（episode_reset / clock_regression）是**独立结局**，
     # 不冒充命中 / 失手，也不构成「完整射击闭环」（故不进入 resolved_ids）。
     aborted = [l for l in mon.fire if l.startswith('SHOT_ABORTED')]
     fired_ids = {shot_of(l) for l in fired}

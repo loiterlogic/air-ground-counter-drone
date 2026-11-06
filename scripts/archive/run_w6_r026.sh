@@ -52,7 +52,7 @@ run_scene() {
   # 顶层 launch 生成的 scene_manifest（/tmp/w6_lightweight_manifest_<scene>_0_<token>.json）
   local mf="$(ls -t /tmp/w6_lightweight_manifest_${scene}_0_*.json 2>/dev/null | head -1)"
   if [ -f "${mf}" ]; then cp "${mf}" "${OUT}/manifests/${scene}.json"; else echo "[Phase A] WARN manifest 缺失 ${mf}"; fi
-  # 障碍轴世界产物（S-06 / ADR-0062）：none = base world（不含 pole_*）；static = 真源注入生成的世界
+  # 障碍轴世界产物（S-06 / ADR-0007）：none = base world（不含 pole_*）；static = 真源注入生成的世界
   if [ "${label}" = "none" ] && [ -f "${WORLD}" ]; then
     cp "${WORLD}" "${OUT}/worlds/agc_world_no_obstacles.sdf"
   fi

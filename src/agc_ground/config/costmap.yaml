@@ -2,7 +2,7 @@
 #
 # 用途：**离线对照基线**（R8 的 Nav2 planner/controller）**自持**
 #       （`ground_baseline` 内建 `Costmap2DROS`，节点名 `costmap`）；
-#       RL 主控**不消费** costmap（[ADR-0060](../../../docs/adr/0060-nav2-absorption-applicability-and-command-source-trimming.md)），
+#       RL 主控**不消费** costmap（[ADR-0003](../../../docs/adr/0003-nav2-paradigm-absorption.md#top)），
 #       故 `command_source=rl` **不**起独立 costmap 进程；
 #       **不作** collision_monitor 的感知源（安全层走 `scan`，见 ground.yaml）。
 #

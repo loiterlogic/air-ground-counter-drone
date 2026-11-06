@@ -4,7 +4,7 @@
 对每个 `(scene, seed)`：起 `w6.launch.py backend:=lightweight scene:=<scene> seed:=<seed>` → 调
 `/agc/task/start` → 追踪 `/agc/task/state` 至终态或超时 → SIGINT 拆除（令 run_logger 落
 `summary.json`）。汇总每回合 `metrics/summary.json` 为 campaign 报告（含 C9 两指标），
-落 `experiments/<campaign>/<run_id>/`（ADR-0007）。
+落 `experiments/<campaign>/<run_id>/`（ADR-0006）。
 
 `task_manager` 只做单 episode；批量由本 runner 驱动（spec R12）。
 
@@ -43,6 +43,11 @@ from std_msgs.msg import Bool
 # W8 P0（T3）：GUI renderer 证据按 run 有界（snapshot + probe），不再读共享日志“最近一次”。
 import gui_renderer_evidence  # noqa: E402
 
+# DDS 发现范围 / 传输的**单一真源**（2026-11-04）：原先写死 LOCALHOST，在 `lo` 无组播的
+# 机器上整链零送达。判据见 docs/conventions/整链排障速查.md#dds-transport。
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'demo'))
+import dds_transport as demo_dds  # noqa: E402
+
 # W7-a（R1）：episode 结束判定 / 预算口径的**单一来源** = `agc_rl.termination`
 # （训练 adapter 与评估 adapter 共用同一判定，spec R1 判据：摘要与 adapter end/reason 一致）。
 from agc_rl.termination import (  # noqa: E402
@@ -60,7 +65,7 @@ ROOT = '/home/chen/AGC'
 GT_CAR_TOPIC = '/agc/gt/agc_car'
 GT_TARGET_TOPIC = '/agc/gt/intruder_uav'
 GT_FRESH_S = 1.0
-# ADR-0094：整链就绪门——own PX4 的 `/agc/air/odom` 必须在 start 前流动。
+# ADR-0027：整链就绪门——own PX4 的 `/agc/air/odom` 必须在 start 前流动。
 #   own PX4 错峰到 25 s 后，若仍按地面门 start，task_manager 的 `air/reset_phase`
 #   会在空中 lifecycle 就绪前被调用 → `service unavailable` → 状态保持 IDLE（cold-02 实测）。
 AIR_ODOM_TOPIC = '/agc/air/odom'
@@ -139,6 +144,13 @@ def build_coverage(mode, episodes, backend=None):
                           'evidence': 'scenarios.yaml 场景登记轴 axes.target_motion'},
         'real_terminal': {'value': terminals,
                           'evidence': '每 episode terminal_state（/agc/task/state 观测）'},
+        # G2（ADR-0009）：观测偏航模式必须进产物——`track` 与 oracle `target` / 默认 `velocity`
+        # 是**不同的验收臂**，不记录就无法事后区分跑的是哪一臂（round-8 实测曾漏记）。
+        'observe_yaw_mode': {
+            'value': sorted({e.get('observe_yaw_mode') or 'velocity'
+                             for e in episodes}) or ['velocity'],
+            'evidence': '--observe-yaw-mode（空=用 air.yaml 缺省 velocity；track=ADR-0009 航迹指向；'
+                        'target=oracle 指向臂）'},
     }
 
 
@@ -246,8 +258,8 @@ class Monitor(Node):
         self.cmd_rx = None          # W7-a：/agc/ground/cmd_vel 回环最近接收墙钟
         self.odom_valid = None      # W7-b：/agc/ground/odom_valid 最近值（None=未收到）
         self.odom_valid_rx = None
-        self.air_rx = None          # ADR-0094：/agc/air/odom 最近接收墙钟（整链就绪门）
-        self.sim_at_start = None    # W7-b（ADR-0074）：start 调用时刻的仿真钟（固定观测时长基准）
+        self.air_rx = None          # ADR-0027：/agc/air/odom 最近接收墙钟（整链就绪门）
+        self.sim_at_start = None    # W7-b（ADR-0022）：start 调用时刻的仿真钟（固定观测时长基准）
         self.create_subscription(AgcTaskState, '/agc/task/state', self._on, 20)
         self.create_subscription(Clock, '/clock', self._on_clock, 1)
         self.create_subscription(PoseStamped, GT_CAR_TOPIC, self._on_gt_car, 10)
@@ -286,7 +298,7 @@ class Monitor(Node):
         self.air_rx = time.monotonic()
 
     def air_fresh(self):
-        """ADR-0094：own PX4 的 `/agc/air/odom` 是否在新鲜窗口内（整链 start 前置）。"""
+        """ADR-0027：own PX4 的 `/agc/air/odom` 是否在新鲜窗口内（整链 start 前置）。"""
         return self.air_rx is not None and (time.monotonic() - self.air_rx) < AIR_FRESH_S
 
     def odom_valid_ok(self):
@@ -313,7 +325,7 @@ class Monitor(Node):
             return False, 'service unavailable'
         fut = self.cli.call_async(Trigger.Request())
         rclpy.spin_until_future_complete(self, fut, timeout_sec=timeout)
-        self.sim_at_start = self.sim   # ADR-0074：固定观测时长基准（start 时刻的仿真钟）
+        self.sim_at_start = self.sim   # ADR-0022：固定观测时长基准（start 时刻的仿真钟）
         return (fut.result().success, fut.result().message) if fut.done() else (False, 'timeout')
 
     def wait_terminal(self, timeout):
@@ -331,7 +343,7 @@ def wait_ready(mon, timeout_s, require_air=False):
     仅看服务存在不足以复位成功（scenario_reset 复位前置要求 gt 新鲜，年龄 ≤ 0.5 s）；故就绪须等
     **真值数据在流动**，**不**以固定 `sleep` 代就绪（避免 start 早于 gt/桥就绪 → gt_stale → 假 infra）。
 
-    ADR-0094：整链（`backend=full`）另要求 `/agc/air/odom` 在新鲜窗口内——own PX4 错峰后
+    ADR-0027：整链（`backend=full`）另要求 `/agc/air/odom` 在新鲜窗口内——own PX4 错峰后
     若仍按地面门 start，task_manager 会在空中 lifecycle 就绪前调 `air/reset_phase`。
     """
     def _ok():
@@ -360,7 +372,7 @@ def _group_alive(pgid):
         return True
 
 
-# ADR-0075（2026-10-20）：**运行前清场**——防"上次 run 的残留 / 逃逸孤儿"污染本 run。
+# ADR-0027（2026-10-20）：**运行前清场**——防"上次 run 的残留 / 逃逸孤儿"污染本 run。
 #
 # 实测链条：上次 run 被**外部终止**（网络中断 / toolhost 只杀到 leader）时，launch 的子进程
 # （`ros_gz_bridge` 的 `parameter_bridge`、`tf2_ros` 的 `static_transform_publisher`，
@@ -391,7 +403,7 @@ STALE_PROCESS_RULES = (
 
 
 def _proc_env_has(pid, key, value):
-    """ADR-0077：读取 /proc/<pid>/environ，判断是否带指定环境变量。
+    """ADR-0024：读取 /proc/<pid>/environ，判断是否带指定环境变量。
 
     仅用于 W7-c 的**清场归属**；读不到（权限 / 已退出）→ False，绝不误杀。
     """
@@ -404,7 +416,7 @@ def _proc_env_has(pid, key, value):
 
 
 def sweep_stale_processes(log_path=None, worker_id=None):
-    """ADR-0075/0077：运行前清场。返回被 SIGKILL 的 `[(pid, cmdline), ...]`（并追加到 run 日志作审计）。
+    """ADR-0027/0077：运行前清场。返回被 SIGKILL 的 `[(pid, cmdline), ...]`（并追加到 run 日志作审计）。
 
     `worker_id=None` = 单 worker 既有行为（清理全部本项目特征进程）；
     `worker_id=<id>` = W7-c 归属清场：只清 `AGC_WORKER_ID` 等于本 worker 的进程，
@@ -453,7 +465,7 @@ def sweep_stale_processes(log_path=None, worker_id=None):
         killed.append((int(entry), cmd))
     if killed and log_path:
         with open(log_path, 'a') as f:
-            f.write('=== ADR-0075 运行前清场：清理残留进程 %d 个 ===\n' % len(killed))
+            f.write('=== ADR-0027 运行前清场：清理残留进程 %d 个 ===\n' % len(killed))
             for pid, cmd in killed:
                 f.write('  - pid %d: %s\n' % (pid, cmd))
     return killed
@@ -493,7 +505,7 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
                 observe_yaw_mode='', air_tracking_ref='', log_tag='', obs_horizon_s=0.0, goal_follow_target='',
                 own_px4_delay_s=None, px4_warmup=None, intruder_px4_delay_s=None,
                 worker_id=None, start_timeout_s=20.0, px4_run_root=None,
-                gui_render_backend='auto'):
+                gui_render_backend='auto', px4_sim_model=''):
     scenario = registry[scene]['params'].get('run_logger', {}).get('scenario', scene)
     world = os.path.join(ROOT, 'install/agc_sim/share/agc_sim/worlds/agc_world.sdf')
     gz = ('-r -v 3 ' if mode == 'gui' else '-s -r -v 3 ') + world
@@ -502,7 +514,7 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
     log = os.path.join(out_dir, 'log', 'ep_%s%s_%d.log' % (
         (log_tag + '_') if log_tag else '', scene, seed))
     os.makedirs(os.path.dirname(log), exist_ok=True)
-    # ADR-0075：**运行前清场**（本 run 尚未创建任何进程 → 命中者必为上次 run 的残留 / 逃逸孤儿；
+    # ADR-0027：**运行前清场**（本 run 尚未创建任何进程 → 命中者必为上次 run 的残留 / 逃逸孤儿；
     # 实测污染会使 agent 侧 participant 创建 > PX4 的 1 s 预算 → 全链 infra）。
     stale_swept = sweep_stale_processes(log, worker_id=worker_id)
     # 先建 Monitor、再记墙钟起点、再 Popen：从 episode 一开始就记录 /clock
@@ -514,7 +526,6 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
     launch_args = ['ros2', 'launch', 'agc_task', 'w6.launch.py',
                    'backend:=%s' % backend, 'scene:=%s' % scene, 'seed:=%d' % seed,
                    'gz_args:=%s' % gz, 'command_source:=%s' % command_source,
-                   'shield:=%s' % shield,
                    'gui_render_backend:=%s' % gui_render_backend]
     # W7-b（P1）：观测来源覆盖（仅显式给出时透传，保持既有 W6 调用不变）
     if target_source:
@@ -525,10 +536,15 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
     # W7-b（P1 公平性修正）：空中机是否使用目标跟踪参考（''=不覆盖；off=固定航迹臂）
     if air_tracking_ref:
         launch_args.append('air_tracking_ref:=%s' % air_tracking_ref)
-    # W7-b P2 v3（ADR-0083）：任务目标是否跟随**感知目标**——两臂同源，避免 A 拿真值固定目标。
+    # W7-b P2 v3（ADR-0023）：任务目标是否跟随**感知目标**——两臂同源，避免 A 拿真值固定目标。
     if goal_follow_target:
         launch_args.append('goal_follow_target:=%s' % goal_follow_target)
-    # ADR-0094（uXRCE 预热 / 错峰）：仅显式给出时透传；缺省沿用 w6.launch.py 的默认
+    # 视觉定位路径已于 2026-11-04 退役：`perception_path` / `vision_detector` /
+    # `detector_backend` 三个 launch 参数已删除，故此处不再透传。
+    # `px4_sim_model` 仍透传（它与视觉无关，是己方 PX4 机型选择）。
+    if px4_sim_model:
+        launch_args.append('px4_sim_model:=%s' % px4_sim_model)
+    # ADR-0027（uXRCE 预热 / 错峰）：仅显式给出时透传；缺省沿用 w6.launch.py 的默认
     #   （px4_warmup=true / own_px4_delay_s=12.0），既有调用行为不变。
     if own_px4_delay_s is not None:
         launch_args.append('own_px4_delay_s:=%s' % own_px4_delay_s)
@@ -536,10 +552,10 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
         launch_args.append('px4_warmup:=%s' % px4_warmup)
     if intruder_px4_delay_s is not None:
         launch_args.append('intruder_px4_delay_s:=%s' % intruder_px4_delay_s)
-    # W7-c（ADR-0095）：PX4 每实例可写运行根（仅显式给出时透传；空 = 既有共享 build 行为不变）
+    # W7-c（ADR-0024）：PX4 每实例可写运行根（仅显式给出时透传；空 = 既有共享 build 行为不变）
     if px4_run_root:
         launch_args.append('px4_run_root:=%s' % px4_run_root)
-    # ADR-0077：W7-c worker 模式下给 run_logger 一个含 worker id 的唯一 run_id，
+    # ADR-0024：W7-c worker 模式下给 run_logger 一个含 worker id 的唯一 run_id，
     #   避免同秒启动的两个 worker 写同一 experiments/w6-task-eval/<run_id>/（实测碰撞）。
     if worker_id is not None:
         _rid = '%s-%s-%d-%s-w%d-%04d' % (
@@ -550,14 +566,22 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
     # `EnvironmentVariable` 读取，**未导出即抛异常**）；此处按 archive 脚本先例显式导出，
     # 使 run 不依赖调用方 shell 环境（本机 gz 插件路径前提）。
     launch_env = dict(os.environ)
-    # ADR-0077：W7-c worker 归属 / 隔离环境（单 worker 不设，保持既有行为不变）。
+    # DDS 发现范围 / 传输：按本机能力探测（单一真源 `scripts/demo/dds_transport.py`）。
+    # 原先无条件写死 `LOCALHOST`；在 `lo` 无 IFF_MULTICAST 的机器上（本机 WSL2 即如此）
+    # 这会让整条链**零送达**——不是配置偏好问题，是根本连不上。
+    try:
+        launch_env['AGC_DDS_POLICY_USED'] = demo_dds.apply(launch_env)
+    except ValueError as exc:
+        raise SystemExit('[episode_runner] DDS 传输策略非法：%s' % exc)
+    # ADR-0024：W7-c worker 归属 / 隔离环境（单 worker 不设，保持既有行为不变）。
     if worker_id is not None:
         launch_env['AGC_WORKER_ID'] = str(worker_id)
         launch_env['GZ_PARTITION'] = 'agc_w_%s' % worker_id
-        # /dev/shm 不随 netns 隔离：必须关 SHM，防跨 worker 通过共享段互发现。
+        # worker 的硬要求只是「**禁 SHM**」（`/dev/shm` 不随 netns 隔离，否则跨 worker
+        # 会通过共享段互发现）；发现范围沿用上面探测的结果，**不再**写死 LOCALHOST——
+        # 在 `lo` 无组播的机器上写死它就是整条 worker 链零送达。
         launch_env['FASTDDS_BUILTIN_TRANSPORTS'] = 'UDPv4'
         launch_env['ROS_DOMAIN_ID'] = '0'
-        launch_env['ROS_AUTOMATIC_DISCOVERY_RANGE'] = 'LOCALHOST'
     plugin_dir = os.path.join(ROOT, 'install', 'agc_sim', 'lib')
     launch_env['GZ_SIM_SYSTEM_PLUGIN_PATH'] = plugin_dir + (
         ':' + launch_env['GZ_SIM_SYSTEM_PLUGIN_PATH']
@@ -578,12 +602,16 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
     result = {'scene': scene, 'seed': seed, 'scenario': scenario,
               'command_source': command_source, 'shield': shield,
               'backend': backend, 'target_source': target_source or None,
+              # 视觉定位路径已于 2026-11-04 退役：report 两键**保留、值固定**（schema 不漂移）。
+              'perception_path': 'truth',
+              'detector_backend': 'none',
+              'px4_sim_model': px4_sim_model or None,
               'observe_yaw_mode': observe_yaw_mode or None,
               'goal_follow_target': goal_follow_target or None,
               'px4_run_root': px4_run_root,
               'expected_terminal': registry[scene].get('expected_terminal'),
               'expected_reason': registry[scene].get('expected_reason'),
-              # ADR-0075：运行前清场证据（本次清掉了哪些残留 / 孤儿；空 = 环境本就干净）
+              # ADR-0027：运行前清场证据（本次清掉了哪些残留 / 孤儿；空 = 环境本就干净）
               'stale_swept_pids': [p for p, _ in stale_swept],
               'stale_swept_cmds': [c for _, c in stale_swept]}
     try:
@@ -602,7 +630,7 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
         result['start_message'] = msg
         remaining = max(wall_watchdog_s - (time.monotonic() - wall_start_s), 1.0)
         reached = mon.wait_terminal(remaining)
-        # ADR-0074：终态后**不立即拆除**——继续采到**固定观测时长**（自 start 起、按仿真钟），使
+        # ADR-0022：终态后**不立即拆除**——继续采到**固定观测时长**（自 start 起、按仿真钟），使
         # `visibility_metrics`（window_fixed_v1）的分母不随"早成功"截断（消除饱和 / 选择效应）。
         # 上限仍受墙钟看门狗约束（仿真不推进时如实早停）。
         if obs_horizon_s > 0 and mon.sim_at_start is not None:
@@ -695,7 +723,7 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
     return result
 
 
-# W7-b（2026-10-20，ADR-0075）—— **infra 重试协议**（机器噪声，非实验处理）：
+# W7-b（2026-10-20，ADR-0027）—— **infra 重试协议**（机器噪声，非实验处理）：
 #   本机 uXRCE-DDS agent 侧创建 participant 的时延**间歇**达 1.7–2.7 s（良好时 0.67–0.73 s），
 #   超过 PX4 客户端**硬编码**的 1000 ms 预算（`uxrce_dds_client.cpp` 的
 #   `uxr_run_session_until_all_status(&session, 1000, ...)`）→ PX4 报 `create entities failed:
@@ -724,7 +752,7 @@ def run_episode_with_infra_retry(*args, infra_retries=0, **kwargs):
             break
     r['infra_attempts'] = attempts
     r['infra_retries_used'] = len(attempts) - 1
-    r['infra_retry_protocol'] = 'ADR-0075（infra 重试上限 %d）' % int(infra_retries)
+    r['infra_retry_protocol'] = 'ADR-0027（infra 重试上限 %d）' % int(infra_retries)
     return r
 
 
@@ -736,7 +764,7 @@ def main():
     ap.add_argument('--mode', default='headless', choices=['headless', 'gui'])
     ap.add_argument('--gui-render-backend', default='auto',
                     choices=['auto', 'd3d12', 'software'],
-                    help='W8/ADR-0096：GUI 渲染后端；auto=WSL2+D3D12+X11 自动，否则系统默认')
+                    help='W8/ADR-0021：GUI 渲染后端；auto=WSL2+D3D12+X11 自动，否则系统默认')
     ap.add_argument('--timeout', type=float, default=150.0, help='单回合等待终态上限（秒）')
     ap.add_argument('--wall-watchdog-s', type=float, default=None,
                     help='episode 墙钟看门狗预算（秒）；缺省回落到 --timeout')
@@ -746,21 +774,32 @@ def main():
     ap.add_argument('--run-id', default=None)
     # W7-a（R5）：命令源单一选择——`rl`（RL 主控）默认 / `baseline`（Navfn + 自研 LQR 离线对照基线）。
     # 由 w6.launch.py 透传至 ground_bringup；缺省 `rl` → 既有 W6 证据行为不变。
-    # W7-b（P2 臂 B）：`rl_high` = 高层（拦截点）+ 成熟低层（Navfn + 自研 LQR）。
-    ap.add_argument('--command-source', default='rl', choices=['rl', 'baseline', 'rl_high'])
-    # W7-b（T1/E1，ADR-0070(d)）：安全层开关——`true`（默认，起 collision_monitor）/
-    # `false`（无 shield 对照臂：恒等透传，纯仿真，**不**用于部署）。
-    ap.add_argument('--shield', default='true', choices=['true', 'false'])
+    # 2026-11-04 清退：`--command-source` 只剩 rl / baseline（train / rl_high 随 W7 结档删除）；
+    # `--shield` 参数已删除——安全层恒定启用（见 docs/conventions/路线分支治理.md 5.3）。
+    ap.add_argument('--command-source', default='rl', choices=['rl', 'baseline'])
     # W7-b（P1 / T6）：backend 与观测来源覆盖（缺省不变：lightweight / backend 能力表值）。
     ap.add_argument('--backend', default='lightweight', choices=['lightweight', 'full'])
+    # 视觉定位路径已于 2026-11-04 退役：感知路径与视觉后端两个 CLI 参数一并删除。
+    ap.add_argument('--px4-sim-model', default='',
+                    help='己方 PX4 gz 机型（缺省 gz_x500）')
     ap.add_argument('--target-source', default='', choices=['', 'air_fusion', 'gt_adapter'])
     # W7-b（P1·甲）：空中机观测偏航模式覆盖（''=air.yaml 默认 velocity）
-    ap.add_argument('--observe-yaw-mode', default='', choices=['', 'velocity', 'target'])
-    # ADR-0074：终态后继续采到**固定观测时长**（自 start 起、仿真钟秒；0=旧行为，终态即拆）
+    # G2（ADR-0009）：`track` = **感知航迹指向**（`/agc/targets` 驱动，无 fresh 航迹时确定性搜索）。
+    #   与 `target`（oracle，读 /agc/gt）互斥；新增本项不改默认（'' = 用 air.yaml 缺省 velocity）。
+    ap.add_argument('--observe-yaw-mode', default='', choices=['', 'velocity', 'target', 'track'])
+    # ADR-0022：终态后继续采到**固定观测时长**（自 start 起、仿真钟秒；0=旧行为，终态即拆）
     ap.add_argument('--obs-horizon-s', type=float, default=0.0)
     # 放宽（2026-10-20）：/agc/task/start 等待上限（s）——须 ≥ task_manager 的 air_hover_timeout_s
     # （PX4 慢热时 start 事务内含悬停等待；缺省 60 > 45）。
     ap.add_argument('--start-timeout-s', type=float, default=60.0)
+    # ADR-0027 错峰实验旋钮（**仅显式给出时**透传给 launch，缺省行为逐字不变）。
+    # 2026-11-03 实测：intruder 的 DDS participant 创建会冲掉己方正在发的 setpoint 流 →
+    #   己方 `invalid setpoints` → PX4 failsafe 盲降 → `air_hover_timeout`。实测两者相差 0.14 s。
+    #   默认 25/35（错峰 10 s）在"己方 9.3 s 就 ARM 完"的快速启动下**不够**，故开放此旋钮做 A/B。
+    ap.add_argument('--own-px4-delay-s', type=float, default=None,
+                    help='己方 PX4 启动延迟（秒）；缺省用 launch 默认 25.0')
+    ap.add_argument('--intruder-px4-delay-s', type=float, default=None,
+                    help='入侵者 PX4 启动延迟（秒）；缺省用 launch 默认 35.0')
     args = ap.parse_args()
 
     wall_watchdog_s = args.wall_watchdog_s if args.wall_watchdog_s is not None else args.timeout
@@ -782,6 +821,17 @@ def main():
     os.makedirs(os.path.join(out_dir, 'log'), exist_ok=True)
     os.makedirs(os.path.join(out_dir, 'metrics'), exist_ok=True)
 
+    # DDS 策略必须作用于**本进程自己的** rclpy 上下文：本 runner 自己也要订阅
+    # `/agc/task/state`、`/agc/air/odom`、gt 等做就绪门与终态判定。若只把策略写进
+    # 子进程的 launch_env 而漏了 os.environ，Monitor 会退到默认 `SUBNET`+默认传输 ——
+    # 在本机（`lo` 无组播）表现为"配对成功但用户数据零送达"→ 就绪门永不通过
+    # （`ready=false` / `start_message=service unavailable`），整链看着像卡死。
+    # 见 docs/conventions/整链排障速查.md#dds-transport。
+    try:
+        demo_dds.apply(os.environ)
+    except ValueError as exc:
+        raise SystemExit('[episode_runner] DDS 传输策略非法：%s' % exc)
+
     rclpy.init()
     episodes = []
     for scene in scenes:
@@ -797,12 +847,15 @@ def main():
                 scene, seed, args.command_source))
             r = run_episode(scene, seed, registry, args.mode, wall_watchdog_s, out_dir, carriers,
                             ready_timeout_s=args.ready_timeout_s,
-                            command_source=args.command_source, shield=args.shield,
+                            command_source=args.command_source, shield='true',
                             backend=args.backend, target_source=args.target_source,
                             observe_yaw_mode=args.observe_yaw_mode,
                             obs_horizon_s=args.obs_horizon_s,
                             start_timeout_s=args.start_timeout_s,
-                            gui_render_backend=args.gui_render_backend)
+                            own_px4_delay_s=args.own_px4_delay_s,
+                            intruder_px4_delay_s=args.intruder_px4_delay_s,
+                            gui_render_backend=args.gui_render_backend,
+                            px4_sim_model=args.px4_sim_model)
             print('  terminal=%s reason=%s expected_match=%s pass=%s integrity=%s outcome_class=%s shield=%s reset=%s'
                   % (r.get('terminal_state'), r.get('reason_code'), r.get('expected_match'),
                      r.get('pass'), r.get('layer_integrity'), r.get('outcome_class'),
@@ -821,8 +874,7 @@ def main():
         'backend': args.backend, 'launch': LAUNCH,
         # W7-a（R5）：命令源（rl | baseline）——baseline = Navfn + 自研 LQR 离线对照基线。
         'command_source': args.command_source,
-        # W7-b（T1/E1）：安全层开关（true=有 shield / false=无 shield 对照臂）
-        'shield': args.shield,
+        'shield': 'true',   # 2026-11-04：安全层恒定启用（--shield 已删；字段保留以保 schema 不漂移）
         'git_commit': next((e.get('git_commit') for e in episodes if e.get('git_commit')), 'unknown'),
         'n_episodes': len(episodes),
         # R-031：C9 两指标（均值仅基于**有效**样本；缺失 / not_applicable 如实标注，不以 0 冒充）
@@ -846,7 +898,7 @@ def main():
         'rtf_mean': (sum(rtfs) / len(rtfs)) if rtfs else None,
         'wall_watchdog_s': wall_watchdog_s,
         'episodes': episodes,
-        # S-07（ADR-0063）：campaign 报告**引用**每个 episode run 的不可变产物（run_id + config/）。
+        # S-07（ADR-0006）：campaign 报告**引用**每个 episode run 的不可变产物（run_id + config/）。
         'run_references': [
             {'scene': e['scene'], 'seed': e['seed'], 'run_id': e.get('run_id'),
              'run_dir': os.path.join('experiments', 'w6-task-eval', str(e.get('run_id'))),

@@ -5,24 +5,24 @@
 `RTL / LAND / HOLD`；"失联"（LOST）以**停发 Offboard 流**触发 PX4 自身 failsafe。
 **不**触碰己方机 / 车（契约 [唯一执行口]）。
 
-R-019（[ADR-0034]）failsafe **因子分离**（三因子，独立可观测 / 标注）：
+R-019（[ADR-0015]）failsafe **因子分离**（三因子，独立可观测 / 标注）：
   ① **强制模式**（`forced_mode`）：`RTL / LAND / HOLD` 发 `SET_NAV_STATE`（nav_state 5 / 18 / 4）。
   ② **仅断 Offboard**（`offboard_only`）：`LOST` **只**停发 Offboard 流，**不**发 `SET_NAV_STATE`；
      其后的行为由运行时锁定的 `COM_OF_LOSS_T` / `COM_OBL_RC_ACT` 解释（见
      `src/agc_task/config/px4_failsafe_lock.yaml` 真源与 `scripts/lock_px4_failsafe_params.sh` 注入的
      SITL 启动参数 `px4-rc.params`），**非**数据链失联。
-  ③ **数据链失联**（`NAV_DLL_ACT`）：本轮**未实现**（如实限制，见 [ADR-0034]）。
+  ③ **数据链失联**（`NAV_DLL_ACT`）：本轮**未实现**（如实限制，见 [ADR-0015]）。
   **停发 Offboard 流 ≠ `NAV_DLL_ACT`**：前者是 offboard-loss（`COM_OF_LOSS_T` + `COM_OBL_RC_ACT`），
   后者才是 data-link-loss（`NAV_DLL_ACT`），两者为**不同机制**。
   `LOST` 的确认期望 nav_state = `lost_expected_nav_state`（= 运行时锁定 `COM_OBL_RC_ACT` 的映射；
   默认 `0` → POSCTL `2`），使 LOST 的 R-018 确认仍可成立（观测目标进入该 failsafe 模式且持续）。
 
-R-017（[ADR-0032]）：本节点是干扰授权的**唯一裁决者**。仅当「命令合法」**且**「作用包络**新鲜**」
+R-017（[ADR-0015]）：本节点是干扰授权的**唯一裁决者**。仅当「命令合法」**且**「作用包络**新鲜**」
 （最近 `envelope_max_age_s` 内收到包络为真）才产出**已校验授权事件** `JAM_*`（发布到 `state_topic`）；
 未知命令 / 包络外 / 包络**过期（未就绪）** 一律**不产出**事件。`JAM_NONE` 是**释放事件**（非注入），
 `''/NONE/CLEAR` **始终发出**。
 
-R-018（[ADR-0033]）：授权 / 发送**不等于**效果。证据链拆为
+R-018（[ADR-0015]）：授权 / 发送**不等于**效果。证据链拆为
 **意图 → 授权 → 发送 → ACK → 真实 nav 状态 → 持续行为**：
   * 授权事件（`/agc/task/jam_state`）语义**保留**（R-017，驱动 `intruder_driver` 停发 Offboard）。
   * 发送后开 **确认窗口**（`jam_confirm_window_s`）；订阅入侵者 PX4 `VehicleStatus`（`vehicle_status_topic`），
@@ -38,7 +38,7 @@ R-018（[ADR-0033]）：授权 / 发送**不等于**效果。证据链拆为
     `JAM_FAIL_MODE_UNREACHED`（窗口内有状态但未达目标模式）/
     `JAM_FAIL_NOT_SUSTAINED`（达到但未持续 `jam_sustain_s`）——负例亦携带 `factor`。
 
-R-020（[ADR-0035]）：干扰**作用包络**已与**捕获作用包络**分离。
+R-020（[ADR-0011]）：干扰**作用包络**已与**捕获作用包络**分离。
   * 可交战包络 `/agc/task/envelope_in` 由 `capture_adjudicator` 的**最小动态火控交战门**给出
     （W7-b T2/E2：逐帧弹道；高度含车体 `h = target.z − car.z − launcher_h`）。
     （高度含车体 `h = target.z − car.z − launcher_h`）。

@@ -30,6 +30,33 @@ work_area:
   origin_x: -50.0
   origin_y: -50.0
 
+# ---- 飞行高度（ADR-0007；用户 2026-11-02 裁定「高度和地图绑定」）----
+# 本节是**本图固定飞行高度的唯一真源**。运行期由 `w6_composition.apply_flight_altitude()`
+# 派生注入 `air.yaml` / `w6_base.yaml` 的同名参数；`air.yaml` 里的同名键只作 standalone /
+# 单测兜底，**运行期一律被本节覆盖**（与 `safety.obstacle_*` 的派生处理同款）。
+#
+# 为什么高度是**地图属性**（不是场景参数）：用户原话「这是和地图绑定的，因为后面会做
+# 小障碍高密度和大障碍低密度等图」。换图即换高度，**代码一行不动**。
+#
+# 五键语义（与 `docs/conventions/飞行高度分层与按地图定高.md` 的 L2a/L2b/L2c 对应）：
+#   own_track_m        —— 己方机跟踪高度（L2b → standoff_follower.height）
+#   own_takeoff_m      —— 己方机起飞高度（L2c → takeoff_controller.takeoff_altitude_m）
+#   target_cruise_m    —— 目标机巡航高度（L2a → intruder_driver.cruise_alt_m 的**默认值**）
+#   own_clearance_min_m—— 垂直净空下限 c_clear（K3）
+#   derived            —— 本图几何的派生量（只读；由 `height_survey` 同口径算出，供断言比对）
+flight_altitude:
+  own_track_m: 2.5
+  own_takeoff_m: 2.5
+  target_cruise_m: 2.0
+  own_clearance_min_m: 0.5
+  derived:
+    h_max_map_m: 3.0            # shed
+    h_max_map_id: shed
+    h_max_env_m: 0.0            # 最近 cyl_2 距 31.73 m，远在环带外
+    h_max_env_id: null
+    rule_version: 1
+  # 取值依据：对照 / 快跑图，**维持既有值不变**（理由同 minimal：包络内无障碍，抬高无收益）。
+
 obstacles:
   # ---- 唯一建筑 ----
   - id: shed

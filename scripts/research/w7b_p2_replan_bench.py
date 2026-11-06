@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w7b_p2_replan_bench —— P2 臂 B「重规划触发」**受控台架**（ADR-0055 / ADR-0056 审计）。
+"""w7b_p2_replan_bench —— P2 臂 B「重规划触发」**受控台架**（ADR-0007 / ADR-0013 审计）。
 
 定位：**诊断台架**（非确证、不改 P1/P2 verdict）。起真实二进制：
   * `install/agc_ground/lib/agc_ground/ground_baseline`（Navfn + 自研 LQR + 内建 Costmap2DROS）；
@@ -141,7 +141,7 @@ class Bench(Node):
         self.odom_pub = self.create_publisher(Odometry, ODOM_TOPIC, 20)
         self.map_pub = self.create_publisher(OccupancyGrid, MAP_TOPIC, LATCHED)
         self.target_pub = self.create_publisher(TargetTrackArray, TARGET_TOPIC, 20)
-        # ADR-0092 C7/C8：合成动态层 marking（scan / pointcloud）；其他用例不发布。
+        # ADR-0013 C7/C8：合成动态层 marking（scan / pointcloud）；其他用例不发布。
         self.scan_pub = self.create_publisher(LaserScan, '/agc/ground/scan_filtered', 10)
         self.points_pub = self.create_publisher(PointCloud2, '/agc/sim/car_points', 10)
         # 反复 latched 发布 world→car/base_link 静态 TF，确定性覆盖 costmap 激活的 TF 发现窗口。
@@ -225,7 +225,7 @@ class Bench(Node):
         self.state_pub.publish(s)
 
     def pub_dynamic_marking(self, x, y, z=2.0):
-        """ADR-0092 C7/C8：在 (x,y,z) 发布一帧合成 scan + pointcloud（移动目标样式）。
+        """ADR-0013 C7/C8：在 (x,y,z) 发布一帧合成 scan + pointcloud（移动目标样式）。
 
         scan 用 car/base_link 坐标系，只在一个方位角给出距离；pointcloud 用 world 系给一个 3D 点。
         不改变任何话题 / 参数，仅用于验证 dynamic 层 marking 不应触发地图签名。
@@ -1027,7 +1027,7 @@ def main():
     selected = [c.strip() for c in args.cases.split(',') if c.strip()]
     result = {
         'run_id': args.run_id,
-        'kind': 'diagnostic_bench（ADR-0055 / ADR-0056 审计；非确证，不改 verdict）',
+        'kind': 'diagnostic_bench（ADR-0007 / ADR-0013 审计；非确证，不改 verdict）',
         'scope_note': ('节点行为台架：真实 ground_baseline 二进制 + 合成 map/odom/goal/target；'
                        'C6 另起真实 agc_rl_high_level。**非整链** / 非 GUI；不以 A 臂 0 次重规划为验收目标。'),
         'env': {'ROS_DOMAIN_ID': os.environ.get('ROS_DOMAIN_ID'),

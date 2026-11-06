@@ -1,8 +1,8 @@
 // agc_control/controller.hpp —— 控制器插件基类（pluginlib）
 //
-// 形态对齐 Nav2 的 controller 插件抽象（ADR-0008 吸收点：pluginlib）。
+// 形态对齐 Nav2 的 controller 插件抽象（ADR-0003 吸收点：pluginlib）。
 // 通用接口与执行器解耦：入参 = state + ref，出参 = **加速度指令** acc_cmd（世界系 ENU/FLU）。
-// 各消费者自行转执行量：air → PX4 位置/速度 setpoint；ground → cmd_vel（ADR-0018）。
+// 各消费者自行转执行量：air → PX4 位置/速度 setpoint；ground → cmd_vel（ADR-0004）。
 
 #pragma once
 

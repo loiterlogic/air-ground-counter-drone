@@ -6,7 +6,7 @@
   * 门禁真实生效（未就绪必拒，非静默放行）；
   * `scenario_reset → /agc/air/reset_phase → 门禁校验` 之后 start 成功；
   * 无 `ODOM_INVALID` 自伤误判（成功那次的原因码不含 odom_invalid；失败-成功序列可达）。
-结果落 `experiments/w6-task-eval/<run_id>/metrics/r2.json`（ADR-0007）。
+结果落 `experiments/w6-task-eval/<run_id>/metrics/r2.json`（ADR-0006）。
 
 用法（launch 刚起时即执行，勿等待）：
   python3 tests/w6_r2_check.py --run-id 20261014-w6-r2-0

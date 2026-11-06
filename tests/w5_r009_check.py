@@ -20,7 +20,7 @@ DiffDrive 插件**没有**命令超时（已核验 libgz-sim8-diff-drive-system.
   S1 单调时钟超时（ROS 钟冻结）→ watchdog_s 量级内输出归零（旧实现永保 1.5）。
   S2 stamp 倒退拒收。 S3 错 frame_id 拒收。 S4 NaN / inf 拒收。 S5 限幅。 S6 正常透传。
 
-`--scenario sim` 标定口径（上界来历，见 ADR-0021(c) 本车实测动力学）：
+`--scenario sim` 标定口径（上界来历，见 ADR-0010 本车实测动力学）：
   本车 v_max = 1.5 m/s、锁轮制动 a ≈ 0.9 m/s²（= DiffDrive max_wheel_acceleration × 轮半径）。
   末端机制超时 T = cmd_deadman_timeout_s（与中继 watchdog_s 同量级，取值口径 = 契约 #params 单一来源）：
     * 失源盲行 d_blind = v_max · T = 1.5 × 0.3 = 0.45 m；
@@ -59,7 +59,7 @@ GZ_DIFFDRIVE_LIB = (
     '/home/chen/AGC/../../../opt/ros/jazzy/opt/gz_sim_vendor/lib/libgz-sim8-diff-drive-system.so')
 EVIDENCE_GREP = 'max_linear_velocity|max_angular_velocity|odom_topic|timeout|deadman'
 
-# ---- 本车实测动力学 / 末端机制标定（口径见模块 docstring，来源 ADR-0021(c) + car.yaml）----
+# ---- 本车实测动力学 / 末端机制标定（口径见模块 docstring，来源 ADR-0010 + car.yaml）----
 CAR_V_MAX = 1.5           # 车体线速上限（config/car.yaml model.max_linear_velocity）
 A_BRAKE = 0.9             # 锁轮制动减速度（本车实测）
 K_TIMEOUT_S = 0.3         # 末端机制超时（cad 与 car.yaml cmd_deadman_timeout_s / 中继 watchdog_s 一致）

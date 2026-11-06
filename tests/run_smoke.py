@@ -16,7 +16,7 @@
 | `offline` | `scripts/tests/` 全部离线单测（不启 ROS 节点 / 不启仿真） | 演示入口、视觉接线、视觉高亮等回归 |
 
 **不是**要求 57 个核查全绿——那需要整链环境，语义是"验收"而非"冒烟"
-（见 [P2-1 plan](../../docs/archive/completion-20261031/p2-1-项目交付物.md#p2-1-goal) 第 5 项与
+（见第 5 项与
 [tests/README](../../tests/README.md)）。
 
 ## 用法
@@ -69,6 +69,16 @@ GROUPS = [
        os.path.join(ROOT, 'scripts', 'tests', 'test_scripts_index.py')]]),
     ('offline', 'scripts/tests 全部离线单测',
      [[sys.executable, '-m', 'pytest', '-q', os.path.join(ROOT, 'scripts', 'tests')]]),
+    # 2026-11-04：DDS 契约闸门。**必须留在默认冒烟里**——写死 LOCALHOST 曾两次让整条
+    # 收发链静默零送达（本机 `lo` 无 IFF_MULTICAST），每次都花掉一整轮定位。
+    # 纯静态、秒级；判据见 tests/w6_dds_contract_check.py 的 case e。
+    ('dds', 'DDS 契约：不得写死 LOCALHOST / launch 不覆盖发现范围',
+     [[sys.executable, os.path.join(ROOT, 'tests', 'w6_dds_contract_check.py')]]),
+    # N3「PX4/toolchain 可复现构建逐步固化」（2026-11-04）：pin 清单与实机一致性。
+    # 纯只读、秒级；此前有单测但**没接任何门槛**，等于不跑。判据见 ADR-0005(d)。
+    # 前提是 `toolchain/` 在本机存在（外部依赖、不入 git）；缺失时如实 FAIL 而不是静默跳过。
+    ('toolchain', '工具链 pin 清单与实机一致（ADR-0005）',
+     [[sys.executable, os.path.join(ROOT, 'scripts', 'toolchain_pin_check.py')]]),
 ]
 
 GREEN, RED, YELLOW, DIM, RESET = '\033[32m', '\033[31m', '\033[33m', '\033[2m', '\033[0m'
@@ -79,10 +89,18 @@ def _color(text, code, enabled):
 
 
 def _env():
-    """source ROS + 工作区后执行（与 `run_demo.sh` 同口径，避免"少 source"误报失败）。"""
+    """source ROS + 工作区后执行（与 `run_demo.sh` 同口径，避免"少 source"误报失败）。
+
+    DDS 发现范围 / 传输走**单一真源**（`scripts/demo/dds_transport.py`），与
+    `run_demo.sh` / `episode_runner` / 测试完全一致。原先此处写死 `LOCALHOST`，
+    在 `lo` 无 `IFF_MULTICAST` 的机器上会让任何**跨进程收发**的组静默全 0 失败——
+    本组目前恰好不需要收发，才侥幸没暴露（见 docs/conventions/整链排障速查.md#dds-transport）。
+    """
     env = dict(os.environ)
     env.setdefault('ROS_DOMAIN_ID', '0')
-    env['ROS_AUTOMATIC_DISCOVERY_RANGE'] = 'LOCALHOST'
+    sys.path.insert(0, os.path.join(ROOT, 'scripts', 'demo'))
+    import dds_transport
+    dds_transport.apply(env)
     return env
 
 

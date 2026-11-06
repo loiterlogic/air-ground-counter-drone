@@ -224,7 +224,7 @@ def case_f_r006_preserved(bench):
 
 
 def case_g_adr_0055():
-    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0055-*.md')))
+    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0007-scene-geometry-single-source-and-layout.md')))
     res = {'path': os.path.relpath(matches[0], ROOT) if matches else None, 'exists': bool(matches)}
     if matches:
         t = _read(matches[0]) or ''

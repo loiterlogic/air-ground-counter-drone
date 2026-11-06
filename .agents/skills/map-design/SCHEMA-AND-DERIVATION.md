@@ -166,7 +166,7 @@ DEFAULT_WORLD_MAP
 
 - 贴图属**自产资产**：由 `src/agc_sim/materials/gen_textures.py` 用固定种子生成 +
   `manifest.json` 登记 sha256 / 尺寸 / 基色；第三方资产必须走
-  [ADR-0068](../../../docs/adr/0068-third-party-asset-provenance-license-and-hash-manifest.md)
+  [ADR-0005](../../../docs/adr/0005-px4-toolchain-and-link.md#top)
   的 provenance / 许可 / 哈希登记。
 - **两个编码关**：`<albedo_map>` 与基色是**相乘**的（带贴图的材质要把基色置白）；
   PNG 被当 sRGB、`<diffuse>` 是线性（落盘前做线性 → sRGB 编码）。

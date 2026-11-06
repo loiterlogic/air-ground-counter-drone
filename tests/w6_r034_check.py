@@ -131,7 +131,7 @@ def case_i_scripts_hygiene():
 
 
 def case_j_adr():
-    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0049-*.md')))
+    matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0019-lifecycle-and-startup-robustness.md')))
     res = {'path': matches[0] if matches else None, 'exists': bool(matches)}
     if matches:
         t = _read(matches[0]) or ''

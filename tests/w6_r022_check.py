@@ -11,7 +11,7 @@
   * 提供假服务 `/agc/scenario/reset`（`Trigger`，成功并 epoch++；case d 可**延迟应答**模拟慢应答）。
   * 订阅 `/agc/task/state`、`/agc/task/episode`。
 
-用例（结果落 `experiments/w6-task-eval/<run_id>/metrics/r022.json`，ADR-0007）：
+用例（结果落 `experiments/w6-task-eval/<run_id>/metrics/r022.json`，ADR-0006）：
   a active 重入 start → 拒绝（success=false）、状态不变（非 INFRA_FAILURE）、未再调用 reset。
   b 终态后 start = 新 episode（success=true、态回 AIR_SEARCH、`/agc/task/episode` 值递增）。
   c 终态后迟到 abort → 不覆写（仍 MISSION_FAILED）。

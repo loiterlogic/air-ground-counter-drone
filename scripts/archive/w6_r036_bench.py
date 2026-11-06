@@ -11,7 +11,7 @@
   4. **effective**     —— 由 `/fmu/in/trajectory_setpoint` 反变换回世界 ENU 后**减去 `0.5·a·dt²` 前馈**重建；
   5. **setpoint**      —— 同上反变换（含前馈）的世界 ENU 指令位置。
 
-**重建口径（与 ADR-0051 一致）**：`offboard_interface.cpp::publishSetpoint` 将世界 ENU 位置
+**重建口径（与 ADR-0008 一致）**：`offboard_interface.cpp::publishSetpoint` 将世界 ENU 位置
 `p_enu` 先减局部原点（本台架 `origin_pose=0,0,0` → 原点为零）再 `enu→ned` 发布；故
 `setpoint_enu = nedToEnu(m.position)`，`acc_enu = nedToEnu(m.acceleration)`，
 `effective.pos = setpoint_enu − 0.5·acc_enu·dt²`（dt = `1/setpoint_rate_hz` = 0.02 s），
@@ -30,7 +30,7 @@
 + `<run_id>/r036/curves.csv`（同时间轴 5 曲线）。C1 容限 / 目标速度**读取** `air.yaml`（不复制参数）。
 
 只回收**本进程组**的子进程（`start_new_session` + `killpg` + `wait`）；**不**用裸名 `pkill -f`、**不**递归删除。
-证据落 `experiments/w6-task-eval/<run_id>/r036/`（ADR-0007）。
+证据落 `experiments/w6-task-eval/<run_id>/r036/`（ADR-0006）。
 
 ⚠ 范围标注：本台架为 **C1 高度语义 / 同时间证据逻辑台架**（真实节点，**非**整链 / **非**双 PX4 / **非** GUI）。
 """
@@ -547,7 +547,7 @@ def main():
 
     bias = (0.20, -0.15, 0.60)   # 已知偏置：估计 = world GT + 位置偏置（z:+0.60 m）
     tau_v, tau_p = 0.20, 0.50    # 机体一阶速度趋近时间常数 / 弱位置牵引时间常数
-    # （模型口径：机体真值速度一阶趋近参考速度 → 稳态速度误差**非零但小**；见 ADR-0051 取证节。）
+    # （模型口径：机体真值速度一阶趋近参考速度 → 稳态速度误差**非零但小**；见 ADR-0008 取证节。）
 
     out_dir = os.path.join(args.experiments_root, 'w6-task-eval', args.run_id)
     cfg_dir = os.path.join(out_dir, 'config')

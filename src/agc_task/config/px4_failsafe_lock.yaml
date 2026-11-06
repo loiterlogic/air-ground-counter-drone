@@ -8,3 +8,21 @@ nav_dll_act: 0        # NAV_DLL_ACT：数据链丢失动作（0=Disabled；因�
 # 桥会把 PX4 时间戳推到墙上时钟尺度，与仿真时钟共享的映射产生**离奇/负**时间戳
 # （`sec≈−1.7e9` / `+8.5e7`），导致下游年龄门失效、`rclcpp::Time` 负值崩溃。
 uxrce_dds_synct: 0    # UXRCE_DDS_SYNCT：0=禁用桥时间同步（仿真）；1=PX4 默认（启用）
+
+# ---- 仿真磁力计（2026-11-03 抬高度验证中定位，**这是目标机不起飞的根因**）------------
+# 病灶：PX4 官方 gz 机型 `x500`（→ `x500_base`）**没有 magnetometer 传感器**（实测传感器只有
+#   `air_pressure_sensor` / `imu_sensor` / `navsat_sensor`；世界 SDF 也无 Magnetometer 插件）。
+#   而 PX4 的 `sensor_mag_sim` 模块（用 GPS 位置 + 世界磁场模型**合成**磁力计数据，不需要 gz
+#   磁力计传感器）只在 `SENS_EN_MAGSIM=1` 时才由 `px4-rc.simulator` 启动，而该参数
+#   **定义默认值就是 0**（`src/modules/simulation/sensor_mag_sim/parameters.c:43`）。
+#   → 整条链路没有磁力计 → `Preflight Fail: Compass Sensor 0 missing` +
+#     `mag_test_ratio` 超阈 → `Preflight Fail: Yaw estimate error` → EKF 不发布
+#     `vehicle_odometry` → `intruder_driver` 收不到 odom → 目标机**永不 ARM**。
+# 为什么现在才暴露：该缺陷与高度无关，但抬到 12/14 m 后目标机停在地面，己方 3D 距离 ≥14 m。
+#   2026-11-03 更正：当时写"超出感知量程 12 m → 必然失败"，该**诊断特征已失效**——
+#   量程改为 30.0 后 √(26.17²+14²)=29.68 m 仍在量程内（余量 0.32 m），目标停地面时感知
+#   照样有航迹（只是钉在地面不动）。⇒ "目标没起飞"**只能**靠 `intruder_driver` 自身的
+#   `have_odom` 错误日志 + `target_takeoff_guard` 判定，**不得**再依赖感知致盲间接暴露。
+# 修法：显式打开仿真磁力计。**不要**用 `SYS_HAS_MAG=0` / `EKF2_MAG_TYPE=5` 绕过——实测那两条会
+#   让 `Ready for takeoff` 从 2 次降到 **0** 次（EKF 拿不到任何航向约束，连初始化都过不去）。
+sensor_en_magsim: 1   # SENS_EN_MAGSIM：1=启动 sensor_mag_sim（GPS+世界磁场模型合成磁力计）

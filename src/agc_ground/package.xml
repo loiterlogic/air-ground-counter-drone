@@ -16,7 +16,7 @@
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>agc_msgs</depend>
-  <!-- W5-c 离线基线：共享控制层 + Nav2 planner 插件（ADR-0008 / ADR-0018） -->
+  <!-- W5-c 离线基线：共享控制层 + Nav2 planner 插件（ADR-0003 / ADR-0004） -->
   <depend>agc_control</depend>
   <depend>pluginlib</depend>
   <depend>tf2_ros</depend>

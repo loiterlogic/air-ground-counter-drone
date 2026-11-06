@@ -16,7 +16,7 @@ subprocess 直接起 `install/agc_task/lib/agc_task/{capture_adjudicator, task_m
   * 提供假服务 `/agc/scenario/reset`（`Trigger`，成功并 epoch++）。
   * 订阅 `/agc/task/capture_hit`、`/agc/task/capture_event`、`/agc/task/state`。
 
-用例（结果落 `experiments/w6-task-eval/<run_id>/metrics/r021.json`，ADR-0007）：
+用例（结果落 `experiments/w6-task-eval/<run_id>/metrics/r021.json`，ADR-0006）：
   a 任务未开始（无 GROUND_APPROACH）入包络 → **无** `capture_hit` / `capture_event`。
   b 源停 / 输入超龄 / `confidence<min` → **不产出**。
   c 连续两回合（epoch 变化）各独立命中（第二回合 `fired_` 已复位，重新产出）。

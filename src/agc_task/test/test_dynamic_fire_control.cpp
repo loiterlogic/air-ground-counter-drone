@@ -1,4 +1,4 @@
-// test_dynamic_fire_control.cpp —— ADR-0091：火控在飞生命周期确定性单测
+// test_dynamic_fire_control.cpp —— ADR-0011：火控在飞生命周期确定性单测
 //
 // 显式 `t_s`（20 Hz）驱动状态机；不依赖 ROS / GZ / PX4 / 墙钟随机性。
 // 修复前（bug-compatible）的 step() 把位姿 / 交战门提前返回放在 `if (in_flight_)` 之前，
@@ -89,7 +89,7 @@ TerminalScan runFrom(
 }
 }  // namespace
 
-// 红测（ADR-0085(i-1) 最小复现）：发射后目标失效并保持 → 修复前无终局。
+// 红测（ADR-0023(i-1) 最小复现）：发射后目标失效并保持 → 修复前无终局。
 TEST(DynamicFireControlLifecycle, TargetInvalidAfterFireStillSettles)
 {
   agc_task::FireParams p;   // 默认物理参数（v0=6.5, θ=75°, d=1.0, cooldown=2.0, timeout=3.0）
@@ -191,19 +191,23 @@ TEST(DynamicFireControlLifecycle, TargetOutOfHorizontalRangeAfterFireStillSettle
 }
 
 // 发射后车辆位姿缺失：弹道由发射原点锁定，落地结算不受影响。
+//
+// ADR-0011 注：交战门改为「预演弹道能命中才开火」后，**能开火 ⇔ 静止目标必中**，
+//   故"失手"必须由**发射后目标移走**构造（旧式用 (1,0,0.2) 那种"门真但必空"的位姿，
+//   那正是本次修正要消灭的情形，不再可用作失手用例）。
 TEST(DynamicFireControlLifecycle, CarInvalidAfterFireStillSettles)
 {
   agc_task::FireParams p;
   agc_task::DynamicFireControlAdjudicator adj(p);
   adj.reset(1);
 
-  // 目标在包络内但不在弹道近旁（(1,0,0.2) 处网最近距离 ≈0.86 m > 0.5 m 半径）。
   auto car = makePose(0.0, 0.0, 0.0);
-  const auto target = makePose(1.0, 0.0, 0.2);
+  auto target = makePose(2.0, 0.0, 1.0);   // 新门下可开火（预演最近距离 0.33 m ≤ 0.5 m）
   const auto fire = runToFire(adj, car, target, 1.0);
   ASSERT_TRUE(fire.fired);
 
   car.valid = false;
+  target.x = 10.0;   // 发射后目标移走 → 网打空，落地结算
   const auto scan = runFrom(adj, car, target, fire.fire_i + 1, 120, false);
   EXPECT_EQ(scan.count, 1);
   EXPECT_EQ(scan.status, agc_task::CaptureStatus::kMiss);
@@ -232,6 +236,10 @@ TEST(DynamicFireControlLifecycle, LandingSettlesAtBallisticTime)
 }
 
 // 超时路径：net_flight_timeout_s 小于弹道落地时间 → 在超时拍结算 SHOT_MISS。
+//
+// ADR-0011 注：timeout=0.5 s 时 (2,0,1.0) 处**不满足**新交战门（预演只到 t=0.5 s，
+//   最近距离 1.54 m > 0.5 m 半径）→ 不会开火。改用 (0.5,0,1.0)（t=0.20 s 处最近 0.21 m），
+//   门内可开火；再令目标在发射后移走，使飞行必然走到超时结算。
 TEST(DynamicFireControlLifecycle, TimeoutSettlesAtTimeout)
 {
   agc_task::FireParams p;
@@ -240,11 +248,11 @@ TEST(DynamicFireControlLifecycle, TimeoutSettlesAtTimeout)
   adj.reset(1);
 
   const auto car = makePose(0.0, 0.0, 0.0);
-  auto target = makePose(2.0, 0.0, 1.0);
+  auto target = makePose(0.5, 0.0, 1.0);
   const auto fire = runToFire(adj, car, target, 1.0);
   ASSERT_TRUE(fire.fired);
 
-  target.valid = false;
+  target.x = 10.0;   // 发射后目标移走 → 不会命中，走到超时
   const auto scan = runFrom(adj, car, target, fire.fire_i + 1, 120, false);
   ASSERT_EQ(scan.count, 1);
   EXPECT_EQ(scan.status, agc_task::CaptureStatus::kMiss);
@@ -254,6 +262,10 @@ TEST(DynamicFireControlLifecycle, TimeoutSettlesAtTimeout)
 }
 
 // 冷却：结算后 cooldown_until 之前不得发射；冷却结束后且目标 settled 才可再次发射。
+//
+// ADR-0011 注：(1,0,0.2) 在旧门内、新门外（预演最近 0.86 m > 0.5 m），已不能用于"开火后失手"。
+//   改用 (2,0,1.0)：新门下可开火，且发射后目标移走 → 落地失手（flight=1.30 s）；
+//   冷却结束后目标恢复原位（静止、已 settled）→ 可再次开火。
 TEST(DynamicFireControlLifecycle, CooldownBlocksThenAllows)
 {
   agc_task::FireParams p;
@@ -261,19 +273,21 @@ TEST(DynamicFireControlLifecycle, CooldownBlocksThenAllows)
   adj.reset(1);
 
   const auto car = makePose(0.0, 0.0, 0.0);
-  const auto target = makePose(1.0, 0.0, 0.2);   // 落地失手（最近 ≈0.86 m）
+  auto target = makePose(2.0, 0.0, 1.0);   // 新门下可开火
   const auto fire = runToFire(adj, car, target, 1.0);
   ASSERT_TRUE(fire.fired);
   EXPECT_EQ(adj.shotSeq(), 1);
 
-  // 失手于 t=2.05 s（flight=1.30），cooldown_until=4.05 s。
+  // 发射后目标移走 → 落地失手于 t=2.05 s（flight=1.30），cooldown_until=4.05 s。
+  target.x = 10.0;
   const auto before = runFrom(adj, car, target, fire.fire_i + 1, 80, true);   // t ≤ 4.00
   ASSERT_EQ(before.count, 1) << "应恰好一次失手结算";
   EXPECT_EQ(before.status, agc_task::CaptureStatus::kMiss);
   EXPECT_EQ(before.shots, 0) << "冷却期内不得再次发射";
   EXPECT_EQ(adj.shotSeq(), 1);
 
-  const auto after = runFrom(adj, car, target, 81, 90, true);   // 4.05 – 4.50
+  target.x = 2.0;   // 目标回到可交战位置（滤波已随移走重置 → 需重新 settled）
+  const auto after = runFrom(adj, car, target, 81, 140, true);   // 4.05 – 7.00
   EXPECT_EQ(after.shots, 1) << "冷却结束后应允许再次发射";
   EXPECT_EQ(adj.shotSeq(), 2);
 }
@@ -388,4 +402,70 @@ TEST(DynamicFireControlLifecycle, HitOnTrajectory)
   EXPECT_TRUE(scan.decision.miss_dist_valid);
   EXPECT_LE(scan.decision.miss_dist, 0.5 + 1e-9);
   EXPECT_FALSE(adj.inFlight());
+}
+
+// ---------------------------------------------------------------------------
+// ADR-0011：交战门 = 「预演弹道能命中才开火」
+//
+// 旧式判据 `dist ≤ reach + d/2`（包络最外沿）会**放行物理上必空的开火**：
+//   reach 只是网落到该高度的水平距离，不代表该距离上一定命中。当目标落在网弹道
+//   两个高度交点之间（环带空隙）时，门为真却必空——这正是 capture 场景「三中三不中」
+//   的直接原因（默认参数实测余量仅 0.18 m；抬到 12 m 后 0.08 m，20 m 时 0.008 m）。
+// 新式：预演整条弹道求网心与目标的最近距离，≤ 半径 − aim_margin 才判可交战。
+//   ⇒ 门为真 ⇔ 此刻开火必中；`envelope_in` 与 `capture_hit` 口径一致。
+// ---------------------------------------------------------------------------
+
+// 回归锚点：h=0.2 m、水平 1.0 m —— 旧门（reach 1.889 + 0.5 = 2.389 > 1.0）放行，
+//   但预演最近距离 0.859 m > 半径 0.5 m，物理上必空。新门必须判**不可交战**。
+TEST(DynamicFireControlGate, RejectsShotThatCannotHit)
+{
+  agc_task::FireParams p;
+  agc_task::DynamicFireControlAdjudicator adj(p);
+  adj.reset(1);
+
+  const auto car = makePose(0.0, 0.0, 0.0);
+  const auto target = makePose(1.0, 0.0, 0.2);   // 旧门内、新门外
+  const auto fire = runToFire(adj, car, target, 3.0);
+  EXPECT_FALSE(fire.fired) << "预演打不中的距离不得开火（旧门会放行）";
+  EXPECT_EQ(adj.shotSeq(), 0);
+
+  // 同一拍必须给出「未入包络」而不是沉默：engaged=false。
+  const auto d = adj.step(car, target, 3.0, true);
+  EXPECT_FALSE(d.engaged);
+  EXPECT_EQ(d.status, agc_task::CaptureStatus::kOutOfEnvelope);
+}
+
+// 互补锚点：h=0.2 m、水平 1.8 m —— 同一条弹道的**第二段**交点附近，预演最近 0.086 m，
+//   新门必须放行且**开火后真的命中**（证明门与命中判定同源）。
+TEST(DynamicFireControlGate, AcceptsShotThatHits)
+{
+  agc_task::FireParams p;
+  agc_task::DynamicFireControlAdjudicator adj(p);
+  adj.reset(1);
+
+  const auto car = makePose(0.0, 0.0, 0.0);
+  const auto target = makePose(1.8, 0.0, 0.2);
+  const auto fire = runToFire(adj, car, target, 3.0);
+  ASSERT_TRUE(fire.fired) << "预演能命中就必须放行";
+
+  const auto scan = runFrom(adj, car, target, fire.fire_i + 1, fire.fire_i + 30, true);
+  ASSERT_EQ(scan.count, 1);
+  EXPECT_EQ(scan.status, agc_task::CaptureStatus::kHit)
+    << "门放行后必须命中——否则门与命中判定不同源";
+  EXPECT_TRUE(scan.decision.hit);
+}
+
+// aim_margin 语义：把余量提到 0.5 m（= 整个半径）后，连"擦边能中"的距离也必须被拒。
+TEST(DynamicFireControlGate, AimMarginTightensGate)
+{
+  agc_task::FireParams p;
+  p.aim_margin = 0.5;   // 要求最近距离 ≤ 0（精确穿过）
+  agc_task::DynamicFireControlAdjudicator adj(p);
+  adj.reset(1);
+
+  const auto car = makePose(0.0, 0.0, 0.0);
+  const auto target = makePose(1.8, 0.0, 0.2);   // 预演最近 0.086 m，余量要求下不达标
+  const auto fire = runToFire(adj, car, target, 3.0);
+  EXPECT_FALSE(fire.fired) << "aim_margin 收紧后，余量不足的距离不得开火";
+  EXPECT_EQ(adj.shotSeq(), 0);
 }
