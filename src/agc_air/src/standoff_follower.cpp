@@ -1,7 +1,7 @@
 // standoff_follower —— 对目标**常开** standoff 跟踪（spec R6，）
 //
 // 契约 [硬约束] ：无人机对目标的跟踪**常开**（非可选），保持安全间距（不紧贴），
-// 目的是不丢失目标；目标须新鲜（ref_max_age_s=0.5、confidence≥0.5），**过期即冻结**。
+// 目的是不丢失目标；目标须在时间窗内新鲜且 confidence 达标，**过期即冻结**。
 // 行为对齐旧 `air_follow` 的**距离带策略**（WHAT）；实现为全新重写（HOW 不继承）。
 // 输出 `/agc/air/tracking_ref`，**覆盖**基础轨迹参考（由 trajectory_tracker 执行覆盖）。
 
@@ -65,7 +65,7 @@ protected:
         // `drop_prob=0.1` 在 10 Hz 下每 ~10 拍就有一次空数组，每次都会立刻把航迹判死 →
         // `targetFresh` 返回 false → 冻结（hold）。**丢包被放大成航迹中断**（实测 nominal 档
         // 3 次 hold，全部对应空数组拍；ideal 档 0 次）。
-        // 正确语义：保持上一有效航迹不动，由**年龄**判定失效（`ref_max_age_s=0.5`）——
+        // 正确语义：保持上一有效航迹不动，由**年龄**判定失效——
         // 那才是契约 的"过期即冻结"。空数组只是"这一拍没送来新东西"。
         if (m->tracks.empty()) {
           ++diag_empty_;

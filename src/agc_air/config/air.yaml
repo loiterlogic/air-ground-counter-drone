@@ -38,8 +38,8 @@ trajectory_tracker:
     observe_yaw_mode: "velocity"
     yaw_aim_gt_topic: "/agc/gt/intruder_uav"
     tracking_ref_timeout_s: 0.5
-    target_max_age_s: 0.5            # 目标源时间窗（对齐契约 C10 ref_max_age_s=0.5）
-    confidence_min: 0.5              # 目标 confidence 门槛（对齐契约 C10 confidence>=0.5）
+    target_max_age_s: 0.5            # 目标源时间窗（超龄即失效）
+    confidence_min: 0.5              # 目标 confidence 门槛（低于即失效）
     rl_offset_timeout_s: 0.5         # RL offset 寿命 / 生效窗口（源时间超时归零）
     rl_offset_max_m: 2.0             # RL offset 能力限幅（幅值上限，m）
     conflict_persist_s: 1.0
@@ -94,7 +94,7 @@ standoff_follower:
     hysteresis: 1.0                 # 距离带滞回（m）
     max_step_m: 0.1                 # 单拍限幅（0.1 m@20 Hz → 最大水平速度 2.0 m/s）
     rate_hz: 20.0
-    ref_max_age_s: 0.5              # 目标新鲜度（契约 C10）
+    ref_max_age_s: 0.5              # 目标新鲜度（超龄即冻结）
     confidence_min: 0.5
     odom_topic: "/agc/air/odom"
     target_topic: "/agc/targets"

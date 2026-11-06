@@ -86,7 +86,7 @@ protected:
       "tracking_status_topic", "/agc/air/tracking_status");
     own_name_ = declare_param_idempotent<std::string>("controller_name", "trajectory_tracker");
     tracking_ref_timeout_s_ = declare_param_idempotent<double>("tracking_ref_timeout_s", 0.5);
-    // 目标门同时校验**源时间窗**与 **confidence**（对齐契约 ：ref_max_age_s / confidence≥0.5）。
+    // 目标门同时校验**源时间窗**与 **confidence**：两者都新鲜才放行。
     target_max_age_s_ = declare_param_idempotent<double>("target_max_age_s", 0.5);
     confidence_min_ = declare_param_idempotent<double>("confidence_min", 0.5);
     // N4（2026-11-03）：`acquired_` 判据 = **连续新鲜** `latch_hold_s` 秒（0 = 旧行为"一帧即建立"）。
@@ -816,8 +816,8 @@ private:
   std::string self_uid_;               // R-035：进程实例唯一标识（区分同名重复节点）
   double rate_hz_{50.0};
   double tracking_ref_timeout_s_{0.5};
-  double target_max_age_s_{0.5};       // R-032：目标源时间窗（对齐契约 C10 ref_max_age_s=0.5）
-  double confidence_min_{0.5};         // R-032：目标 confidence 门槛（对齐契约 C10 confidence>=0.5）
+  double target_max_age_s_{0.5};       // 目标源时间窗（超龄即失效）
+  double confidence_min_{0.5};         // 目标 confidence 门槛（低于即失效）
   double rl_offset_timeout_s_{0.5};    // R-032：RL offset 寿命 / 生效窗口
   double rl_offset_max_m_{2.0};        // R-032：RL offset 能力限幅（幅值上限，m）
   double conflict_persist_s_{1.0};
