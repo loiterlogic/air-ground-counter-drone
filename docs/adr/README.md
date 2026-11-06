@@ -180,5 +180,5 @@
 
 ## 相关
 
-- 文档真源分层与稳定锚点 / 决策适用关系与引用纪律：[ADR-0002](./0002-docs-source-of-truth-and-reference-discipline.md#top)
+- 文档分层与稳定锚点 / 决策适用关系与引用纪律：[ADR-0002](./0002-docs-source-of-truth-and-reference-discipline.md#top)
 - 新增 ADR 的写法：[`.agents/skills/domain-modeling/ADR-FORMAT.md`](../../.agents/skills/domain-modeling/ADR-FORMAT.md)

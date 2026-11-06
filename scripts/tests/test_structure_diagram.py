@@ -179,7 +179,7 @@ def test_declared_package_xml_matches_edges():
         # 图可以比 manifest 少（例如 ①②③ 的具体类别需要人工判定），但不能凭空多
         extra = in_graph - declared
         assert not extra, (
-            '%s 在图里有边指向 %r，但 package.xml 从未声明（图比真源多画了依赖）'
+            '%s 在图里有边指向 %r，但 package.xml 从未声明（图比 package.xml 多画了依赖）'
             % (pid, sorted(extra)))
 
 
@@ -216,7 +216,7 @@ def test_sim_does_not_depend_on_msgs():
     if os.path.isfile(xml):
         with open(xml, encoding='utf-8') as f:
             assert 'agc_msgs' not in f.read(), (
-                'src/agc_sim/package.xml 现在声明了 agc_msgs：真源已变，图与判据都要跟着改')
+                'src/agc_sim/package.xml 现在声明了 agc_msgs：package.xml 已变，图与判据都要跟着改')
 
 
 def test_task_edges_are_run_composition_not_link():
@@ -644,7 +644,7 @@ def test_structure_doc_covers_all_packages():
         assert label in text, '系统结构图.md 缺少依赖类别标注 %r' % label
     # 文档不得再保留已证伪的 sim→msgs 关系
     assert 'SIM -.① 消息.-> MSGS' not in text, (
-        '系统结构图.md 的 Mermaid 仍画着 agc_sim → agc_msgs（真源无此依赖）')
+        '系统结构图.md 的 Mermaid 仍画着 agc_sim → agc_msgs（package.xml 无此依赖）')
 
 
 def test_readme_references_existing_assets():

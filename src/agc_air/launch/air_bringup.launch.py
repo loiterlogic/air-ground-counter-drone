@@ -250,7 +250,7 @@ def generate_launch_description():
                               description='实验随机种子（注入 PX4 GPS 仿真；原 air_perception 已于 2026-11-06 退役）'),
         # 地图（配置文件选择）；缺省 minimal = 既有行为（几何逐值不变）。
         DeclareLaunchArgument('world_map', default_value='minimal',
-                              description='地图（几何真源选择）：minimal（默认）| yard | open_field'),
+                              description='地图（几何来源选择）：minimal（默认）| yard | open_field'),
     ]
 
     ld = LaunchDescription()

@@ -185,7 +185,7 @@ def test_c8_wording_table_matches_plan_document():
  语义已迁到上述 convention（结论未变），本测试随之改指现役配置文件。
     """
     path = os.path.join(ROOT, 'docs', 'conventions', '演示可观测性与产物语义.md')
-    assert os.path.exists(path), '找不到语义真源文档：%s' % path
+    assert os.path.exists(path), '找不到语义定义文档：%s' % path
     doc = open(path, encoding='utf-8').read()
     for _n, name, text, _audience in status_map.STATE_ROWS:
         assert '`%s`' % name in doc or name in doc, 'P1-3 文档缺状态 %s' % name

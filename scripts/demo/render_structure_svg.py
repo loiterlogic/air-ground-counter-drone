@@ -762,7 +762,7 @@ def render_overview():
     # 页眉
     out.append(_t(MARGIN_L, 38, 'AGC 系统结构（概览）', FS_TITLE, COLOR['ink'], True))
     out.append(_t(MARGIN_L, 62,
-                  '8 包 · 四类依赖 · 画布 820 px = README 显示宽 · 真源见包边界',
+                  '8 包 · 四类依赖 · 画布 820 px = README 显示宽 · 定义见包边界',
                   FS_SUB, COLOR['muted']))
 
     # 图例（只有 ①②③ 是线；④ 是框内标签）

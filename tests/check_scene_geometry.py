@@ -148,7 +148,7 @@ def _close(a, b, eps=1e-9):
 
 
 def _src_geometry_of(ob, world_map_mod):
-    """真源障碍（单图元）→ 期望世界几何 `(kind, [..])`（与 `world_bringup` 注入口径一致）。"""
+    """几何文件里的障碍（单图元）→ 期望世界几何 `(kind, [..])`（与 `world_bringup` 注入口径一致）。"""
     return _src_part_geometry_of(ob, world_map_mod)
 
 

@@ -89,8 +89,6 @@ LOCAL_ONLY_PREFIXES = (
     "reference/",            # 旧树归档（只读）
     "toolchain/",            # 外部工具链（仅 README 入库）
     ".trae/",                # 已退役；残留即异常，但语义仍是"本机"
-    # 下面两条是"本机保留路径"表里的数据字面量（检测用），不是决策引用。
-    ".coordination/wake/",   # 已退役叫醒产物
 )
 
 # 历史范围：断链只列名，不计入失败。

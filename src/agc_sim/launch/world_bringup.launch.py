@@ -59,7 +59,7 @@ def _load_yaml(path):
 
 
 def _load_geometry(path):
-    """读**单一几何真源**（S-06；ADR-0007）；P1-1 起路径由 `world_map` 决定。"""
+    """读**单一几何来源**（ADR-0007）；P1-1 起路径由 `world_map` 决定。"""
     with open(path, 'r') as f:
         return yaml.safe_load(f)
 

@@ -980,7 +980,7 @@ class DemoRun:
                  '- 形态：`%s` · 后端：`%s` · 场景：`%s` · 地图：`%s` · seed `%d`' % (
                      r['mode'], r.get('backend'), r.get('scene'), r.get('world_map'),
                      r.get('seed')),
-                 '- **观测指向臂**：`%s`（`air.yaml` 真源值；s04 场景覆盖为 `track`）'
+                 '- **观测指向臂**：`%s`（`air.yaml` 的值；s04 场景覆盖为 `track`）'
                  '；目标测量由 `gt_adapter` 直取真值（无几何门控、不分远近）' % (
                      (r.get('summary') or {}).get('observe_yaw_mode') or 'track'),
                  '- 终态：`%s` / `%s`（期望 `%s`）' % (

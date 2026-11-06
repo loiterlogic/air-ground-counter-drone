@@ -37,6 +37,14 @@ EXCLUDED_MARKERS = (
     'docs/plan/README.md',
 )
 
+# 目录名**事实陈述**白名单：规范文档必须能描述目录结构（如「产物落 docs/reviews/」），
+# 这不是"引用已退役的过程目录陈述当前行为"，而是目录分类表本身的内容。
+# 判定：整行不含 `](`（不是链接）且只出现目录名作为**名词**。
+DIRNAME_FACT_FILES = frozenset({
+    'docs/conventions/目录与命名规范.md',
+    'docs/conventions/路线分支治理.md',
+})
+
 FORBIDDEN = (
     # 2026-11-06 用户裁定：**整个项目以后只能在代码中引用 ADR**。
     # 下列形态一律不许出现在代码/配置里（不是"软建议"，是硬规则）。
@@ -53,7 +61,8 @@ FORBIDDEN = (
     (r'docs/reviews/', '评审快照路径'),
     (r'\bspecs/', '历史规格路径'),
     (r'\bP\d+-\d|\bF\d+-\d|\bN3\b|\bM0\b', '过程批次号'),
-    (r'ADR-0(?:03[2-9]|0[4-9]\d|1\d\d)', '旧体系 ADR 编号'),
+    # 现行 ADR 编号为 0001–0032；旧体系从 0033 起算（原规则从 0032 起，误伤现行 0032）。
+    (r'ADR-0(?:0(?:3[3-9]|[4-9]\d)|[1-9]\d\d)', '旧体系 ADR 编号'),
     (r'真源', '「真源」'),
 )
 
@@ -191,7 +200,11 @@ def test_no_new_forbidden_references():
             hit = lineno in scanned
         if not hit:
             continue
-        for label in _hits(text):
+        labels = _hits(text)
+        # 目录分类表里的目录名属事实陈述，不是引用（见 DIRNAME_FACT_FILES 注释）
+        if rel in DIRNAME_FACT_FILES and '](' not in text:
+            labels = [x for x in labels if x not in ('协作台账路径', '评审快照路径', '临时计划路径')]
+        for label in labels:
             problems.append('%s:%d [%s] %s' % (rel, lineno, label, text.strip()[:100]))
     assert not problems, (
         '新增/改动行出现禁止的决策引用（docs/conventions/引用与注释纪律.md#rule）：\n  %s'

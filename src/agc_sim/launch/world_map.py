@@ -102,7 +102,7 @@ def resolve(world_map):
 
 
 def geometry_path(sim_share, world_map=DEFAULT_WORLD_MAP):
-    """返回 `(地图名, 真源绝对路径)`。"""
+    """返回 `(地图名, 几何文件绝对路径)`。"""
     name = resolve(world_map)
     return name, os.path.join(sim_share, 'config', MAP_GEOMETRY_FILES[name])
 

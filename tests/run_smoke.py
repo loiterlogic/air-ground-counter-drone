@@ -54,7 +54,7 @@ GROUP_TIMEOUT_S = 300
 
 # 每组：(名称, 说明, 命令前缀列表)
 GROUPS = [
-    ('geometry', '几何派生链：地图真源 → 世界 SDF',
+    ('geometry', '几何派生链：地图配置 → 世界 SDF',
      [[sys.executable, os.path.join(ROOT, 'tests', 'check_scene_geometry.py')]]),
     ('messages', '9 消息 ABI 字段序 + AgcTaskState 状态常量',
      [[sys.executable, '-m', 'pytest', '-q',

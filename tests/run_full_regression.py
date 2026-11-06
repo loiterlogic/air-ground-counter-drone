@@ -79,7 +79,7 @@ def _shell(argv):
 
 
 def _env():
-    """DDS 策略走单一真源，与 run_demo.sh / 测试完全一致（见 ADR-0028）。"""
+    """DDS 策略走唯一决定点，与 run_demo.sh / 测试完全一致（见 ADR-0028）。"""
     env = dict(os.environ)
     env.setdefault('ROS_DOMAIN_ID', '0')
     sys.path.insert(0, os.path.join(ROOT, 'scripts', 'demo'))

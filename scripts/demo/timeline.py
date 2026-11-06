@@ -49,7 +49,7 @@ class Timeline:
         if parent:
             os.makedirs(parent, exist_ok=True)
         self._fh = open(path, 'w', encoding='utf-8')
-        self._fh.write('# AGC 演示事件时间线（人读；指标真源是 metrics/summary.json）\n')
+        self._fh.write('# AGC 演示事件时间线（人读；指标以 metrics/summary.json 为准）\n')
         self._fh.write('# 时刻 = 相对演示启动的墙钟，格式 [mm:ss.d]\n#\n')
         self._fh.flush()
         self._closed = False

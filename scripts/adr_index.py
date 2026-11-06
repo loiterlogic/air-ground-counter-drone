@@ -255,7 +255,7 @@ def render(entries: list[dict[str, str]]) -> str:
     lines.append("")
     lines.append("## 相关")
     lines.append("")
-    lines.append("- 文档真源分层与稳定锚点 / 决策适用关系与引用纪律："
+    lines.append("- 文档分层与稳定锚点 / 决策适用关系与引用纪律："
                  "[ADR-0002](./0002-docs-source-of-truth-and-reference-discipline.md#top)")
     lines.append("- 新增 ADR 的写法：[`.agents/skills/domain-modeling/ADR-FORMAT.md`](../../.agents/skills/domain-modeling/ADR-FORMAT.md)")
     lines.append("")

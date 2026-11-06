@@ -204,7 +204,7 @@ def main() -> None:
     ap.add_argument('--params', default='src/agc_air/config/air.yaml',
                     help='参数唯一来源（阈值从此读，不复制）')
     ap.add_argument('--geometry', default='src/agc_sim/config/world_geometry.yaml',
-                    help='静态障碍几何单一真源（S-06 / ADR-0007；障碍坐标从此读，不复制）')
+                    help='静态障碍几何唯一来源（ADR-0007；障碍坐标从此读，不复制）')
     ap.add_argument('--prefix', default='/agc/air')
     ap.add_argument('--duration', type=float, default=60.0)
     ap.add_argument('--warmup', type=float, default=3.0)

@@ -136,7 +136,7 @@ def generate_launch_description():
     # 地图（配置文件选择）；缺省 minimal = 既有行为。
     ld.add_action(DeclareLaunchArgument(
         'world_map', default_value='minimal',
-        description='地图（几何真源选择）：minimal（默认）| yard | open_field（由上层传入）'))
+        description='地图（几何来源选择）：minimal（默认）| yard | open_field（由上层传入）'))
     # F1（2026-10-31）：出生布局透传口。缺省 **'auto'** = 不改 world_bringup 的缺省
     # （car.yaml / target.yaml 的值）→ standalone 行为逐字不变；main.launch.py 显式传入
     # 布局配置文件派生值（或场景覆盖值），两侧（世界 spawn / 复位）同源。
@@ -158,7 +158,7 @@ def generate_launch_description():
     ld.add_action(DeclareLaunchArgument(
         'map_file',
         default_value=os.path.join(perception_share, 'config', 'map.yaml'),
-        description='S-06 地图几何文件（缺省 = 包内回退副本；由上层按真源派生传入）'))
+        description='S-06 地图几何文件（缺省 = 包内回退副本；由上层按几何来源派生传入）'))
     ld.add_action(DeclareLaunchArgument(
         'scene_manifest_file', default_value='',
         description='R-026 scene_manifest.json 路径（由上层生成；空 = 不落）'))

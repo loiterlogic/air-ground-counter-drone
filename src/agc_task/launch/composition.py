@@ -102,7 +102,7 @@ def geometry_path(sim_share, world_map=DEFAULT_WORLD_MAP):
 
 
 def load_geometry(sim_share, world_map=DEFAULT_WORLD_MAP):
-    """读**单一几何真源**（S-06；ADR-0007）；P1-1 起按 `world_map` 选文件。"""
+    """读**单一几何来源**（ADR-0007）；P1-1 起按 `world_map` 选文件。"""
     _, path = geometry_path(sim_share, world_map)
     with open(path) as f:
         return yaml.safe_load(f)
@@ -716,7 +716,7 @@ def flight_altitude_block(geometry):
     fa = (geometry or {}).get('flight_altitude')
     if not isinstance(fa, dict):
         raise RuntimeError(
-            '地图几何真源缺少 flight_altitude 块（ADR-0007：高度必须随地图声明）→ 拒绝运行')
+            '地图几何文件缺少 flight_altitude 块（ADR-0007：高度必须随地图声明）→ 拒绝运行')
     out = {}
     for key in ('own_track_m', 'own_takeoff_m', 'target_cruise_m', 'own_clearance_min_m'):
         if key not in fa:

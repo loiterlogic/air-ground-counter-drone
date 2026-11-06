@@ -50,7 +50,7 @@ def test_capture_authorized_scenes_disable_milestone_terminal():
             '→ 捕获结局不可达（ADR-0014）' % scene)
         checked.append(scene)
     # 配置文件里应至少有一个已授权场景（s08）；退化保护：若该轴被误删，测试应失败而非静默通过。
-    assert checked, '未找到任何 interception_authorized=true 的场景——场景真源可能被误改（ADR-0014）'
+    assert checked, '未找到任何 interception_authorized=true 的场景——场景配置可能被误改（ADR-0014）'
 
 
 def test_base_default_keeps_existing_behavior():

@@ -144,7 +144,7 @@ class VizMarkers(Node):
             spec.loader.exec_module(mod)
             return share, mod
         except Exception as exc:  # noqa: BLE001
-            self.get_logger().warning('viz_markers：读不到几何真源（%s），静态层跳过' % exc)
+            self.get_logger().warning('viz_markers：读不到几何文件（%s），静态层跳过' % exc)
             return None
 
     def on_car_odom(self, msg):

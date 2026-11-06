@@ -654,7 +654,7 @@ def generate_launch_description():
     # （minimal | yard | open_field）则强制该地图。未知值在 _compose 内拒绝运行。
     ld.add_action(DeclareLaunchArgument(
         'world_map', default_value='',
-        description='地图覆盖（几何真源选择）：空=按场景登记（s04→yard，其余→minimal）；'
+        description='地图覆盖（几何来源选择）：空=按场景登记（s04→yard，其余→minimal）；'
                     '显式 minimal | yard | open_field 则强制该地图'))
     ld.add_action(DeclareLaunchArgument(
         'run_id_override', default_value='',
@@ -704,7 +704,7 @@ def generate_launch_description():
                     'headless（gz -s）忽略'))
     ld.add_action(DeclareLaunchArgument(
         'px4_own_pose', default_value='',
-        description='己方机 spawn 位（world ENU，逗号分隔；**空 = 取自出生布局真源** '
+        description='己方机 spawn 位（world ENU，逗号分隔；**空 = 取自出生布局文件** '
                     'config/spawn_layout.yaml 的 own_uav 段）。该字符串同时用作 '
                     'PX4_GZ_MODEL_POSE 与空中节点 origin_pose（局部系原点），故"起飞参考"与'
                     '"净空校验坐标"不可能不一致。仅 backend:=full 生效。'))
