@@ -199,7 +199,7 @@ public:
     fs::create_directories(fs::path(experiments_root_) / campaign_, ec);
     if (ec || !fs::create_directory(run_dir_, ec) || ec) {
       RCLCPP_ERROR(get_logger(),
-        "拒绝写入已有 run 目录（R-029 唯一 run_id 不可覆盖）：%s", run_dir_.c_str());
+        "拒绝写入已有 run 目录（run_id 必须唯一、不可覆盖；ADR-0006）：%s", run_dir_.c_str());
       dir_ok_ = false;
       return;
     }
@@ -256,7 +256,7 @@ public:
     cm_sub_ = create_subscription<nav2_msgs::msg::CollisionMonitorState>(
       cm_state_topic, 20, [this](nav2_msgs::msg::CollisionMonitorState::SharedPtr m) {
         cm_action_ = m->action_type;
-        have_cm_state_ = true;   // R-028：action 快照到达（有效样本掩码：**状态已知**即可，见 evaluateTick）
+        have_cm_state_ = true;   // action 快照到达（有效样本掩码：**状态已知**即可，见 evaluateTick）（ADR-0016）
       });
     // 复位记账（task_manager 以 transient_local 发布，晚订阅可获最后值）
     reset_retries_sub_ = create_subscription<std_msgs::msg::Int32>(
@@ -336,7 +336,7 @@ public:
     long agg_ticks_total = 0, agg_ticks_valid = 0;
     long agg_ticks_invalid_scan = 0, agg_ticks_invalid_action = 0;
     long agg_triggered_ticks = 0, agg_infeasible_ticks = 0, agg_scan_samples = 0;
-    long agg_ticks_intervened = 0;   // W7-b（T1/E1）
+    long agg_ticks_intervened = 0;   // 安全层干预拍数累计
     long agg_vis_total = 0, agg_vis_visible = 0, agg_vis_opportunity = 0;
     double agg_vis_gap_longest = 0.0, agg_vis_recovery_last = 0.0;
     // （T4）：窗口级新诊断的聚合（只增不改；相对时刻取各窗口最早值，窗口起点仍为各自 enter_s）。
@@ -435,7 +435,7 @@ public:
            "\"scan_valid_mask\": \"scan_frame_fresh_v2\"},\n"
         << "  \"metrics_comparability\": \"proxy_v1（进程全时长）与 window_valid_v2（episode 窗口）"
            "及 gz_contact_v1 三口径互不冒充，均不与旧 RL 安全集指标直接对照（口径/分母不同）；"
-           "scan 有效样本掩码自 W7-b 起为 scan_frame_fresh_v2（帧新鲜即有效，**不**要求前向锥有回波）"
+           "scan 有效样本掩码为 scan_frame_fresh_v2（帧新鲜即有效，**不**要求前向锥有回波）"
            "——无障碍场景的 ticks_invalid_scan 因此由 100% 降为 ~0，与 v1 不可逐值对照；"
            "action 档自 window_valid_v2 起为『状态已知 + 安全层存活』（**不**要求 state 话题逐拍新鲜，"
            "该话题是边沿发布）——动作长期不变的场景 ticks_invalid_action 因此由 100% 降为 ~0，"
@@ -637,7 +637,7 @@ private:
     std::string exit_state, exit_reason; // 关窗时的 state_name / reason_code
     long ticks_total{0}, ticks_valid{0}, ticks_invalid_scan{0}, ticks_invalid_action{0};
     long triggered_ticks{0}, infeasible_ticks{0}, scan_samples{0};
-    long ticks_intervened{0};   // W7-b（T1/E1）：本窗口内 raw≠effective（安全层干预）的拍数
+    long ticks_intervened{0};   // 本窗口内 raw≠effective（安全层干预）的拍数
     // （T3/E3，F-10）：可见性（分母 = 本窗口拍数）
     long vis_ticks_total{0}, vis_ticks_visible{0}, vis_ticks_opportunity{0};
     double vis_gap_longest_s{0.0}, vis_recovery_last_s{0.0};
@@ -668,10 +668,10 @@ private:
 
   void onScan(const sensor_msgs::msg::LaserScan & m)
   {
-    ++scan_samples_;  // R-027：scan 帧计数（供 not_applicable.scan_derived 掩码）
-    have_scan_frame_ = true;  // W7-b 修订（scan_fresh_v2）：收到过帧即数据可得（与是否有回波无关）
-    scan_rx_s_ = now().seconds();  // R-028：同时间快照——最近 scan 到达时刻
-    if (current_window_ >= 0) {++windows_[current_window_].scan_samples;}  // R-028：窗口内 scan 帧
+    ++scan_samples_;  // scan 帧计数（供 not_applicable.scan_derived 掩码）（ADR-0010）
+    have_scan_frame_ = true;  // 收到过帧即数据可得（与是否有回波无关）
+    scan_rx_s_ = now().seconds();  // 同时间快照——最近 scan 到达时刻（ADR-0016）
+    if (current_window_ >= 0) {++windows_[current_window_].scan_samples;}  // 窗口内 scan 帧（ADR-0016）
     double min_r = std::numeric_limits<double>::infinity();
     for (size_t i = 0; i < m.ranges.size(); ++i) {
       const double a = m.angle_min + static_cast<double>(i) * m.angle_increment;
@@ -1114,7 +1114,7 @@ private:
     if (triggered) {
       ++triggered_ticks_;
       if (!have_scan_) {
-        ++ticks_triggered_no_scan_;  // R-027：无 scan 的触发拍（not_applicable.scan_derived 的证据）
+        ++ticks_triggered_no_scan_;  // 无 scan 的触发拍（not_applicable.scan_derived 的证据）（ADR-0010）
       } else {
         // 剩余停车裕度 brake_d = v^2/(2a)、margin = scan_min_forward - brake_d。
         const double v = std::abs(vx_body_);
@@ -1398,7 +1398,7 @@ private:
     const bool has_lat = !target_obs_latency_.empty();
     o << "{";
     o << "\"definition_version\": \"n4_tracking_error_v1\", ";
-    o << "\"note\": \"派生诊断，非契约 C1 口径；err_eff = ‖/agc/air/tracking_ref − /agc/air/odom‖"
+    o << "\"note\": \"派生诊断，非契约硬约束 #hc-1 口径；err_eff = ‖/agc/air/tracking_ref − /agc/air/odom‖"
          "（水平 XY，仿真时间戳最近邻配对，容差 " << air_pair_max_dt_s_ << " s）。"
          "hold_events 是 frozen 的**边沿**计数（非逐拍 WARN 行数）。\", ";
     // ---- hold ----
@@ -1522,12 +1522,12 @@ private:
     if (src.empty()) {return;}
     std::error_code ec;
     if (!fs::exists(src, ec)) {
-      RCLCPP_WARN(get_logger(), "R-026：源文件不存在，跳过拷贝 %s", src.c_str());
+      RCLCPP_WARN(get_logger(), "源文件不存在，跳过拷贝 %s（ADR-0006）", src.c_str());
       return;
     }
     fs::copy_file(src, run_dir_ / "config" / dst_name, fs::copy_options::overwrite_existing, ec);
     if (ec) {
-      RCLCPP_WARN(get_logger(), "R-026：拷贝 %s → config/%s 失败：%s",
+      RCLCPP_WARN(get_logger(), "拷贝 %s → config/%s 失败：%s（ADR-0006）",
         src.c_str(), dst_name.c_str(), ec.message().c_str());
     }
   }

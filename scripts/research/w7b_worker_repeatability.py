@@ -93,7 +93,7 @@ SHOT_RE = re.compile(r'SHOT_FIRED shot=(\S+) t=([\d.]+).*?age=([\d.]+)')
 CAPTURE_RE = re.compile(r'CAPTURE（发射式网动态命中）.*?shot=(\S+).*?flight=([\d.]+) s')
 R041_RE = re.compile(r'R-041：目标有效性 goal_valid=(true|false).*?age=(-?[\d.]+)')
 TW_RE = re.compile(r'\[tw=([\d.]+)s\] requesting OFFBOARD')
-R013_RE = re.compile(r'R-013 门禁证据.*?now=([\d.]+)')
+R013_RE = re.compile(r'起始门禁证据.*?now=([\d.]+)')
 B1_RE = re.compile(r'B1 诊断')
 B1_KEYS = ('gate_ok', 'no_pose', 'behind', 'rmin', 'rmax', 'fov_az', 'fov_el', 'blocked', 'dropped')
 
@@ -283,7 +283,7 @@ def parse_log(path):
                 out['release_control_wall'] = cur_wall
             if 'start OK -> AIR_SEARCH' in line and out['start_ok_wall'] is None:
                 out['start_ok_wall'] = cur_wall
-            if 'R-013 门禁证据' in line and out['start_ok_sim_s'] is None:
+            if '起始门禁证据' in line and out['start_ok_sim_s'] is None:
                 mm = R013_RE.search(line)
                 if mm:
                     out['start_ok_sim_s'] = float(mm.group(1))

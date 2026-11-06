@@ -210,8 +210,8 @@ protected:
         const auto & tr = m->tracks.front();
         const auto & p = tr.pose.pose.position;
         target_pos_ = agc_air::Vector3(p.x, p.y, p.z);
-        target_confidence_ = tr.confidence;                 // R-032：目标门并检 confidence
-        target_stamp_ = sourceStamp(tr.header.stamp);      // R-032：以源时间计目标年龄
+        target_confidence_ = tr.confidence;                 // 目标门并检 confidence（ADR-0017）
+        target_stamp_ = sourceStamp(tr.header.stamp);      // 以源时间计目标年龄（ADR-0017）
         have_target_ = true;
       });
 
@@ -289,7 +289,7 @@ protected:
     reset_phase_srv_.reset();
     trajectory_.reset();
     controller_.reset();
-    resetAuthorityState();   // R-035：完整清理并重置授权 / 冲突 / 竞争者与 claim
+    resetAuthorityState();   // 完整清理并重置授权 / 冲突 / 竞争者与 claim（ADR-0010）
     if (offboard_) {offboard_->cleanup();}
     offboard_.reset();
     return CallbackReturn::SUCCESS;
@@ -365,7 +365,7 @@ private:
     agc_control::State state;
     state.pos = agc_air::Vector3(odom.pose.pose.position.x, odom.pose.pose.position.y,
         odom.pose.pose.position.z);   // 世界 ENU（px4_adapter 已含 EKF 原点平移）
-    state.vel = worldVelFromOdom(odom);   // 机体系 FLU → 世界 ENU（R-003）
+    state.vel = worldVelFromOdom(odom);   // 机体系 FLU → 世界 ENU（ADR-0008）
 
     // ① 显式唯一授权：仅由 active_controller 指定（交权路线：takeoff 先
     // releaseSetpointPublishers 让出唯一发布者，**再** publishActive("trajectory_tracker")）。
@@ -388,7 +388,7 @@ private:
     if (permit && !have_control_) {
       trajectory_->reset(state);
       controller_->reset();
-      t0_ = now();   // R-035：新一集起点（接管 = 新许可生效点）。
+      t0_ = now();   // 新一集起点（接管 = 新许可生效点，ADR-0010）。
       // 高度基准（ADR-0008，唯一世界高度语义 = 世界 ENU z）：状态已是世界 ENU（px4_adapter 含 EKF
       // 原点平移，），此处 z_offset 是**层高基准**选择（轨迹 h=2.5 m 相对接管时刻机体高度）——
       // **非**世界原点代偿；对外 base_ref 与该 effective **同一基准**（发布带同一 z_offset_）。
@@ -429,7 +429,7 @@ private:
       if (have_control_) {
         have_control_ = false;
         RCLCPP_WARN(get_logger(),
-          "R-035：控制许可撤销（authorized=%d conflict=%d）→ relinquish（本拍停发 setpoint）",
+          "控制许可撤销（authorized=%d conflict=%d）→ relinquish（本拍停发 setpoint，ADR-0010）",
           static_cast<int>(is_authorized_), static_cast<int>(conflict_));
       }
       publishClaim(permit);
@@ -628,15 +628,15 @@ private:
     if (competing_) {
       if (!conflict_ && (t - competing_first_).seconds() > conflict_persist_s_) {
         conflict_ = true;
-        frozen_ = true;   // 复用 R-032 hold 内部状态 = 已定义安全状态
+        frozen_ = true;   // 复用 hold 内部状态 = 已定义安全状态（ADR-0017）
         RCLCPP_WARN(get_logger(),
-          "R-035：竞争者 claim（uid=%s）持续 > %.2fs → control_conflict（relinquish）",
+          "竞争者 claim（uid=%s）持续 > %.2fs → control_conflict（relinquish，ADR-0010）",
           competitor_uid_.c_str(), conflict_persist_s_);
       }
     } else if (conflict_ && (t - competing_last_).seconds() > conflict_clear_s_) {
       conflict_ = false;
       frozen_ = false;
-      RCLCPP_WARN(get_logger(), "R-035：竞争者消失 ≥ %.2fs → 清 control_conflict", conflict_clear_s_);
+      RCLCPP_WARN(get_logger(), "竞争者消失 ≥ %.2fs → 清 control_conflict（ADR-0010）", conflict_clear_s_);
     }
   }
 
@@ -709,7 +709,7 @@ private:
     conflict_ = false;
     competing_ = false;
     competitor_uid_.clear();
-    frozen_ = false;   // 复用 R-032 hold 内部状态
+    frozen_ = false;   // 复用 hold 内部状态（ADR-0017）
     have_control_ = false;
     conflict_since_ = now();
     claim_epoch_ = 0;
@@ -789,13 +789,13 @@ private:
       const auto & odom = offboard_->odom();
       state.pos = agc_air::Vector3(
         odom.pose.pose.position.x, odom.pose.pose.position.y, odom.pose.pose.position.z);
-      state.vel = worldVelFromOdom(odom);   // 机体系 FLU → 世界 ENU（R-003）
+      state.vel = worldVelFromOdom(odom);   // 机体系 FLU → 世界 ENU（ADR-0008）
       z_offset_ = state.pos.z() - trajectory_->sample(0.0).pos.z();
     }
     trajectory_->reset(state);
     if (controller_) {controller_->reset();}
-    t0_ = now();  // 相位自 t=0 起算（C5）
-    acquired_ = false;   // R-032：相位复位即新一集起点，清"已获模式" / 冻结 / 最后有效参考。
+    t0_ = now();  // 相位自 t=0 起算（契约 #hc-5）
+    acquired_ = false;   // 相位复位即新一集起点，清"已获模式" / 冻结 / 最后有效参考（ADR-0017）。
     latch_start_ = rclcpp::Time(0, 0, RCL_ROS_TIME);   // N4：连续新鲜计时清零
     frozen_ = false;
     last_good_ref_ = agc_control::Reference();
@@ -812,24 +812,24 @@ private:
   std::string world_frame_, traj_plugin_, ctrl_plugin_, traj_ns_, ctrl_ns_;
   std::string ref_topic_, tracking_ref_topic_, target_topic_, active_topic_, conflict_topic_;
   std::string rl_offset_topic_, own_name_, reset_phase_service_, track_status_topic_;
-  std::string control_permit_topic_;   // R-035：控制许可 claim/ack 话题（配套诊断，非 ABI）
-  std::string self_uid_;               // R-035：进程实例唯一标识（区分同名重复节点）
+  std::string control_permit_topic_;   // 控制许可 claim/ack 话题（配套诊断，非 ABI；ADR-0010）
+  std::string self_uid_;               // 进程实例唯一标识（区分同名重复节点；ADR-0010）
   double rate_hz_{50.0};
   double tracking_ref_timeout_s_{0.5};
   double target_max_age_s_{0.5};       // 目标源时间窗（超龄即失效）
   double confidence_min_{0.5};         // 目标 confidence 门槛（低于即失效）
-  double rl_offset_timeout_s_{0.5};    // R-032：RL offset 寿命 / 生效窗口
-  double rl_offset_max_m_{2.0};        // R-032：RL offset 能力限幅（幅值上限，m）
+  double rl_offset_timeout_s_{0.5};    // RL offset 寿命 / 生效窗口（ADR-0017）
+  double rl_offset_max_m_{2.0};        // RL offset 能力限幅（幅值上限，m）
   double conflict_persist_s_{1.0};
-  double conflict_clear_s_{2.0};       // R-035：竞争者 claim 消失清冲突阈值（s）
+  double conflict_clear_s_{2.0};       // 竞争者 claim 消失清冲突阈值（s；ADR-0010）
   double max_yaw_rate_{2.0};
-  std::string observe_yaw_mode_{"velocity"};   // W7-b P1（甲）：velocity（机头随速度）| target（对准目标）
+  std::string observe_yaw_mode_{"velocity"};   // velocity（机头随速度）| target（对准目标）
   std::string yaw_aim_gt_topic_{"/agc/gt/intruder_uav"};   // 仅 target 臂使用（oracle 指向源）
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr yaw_aim_sub_;
   agc_air::Vector3 yaw_aim_pos_{agc_air::Vector3::Zero()};
   rclcpp::Time yaw_aim_stamp_{0, 0, RCL_ROS_TIME};
   bool have_yaw_aim_{false};
-  bool aim_used_logged_{false}, aim_skipped_logged_{false};   // 一次性诊断（W7-b P1 甲）
+  bool aim_used_logged_{false}, aim_skipped_logged_{false};   // 一次性诊断
 
   pluginlib::ClassLoader<agc_control::TrajectoryGenerator> traj_loader_;
   pluginlib::ClassLoader<agc_control::Controller> ctrl_loader_;
@@ -842,14 +842,14 @@ private:
   rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::Bool>::SharedPtr conflict_pub_;
   rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::String>::SharedPtr active_pub_;
   rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::String>::SharedPtr track_status_pub_;
-  rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::String>::SharedPtr permit_pub_;   // R-035
+  rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::String>::SharedPtr permit_pub_;   // ADR-0010
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr reset_phase_srv_;
 
   rclcpp::Subscription<trajectory_msgs::msg::MultiDOFJointTrajectory>::SharedPtr tracking_ref_sub_;
   rclcpp::Subscription<agc_msgs::msg::TargetTrackArray>::SharedPtr target_sub_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr active_sub_;
   rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr rl_offset_sub_;
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr permit_sub_;   // R-035
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr permit_sub_;   // ADR-0010
   rclcpp::TimerBase::SharedPtr timer_;
 
   agc_control::Reference tracking_ref_;
@@ -865,7 +865,7 @@ private:
   bool track_aim_logged_{false};
   bool track_search_logged_{false};
   rclcpp::Time target_stamp_{0, 0, RCL_ROS_TIME};
-  double target_confidence_{0.0};    // R-032：目标门 confidence
+  double target_confidence_{0.0};    // 目标门 confidence（ADR-0017）
   bool have_target_{false};
   // 诊断：空数组拍数（"本拍无新观测"，不是"目标丢失"）——不静默吞掉
   unsigned long long diag_empty_{0};
@@ -873,7 +873,7 @@ private:
   rclcpp::Time latch_start_{0, 0, RCL_ROS_TIME};
   double latch_hold_s_{3.0};
   agc_air::Vector3 rl_offset_{agc_air::Vector3::Zero()};
-  rclcpp::Time rl_offset_stamp_{0, 0, RCL_ROS_TIME};   // R-032：RL offset 源时间
+  rclcpp::Time rl_offset_stamp_{0, 0, RCL_ROS_TIME};   // RL offset 源时间（ADR-0017）
   bool have_rl_offset_{false};
   std::string commanded_controller_;
 

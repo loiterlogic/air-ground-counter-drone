@@ -145,7 +145,7 @@ public:
       odom_valid_topic, 10,
       [this](std_msgs::msg::Bool::SharedPtr m) {
         odom_valid_ = m->data;
-        last_odom_valid_rx_ = now();   // R-013：记录到达时刻（复位后新鲜度基准）
+        last_odom_valid_rx_ = now();   // 记录到达时刻（复位后新鲜度基准）（ADR-0014）
         have_odom_valid_ = true;
       });
     cmd_sub_ = create_subscription<geometry_msgs::msg::TwistStamped>(
@@ -177,7 +177,7 @@ public:
       [this](nav_msgs::msg::Odometry::SharedPtr m) {
         car_x_ = m->pose.pose.position.x;
         car_y_ = m->pose.pose.position.y;
-        last_car_odom_rx_ = now();   // R-013：记录到达时刻（复位后新鲜度基准）
+        last_car_odom_rx_ = now();   // 记录到达时刻（复位后新鲜度基准）（ADR-0014）
         have_car_ = true;
       });
     air_active_sub_ = create_subscription<std_msgs::msg::String>(
@@ -193,7 +193,7 @@ public:
         if (m->data != air_control_conflict_) {
           air_control_conflict_ = m->data;
           RCLCPP_WARN(get_logger(),
-            "R-035：空中控制冲突 control_conflict=%s（只读记录，不改任务状态机）",
+            "空中控制冲突 control_conflict=%s（只读记录，不改任务状态机；ADR-0010）",
             air_control_conflict_ ? "true" : "false");
         }
       });
@@ -216,7 +216,7 @@ public:
         if (d == "JAM_RTL" || d == "JAM_LAND" || d == "JAM_HOLD" || d == "JAM_LOST") {
           if (episode_epoch_ < 0) {return;}
           jam_reason_ = d;
-          jam_rx_ = now();   // R-021：记录到达时刻（先命中者胜按时刻定序）
+          jam_rx_ = now();   // 记录到达时刻（先命中者胜按时刻定序）（ADR-0014）
         }
       });
     // 结算 capture 改订配套事件（ep / 时刻 / target）；ep 不匹配当前 episode → 拒收。
@@ -503,7 +503,7 @@ private:
 
     const std::string evid = evidenceSummary(t_now, age_ov, age_car, age_cmd);
     if (!reason.empty()) {
-      RCLCPP_INFO(get_logger(), "R-013 门禁证据(失败=%s): %s", reason.c_str(), evid.c_str());
+      RCLCPP_INFO(get_logger(), "起始门禁证据(失败=%s): %s", reason.c_str(), evid.c_str());
       fail(res, reason, evid);
       return;
     }
@@ -555,7 +555,7 @@ private:
     setState(AgcTaskState::AIR_SEARCH, "ok");
     res->success = true;
     res->message = "started: AIR_SEARCH " + evid;
-    RCLCPP_INFO(get_logger(), "R-013 门禁证据(通过): %s", evid.c_str());
+    RCLCPP_INFO(get_logger(), "起始门禁证据(通过): %s", evid.c_str());
     RCLCPP_INFO(get_logger(), "start OK -> AIR_SEARCH");
   }
 
@@ -888,18 +888,18 @@ private:
   double air_z_min_{std::numeric_limits<double>::infinity()};
   double goal_x_{4.0}, goal_y_{3.0};
   double d_track_{3.0}, t_dwell_{3.0}, t_max_{120.0}, confidence_min_{0.5}, target_max_age_s_{0.5};
-  double odom_valid_max_age_s_{1.0};   // R-013：复位后 odom_valid / 地面 odom 新鲜度上限
+  double odom_valid_max_age_s_{1.0};   // 复位后 odom_valid / 地面 odom 新鲜度上限（ADR-0014）
   double fsm_hz_{10.0};
-  double reset_call_timeout_s_{8.0};   // R-022：reset / reset_phase 调用超时（s）
+  double reset_call_timeout_s_{8.0};   // reset / reset_phase 调用超时（s）（ADR-0014）
   bool goal_follow_target_{false};
-  double goal_hold_valid_s_{1.0};   // R-041：最后有效目标保持窗口（s）；超窗显式失效
+  double goal_hold_valid_s_{1.0};   // 最后有效目标保持窗口（s）；超窗显式失效（ADR-0013）
   // 最后有效目标缓存（位置 / 源时刻 / 身份 / 最近有效到达时刻）；新 episode 清空
   bool have_last_valid_target_{false};
   double last_valid_target_x_{0.0}, last_valid_target_y_{0.0};
   rclcpp::Time last_valid_target_stamp_{0, 0, RCL_ROS_TIME};   // 最后有效目标的**源时刻**
   rclcpp::Time last_valid_target_rx_{0, 0, RCL_ROS_TIME};      // 最后有效目标的**到达时刻**（保持窗口基准）
   std::string last_valid_target_id_{};
-  bool air_present_{true};   // 运行模式（R-001）：是否含空中域（决定相位复位门禁是否适用）
+  bool air_present_{true};   // 运行模式：是否含空中域（决定相位复位门禁是否适用）
 
   uint8_t state_{AgcTaskState::IDLE};
   // 终态锁存（进入终态时记录「锁存终态 + 所属 episode」；0xFF / -1 = 未锁存）
@@ -909,11 +909,11 @@ private:
   bool odom_valid_{false};
   bool have_odom_valid_{false};
   bool have_cmd_{false};
-  rclcpp::Time last_odom_valid_rx_{0, 0, RCL_ROS_TIME};   // R-013：odom_valid 到达时刻
-  rclcpp::Time last_car_odom_rx_{0, 0, RCL_ROS_TIME};     // R-013：地面 odom 到达时刻
+  rclcpp::Time last_odom_valid_rx_{0, 0, RCL_ROS_TIME};   // odom_valid 到达时刻（ADR-0014）
+  rclcpp::Time last_car_odom_rx_{0, 0, RCL_ROS_TIME};     // 地面 odom 到达时刻（ADR-0014）
   rclcpp::Time last_cmd_rx_{0, 0, RCL_ROS_TIME};
-  rclcpp::Time reset_done_time_{0, 0, RCL_ROS_TIME};      // R-013：复位完成 epoch（新鲜度基准）
-  rclcpp::Time prev_clock_{0, 0, RCL_ROS_TIME};           // R-013：时钟进展门的上一次采样
+  rclcpp::Time reset_done_time_{0, 0, RCL_ROS_TIME};      // 复位完成 epoch（新鲜度基准）（ADR-0014）
+  rclcpp::Time prev_clock_{0, 0, RCL_ROS_TIME};           // 时钟进展门的上一次采样（ADR-0014）
   rclcpp::Time start_time_{0, 0, RCL_ROS_TIME};
   rclcpp::Time dwell_start_{0, 0, RCL_ROS_TIME};
   // dwell 逐拍判据状态
@@ -935,7 +935,7 @@ private:
   double car_x_{0.0}, car_y_{0.0};
 
   std::string air_controller_{};
-  bool air_control_conflict_{false};   // R-035：只读记录的空中控制冲突（**不**入状态机判据）
+  bool air_control_conflict_{false};   // 只读记录的空中控制冲突（**不**入状态机判据）（ADR-0010）
   std::string jam_reason_{};
   std::string capture_reason_{};
   // episode 身份 + 事件到达时刻（先命中者胜按时刻定序）
@@ -954,20 +954,20 @@ private:
   rclcpp::Subscription<agc_msgs::msg::TargetTrackArray>::SharedPtr target_sub_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr ground_odom_sub_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr air_active_sub_, jam_sub_, capture_sub_;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr air_conflict_sub_;   // R-035：只读 control_conflict
-  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr air_odom_sub_;   // W7-b：起飞完成（悬停）判据
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr epoch_sub_;   // R-021：episode epoch 学习
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr air_conflict_sub_;   // 只读 control_conflict（ADR-0010）
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr air_odom_sub_;   // 起飞完成（悬停）判据
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr epoch_sub_;   // episode epoch 学习（ADR-0014）
   rclcpp::Publisher<AgcTaskState>::SharedPtr state_pub_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr goal_pub_;
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr goal_info_pub_;   // R-041：goal 有效性/身份/时刻伴随诊断
-  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr episode_pub_;   // R-022：新 episode 标识发布
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr dwell_pub_;    // R-023：dwell 分段事件发布
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr goal_info_pub_;   // goal 有效性/身份/时刻伴随诊断（ADR-0013）
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr episode_pub_;   // 新 episode 标识发布（ADR-0014）
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr dwell_pub_;    // dwell 分段事件发布（ADR-0014）
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr reset_retries_pub_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr reset_failed_pub_;
   std::shared_ptr<rclcpp::Node> reset_client_node_;
   rclcpp::Client<Trigger>::SharedPtr reset_client_, reset_phase_client_, release_client_;
   rclcpp::Service<Trigger>::SharedPtr start_srv_, abort_srv_;
-  rclcpp::CallbackGroup::SharedPtr srv_cb_group_;   // R-013：start/abort 服务独立互斥回调组
+  rclcpp::CallbackGroup::SharedPtr srv_cb_group_;   // start/abort 服务独立互斥回调组（ADR-0014）
   rclcpp::TimerBase::SharedPtr state_timer_, goal_timer_, fsm_timer_;
 };
 
