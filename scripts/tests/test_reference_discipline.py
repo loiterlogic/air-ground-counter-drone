@@ -64,7 +64,37 @@ def _is_excluded(path: Path) -> bool:
     return any(m in '/' + rel for m in EXCLUDED_MARKERS)
 
 
+def _scanned_line_numbers(path: Path) -> set[int]:
+    """用 tokenize 精确取出"注释行 + 文档字符串行"的行号集合。
+
+    为什么不用行首前缀判断：2026-11-06 反例实测，docstring **正文行**不以 `#` 或
+    三引号开头，原 `_is_comment_line` 全部漏扫——这正是 ~300 处历史编号既清不掉
+    也挡不住新增的原因。tokenize 按词法切分，能准确给出 COMMENT 与多行 STRING 的区间。
+
+    **只收多行字符串（docstring）**：单行字符串常量（如 `PATTERN = "R-031"`）不是注释，
+    算进来会把代码里的数据标识误报成"历史编号引用"（本函数首版就踩了这个坑，
+    由 test_guard_bypasses 的反例抓到）。判据用 token 跨行，即真实 docstring 形态。
+
+    文件不是合法 Python（语法错误 / 非 .py）时，退回保守判定：整行都扫。
+    """
+    import tokenize
+
+    lines: set[int] = set()
+    try:
+        with open(path, 'rb') as fh:
+            for tok in tokenize.tokenize(fh.readline):
+                if tok.type == tokenize.COMMENT:
+                    lines.add(tok.start[0])
+                elif tok.type == tokenize.STRING and tok.end[0] > tok.start[0]:
+                    # 多行字符串 = docstring / 多行块注释，其正文行都属"注释语义"
+                    lines.update(range(tok.start[0], tok.end[0] + 1))
+    except (tokenize.TokenError, IndentationError, SyntaxError, OSError, UnicodeDecodeError):
+        return None  # 交给调用方按"整文件可疑"处理
+    return lines
+
+
 def _is_comment_line(line: str) -> bool:
+    """行首前缀的快速判定（保留作兜底 / 供非 Python 文件使用）。"""
     s = line.strip()
     return s.startswith(COMMENT_PREFIXES) or ('#' in line and not s.startswith(('#', '"', "'")))
 
@@ -77,14 +107,31 @@ def _hits(line: str):
     return out
 
 
+class BaselineUnavailable(RuntimeError):
+    """无法取到基线 diff —— 门禁**不得**静默放行。"""
+
+
 def _changed_lines():
-    """产出 (path, lineno, text)：相对 BASELINE 的新增行（只看代码/配置/活跃文档）。"""
+    """产出 (path, lineno, text)：相对 BASELINE 的新增行（只看代码/配置/活跃文档）。
+
+    基线不可达（浅克隆 / squash / rebase / 未装 git）时**必须显式失败**：
+    2026-11-06 反例实测，原实现把非 0 退出码吞成 `return`，导致闸门在那种仓库里
+    永远绿——"看着有保护、实际零覆盖"比没有闸门更危险。
+    """
     try:
-        diff = subprocess.run(
+        proc = subprocess.run(
             ['git', 'diff', '--unified=0', BASELINE, '--', '.'],
-            cwd=ROOT, capture_output=True, text=True, timeout=60).stdout
-    except (OSError, subprocess.SubprocessError):
-        return
+            cwd=ROOT, capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise BaselineUnavailable(
+            '无法执行 git diff（%s）；本闸门依赖 git 历史，请勿在无 git 环境运行' % exc)
+    if proc.returncode != 0:
+        raise BaselineUnavailable(
+            'git diff 基线 %s 不可达（exit %d）：%s\n'
+            '本闸门比较"相对基线的改动"，基线缺失时会**零覆盖**。'
+            '请在完整克隆里运行，或显式更新 BASELINE 常量。'
+            % (BASELINE, proc.returncode, (proc.stderr or '').strip()[:300]))
+    diff = proc.stdout
     cur = None
     lineno = 0
     for raw in diff.splitlines():
@@ -113,10 +160,18 @@ def _scannable(rel: str) -> bool:
 
 def test_no_new_forbidden_references():
     problems = []
+    cache: dict[str, set[int] | None] = {}
     for rel, lineno, text in _changed_lines():
         if not _scannable(rel):
             continue
-        if not _is_comment_line(text):
+        if rel not in cache:
+            cache[rel] = _scanned_line_numbers(ROOT / rel) if rel.endswith('.py') else None
+        scanned = cache[rel]
+        if scanned is None:
+            hit = _is_comment_line(text)
+        else:
+            hit = lineno in scanned
+        if not hit:
             continue
         for label in _hits(text):
             problems.append('%s:%d [%s] %s' % (rel, lineno, label, text.strip()[:100]))

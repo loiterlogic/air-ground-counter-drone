@@ -6,7 +6,7 @@
 
 **本测试断言的是一份"人工判定过的白名单"**（见 [路线分支治理](../../docs/conventions/路线分支治理.md#rule)），不是镜像：
 
- * launch 文件里出现 `xxx_source` / `xxx_mode` / `xxx_backend` / `xxx_path` 形式
+ * launch 文件里出现 `xxx_source` / `xxx_mode` / `xxx_backend` / `xxx_path` / `xxx_type` 形式
  （即"同一功能位置有 ≥2 个实现、由参数选择"）的 `DeclareLaunchArgument`，
  * 必须**恰好**等于台账里的已批准集合；
  * 多一个 = 有人未经批准新增路线分支（须走规范的 2.2 节四项准入）；
@@ -38,7 +38,7 @@ APPROVED_BRANCHES = frozenset({
     'target_source',        # gt_adapter（唯一有效值）
 })
 # 注：`goal_follow_target` **不在此集合**——它是任务语义参数（目标移动时任务目标是否跟随，
-# ADR-0001 / ADR-0013），命名形状也不属本测试检测的 `*_source|_mode|_backend|_path` 家族。
+# ADR-0001 / ADR-0013），命名形状也不属本测试检测的 `*_source|_mode|_backend|_path|_type` 家族。
 # 它不是"同一功能的两种实现"，因此不受本规范约束（#rule 的排除项）。
 
 # 已被裁定清退、不得复活的分支（= 治理规范 #current 的已退役台账；每项应有防复活闸门）
@@ -62,9 +62,13 @@ RETIRED_BRANCHES = frozenset({
     'obstacles_source',
 })
 
-# 路线分支的**命名形状**：`<域>_source` / `<域>_mode` / `<域>_backend` / `<域>_path`。
-# 故意不收 `xxx_type`（`gz_x500_mono_cam` 之类是文件/模型选择，不是路线分支）。
-BRANCH_NAME_RE = re.compile(r"^[a-z][a-z0-9_]*_(source|mode|backend|path)$")
+# 路线分支的**命名形状**：`<域>_source|_mode|_backend|_path|_type`。
+# `_type` 必须收：[路线分支治理](../../docs/conventions/路线分支治理.md#rule) 明确把它
+# 列为路线分支的命名形状。注意别与**资产选择**混淆——`px4_sim_model` / `world_map`
+# 选的是文件，不属本家族（同节的排除项）；
+# 判据是"形状 + 是否由参数切换实现"，不是"名字像不像"。
+# 2026-11-06 反例实测：加 `evil_type` 曾被放行（正则漏收），故补齐。
+BRANCH_NAME_RE = re.compile(r"^[a-z][a-z0-9_]*_(source|mode|backend|path|type)$")
 
 # 环境适配分支（#rule 明确排除的类别）：
 # 这些参数按**运行环境能力**切换（GPU / 渲染器是否可用），不改变业务行为、

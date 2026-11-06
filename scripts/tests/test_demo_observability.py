@@ -181,7 +181,7 @@ def test_c8_wording_table_matches_plan_document():
     """文案表与 [演示可观测性与产物语义] 文档逐行一致（防止代码与文档各说各话）。
 
  配置文件：`docs/conventions/演示可观测性与产物语义.md` 的「状态文案表」。
- 该计划文件原先在 `ADR-0032，2026-10-31 归档、2026-11-03 随归档清理删除；
+ 该计划文件已随归档清理删除（2026-11-03）；
  语义已迁到上述 convention（结论未变），本测试随之改指现役配置文件。
     """
     path = os.path.join(ROOT, 'docs', 'conventions', '演示可观测性与产物语义.md')
