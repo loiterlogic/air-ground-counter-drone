@@ -38,6 +38,8 @@ EXCLUDED_MARKERS = (
 )
 
 FORBIDDEN = (
+    # 2026-11-06 用户裁定：**整个项目以后只能在代码中引用 ADR**。
+    # 下列形态一律不许出现在代码/配置里（不是"软建议"，是硬规则）。
     (r'\bR-\d{2,3}\b', 'R 编号'),
     (r'\bW\d+(-[a-z])?\b', 'W 编号'),
     (r'\bS-\d+\b', 'S 编号'),
@@ -45,8 +47,6 @@ FORBIDDEN = (
     (r'§\s*\d', '§ 章节号'),
     (r'第\s*\d+(\.\d+)?\s*节', '「第 N 节」'),
     (r'规范\s*\d+\.\d+', '「规范 N.N」'),
-    (r'契约\s*#\w+', '契约 #锚点'),
-    (r'真源', '「真源」'),
     (r'\bround-\d+|\bround\s*\d+', '实验轮次'),
     (r'\.coordination/', '协作台账路径'),
     (r'docs/plan/', '临时计划路径'),
@@ -54,7 +54,11 @@ FORBIDDEN = (
     (r'\bspecs/', '历史规格路径'),
     (r'\bP\d+-\d|\bF\d+-\d|\bN3\b|\bM0\b', '过程批次号'),
     (r'ADR-0(?:03[2-9]|0[4-9]\d|1\d\d)', '旧体系 ADR 编号'),
+    (r'真源', '「真源」'),
 )
+
+# 允许的契约条目引用形式：契约没有 ADR 时，用硬约束锚点而非 C1/C10。
+CONTRACT_ANCHOR_RE = re.compile(r'docs/ROS2迁移交接文档\.md#hc-\d+|#hc-\d+')
 
 ADR_REF = re.compile(r'ADR-(\d{4})')
 COMMENT_PREFIXES = ('#', '//', '/*', '*', '"""', "'''")
@@ -151,9 +155,20 @@ def _changed_lines():
             lineno += 1
 
 
+# 可扫描的文本扩展名。二进制资产（.stl / .png / .db3 等）**必须排除**：
+# 2026-11-06 盘点发现 `.stl` / `.png` 被当文本读，正则匹配到二进制字节里的随机序列，
+# 制造了 542 处假命中（占当时统计的 52%）——存量统计因此长期不可信。
+TEXT_SUFFIXES = frozenset({
+    '.py', '.md', '.sh', '.yaml', '.yml', '.cpp', '.hpp', '.h', '.txt',
+    '.xml', '.xacro', '.sdf', '.json', '.cfg', '.cmake', '.urdf', '.world',
+})
+
+
 def _scannable(rel: str) -> bool:
     p = ROOT / rel
     if not p.is_file() or _is_excluded(p):
+        return False
+    if p.suffix.lower() not in TEXT_SUFFIXES:
         return False
     return (rel.startswith(('src/', 'scripts/', 'tests/')) or
             rel in ('run_demo.sh', '.gitignore') or

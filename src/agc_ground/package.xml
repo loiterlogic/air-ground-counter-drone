@@ -3,7 +3,7 @@
 <package format="3">
   <name>agc_ground</name>
   <version>0.0.0</version>
-  <description>AGC 地面导航与安全层（W5）：Nav2 collision_monitor 安全层、RL 主控链路、离线对照基线</description>
+  <description>AGC 地面导航与安全层：Nav2 collision_monitor 安全层、RL 主控链路、离线对照基线</description>
   <maintainer email="agc@example.com">AGC Dev</maintainer>
   <license>Proprietary</license>
 
@@ -16,7 +16,7 @@
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>agc_msgs</depend>
-  <!-- W5-c 离线基线：共享控制层 + Nav2 planner 插件（ADR-0003 / ADR-0004） -->
+  <!-- 离线基线：共享控制层 + Nav2 planner 插件（ADR-0003 / ADR-0004） -->
   <depend>agc_control</depend>
   <depend>pluginlib</depend>
   <depend>tf2_ros</depend>

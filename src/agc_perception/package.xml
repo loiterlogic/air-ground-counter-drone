@@ -3,7 +3,7 @@
 <package format="3">
   <name>agc_perception</name>
   <version>0.0.0</version>
-  <description>AGC 感知与融合（W4）：odom / gt / perception / fusion / map 适配</description>
+  <description>AGC 感知与融合：odom / gt / perception / fusion / map 适配</description>
   <maintainer email="agc@example.com">AGC Dev</maintainer>
   <license>Proprietary</license>
 

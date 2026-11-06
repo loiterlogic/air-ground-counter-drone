@@ -117,15 +117,25 @@
 <a id="hard-constraints"></a>
 ## 6. 硬约束（逐条复验）
 
+<a id="hc-1"></a>
 1. 8 字轨迹为**真八字**（Gerono，`rx=15` / `ry=9` / `h=2.5 m`），全程恒速、无加减速（线速度 `v=2.0 m/s`，弧长参数化）。
+<a id="hc-2"></a>
 2. 距离阈值顺序必须满足 紧急 < 碰撞 < 安全。**顺序为不变量**；**绝对值为可标定量**，由地面安全层按 [ADR-0010](adr/0010-safety-thresholds-and-failsafe.md#top) 的 Nav2 时间窗口径、以 W2 实测动力学标定为 `1.0 < 2.0 < 4.0 m`（ADR-0010 已实测回填；旧值 `0.7/0.9/2.4 m` **作废**）。
+<a id="hc-3"></a>
 3. 实证 / 验收**定性、关键场景**使用**非无头（GUI）**并留记录；**规模数值统计**允许 **headless**，但**须经 GUI ↔ headless 等价核验**（同参数 / 同 seed、关键指标一致），且产物**如实标注** `backend` / `mode`；默认仍无头以向后兼容（[ADR-0018](adr/0018-acceptance-and-coverage-matrix.md#top)）。
+<a id="hc-4"></a>
 4. 训练与评估成功定义统一：**超时一律算失败**，只有显式完成才算成功。
+<a id="hc-5"></a>
 5. 每个 episode 起始必须把轨迹相位复位到 t=0。
+<a id="hc-6"></a>
 6. 安全滤波器参数须用**真实逃逸能力**（如 `lateral_speed = min(max_offset_xy, max_offset_change/dt)`）。
+<a id="hc-7"></a>
 7. 场景生成须保证**出生净空 ≥ 可标定下限**（按新 C2 安全档 + 实体外伸推导，见 [ADR-0012](adr/0012-spawn-clearance-and-reset-transaction.md#top)；旧值 `2.4 m` **作废**）；复位失败最多重试 3 次且不占 episode 预算。
+<a id="hc-8"></a>
 8. 状态机终态为"抵近并持续跟踪"，`SUCCESS` **不得**表述为"拦截完成"。
+<a id="hc-9"></a>
 9. 评估报告须含 `shield_infeasible_rate` 与 `reset_failure_rate`。
+<a id="hc-10"></a>
 10. **无人机对目标的跟踪常开**（非可选；原"跟随默认关闭"作废）：保持**安全间距**（不紧贴），目的为**不丢失目标**；跟踪要求目标新鲜（`ref_max_age_s=0.5`）且 `confidence≥0.5`，过期即冻结。无人机同时负责**自身飞行安全**（自避障）。
 
 > **回归挂载**：每条约束挂到"首次使其可验证"的 workstream，映射表见归档 Runbook 的 [硬约束挂载表](archive/ROS2迁移步骤.md#hard-constraint-mounting)（历史编排记录，非约束）。
