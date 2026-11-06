@@ -49,7 +49,7 @@ trajectory_tracker:
       ref_speed_target: 2.0
       ref_speed_tol: 1.0e-3
       height_datum_tol_m: 0.10
-      body_speed_p95_tol_mps: 0.30     # 占位待回填（W3「恒速误差 ε」尚未实测标定）
+      body_speed_p95_tol_mps: 0.30     # 占位待回填（恒速误差 ε 尚未实测标定）
       height_err_p95_tol_m: 0.20       # 占位待回填
       sustained_limit_eps_mps: 0.30
     odom_topic: "/agc/air/odom"
@@ -60,7 +60,7 @@ trajectory_tracker:
     active_controller_topic: "/agc/air/active_controller"
     conflict_topic: "/agc/air/control_conflict"
     rl_offset_topic: "/agc/air/rl_offset"
-    tracking_status_topic: "/agc/air/tracking_status"   # R-032：配套诊断（非 ABI / 非命令者）
+    tracking_status_topic: "/agc/air/tracking_status"   # 配套诊断（非 ABI / 非命令者；ADR-0017）
     origin_pose: "0,0,0.2,0,0,0"
     traj:
       speed: 2.0
@@ -81,9 +81,9 @@ trajectory_tracker:
       obstacle_margin: 2.5
       target_margin: 1.5
       target_min_dist: 8.0
-      reaction_time_s: 0.2              # R-033：反应时间余量（s）
-      max_speed_mps: 2.0                # R-033：反应时间内可达到的水平速度（m/s）
-      reachability_margin: 0.3          # R-033：可达性（制动 / 加速度受限）余量（m）
+      reaction_time_s: 0.2              # 反应时间余量（s；ADR-0010）
+      max_speed_mps: 2.0                # 反应时间内可达到的水平速度（m/s；ADR-0010）
+      reachability_margin: 0.3          # 可达性（制动 / 加速度受限）余量（m；ADR-0010）
 
 # 安全间距带由安全层几何定，与量程无关；量程 R=30.0 推导见 ADR-0008 实施回填。
 standoff_follower:

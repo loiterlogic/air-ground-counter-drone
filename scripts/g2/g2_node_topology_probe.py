@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""G2 round-9：在**实际运行**中采集 `/trajectory_tracker` 的订阅清单。
+"""在**实际运行**中采集 `/trajectory_tracker` 的订阅清单。
 
 为什么必须实跑采集： 的"无 GT 指向订阅"只有**源码守卫**与**日志免责声明**两类证据，
 Leader 要求补**运行拓扑证据**（`ros2 node info` 或等价运行图）。源码守卫可能被条件分支绕过，
@@ -39,7 +39,7 @@ def wait_node(node, deadline_s):
     """等节点出现**并且** lifecycle 进入 `active`。
 
  为什么必须等 active：`trajectory_tracker` 是 lifecycle 节点，**业务订阅全部在
-    `on_configure_impl()` 里创建**。round-9 首次采集踩过这个坑——在 unconfigured 状态下
+    `on_configure_impl()` 里创建**。首次采集踩过这个坑——在 unconfigured 状态下
     `ros2 node info` 只显示 `/clock` 与 `/parameter_events`，会得出"没有 /agc/targets"的
  错误结论（实际是还没建）。
     """

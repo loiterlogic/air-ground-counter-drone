@@ -1,4 +1,4 @@
-"""G2 round-8（ADR-0009）`observe_yaw_mode=track` 的静态/语义判据。
+"""（ADR-0009）`observe_yaw_mode=track` 的静态/语义判据。
 
 判据全部可从**源码文本**判定（不启 ROS），覆盖 request「必做验证 A」中可静态化的部分：
 

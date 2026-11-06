@@ -1,4 +1,4 @@
-"""P1-3 可观测与演示呈现的离线回归（**不启任何仿真、不读 ROS 图**）。
+"""可观测与演示呈现的离线回归（**不启任何仿真、不读 ROS 图**）。
 
 守护演示可观测性七条要求里**可在离线判定**的部分：
 
@@ -541,7 +541,7 @@ def test_default_arm_unchanged_and_annotated():
 def test_presentation_failure_degrades_instead_of_killing_the_run():
     """面板 / 时间线抛异常时，跟随循环**必须**继续（只记 `presentation_errors`）。
 
-    round-1 实测缺陷：`Timeline.state() got an unexpected keyword argument 'at'` 冒到
+    实测缺陷：`Timeline.state() got an unexpected keyword argument 'at'` 冒到
     `run()` 之外 → 监督进程崩溃、仿真进程组仍在跑，一场真实实验白跑。
     """
     import start as demo_start

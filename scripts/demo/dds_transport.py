@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DDS 传输与发现范围选择（单一真源，2026-11-04 新增）。
+"""DDS 传输与发现范围选择（唯一决定点，2026-11-04 新增）。
 
 **为什么需要它**：原先"铁律"要求 `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`，该做法隐含
 一个未写出的前提——**`lo` 带 `IFF_MULTICAST`**。本机 WSL2 内核上 `lo` 只有 `UP|LOOPBACK`

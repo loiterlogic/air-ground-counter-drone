@@ -1,4 +1,4 @@
-"""agc_rl —— 地面 RL 最小版（W5-b）。
+"""agc_rl —— 地面 RL 接口。
 
 - `interface`：obs / action 空间冻结（配置文件）。
 - `policy`：策略加载（确定性策略，可加载 JSON 参数）。

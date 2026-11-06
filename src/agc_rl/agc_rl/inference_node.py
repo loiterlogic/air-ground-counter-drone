@@ -1,4 +1,4 @@
-"""agc_rl 地面 RL 推理节点（W5-b · spec R6/R7）。
+"""agc_rl 地面 RL 推理节点。
 
 链路位置：`ground_policy_rl → cmd_vel_raw → collision_monitor → 唯一执行口 → ground_drive_relay → GZ`。
 本节点**只**写中间话题 `cmd_vel_raw`（`/agc/ground/cmd_vel_raw`），**SHALL NOT** 直接写契约

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""m0_skeleton —— M0 最小端到端闭环顶层 launch。
+"""skeleton —— 最小端到端闭环顶层 launch。
 
 一条命令起全链：include agc_sim 的世界+桥，再起 odom 适配、地面执行链、
 门控/复位与 run logger。参数配置文件 src/agc_task/config/skeleton.yaml。

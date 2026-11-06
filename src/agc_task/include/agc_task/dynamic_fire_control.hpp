@@ -76,8 +76,8 @@ struct CaptureDecision
   double miss_dist{0.0};      // 最近逼近距离
   Vec3 predicted{0.0, 0.0, 0.0};
   Vec3 target_vel{0.0, 0.0, 0.0};   // ADR-0011：发射时的滤波后目标速度（证据）
-  Vec3 est{0.0, 0.0, 0.0};          // W7-b T3：发射时的滤波后目标位置（诊断）
-  double t_est{0.0};                // W7-b T3：predictTarget 迭代后用于瞄准的到达时间（诊断）
+  Vec3 est{0.0, 0.0, 0.0};          // 发射时的滤波后目标位置（诊断）
+  double t_est{0.0};                // predictTarget 迭代后用于瞄准的到达时间（诊断）
   std::string shot_id;
   std::string reason;           // ADR-0011：中止原因（episode_reset | clock_regression）
   double t_event{0.0};          // ADR-0011：中止发生的仿真时刻

@@ -59,7 +59,7 @@ TEST_F(TrajectoryPluginsTest, Figure8IsConstantSpeed)
     max_dev = std::max(max_dev, std::abs(r.vel.norm() - 2.0));
     max_acc = std::max(max_acc, r.acc.norm());
   }
-  EXPECT_LT(max_dev, 1e-3) << "|v| 应恒为 2.0 m/s（C1）";
+  EXPECT_LT(max_dev, 1e-3) << "|v| 应恒为 2.0 m/s（契约 #hc-1）";
   EXPECT_GT(max_acc, 0.0) << "八字轨迹存在法向加速度（曲率非零）";
 }
 

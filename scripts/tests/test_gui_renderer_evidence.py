@@ -1,4 +1,4 @@
-"""W8 P0 / T3：逐 run 有界 GUI renderer 证据单测（纯 stdlib，不读共享日志）。
+"""逐 run 有界 GUI renderer 证据单测（纯 stdlib，不读共享日志）。
 
 覆盖：追加 / 截断 / 缺失 / 新建 / 冲突 / 无变化，以及 startup+final 合并。
 """

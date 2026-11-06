@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""状态语义映射——**全项目唯一**的"开发词汇 → 观众人话"实现（P1-3）。
+"""状态语义映射——**全项目唯一**的"开发词汇 → 观众人话"实现。
 
 配置文件：[演示可观测性与产物语义](../../docs/conventions/演示可观测性与产物语义.md#top)。
 输入是 [`AgcTaskState.msg`](../../src/agc_msgs/msg/AgcTaskState.msg) 的 `state` 枚举与

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""perception_bringup —— W4 感知一键启动（spec R3/R8）。
+"""perception_bringup —— 感知一键启动。
 
 由上层 launch（air_bringup / m0_skeleton）**include**；参数配置文件 `config/perception.yaml`。
 
@@ -44,7 +44,7 @@ from launch_ros.actions import Node
 
 
 def _reject_non_minimal_fallback(context, *args, **kwargs):
-    """P1-1：**回退副本只支持 minimal**（规格「同步回退副本与核查」）。
+    """**回退副本只支持 minimal**（规格「同步回退副本与核查」）。
 
  standalone 直接起 `perception_bringup`（不经过 `composition` 派生）时，`map_file` /
  `obstacles_file` 用包内回退副本，它们只与 **minimal** 配置文件一致。若此时声明

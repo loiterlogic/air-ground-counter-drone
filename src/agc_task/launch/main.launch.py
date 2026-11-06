@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""w6 —— W6 顶层统一入口（结构评审 S-05；ADR-0020；backend 参数化单一入口）。
+"""main —— 顶层统一入口（ADR-0020；backend 参数化单一入口）。
 
-一条 `ros2 launch` 按 `backend` 组装 W6 场景：
+一条 `ros2 launch` 按 `backend` 组装场景：
  * backend:=lightweight（默认）—— 轻量栈：include `skeleton.launch.py`（世界 + 桥 + 感知 +
  地面链路 + 任务层 scenario_reset/task_manager/run_logger）+ `capture_adjudicator` + `jammer`；
  **无** PX4 / 空中链路。

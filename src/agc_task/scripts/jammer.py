@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""jammer —— 行为级电子干扰注入（W6 R8 / spec R8；R-017 单一授权 + R-018 真实确认 + R-019 因子分离）。
+"""jammer —— 行为级电子干扰注入（单一授权 + 真实确认 + 因子分离；ADR-0015）。
 
 对**入侵者** PX4 经 uXRCE 发 `px4_msgs/VehicleCommand`（`VEHICLE_CMD_SET_NAV_STATE`）强制
 `RTL / LAND / HOLD`；"失联"（LOST）以**停发 Offboard 流**触发 PX4 自身 failsafe。
@@ -132,7 +132,7 @@ class Jammer(Node):
         # 确认状态机
         self.target_nav_state_ = None   # 当前 pending 注入的目标 nav_state（None = 无待确认）
         self.pending_reason_ = None
-        self.pending_factor_ = None      # R-019 因子标签（forced_mode / offboard_only）
+        self.pending_factor_ = None      # 因子标签（forced_mode / offboard_only）
         self.window_open_t_ = None
         self.sustain_start_t_ = None
         self.acked_ = False

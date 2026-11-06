@@ -153,7 +153,7 @@ public:
         if (v != goal_valid_) {
           goal_valid_ = v;
           RCLCPP_WARN(
-            get_logger(), "R-041：目标有效性 goal_valid=%s（%s）",
+            get_logger(), "目标有效性 goal_valid=%s（%s）；ADR-0013",
             v ? "true" : "false", m->data.c_str());
         }
       });
@@ -569,7 +569,7 @@ private:
   std::string base_frame_, global_frame_;
   std::string planner_plugin_, planner_id_, ctrl_plugin_;
   std::string odom_topic_, goal_topic_, state_topic_, cmd_raw_topic_, path_topic_;
-  std::string goal_info_topic_;   // R-041：目标有效性伴随诊断话题
+  std::string goal_info_topic_;   // 目标有效性伴随诊断话题（ADR-0013）
   double rate_hz_{20.0}, replan_period_s_{2.0}, replan_disp_m_{1.0}, goal_tol_m_{0.3};
   double max_path_age_s_{5.0};
   bool stop_on_invalid_{true};
@@ -602,7 +602,7 @@ private:
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr goal_sub_;
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr goal_info_sub_;   // R-041：目标有效性伴随诊断
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr goal_info_sub_;   // 目标有效性伴随诊断（ADR-0013）
   rclcpp::Subscription<agc_msgs::msg::AgcTaskState>::SharedPtr state_sub_;
   rclcpp::TimerBase::SharedPtr timer_;
 };

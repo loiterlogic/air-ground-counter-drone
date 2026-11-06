@@ -51,7 +51,7 @@ synct = cfg.get('uxrce_dds_synct')
 magsim = cfg.get('sensor_en_magsim')
 lines = (
     "# 本文件由 scripts/lock_px4_failsafe_params.sh 生成（ADR-0010）。\n"
-    "# 单一真源：src/agc_task/config/px4_failsafe_lock.yaml（勿手改本文件）。\n"
+    "# 单一来源：src/agc_task/config/px4_failsafe_lock.yaml（勿手改本文件）。\n"
     "param set COM_OF_LOSS_T %s\n"
     "param set COM_OBL_RC_ACT %s\n"
     "param set NAV_DLL_ACT %s\n"

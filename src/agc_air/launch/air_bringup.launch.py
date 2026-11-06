@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""air_bringup —— W3 空中链路一键启动（spec R1）。
+"""air_bringup —— 空中链路一键启动。
 
 一条 `ros2 launch` 起：agc_world（唯一 gz server，经 agc_sim/world_bringup）+ uXRCE-DDS Agent
 + PX4 SITL（`PX4_GZ_STANDALONE=1`、`PX4_GZ_WORLD=agc_world`、`PX4_SIM_MODEL=gz_x500`（launch 参数

@@ -1,4 +1,4 @@
-"""RL 策略加载与推理（W5-b · spec R6）。
+"""RL 策略加载与推理。
 
 策略**可加载**：由 config 的 `policy_path` 指向一个 JSON 参数文件（最简确定性策略 / 预置权重）。
 改 `policy_path` → 载入不同参数 → 行为变化可复现（spec R6 判据）。
@@ -34,7 +34,7 @@ class DeterministicPolicy(Policy):
     # 默认参数（policy_path 缺省/不可读时使用；与 `policies/go_to_goal.json` 一致）
     DEFAULTS = {
         "name": "deterministic_go_to_goal",
-        "avoid_obstacles": False,         # False → 纯 go-to-goal（安全层为唯一 shield，见 ADR-0004/C6）
+        "avoid_obstacles": False,         # False → 纯 go-to-goal（安全层为唯一 shield，见 ADR-0004 / 契约 #hc-6）
         "safe_distance_norm": 0.35,       # 前方净空低于此 → 触发避让（旧树 safe_distance_norm）
         "forward_half_width_sectors": 1,  # 前方判定扇区半宽
         "prefer_side": "left",            # 左右净空相等时的偏好：left | right
@@ -51,12 +51,12 @@ class DeterministicPolicy(Policy):
         name = loaded.get("name")
         if name and name != self.name:
             raise ValueError(
-                "policy '%s' 与加载器 '%s' 不匹配（W5-b 仅提供确定性策略）" % (name, self.name))
+                "policy '%s' 与加载器 '%s' 不匹配（仅提供确定性策略）" % (name, self.name))
         self.params.update({k: v for k, v in loaded.items() if k != "name"})
 
     def act(self, obs, num_sectors):
         if not bool(self.params["avoid_obstacles"]):
-            return 0  # 纯 go-to-goal：安全层（collision_monitor）为唯一 shield（ADR-0004 / C6）
+            return 0  # 纯 go-to-goal：安全层（collision_monitor）为唯一 shield（ADR-0004 / 契约 #hc-6）
         half = int(self.params["forward_half_width_sectors"])
         forward = interface.forward_clearance(obs, num_sectors, half)
         if forward >= float(self.params["safe_distance_norm"]):

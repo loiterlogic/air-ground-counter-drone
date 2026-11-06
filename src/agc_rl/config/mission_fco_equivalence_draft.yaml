@@ -11,7 +11,7 @@ w8_mission_fco_equivalence_draft:
   execution_authorized: false
   gate_context: not_evaluable_as_specified
   scope_note: >-
-    本草案是 GUI/headless 模式等价的新设计，不是 W8-E2 科研预注册；
+    本草案是 GUI/headless 模式等价的新设计，不是科研预注册；
     旧 P1/P2 verdict、MME、N、种子与历史门均未改写。
 
   historical_seed_evidence:
@@ -27,10 +27,10 @@ w8_mission_fco_equivalence_draft:
         role: P1 机制消融（同集合）
       - path: experiments/w8-parity/20261025-w8-gui-headless-pilot
         seeds: [5, 0]
-        role: W8 模式 pilot（工程 seeds）
+        role: 模式等价 pilot（工程 seeds）
       - path: experiments/w8-parity/20261025-w8-gui-gpu-pilot
         seeds: [5, 0]
-        role: W8 GPU-GUI 修正 pilot（工程 seeds）
+        role: GPU-GUI 修正 pilot（工程 seeds）
     independence_status: >-
       历史确证/消融集合为 0–19；本轮工程验证使用 5/0。候选网格显式避开这些值。
       该独立性结论基于上列 run 清单的 seed 字段；未对 experiments/ 全量历史做穷举证明，
@@ -196,7 +196,7 @@ w8_mission_fco_equivalence_draft:
     cost_model:
       wall_seconds_per_attempt: 250
       basis: >-
-        W8 pilot 的工程参考（约 240–260 s/attempt），不是本轮新样本；
+        既有 pilot 的工程参考（约 240–260 s/attempt），不是本轮新样本；
         实际成本须在 plan v2 用新 pilot 或保守上界重算。
       total_attempts_delta_0_10: 144
       total_wall_hours_delta_0_10: 10.0
@@ -229,4 +229,4 @@ w8_mission_fco_equivalence_draft:
     - 新指标方差未知；σ_upper=0.15 只是保守规划假设，未经观测。
     - 每 seed 2 次重复对 seed 内散布估计很弱；是否增加重复或另批 pilot 待裁定。
     - seed 网格 100–135 的独立性与历史使用集合需 Codex 复核。
-    - 本草案不授权 headless、正式等价、新 pilot、W8-E2、在线 RL、W7-c 扩容。
+    - 本草案不授权 headless、正式等价、新 pilot、科研预注册、在线 RL、多 worker 扩容。

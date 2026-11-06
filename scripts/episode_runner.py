@@ -259,7 +259,7 @@ class Monitor(Node):
         self.odom_valid = None      # /agc/ground/odom_valid 最近值（None=未收到）
         self.odom_valid_rx = None
         self.air_rx = None          # ADR-0027：/agc/air/odom 最近接收墙钟（整链就绪门）
-        self.sim_at_start = None    # W7-b（ADR-0022）：start 调用时刻的仿真钟（固定观测时长基准）
+        self.sim_at_start = None    # start 调用时刻的仿真钟（ADR-0022）（固定观测时长基准）
         self.create_subscription(AgcTaskState, '/agc/task/state', self._on, 20)
         self.create_subscription(Clock, '/clock', self._on_clock, 1)
         self.create_subscription(PoseStamped, GT_CAR_TOPIC, self._on_gt_car, 10)

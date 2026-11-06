@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""world_map —— 几何真源「按地图分文件」的**单一清单**（P1-1）。
+"""world_map —— 几何来源「按地图分文件」的**单一清单**。
 
 `world_geometry.yaml`（minimal）与 `maps/*.yaml`（yard / open_field）都是**静态障碍 +
 作业区几何**的配置文件，只是按地图拆成多个文件。**哪张地图对应哪个文件**只在本文登记一次；

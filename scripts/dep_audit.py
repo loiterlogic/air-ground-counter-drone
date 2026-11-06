@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""dep_audit —— 依赖声明 lint（评审 S-01「声明 ⊇ 真实直接使用」前置）。
+"""dep_audit —— 依赖声明 lint（「声明 ⊇ 真实直接使用」）。
 
 对 `src/agc_*` 各包核对：
   1. `CMakeLists.txt` 的 `find_package(X)` → 必须在 `package.xml` 声明（含别名映射）；

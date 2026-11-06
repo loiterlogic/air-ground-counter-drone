@@ -30,7 +30,7 @@
 
 ```bash
 python3 scripts/demo/capture_run.py \
-    --out experiments/p2-1/round-2 --duration 110 --interval 1.0
+    --out experiments/<campaign>/<run_id> --duration 110 --interval 1.0
 ```
 
 退出码：`0` 三图齐全且帧数达标；`1` 有缺项（报告写明缺哪项）；`2` 用法/环境错误。
@@ -133,7 +133,7 @@ def pick_frames(frames, timeline, prefer_size=None, stable_median=None, tol=0.02
                 'terminal': frames[-1][1], 'notes': notes}
 
     # 只允许从**视角稳定**的帧里挑：skyband 与中位数偏离 > tol 的帧是"用户拖动/缩放"
-    # 造成的，不能作为交付图（round-4b 实测：前 3 帧被拖过，skyband 0.1292 vs 中位 0.0）
+    # 造成的，不能作为交付图（实测：前 3 帧被拖过，skyband 0.1292 vs 中位 0.0）
     stable_paths = set()
     if stable_median is not None:
         for item in (frame_skybands or []):
@@ -147,7 +147,7 @@ def pick_frames(frames, timeline, prefer_size=None, stable_median=None, tol=0.02
             return None
         pool = frames
         if prefer_size is not None:
-            # 优先在同一图像尺寸的帧里挑——否则三图尺寸不一致（round-4b 实测：
+            # 优先在同一图像尺寸的帧里挑——否则三图尺寸不一致（实测：
             # 终态帧撞上窗口被放大，1539×999 vs 另两张 831×952）
             import os as _os
             from PIL import Image as _Img
@@ -224,7 +224,7 @@ def pick_frames(frames, timeline, prefer_size=None, stable_median=None, tol=0.02
             idx = 1 if len(after) > 1 else 0
             term_frame = after[idx][1]
             # 若该帧尺寸与另两张不同（窗口在终态后被改过大小），改取**同尺寸**的最后一帧，
-            # 保证三图尺寸一致（round-4b 实测：终态帧撞上 1539×999）
+            # 保证三图尺寸一致（实测：终态帧撞上 1539×999）
             if prefer_size is not None:
                 import os as _os
                 from PIL import Image as _Img
@@ -555,7 +555,7 @@ def main(argv=None):
                         # 预登记：首帧即算 skyband（不挑好看的帧），但**仅作记录**。
                         # 判定改用"稳定帧中位数"（见下方 stable_skyband）——因为
                         # `Screenshot` 插件取的是 **GUI 实时视图相机**，用户拖一下/滚一下滚轮
-                        # 画面就变（round-4b 实测：第 3 帧一次跳变，作业区 84.7%→99.9%）。
+                        # 画面就变（实测：第 3 帧一次跳变，作业区 84.7%→99.9%）。
                         # 单看首帧会把"人为操作"误判成"系统视角"。
                         first_skyband = _skyband(path)
                         if first_skyband:
@@ -616,7 +616,7 @@ def main(argv=None):
             demo_dir = d
     if demo_dir:
         timeline = parse_timeline(os.path.join(demo_dir, 'timeline.txt'))
-    # ⚠ 时刻基准对齐（round-4b 踩到的坑）：
+    # ⚠ 时刻基准对齐（实测踩过的坑）：
     # `timeline.txt` 的 `[mm:ss.d]` 是**相对运行起点**，而取帧记录用的是 `time.monotonic`
     # 相对**本脚本开始轮询**——两者原点不同，直接比较会把三张图全选到相邻帧。
     # 修法：从 result.json 的 `started_at` 取运行起点，把帧时刻换算成同一零点。

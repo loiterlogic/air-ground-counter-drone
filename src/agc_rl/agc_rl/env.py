@@ -1,4 +1,4 @@
-"""Gymnasium 兼容的环境适配层（W7-a · spec R1）。
+"""Gymnasium 兼容的环境适配层。
 
 **无 gymnasium 依赖**：实现 Gymnasium v0.26+ 约定的最小 API（`reset` / `step` / `close`），
 `reset() -> (obs, info)`；`step(action) -> (obs, reward, terminated, truncated, info)`。

@@ -20,7 +20,7 @@
 
   <model name="intruder_uav">
     <xacro:unless value="$(arg controlled)">
-      <!-- ===== 被动版（M0/兼容）：失重刚体 + 外部速度指令驱动 ===== -->
+      <!-- ===== 被动版（最小闭环兼容）：失重刚体 + 外部速度指令驱动 ===== -->
       <static>false</static>
 
       <link name="target/base_link">

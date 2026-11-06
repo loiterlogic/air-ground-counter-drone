@@ -21,7 +21,7 @@ CONFIG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__fil
 
 def _load():
     with open(os.path.join(CONFIG_DIR, 'scenarios.yaml')) as f:
-        scenarios = yaml.safe_load(f)['scenes']   # 真源根键为 `scenes`
+        scenarios = yaml.safe_load(f)['scenes']   # 根键为 `scenes`
     with open(os.path.join(CONFIG_DIR, 'base.yaml')) as f:
         base = yaml.safe_load(f)
     return scenarios, base
@@ -60,7 +60,7 @@ def test_base_default_keeps_existing_behavior():
 
 
 def test_non_capture_scenes_unaffected():
-    """非授权场景不得被本次修正波及（否则会破坏既有 W6 回归）。"""
+    """非授权场景不得被本次修正波及（否则会破坏既有回归）。"""
     scenarios, base = _load()
     affected = [
         scene for scene in scenarios
@@ -124,7 +124,7 @@ def test_spawn_layout_reaches_tracking_range():
             violations.append('%s: goal=(%g,%g) target=(%g,%g) d=%.2f > d_track=%.2f'
                               % (scene, gx, gy, tx, ty, dist, d_track))
     assert not violations, (
-        '固定任务目标离目标出生位过远 → C8「车↔目标 ≤ d_track」不可达，跟踪终态永不可能：\n  '
+        '固定任务目标离目标出生位过远 → 「车↔目标 ≤ d_track」不可达，跟踪终态永不可能：\n  '
         + '\n  '.join(violations))
     # 退化保护：本规则至少覆盖到默认演示场景 s04，否则说明判据被架空了。
     assert 's04_static_static_obs_track' in checked, (
@@ -139,7 +139,7 @@ def test_s04_spawn_comes_from_layout():
     spawn_keys = {'car_x', 'car_y', 'target_x', 'target_y'}
     leaked = spawn_keys & set(overrides)
     assert not leaked, (
-        's04 仍覆盖出生位 %s → 布局真源（spawn_layout.yaml）对它不生效' % sorted(leaked))
+        's04 仍覆盖出生位 %s → 布局文件（spawn_layout.yaml）对它不生效' % sorted(leaked))
 
 
 if __name__ == '__main__':
@@ -150,7 +150,7 @@ if __name__ == '__main__':
 # F1 ：出生布局配置文件的非有限值 / 非法值守卫
 # ------------------------------------------------------------------------------
 def _layout_with(monkeypatch_tmp, mutate):
-    """把真源复制到临时目录并按 `mutate` 改写，返回该临时文件的路径。"""
+    """把布局文件复制到临时目录并按 `mutate` 改写，返回该临时文件的路径。"""
     import tempfile
     with open(os.path.join(CONFIG_DIR, 'spawn_layout.yaml')) as f:
         doc = yaml.safe_load(f)
@@ -293,7 +293,7 @@ SIM_CONFIG_DIR = os.path.join(_ROOT, 'src', 'agc_sim', 'config')
 
 
 def _geometry_file(world_map):
-    """地图名 → 几何真源文件（**只经 `world_map.MAP_GEOMETRY_FILES`**，不另建第二份表）。"""
+    """地图名 → 几何来源文件（**只经 `world_map.MAP_GEOMETRY_FILES`**，不另建第二份表）。"""
     import importlib.util
     path = os.path.join(_ROOT, 'src', 'agc_sim', 'launch', 'world_map.py')
     spec = importlib.util.spec_from_file_location('wm_for_tests', path)
@@ -357,7 +357,7 @@ def test_cruise_altitude_manifest_block_reports_source_and_datum():
         assert blk['world_enu_absolute'] is False, (
             '%s: 不得把巡航高度声明为世界 ENU 绝对高度（H0 实测原点跨 run 漂移）' % scene)
         assert blk['stacks_on_spawn_z'] is False, (
-            '%s: 不得声明与世界 spawn z 叠加（H0 round-3 T2 实测已排除该叠加）' % scene)
+            '%s: 不得声明与世界 spawn z 叠加（实测已排除该叠加）' % scene)
         assert blk['alias_conflicts'] is False, '%s: 别名冲突 %r' % (scene, blk)
 
 
@@ -466,7 +466,7 @@ def test_flight_altitude_keys_are_sane():
 
 
 def test_standoff_safe_max_respects_safety_floor_and_sensor_range():
-    """H0 round-4：`safe_max` 必须同时满足**安全层下界**与**三维感知量程上界**。
+    """`safe_max` 必须同时满足**安全层下界**与**三维感知量程上界**。
 
  判据（两条件缺一不可）：
  ① 停止趋近点 `safe_max − hysteresis` ≥ 安全层目标圆盘下界
@@ -520,7 +520,7 @@ def test_standoff_safe_max_respects_safety_floor_and_sensor_range():
 
 
 def test_standoff_stop_point_matches_safety_floor_minimally():
-    """H0 round-4：本项取**最小几何修复**——停止点应恰在安全层下界（不多留、不少留）。
+    """本项取**最小几何修复**——停止点应恰在安全层下界（不多留、不少留）。
 
  这不是"必须等于"的硬约束（多留余量也合法），而是防止有人把 safe_max 一路调大、
  用扩大距离换来"看起来不冲突"而牺牲量程裕度。允许区间 [floor, ceil]。
@@ -570,7 +570,7 @@ def _air_merged_for(scene):
 
 
 def test_s04_scene_default_observe_yaw_is_track():
-    """H0 round-5：s04 场景级默认 `observe_yaw_mode` 必须是 `track`（用户授权项）。
+    """s04 场景级默认 `observe_yaw_mode` 必须是 `track`（用户授权项）。
 
  走**真实合并路径**（air.yaml → 场景覆盖），不是只看 YAML 字面：
  合并后 `trajectory_tracker.observe_yaw_mode` 必须真的变成 `track`，
@@ -589,7 +589,7 @@ def test_s04_scene_default_observe_yaw_is_track():
 
 
 def test_other_scenes_do_not_inherit_track():
-    """H0 round-5：s02 及其余场景**不得**被隐式改成 track（只授权了 s04）。
+    """s02 及其余场景**不得**被隐式改成 track（只授权了 s04）。
 
  判据：除 s04 外，任何场景合并后的 `observe_yaw_mode` 必须仍是 air.yaml 缺省 `velocity`。
     """
@@ -610,7 +610,7 @@ def test_other_scenes_do_not_inherit_track():
 
 
 def test_cli_observe_yaw_overrides_scene_default():
-    """H0 round-5：显式 CLI `observe_yaw_mode:=<mode>` **优先于**场景默认。
+    """显式 CLI `observe_yaw_mode:=<mode>` **优先于**场景默认。
 
  守护的 bug 类别：把场景默认写成"无条件生效"，使历史对照臂/消融实验无法用 CLI 强制回
  `velocity` 复现旧行为。`main.launch.py` 的顺序是「先合并场景 → 再用非空 CLI 覆盖」，
@@ -633,7 +633,7 @@ def test_cli_observe_yaw_overrides_scene_default():
 
 
 def test_air_yaml_global_observe_yaw_unchanged():
-    """H0 round-5：`air.yaml` 的**全局**默认不得被改成 track（只授权场景级）。"""
+    """`air.yaml` 的**全局**默认不得被改成 track（只授权场景级）。"""
     air_path = os.path.join(os.path.dirname(os.path.dirname(CONFIG_DIR)),
                             'agc_air', 'config', 'air.yaml')
     with open(air_path) as f:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""离线单测：P1-4 baseline closure 的两处修复（T0，不启 ROS / 不启仿真）。
+"""离线单测：基线收尾的两处修复（T0，不启 ROS / 不启仿真）。
 
 断言的是"两个**已定位**的脆弱点不再存在"，不是"跑起来看着对"：
 
@@ -241,7 +241,7 @@ def test_aggregate_empty_is_none_not_zero():
 
 def test_probe_pair_accepts_mapping_and_key_list():
     """`pair_one` 的签名必须显式收 (refs, trefs, ref_keys, tref_keys) —— 这条正是
-    round-2 臂 A 崩溃的回归点（传 dict 当序列）。"""
+    臂 A 崩溃的回归点（传 dict 当序列）。"""
     import inspect
     params = list(inspect.signature(_probe_module().pair_one).parameters)
     assert params == ['ts', 'odom_xy', 'refs', 'trefs', 'ref_keys', 'tref_keys',

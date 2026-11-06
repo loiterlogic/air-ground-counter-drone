@@ -296,7 +296,7 @@ def case_normal_path_changes_output(bench, cfg, results):
 
 
 def case_degenerate_arrived(bench, cfg, results):
-    """②b 退化到位路径：两点重合 + 车在末端容差内 → 必须零速（round-1 review B2）。
+    """②b 退化到位路径：两点重合 + 车在末端容差内 → 必须零速（实测）。
 
  修复前：累计弧长全 0 → `_advance_index` 停在 index 0 → `finished` 永假 → 到点后继续出速度。
     """

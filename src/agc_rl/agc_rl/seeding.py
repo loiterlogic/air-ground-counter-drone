@@ -1,4 +1,4 @@
-"""种子分解与派生（W7-a · spec R3）。
+"""种子分解与派生。
 
 分离 `spawn / sensor / channel / target / policy / physics` 六个随机流，并保存**派生规则**；
 `scene / episode / attempt` **三级区分**；配对比较用**共同外生随机过程**（CRN）。

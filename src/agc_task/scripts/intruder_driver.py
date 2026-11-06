@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""intruder_driver —— 入侵者 PX4 脚本化驱动（W6 前置 P / spec R4；R-016 episode 起点协议）。
+"""intruder_driver —— 入侵者 PX4 脚本化驱动（episode 起点协议见 ADR-0014）。
 
 入侵者为**第二个 PX4 SITL 实例**（attach 到模型 `intruder_uav`）。本节点经 uXRCE / `px4_msgs`
 以 Offboard 驱动其运动：`static`（悬停）/ `linear`（匀速直线）/ `maneuver`（圆周机动）/
@@ -82,7 +82,7 @@ def _qos():
  故"目标未起飞"**只能**靠本节点自己的 `have_odom` 日志判定，
  **不得**再指望感知致盲来间接暴露。）
 
-    对照真源：C++ 侧 `px4_adapter` 用 `rclcpp::SensorDataQoS()`（BEST_EFFORT +
+    对照实现：C++ 侧 `px4_adapter` 用 `rclcpp::SensorDataQoS()`（BEST_EFFORT +
  TRANSIENT_LOCAL，已正确），其注释也写明「订阅端必须同档，否则 QoS 不兼容、收不到数据」。
  Python 侧手抄 QoS 时漏了同一项 —— 这就是"两处各写一份"的代价。
     """
@@ -94,7 +94,7 @@ def _qos():
 
 
 def _epoch_qos():
-    """R-016：epoch 订阅 QoS —— depth=1 + RELIABLE + TRANSIENT_LOCAL（对齐 scenario_reset 发布端）。"""
+    """epoch 订阅 QoS —— depth=1 + RELIABLE + TRANSIENT_LOCAL（对齐 scenario_reset 发布端）。"""
     q = QoSProfile(depth=1)
     q.reliability = ReliabilityPolicy.RELIABLE
     q.history = HistoryPolicy.KEEP_LAST
@@ -252,7 +252,7 @@ class IntruderDriver(Node):
             self.get_logger().info(f'episode armed (epoch={val})')
 
     def _on_jam_state(self, m: String):
-        """R-017：消费 jammer 的**已校验授权事件**（`JAM_*` = 授权，`JAM_NONE`/空 = 释放）。"""
+        """消费 jammer 的**已校验授权事件**（`JAM_*` = 授权，`JAM_NONE`/空 = 释放）。"""
         key = m.data.strip().upper()
         jammed = key not in ('', 'JAM_NONE')
         now = self._now_us()
@@ -378,7 +378,7 @@ class IntruderDriver(Node):
                         f'`/fmu/out/vehicle_odometry` 是否有数据（本节点不会自行恢复）')
             return
         if self.jammed_:
-            return  # 干扰授权生效：停发 Offboard → PX4 offboard-loss（R8/R-019；非数据链失联）
+            return  # 干扰授权生效：停发 Offboard → PX4 offboard-loss（非数据链失联；ADR-0010）
         ts = self._now_us()
         tw = (ts - self.warmup_t0_) * 1e-6     # 预热时间（**独立于** episode）
 

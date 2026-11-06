@@ -704,7 +704,7 @@ def apply_air_geometry(air_merged, geometry, sim_share=None):
 
 
 def flight_altitude_block(geometry):
-    """ADR-0007：读地图真源里的 `flight_altitude` 块并**规范化 + 校验**。
+    """ADR-0007：读地图几何里的 `flight_altitude` 块并**规范化 + 校验**。
 
  用户 2026-11-02 裁定：「高度和地图绑定，因为后面会做小障碍高密度和大障碍低密度等图」。
  ⇒ 每张地图在自己几何文件里声明"该图该飞多高"，运行期派生注入，`air.yaml` / `base.yaml`

@@ -1,4 +1,4 @@
-"""GUI 渲染后端选择（W8 / ADR-0021）。
+"""GUI 渲染后端选择（ADR-0021）。
 
 `gui_render_backend`:
  * ``auto``（项目默认）—— WSL2 + ``/dev/dxg`` + X11 时使用 Mesa D3D12；

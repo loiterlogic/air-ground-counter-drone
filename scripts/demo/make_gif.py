@@ -16,7 +16,7 @@
 ## 用法
 
 ```bash
-python3 scripts/demo/make_gif.py --frames experiments/p2-1/round-2/frames \
+python3 scripts/demo/make_gif.py --frames experiments/<campaign>/<run_id>/frames \
     --out docs/conventions/assets/demo.gif --fps 8 --max-bytes 5242880
 ```
 

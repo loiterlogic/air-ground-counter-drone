@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w3_target_driver —— W3 临时目标驱动脚本（spec Task 9.2）
+"""target_driver —— 临时目标驱动脚本
 
 按速度指令驱动 `intruder_uav`（模型挂 GZ VelocityControl，经 ros_gz 桥接
 `/agc/sim/target_cmd_vel` → `/model/intruder_uav/cmd_vel`）。正式 driver / 干扰注入属 。

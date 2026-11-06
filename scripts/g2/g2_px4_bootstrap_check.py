@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""G2 round-6 判据：从 PX4 `ulg` 提取"GPS 自举是否成功"的可复跑证据。
+"""判据：从 PX4 `ulg` 提取"GPS 自举是否成功"的可复跑证据。
 
 为什么用 ulg 而不是日志文本： 的判别完全依赖 ulg 里的
 `sensor_gps` / `vehicle_global_position` / `sensor_mag` 条数与 `reset_count_quat`；

@@ -1,4 +1,4 @@
-"""obs / action 版本化机制（W7-a · spec R2）。
+"""obs / action 版本化机制。
 
 引入 `obs_version`、归一化统计与 checkpoint 元数据；**旧版本可回放**。
 

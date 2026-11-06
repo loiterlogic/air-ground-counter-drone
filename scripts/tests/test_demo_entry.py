@@ -691,7 +691,7 @@ def test_interrupt_exit_code_is_130_not_task_failure():
 def test_duration_branch_is_recorded_even_when_not_reached():
     """`--duration` 未触达时必须**显式记账**，不得静默当作"已验证主动停"。
 
-    round-3 实测：`--duration 15` 时任务在 13.61 s 先达 `TRACKING_SUCCESS`，
+    实测：`--duration 15` 时任务在 13.61 s 先达 `TRACKING_SUCCESS`，
  `duration_limit` 分支未执行。若代码不记账，产物看起来与"到时主动停"一模一样，
  后来人会把"未验证的分支"读成"已验证"。
     """

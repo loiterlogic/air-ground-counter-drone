@@ -84,8 +84,8 @@ map_adapter:
     world_frame: "world"
     rate_hz: 2.0
     map_topic: "/agc/map"
-    dynamic_max_age_s: 1.5       # R-006：动态障碍轨最后观测年龄超过此值即过期（→ 未知，非永久自由）；static 先验不过期
-    source_max_age_s: 1.0        # R-006：/agc/obstacles 源静默超过此值 → /agc/map/valid=false（知识时效）
+    dynamic_max_age_s: 1.5       # 动态障碍轨最后观测年龄超过此值即过期（→ 未知，非永久自由）；static 先验不过期
+    source_max_age_s: 1.0        # /agc/obstacles 源静默超过此值 → /agc/map/valid=false（知识时效）
     # （ADR-0007）：场景/源版本（折入内容身份 hash / 由 launch 按场景派生注入）；单调更新序号诊断话题
     scenario_version: ""
     update_seq_topic: "/agc/map/update_seq"

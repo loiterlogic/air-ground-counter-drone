@@ -4,7 +4,7 @@ w8_gui_headless_plan:
   version: 1.1
   date: 2026-10-25
   status: frozen_before_runs
-  scope: "W8-E1 前置 GUI/headless 模式等价：GPU-GUI 修正后的 pilot（默认软件 GUI 作为受限条件单列）"
+  scope: "GUI/headless 模式等价前置：GPU-GUI 修正后的 pilot（默认软件 GUI 作为受限条件单列）"
   campaign: w8-parity
   reference:
     base_plan: "src/agc_rl/config/gui_headless_plan.yaml（v1，sha256 3afa82c4…a292；未修改）"
@@ -36,7 +36,7 @@ w8_gui_headless_plan:
   fixed_conditions:
     backend: full
     worker: ordinary_single_worker
-    worker_note: "普通单 worker：无 --worker-id、无 --px4-run-root；W7-c 保持 deferred。"
+    worker_note: "普通单 worker：无 --worker-id、无 --px4-run-root；多 worker 扩容保持 deferred。"
     infra_retries: 0
     obs_horizon_s: 60.0
     timeout_s: 240.0
@@ -85,7 +85,7 @@ w8_gui_headless_plan:
       first_fco_rel_s: "episode_window_metrics.first_fire_control_opportunity_s（相对窗口 enter_s）"
       first_envelope_rel_s: "episode_window_metrics.first_envelope_in_s"
       capture_t_s: "日志 CAPTURE 事件的绝对仿真时刻；未发生为 null"
-      timeout_rate: "MISSION_FAILED + reason TIMEOUT / mission attempts（契约 C4：超时算失败）"
+      timeout_rate: "MISSION_FAILED + reason TIMEOUT / mission attempts（契约 #hc-4：超时算失败）"
       capture_success_rate: "INTERCEPT_CONFIRMED / mission attempts"
       min_clearance_m: "arms.json.command_attribution.clearance_min_m（即 summary command_attribution.clearance_min_m）"
       intervention_ticks_ratio: "episode_window_metrics.intervention_ticks_ratio（active 窗口）"
@@ -111,7 +111,7 @@ w8_gui_headless_plan:
   denominators:
     mission_attempts: "terminal_state 为任务终态（成功或 mission failure）且 outcome_class != infra"
     infra: "INFRA_FAILURE / outcome_class=infra 单列，不计入 mission 分母"
-    timeout: "MISSION_FAILED(TIMEOUT) 计入 mission_attempts，按失败计（契约 C4）"
+    timeout: "MISSION_FAILED(TIMEOUT) 计入 mission_attempts，按失败计（契约 #hc-4）"
 
   hard_invariants:
     - "每发 SHOT_FIRED 恰有一个 SHOT_HIT / SHOT_MISS / SHOT_ABORTED；unresolved / duplicated 为空"

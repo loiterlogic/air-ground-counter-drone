@@ -1,6 +1,6 @@
 # agc_sim（· 仿真世界与模型）
 
-单一世界 + 车/目标模型 + `ros_gz` 桥。分两段交付：**-min**（供 M0）与 **-full**（传感器链路，待补）。
+单一世界 + 车/目标模型 + `ros_gz` 桥。分两段交付：**基础段**（供最小闭环）与**完整段**（传感器链路，待补）。
 > **打补丁（平台换装，[ADR-0010](../../docs/adr/0010-safety-thresholds-and-failsafe.md#top)）**：地面车由 TB3 级小车换装为 **Velodyne 语义差速 UGV**，基座取 Gazebo Fuel 官方模型 **Clearpath Robotics Husky A200**（来源 / 许可见 [第三方资产与许可](../../docs/conventions/第三方资产与许可.md)；保形换装：仅换视觉 mesh + 碰撞/惯量并 1:1 移植尺度，驱动内核仍为 gz-sim `DiffDrive`）。不变量保持：`car/base_link`、`car/lidar_link`（`/agc/car_lidar`）、`car/capture_net`、`car/jammer`、桥入/出、`config/car.yaml` 唯一参数源。
 
 ## 目录
@@ -70,7 +70,7 @@ SceneBroadcaster → Sensors`），与 Nav2 官方 `tb3_sandbox` 写法一致。
 误判为"渲染不可用"，实为顺序问题）。sensor 的 `<topic>` 取绝对名 `/agc/car_lidar` → gz 点云话题
 `/agc/car_lidar/points`（另有 `/agc/car_lidar` 的 `LaserScan`，未桥）。
 
-**实测**：`/agc/sim/car_points`（`sensor_msgs/PointCloud2`）@ **~10 Hz**，GUI 与无头均正常；M0 不受影响。
+**实测**：`/agc/sim/car_points`（`sensor_msgs/PointCloud2`）@ **~10 Hz**，GUI 与无头均正常；最小闭环不受影响。
 
 ## 拦截相关模型（-interception）
 

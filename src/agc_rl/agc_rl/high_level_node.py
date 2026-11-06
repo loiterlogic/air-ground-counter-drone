@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""high_level_node —— W7-b P2 臂 B：**高层（拦截点）+ 成熟低层**（[ADR-0022](b)(f)）。
+"""high_level_node —— 臂 B：**高层（拦截点）+ 成熟低层**（[ADR-0022](b)(f)）。
 
 角色（P2「RL 职责分层」的**臂 B**）：本节点只出**高层决策**——把目标预测拦截点作为**目标点**
 发布到低层（`ground_baseline` = Navfn 规划 + 自研 LQR，见 [](ADR-0002)，

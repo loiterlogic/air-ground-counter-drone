@@ -51,7 +51,7 @@ axes:
     dynamic:
       supported: false
       carrier: null
-      reason: "无动态障碍执行节点（R-026 不新建执行节点、不改世界物理）"
+      reason: "无动态障碍执行节点（不新建执行节点、不改世界物理）"
 
   outcome:
     tracking:

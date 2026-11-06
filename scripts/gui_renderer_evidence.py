@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gui_renderer_evidence —— 逐 run 有界的 GUI 渲染后端证据（W8 P0 / T3）。
+"""gui_renderer_evidence —— 逐 run 有界的 GUI 渲染后端证据。
 
 共享日志 `~/.gz/rendering/ogre2.log` 是 **全局** 资源：并行 GUI run 或日志轮转时，
 “读取最近一次”（读整份文件取最后一条 Device Name）会把别的 run 的 renderer 记到本 run。

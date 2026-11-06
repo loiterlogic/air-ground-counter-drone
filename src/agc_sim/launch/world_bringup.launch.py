@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""world_bringup —— W2-min 世界启动编排（世界 + 桥 + spawn 车/目标）。
+"""world_bringup —— 世界启动编排（世界 + 桥 + spawn 车/目标）。
 
 单一入口，供 顶层 launch include。参数配置文件：
  * 车 / 目标模型与 spawn 位默认值取自 config/car.yaml、config/target.yaml；
@@ -65,7 +65,7 @@ def _load_geometry(path):
 
 
 def _material_sdf(color, finish=None):
-    """经典材质（ambient/diffuse/specular）+ **可选标量 PBR**（P1-1 视觉保真，2026-10-29）。
+    """经典材质（ambient/diffuse/specular）+ **可选标量 PBR**（视觉保真，2026-10-29）。
 
  `finish` 留空 → 输出与旧版**逐字节一致**（无 `<pbr>` 块），保证 minimal / open_field 与
  历史证据不漂移。`finish` 合法值见 `world_map.FINISHES` / `FINISH_PBR`（标量 metalness /
@@ -152,7 +152,7 @@ def _obstacle_model_sdf(ob):
 
 
 def _inject_static_obstacles(src_path, dst_path, geometry):
-    """S-06：由**单一真源**（地图 yaml 的 obstacles）向 base world 注入静态障碍 `<model>` 块，
+    """由**地图 yaml 的 obstacles**向 base world 注入静态障碍 `<model>` 块，
  生成运行期世界写入临时文件。
 
  **不**手写第二份完整 world：base world（光源/地面/物理/插件/`spherical_coordinates`）
@@ -174,7 +174,7 @@ def _inject_static_obstacles(src_path, dst_path, geometry):
 
 
 def _make_gz_sim(world_file, ros_gz_sim_launch, sim_share):
-    """按 `world_map` × `world_obstacles` 选择世界（S-06 / P1-1）：
+    """按 `world_map` × `world_obstacles` 选择世界：
  * `static` —— base world + 由**所选地图配置文件**注入障碍的生成世界（临时文件，按地图命名）；
  * `none` —— base world 本身（**已无**障碍，不注入）。
  世界路径经 gz_args token（按 basename 匹配替换，兼容相对/绝对）单一指定，不由上层手写。
@@ -328,19 +328,19 @@ def generate_launch_description():
         DeclareLaunchArgument('target_body_mass', default_value=str(tgt_m['body_mass'])),
         DeclareLaunchArgument(
             'target_controlled', default_value='false',
-            description='目标模型模式（W6 前置 P）：false=被动失重（M0/W5）；'
+            description='目标模型模式：false=被动失重；'
                         'true=PX4 可控机型（merge x500，由第二 PX4 实例控制）'),
         # / ：按场景障碍轴选择世界。
         # static —— base world 由配置文件注入障碍（含 pole_*）；
         # none —— base world 本身（不含任何障碍）。
         DeclareLaunchArgument(
             'world_obstacles', default_value='static',
-            description='障碍轴世界生成：static（由所选地图真源注入障碍）| none（base world，无任何障碍）'),
+            description='障碍轴世界生成：static（由所选地图几何注入障碍）| none（base world，无任何障碍）'),
         # 配置文件按地图分文件——minimal（config/world_geometry.yaml，默认）|
         # yard / open_field（config/maps/*.yaml）。未知值拒绝运行。
         DeclareLaunchArgument(
             'world_map', default_value=DEFAULT_WORLD_MAP,
-            description='地图（几何真源选择）：minimal（默认，核查基线）| yard（演示主地图）| '
+            description='地图（几何来源选择）：minimal（默认，核查基线）| yard（演示主地图）| '
                         'open_field（能力对照）'),
         DeclareLaunchArgument(
             'gui_render_backend', default_value='auto',

@@ -1,4 +1,4 @@
-"""episode 结束判定**单一来源**（W7-a · spec R1）。
+"""episode 结束判定**单一来源**。
 
 本模块是 的 episode 终止 / 预算语义**配置文件**：**训练 adapter 与评估 adapter
 （`scripts/episode_runner.py`）共用本模块**，不得各自另立判定（spec R1 判据：
@@ -116,7 +116,7 @@ def classify_acceptance_layers(result):
 
 
 def summarize_metrics(episodes):
-    """C9 指标汇总——**不**剔除缺 summary 的回合；如实报缺失计数 / 比例；空集合 → not_applicable。
+    """指标汇总——**不**剔除缺 summary 的回合；如实报缺失计数 / 比例；空集合 → not_applicable。
 
  均值**仅基于有效样本**；缺失 / `not_applicable` 回合**不**以 0 冒充有效。
     """

@@ -113,7 +113,7 @@ private:
     {
       RCLCPP_WARN_THROTTLE(
         get_logger(), *get_clock(), 5000,
-        "vehicle_odometry 帧不符（pose_frame=%u, velocity_frame=%u）：仅支持 NED，已丢弃（R-003）",
+        "vehicle_odometry 帧不符（pose_frame=%u, velocity_frame=%u）：仅支持 NED，已丢弃（ADR-0008）",
         m.pose_frame, m.velocity_frame);
       return;
     }
@@ -123,7 +123,7 @@ private:
     // 取证：EKF 复位同时**丢弃时间锚定**（局部原点与时间基准同源，都会随之跳变）。
     if (m.reset_counter != reset_counter_) {
       RCLCPP_WARN(
-        get_logger(), "EKF 复位计数 %u → %u：局部原点可能跳变，世界坐标需重新标定（R-003）；"
+        get_logger(), "EKF 复位计数 %u → %u：局部原点可能跳变，世界坐标需重新标定（ADR-0008）；"
         "同时重锚 PX4→ROS 时间映射", reset_counter_, m.reset_counter);
       reset_counter_ = m.reset_counter;
       mapper_.reset();
@@ -146,7 +146,7 @@ private:
           RCLCPP_WARN(
             get_logger(),
             "PX4 odom 时间映射不可信（px4_us=%llu → ros=%.3f s，与 now 偏差 %.3f s > %.1f s）"
-            "→ 拒发该帧并重锚时间映射（时间源尺度可能跳变；R-004 不静默替换）",
+            "→ 拒发该帧并重锚时间映射（时间源尺度可能跳变；不静默替换，ADR-0017）",
             static_cast<unsigned long long>(px4_us), ros_ns * 1e-9, skew_s, stamp_max_skew_s_);
         }
         mapper_.reset();

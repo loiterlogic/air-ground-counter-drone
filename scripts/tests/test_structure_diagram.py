@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""系统结构图回归：**表 ↔ 包边界真源**、**版式几何**、**光栅可读性** 三层（T0，不启任何进程）。
+"""系统结构图回归：**表 ↔ 包边界**、**版式几何**、**光栅可读性** 三层（T0，不启任何进程）。
 
 守护的缺陷（来自 2026-10-31 F2 前的实际漂移，不只是理论风险）：
 
@@ -324,7 +324,7 @@ def test_canvas_width_equals_readme_display_width():
 
 
 def test_font_sizes_meet_review_requirement():
-    """按 round-1 审查要求：**包名 ≥ 15 px，主要职责正文 ≥ 12 px**。
+    """按审查要求：**包名 ≥ 15 px，主要职责正文 ≥ 12 px**。
 
  这条是**下限断言**，不是"等于某个值"——可以继续调大，不能为了通过测试而调小。
  注释里写明历史： 交付时正文只有 10 px，被审查判为偏小。
@@ -578,7 +578,7 @@ def _mermaid_block():
 
 
 def test_mermaid_four_edges_match_declaration_table():
-    """**Mermaid 的 ④ 边必须与 EXT_RELATIONS 逐条一致**（round-1 审查指出的 drift）。
+    """**Mermaid 的 ④ 边必须与 EXT_RELATIONS 逐条一致**（审查指出的漂移）。
 
  旧文档的 Mermaid 少了 `task → px4_msgs`，还多画了 `ground → Agent`（`agc_ground` 根本不
  起 Agent）。这条把 Mermaid 文本解析成边集合，与声明表做双向差集——任一方向都不许有差。

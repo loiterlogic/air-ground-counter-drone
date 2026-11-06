@@ -107,7 +107,7 @@ def viz_enabled(headless):
  `static_tf`（[`main.launch.py::_viz_actions`](../../src/agc_task/launch/main.launch.py)）
  只是白烧内存与 CPU（rviz2 ≈257 MB + viz_markers ≈90 MB，见 MAP_DESIGN_PLAYBOOK 16.2）。
 
-    P1-2 round-3 修正：原实现无条件 `viz:=true`，导致 `--headless` 也起 RViz。
+    原实现无条件 `viz:=true`，导致 `--headless` 也起 RViz。
     """
     return not headless
 

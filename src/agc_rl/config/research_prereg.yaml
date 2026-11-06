@@ -373,11 +373,11 @@ w7b_prereg:
       secondary_in_decision: false
   # ——口径纪律——
   policies:
-    timeout_is_failure: true          # 契约 C4
+    timeout_is_failure: true          # 契约 #hc-4
     infra_listed_separately: true     # infra 单列，不吞入成功率
     keep_all_failures_and_infra: true # 保留全部失败 / infra 计数
     same_seed_paired: true            # 同 seed 配对（CRN）
-    no_bitwise_physics_claim: true    # 不承诺 bitwise 物理一致（W7-a 已知边界）
+    no_bitwise_physics_claim: true    # 不承诺 bitwise 物理一致（平台已知边界）
   # ——状态——
   status: "executed"                  # v5 已执行（未达 MDE，判证伪）；P1 v1 / v4 与 P2 v3 历史执行记录见下
   note: "P1 v5（机制激活场景 s15_static_none_fov_capture，static + 窄视场 30°/20°）已执行 N=20 并判定：**未达预注册 MDE**——primary active FCO Δ=+0.0804（95% CI [+0.0281, +0.1328]、p=0.0046、n=20），**方向与假设一致且统计显著，但 Δ < MDE 0.10 ⇒ 按预注册判据证伪**（ADR-0023）。机制激活实测：active 可见率 0.473 vs 0.066（Δ≈41 pt）。P1 v4（s08，active-window）证伪；v1（s08，fixed-window，+0.2988）保留为历史。P2 v2 confounded；P2 v3 已判定证伪 → 保留 c2（ADR-0023）。若要以更小效应（≤0.08）为决策终点，须**新预注册 v6**，不得事后改阈值。"

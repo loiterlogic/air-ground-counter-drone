@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""`test_root_self_location.py` —— 防复发回归：**运行期解析文件的路径必须自定位**（P2-1 裁定 D）。
+"""`test_root_self_location.py` —— 防复发回归：**运行期解析文件的路径必须自定位**（裁定 D）。
 
 ## 守护的缺陷（2026-10-31 实测）
 
@@ -159,7 +159,7 @@ def test_allowed_entries_have_reason():
 
 
 def test_yaml_configs_have_no_absolute_root():
-    """`src/**/config/*.yaml` 里不得再有绝对路径字面量（round-9 已删 16 处）。
+    """`src/**/config/*.yaml` 里不得再有绝对路径字面量（已删 16 处）。
 
  YAML 字面量会在**运行期**决定写盘位置（ 实测：克隆 run 的 summary 写回原仓库），
  且它比 C++ 默认值更"隐蔽"——launch 不显式传参时它就生效。

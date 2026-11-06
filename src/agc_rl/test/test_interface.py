@@ -1,4 +1,4 @@
-"""R-011 判据：`interface.action_to_twist` 符号（ROS 约定）与量纲一致 / 量程解耦。
+"""判据：`interface.action_to_twist` 符号（ROS 约定）与量纲一致 / 量程解耦。
 
 判据（spec「车体系动作方向与量纲一致性」）：
  * 符号：`left` / `left_fast` → 正 `angular.z`（左转）；`right` / `right_fast` → 负（右转）；

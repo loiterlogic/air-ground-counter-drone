@@ -29,7 +29,7 @@
     ⇒ `pitch = +1.5708 rad`。"90°" 是**下俯量**，SDF `pitch` 字段是 **+1.5708**（ADR-0030 写明此区分）。
 
   **相机参数**（取值理由见 ADR-0030）：
-    hfov 100°（1.745 rad）：与 §7.1 的 GSD 验算口径一致；640×480：与 mono_cam 同档，640/2/tan(50°)=268.5 px 焦距；
+    hfov 100°（1.745 rad）：与飞行高度规范里的 GSD 验算口径一致；640×480：与 mono_cam 同档，640/2/tan(50°)=268.5 px 焦距；
     clip near 0.1 / far 3000：near 取 mono_cam 同值，far 覆盖 14 m 高度下的地平线以远（虽正下视用不到）；
     update_rate 30：与 mono_cam 同档，实测桥侧可达 ≥10 Hz。
   **话题命名**：不复用 PX4 的 `camera`（避免与将来 mono_cam 冲突）。gz 侧 `/agc/air/nadir`。

@@ -19,7 +19,7 @@ LOGGER = ROOT / 'install/agc_task/lib/agc_task/run_logger'
 
 
 def _dds_env():
-    """DDS 发现范围 / 传输的**单一真源**（与 run_demo.sh / episode_runner 同源）。
+    """DDS 发现范围 / 传输的**单一来源**（与 run_demo.sh / episode_runner 同源）。
 
  本测试原先写死 `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`。在 `lo` 无 IFF_MULTICAST
  的机器上（本机 WSL2 即如此）该值让发现 1:1 拓扑稳定零送达——**13 个话题全 0 匹配**，测试必挂，

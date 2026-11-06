@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""toolchain_pin_check —— S-09（工具链可重建 pin 清单）一致性核查（**只读**）。
+"""toolchain_pin_check —— 工具链可重建 pin 清单一致性核查（**只读**）。
 
 配置文件：`toolchain/README.md` 内的 ```yaml fenced 块（含 `agc_toolchain_pins:`），
 由 `yaml.safe_load` 解析。本脚本比对 README 记录值 vs 实测，逐项记 PASS / FAIL / SKIP：

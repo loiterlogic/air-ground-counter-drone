@@ -457,7 +457,7 @@ private:
       }
     } else {
       RCLCPP_INFO(
-        get_logger(), "air_present=false（声明无空中域）：跳过相位复位门禁（C5 不适用）");
+        get_logger(), "air_present=false（声明无空中域）：跳过相位复位门禁（契约 #hc-5 不适用）");
     }
 
     // 3) 再校验门禁（reset 之后；= 五门 + 相位复位完成 + 新鲜度/epoch + 时钟进展）——

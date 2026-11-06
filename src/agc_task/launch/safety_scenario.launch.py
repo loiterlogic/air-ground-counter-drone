@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""w5_safety_scenario —— W5 脚本级最小场景（spec W5-c R9）。
+"""safety_scenario —— 脚本级最小安全场景。
 
 复用 顶层 launch（门控 `/agc/task/start`、`/agc/task/state` 与 `/agc/scenario/reset`），
 仅替换任务层参数为 `config/safety_scenario.yaml`（车置于立柱前方 5 m、goal 越过立柱）。

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""track_err_probe —— 空中跟踪误差取证（P1-4 baseline closure）。
+"""track_err_probe —— 空中跟踪误差取证（基线收尾）。
 
 定位： baseline closure 的**取证工具**（工具域，ADR-0020），不是控制链的一部分。
 它只订阅、只落盘，**不发布任何话题、不写执行口、不读真值**。
@@ -28,7 +28,7 @@
 
 ```
 err_eff  = || ref_eff - odom ||,  ref_eff = tracking_ref（若新鲜）否则 base_ref
-err_base = || base_ref  - odom ||   ← 保留，仅作与 round-5/round-1 的连续性对照
+err_base = || base_ref  - odom ||   ← 保留，仅作与历史取证的连续性对照
 ```
 
 `err_base` **不得**表述为跟踪误差（它含 standoff 偏置）。两者都落盘，报告里分别标注。

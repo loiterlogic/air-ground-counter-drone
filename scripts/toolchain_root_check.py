@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""toolchain_root_check —— S-11（工具链根显式注入 + 启动前验证）一致性核查（**只读**）。
+"""toolchain_root_check —— 工具链根显式注入 + 启动前验证一致性核查（**只读**）。
 
 配置文件：`AGENTS.md`「项目根 /home/chen/AGC」+ 契约（工具链在其下 `toolchain/`）。本脚本核查
 两处 入口的**根注入方式**与工具链二进制的**存在性**，逐项记 PASS / FAIL：

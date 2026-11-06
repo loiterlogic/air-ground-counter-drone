@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""evidence_archive —— S-08 证据不可变归档与入库 manifest。
+"""evidence_archive —— 证据不可变归档与入库 manifest。
 
 为每个 experiment run 生成三件产物（**只新增，不覆盖既有 run 产物**）：
 

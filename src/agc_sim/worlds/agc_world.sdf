@@ -3,7 +3,7 @@
   agc_world —— AGC 空地协同的唯一世界（GZ Sim / Harmonic，-min）
 
   **base world**（ADR-0007）：本文件**不含**静态障碍 `pole_*` 块，是
-  障碍生成所依据的 base。静态障碍几何的唯一真源为 `config/world_geometry.yaml`，
+  障碍生成所依据的 base。静态障碍几何的唯一来源为 `config/world_geometry.yaml`，
   由 `world_bringup.launch.py` 按 `world_obstacles`（`static`/`none`）**注入 / 不注入**
   障碍模型生成运行期世界（`none` 直接用本 base；`static` 生成 base + pole 临时世界）。
 
@@ -40,7 +40,7 @@
     <!-- 地面（内联平面）——**场区基层**：冷灰混凝土，标量 PBR（metalness 0 / roughness 0.95）。
          2026-10-29 用户裁定「建筑和地面精细度不高」→ 地面分为「基层 + 道路 + 场坪」三层
          （见下），基层提亮以与沥青路面形成对比。**纯视觉**：碰撞仍是同一张 200×200 平面，
-         不参与障碍真源 / 空中安全层 / 占位栅格。 -->
+         不参与障碍几何 / 空中安全层 / 占位栅格。 -->
     <model name="ground_plane">
       <static>true</static>
       <link name="link">
@@ -78,7 +78,7 @@
     <!-- ===== 地面分层（2026-10-29）：沥青道路 + 混凝土场坪 =====
          设计与纪律（用户要求「地面精细度」；先学后做 → 本机 sdformat 1.11 material.sdf 确认
          `<pbr><metal><metalness>|<roughness>` 是**标量**字段，无需贴图 → 不引入外部资产）：
-           * 三者都是**地面**，不是静态障碍：**不进**几何真源 `obstacles`、不进空中安全层、
+           * 三者都是**地面**，不是静态障碍：**不进**几何来源 `obstacles`、不进空中安全层、
              不进感知占位栅格；仅在 `agc_world.sdf` 内联，与 `ground_plane` 同类。
            * 视觉与碰撞同源（每个几何片段同时注入 collision 与 visual），**不做**装饰性无碰撞块。
            * 厚度 3–4 mm、抬升 2–6 mm：避免与基层共面 z-fighting；对车（轮半径 0.178 m）
@@ -206,7 +206,7 @@
 
 
     <!-- ===== 地面语义层（R6，2026-10-30）= 路缘石 / 停车位线 / 排水沟 / 碎石带 / 绿化带 =====
-         纪律与既有地面分层相同：**都是地面**，不进几何真源 `obstacles`、不进空中安全层、
+         纪律与既有地面分层相同：**都是地面**，不进几何来源 `obstacles`、不进空中安全层、
          不进感知占位栅格；带 collision（视觉与碰撞同源）；抬升 4–6 mm 避免 z-fighting。
          目的：正俯视下用"弱于障碍、强于纯色"的细线把场地分区读出来。 -->
     <model name="curb_w_o">
@@ -557,9 +557,9 @@
 
     <!-- 视觉：**关闭默认地面网格**（；来源：用户 2026-10-29 15:39 「GUI 地图中间的网格不需要」）。
          Gazebo 的地面网格来自 world 的 `<scene><grid>`（SDF 缺省 true），**不是** `ground_plane`
-         的几何—— 它由 GUI 按 cell 大小绘制，不参与碰撞 / 物理 / 任何真源几何。
+         的几何—— 它由 GUI 按 cell 大小绘制，不参与碰撞 / 物理 / 任何几何来源。
          故此处**只**在视觉层关闭它：`<grid>false</grid>`。物理（`<physics>`）、地面碰撞
-         （`ground_plane` 的 `<collision>`）与静态障碍真源（`config/world_geometry.yaml` /
+         （`ground_plane` 的 `<collision>`）与静态障碍几何来源（`config/world_geometry.yaml` /
          `config/maps/*.yaml`）**全部不动**。核查见 `tests/check_scene_geometry.py` 断言 (n)。 -->
     <scene>
       <grid>false</grid>
@@ -575,7 +575,7 @@
          yaw 为何是 +π/2：GZ 相机前向 = 局部 +x、画面向上 = 局部 +z；pitch=+π/2 使前向朝下后，
          局部 +z 落到世界 +x（即"东朝上"）。2026-10-29 用同姿态相机传感器**实测**：
          yaw=0 → 东朝上；yaw=+π/2 → 北朝上（对渲染图与几何投影做 IoU 拟合，命中标准朝向）。
-         纯视觉：不改物理、光照、传感器系统、spherical_coordinates，也不改几何真源。
+         纯视觉：不改物理、光照、传感器系统、spherical_coordinates，也不改几何来源。
          核查断言 (n) 只关 `<scene><grid>` 与 `ground_plane`/`physics`，本块不影响它。 -->
     <gui fullscreen="false">
       <plugin filename="MinimalScene" name="3D View">
@@ -590,7 +590,7 @@
         <background_color>0.78 0.82 0.86</background_color>
         <!--（2026-10-31）：相机高度 118 → 85 m。118 m 时 100×100 作业区只占
              画面约 65%，用户反馈"太远看不清"；85 m 使其约占 90%（边距仍在）。
-             **纯 GUI 视觉**：只改视图相机高度，不碰物理 / 传感器 / 几何真源 / 光照。 -->
+             **纯 GUI 视觉**：只改视图相机高度，不碰物理 / 传感器 / 几何来源 / 光照。 -->
         <!-- 2026-11-05（用户裁定）：相机高度 85 → **50 m**。
              原因：用户实测"GUI 里看不见我方无人机"。85 m 正俯视、默认 FOV 60° 时，
              视野地面宽 ≈98 m、像素密度 ≈8.5 px/m；x500 对角仅 0.35 m → **约 3 px**，
@@ -599,7 +599,7 @@
              **青色 1.2 m 高亮球**（agc_x500.sdf / agc_car.sdf.xacro）配套使用。
              代价（如实）：视野地面宽 ≈58 m，100×100 作业区**不再完整入画**、四角出画；
              这是用户明确的取舍（先看清机体，后看全场）。
-             **纯 GUI 视觉**：只改视图相机高度，不碰物理 / 传感器 / 几何真源 / 光照。 -->
+             **纯 GUI 视觉**：只改视图相机高度，不碰物理 / 传感器 / 几何来源 / 光照。 -->
         <camera_pose>0 0 50 0 1.5708 1.5708</camera_pose>
         <camera_clip>
           <near>0.25</near>
@@ -648,7 +648,7 @@
       </plugin>
     </gui>
 
-    <!-- 静态障碍 pole_1 / pole_2 **不**在本 base world 内：几何真源见 config/world_geometry.yaml，
+    <!-- 静态障碍 pole_1 / pole_2 **不**在本 base world 内：几何来源见 config/world_geometry.yaml，
          由 world_bringup.launch.py 生成运行期世界时按 world_obstacles 注入（ADR-0007）。 -->
 
     <!-- WGS84 / ENU 基准（打补丁）：PX4 NavSat 等所需，与 agc_world 的 ENU 基准一致。 -->

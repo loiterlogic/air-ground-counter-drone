@@ -1,4 +1,4 @@
-"""RL 接口契约冻结（W5-b · spec R6）。
+"""RL 接口契约（已冻结）。
 
 本模块是 `agc_rl` 的**接口配置文件**：观测（obs）空间与动作（action）空间的唯一冻结定义。
 节点（`inference_node`）与策略（`policy`）**只**经本模块构造 obs / 解释 action，

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ground_bringup —— W5 地面链路一键启动（spec W5-a/b/c）。
+"""ground_bringup —— 地面链路一键启动。
 
 起：静态 TF（`car/base_link → car/lidar_link`）+ Nav2 `collision_monitor` 安全层
 + 地面执行中继（唯一执行口）+ **命令源**（`command_source` 单一选择，二者互斥）。

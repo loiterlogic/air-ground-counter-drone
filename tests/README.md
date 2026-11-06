@@ -10,8 +10,8 @@
 | 入口 | 何时跑 | 是否启仿真 | 耗时 |
 |---|---|---|---|
 | [`run_smoke.py`](./run_smoke.py) | **每次提交**（离线冒烟，含 DDS 契约闸门与 toolchain pin 一致性） | 否 | ~40 s |
-| [`run_full_regression.py`](./run_full_regression.py) | **定时**（N3：`full` 整链回归，3 场景） | **是**（独占 GZ/PX4/DDS） | ~240 s |
-| [`run_n3_matrix.py`](./run_n3_matrix.py) | **里程碑**（N3 回归矩阵：四类要求 + vision 代价，6 格） | **是** | ~580 s |
+| [`run_full_regression.py`](./run_full_regression.py) | **定时**（`full` 整链回归，3 场景） | **是**（独占 GZ/PX4/DDS） | ~240 s |
+| [`run_n3_matrix.py`](./run_n3_matrix.py) | **里程碑**（回归矩阵：四类要求，4 格） | **是** | ~580 s |
 
 ```bash
 ./run_demo.sh test # 离线冒烟（6 组）

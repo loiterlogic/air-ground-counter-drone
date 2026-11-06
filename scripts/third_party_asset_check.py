@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""third_party_asset_check —— S-12（外部资产来源 / 许可 / 哈希清单）一致性核查（**只读**）。
+"""third_party_asset_check —— 外部资产来源 / 许可 / 哈希清单一致性核查（**只读**）。
 
 配置文件：`docs/conventions/第三方资产与许可.md`（政策 + 人读表 + 机器可读 ```yaml 块，
 键 `agc_third_party_assets:`，`schema: 1`）。本脚本解析该清单并逐项记 PASS / FAIL：

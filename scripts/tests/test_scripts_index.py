@@ -1,4 +1,4 @@
-"""scripts/ 索引自动核对 —— 索引漂移即测试失败（P0-4）。
+"""scripts/ 索引自动核对 —— 索引漂移即测试失败。
 
 **为什么存在**： 的根因不是"脚本太多"，而是**索引与实际不一致**——
 `scripts/` 顶层曾有 32 个脚本，而 `scripts/README.md` 只登记 8 个，多出的 24 个
@@ -246,9 +246,9 @@ def test_archive_migrated_entries_are_documented_and_present():
 
 
 def test_no_script_was_deleted_by_curation():
-    """P0-4 铁律：**一个脚本都不删**。顶层 + research + archive 的总数不得低于迁移前的 32。
+    """铁律：**一个脚本都不删**。顶层 + research + archive 的总数不得低于迁移前的 32。
 
-    迁移前顶层 = 32 `.py` + 1 `.sh` = 33 个执行脚本（P0-4 基线实测）。
+    迁移前顶层 = 32 `.py` + 1 `.sh` = 33 个执行脚本（基线实测）。
  archive 既有 65 个历史脚本另计，故下界取 33。
     """
     baseline = 33

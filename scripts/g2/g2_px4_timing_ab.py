@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""G2 round-6：PX4 GPS 自举时序 A/B 运行器。
+"""PX4 GPS 自举时序 A/B 运行器。
 
 **为什么需要这个包装**：`scripts/episode_runner.py` 的 `run_episode` 已经支持
 `own_px4_delay_s` / `intruder_px4_delay_s` / `px4_warmup`，但 `main()` 的 argparse
