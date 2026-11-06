@@ -4,7 +4,7 @@
 死参数或只服务已结档研究，并追问"为什么会有这种多路线"。根因是研究期开关未随研究结档收口。
 规范见 `docs/conventions/路线分支治理.md`。
 
-**本测试断言的是一份"人工判定过的白名单"**（该规范 节），不是镜像：
+**本测试断言的是一份"人工判定过的白名单"**（见 [路线分支治理](../../docs/conventions/路线分支治理.md#rule)），不是镜像：
 
  * launch 文件里出现 `xxx_source` / `xxx_mode` / `xxx_backend` / `xxx_path` 形式
  （即"同一功能位置有 ≥2 个实现、由参数选择"）的 `DeclareLaunchArgument`，
@@ -29,19 +29,19 @@ ROOT = Path(__file__).resolve().parents[2]
 CONVENTION = ROOT / 'docs' / 'conventions' / '路线分支治理.md'
 
 # --------------------------------------------------------------------------------------
-# 第二配置文件：已批准的路线分支（= 规范 节「已批准的分支」表）
+# 第二配置文件：已批准的路线分支（= 治理规范 #current 的「已批准的分支」表）
 # --------------------------------------------------------------------------------------
 # 判定依据：**今天就有消费者**，且退役条件已写进规范。
-# 新增行必须先满足规范 节四项（含**用户明确允许**），再改这里。
+# 新增行必须先满足 #rule 的四项准入（含**用户明确允许**），再改这里。
 APPROVED_BRANCHES = frozenset({
     'command_source',       # rl（主控）/ baseline（Navfn+LQR 离线对照）
     'target_source',        # gt_adapter（唯一有效值）
 })
 # 注：`goal_follow_target` **不在此集合**——它是任务语义参数（目标移动时任务目标是否跟随，
 # ADR-0001 / ADR-0013），命名形状也不属本测试检测的 `*_source|_mode|_backend|_path` 家族。
-# 它不是"同一功能的两种实现"，因此不受本规范约束（规范 节的排除项）。
+# 它不是"同一功能的两种实现"，因此不受本规范约束（#rule 的排除项）。
 
-# 已被裁定清退、不得复活的分支（= 规范 节；每项应有防复活闸门）
+# 已被裁定清退、不得复活的分支（= 治理规范 #current 的已退役台账；每项应有防复活闸门）
 RETIRED_BRANCHES = frozenset({
     # 视觉定位路径（2026-11-04）
     'perception_path',
@@ -66,15 +66,15 @@ RETIRED_BRANCHES = frozenset({
 # 故意不收 `xxx_type`（`gz_x500_mono_cam` 之类是文件/模型选择，不是路线分支）。
 BRANCH_NAME_RE = re.compile(r"^[a-z][a-z0-9_]*_(source|mode|backend|path)$")
 
-# 环境适配分支（规范 节明确排除的类别）：
+# 环境适配分支（#rule 明确排除的类别）：
 # 这些参数按**运行环境能力**切换（GPU / 渲染器是否可用），不改变业务行为、
 # 不改变节点集合语义、不需要"用户批准"——它们是让同一份代码能在不同机器上跑起来。
 ENV_ADAPTATION_BRANCHES = frozenset({
     'gui_render_backend',   # auto / d3d12 / software：渲染后端适配（ADR-0021）
 })
 
-# 待清退（规范）：**尚未执行**，因此仍在 launch 里，但必须在台账里可见。
-PENDING_RETIREMENT = frozenset()   # 2026-11-04 已全部执行完毕（见规范 5.2）
+# 待清退：**尚未执行**的项仍会在 launch 里，但必须在台账里可见。
+PENDING_RETIREMENT = frozenset()   # 2026-11-04 已全部执行完毕（见治理规范 #current）
 
 LAUNCH_GLOBS = ('src/*/launch/*.py',)
 
@@ -123,24 +123,25 @@ def test_no_unapproved_branch_args():
 
     assert not missing, (
         '台账登记了 launch 里不存在的分支（删了分支却没更新台账）：\n%s\n'
-        '若确已清退：按规范 4.2 节做完五步（删代码/删测试/改文档/保 schema/写 ADR），'
+        '若确已清退：按[清退规则](../../docs/conventions/路线分支治理.md#retire)做完五步'
+        '（删代码/删测试/改文档/保 schema/写 ADR），'
         '再把名字从 APPROVED_BRANCHES 移到 RETIRED_BRANCHES。'
         % '\n'.join('  - %s' % n for n in sorted(missing)))
 
 
 def test_retired_branches_have_no_declaration():
-    """已清退分支不得在**任何** launch 里复活（规范 4.3 节防复活闸门）。"""
+    """已清退分支不得在**任何** launch 里复活（#retire 的防复活闸门）。"""
     found = _branch_args()
     alive = sorted(RETIRED_BRANCHES & set(found))
     assert not alive, (
-        '已清退的路线分支又被声明了（违反规范 4.3 防复活闸门）：\n%s'
+        '已清退的路线分支又被声明了（违反防复活闸门）：\n%s'
         % '\n'.join('  - %s（出现在 %s）' % (n, ', '.join(found[n])) for n in alive))
 
 
 def test_retired_branches_documented_in_ledger():
-    """每个已清退分支必须在规范 5.2 节有记录（删了不记录 = 下次又会被加回来）。"""
+    """每个已清退分支必须在治理规范的已退役台账有记录（删了不记录 = 下次又会被加回来）。"""
     text = CONVENTION.read_text(encoding='utf-8')
-    assert '5.2 已退役台账' in text, '规范缺少 5.2 节「已退役台账」'
+    assert '5.2 已退役台账' in text, '治理规范缺少「已退役台账」'
     for name in RETIRED_BRANCHES:
         assert name in text, (
             '已清退分支 `%s` 未出现在 docs/conventions/路线分支治理.md 5.2 表里' % name)

@@ -118,7 +118,7 @@
 ```text
 Gazebo（世界 + 车 + 目标 + 相机）
    ⇅  ros_gz 桥（话题 / set_pose 服务）
-agc_perception（odom / gt / perception / fusion / map 适配）
+agc_perception（odom / gt / map 适配）
    ⇅  agc_msgs（9 条消息：唯一公共接口）
 agc_task（task_manager 状态机 · run_logger 指标 · 场景复位 · 捕获裁决）
    ⇅
@@ -135,7 +135,7 @@ PX4 SITL + uXRCE-DDS Agent               /agc/ground/cmd_vel（唯一执行口�
 | [`src/agc_sim`](src/agc_sim) | Gazebo 世界、车 / UAV / 目标模型、`ros_gz` 桥、地图几何真源 |
 | [`src/agc_control`](src/agc_control) | 共享控制库：pluginlib 轨迹生成器 + LQR 控制器插件 |
 | [`src/agc_air`](src/agc_air) | 空中链路：PX4 uXRCE-DDS、起飞 / 悬停 / 轨迹跟踪 |
-| [`src/agc_perception`](src/agc_perception) | 感知与融合：odom / gt / perception / fusion / map 适配节点 |
+| [`src/agc_perception`](src/agc_perception) | 感知：odom / gt（含 bypass）/ map 适配节点 |
 | [`src/agc_ground`](src/agc_ground) | 地面导航与安全层：RL 主控、Nav2 `collision_monitor` |
 | [`src/agc_task`](src/agc_task) | 任务与评估：`task_manager`、`run_logger`、场景、捕获裁决 |
 | [`src/agc_rl`](src/agc_rl) | RL 接口（obs / action）+ 策略加载与推理节点 |
@@ -154,8 +154,9 @@ PX4 SITL + uXRCE-DDS Agent               /agc/ground/cmd_vel（唯一执行口�
 ./run_demo.sh test
 ```
 
-5 组：几何派生链（地图真源 → 世界 SDF）/ 9 消息 ABI 字段序 / 文档断链与锚点 /
-索引一致（ADR + 脚本）/ `scripts/tests` 全部离线单测。实测 **23.4 s** 全绿。
+7 组：几何派生链（地图真源 → 世界 SDF）/ 9 消息 ABI 字段序 / 文档断链与锚点 /
+索引一致（ADR + 脚本）/ `scripts/tests` 全部离线单测 / DDS 契约 / 工具链 pin。
+实测 **27 s** 全绿（2026-11-06，本机）。
 
 > 它**不是**"57 个核查全绿"——那些大多要拉起完整 SITL，语义是验收不是冒烟。
 > 详见 [tests/README](tests/README.md) 与 [`tests/run_smoke.py`](tests/run_smoke.py)。
@@ -180,8 +181,9 @@ PX4 SITL + uXRCE-DDS Agent               /agc/ground/cmd_vel（唯一执行口�
    （[ADR-0009](docs/adr/0009-perception-truth-derived-and-vision-path.md#top)）。
    结论对"感知算法本身"不成立，只对**下游决策与控制**成立。
    目标源只有一条（`/agc/target/source`）：`gt_adapter` 直取真值，**无几何门控、不分远近**
-   （`air_fusion` 已于 2026-11-04 退役）。`air_perception` 的 30 m 量程 / FOV 门控**保留但无消费者**，
-   故它们**不构成**当前的目标可见距离限制。
+   （`air_fusion` 已于 2026-11-04 退役）。`air_perception` 节点及其 30 m 量程 / FOV 门控已于
+   **2026-11-06** 随 `perception` 场景轴整体删除，故**不存在**目标可见距离限制
+   （[路线分支治理 5.2](docs/conventions/路线分支治理.md#current)）。
 3. **无实机验证**：全部结论来自纯仿真，接口为实机预留但未验证
    （[ADR-0001](docs/adr/0001-project-positioning-and-execution-scope.md#top)）。仿真里成立的时序裕度在实机上不保证。
 4. **视觉定位路径已删除**：`perception_path=vision`（相机 → 识别 → 像素反推位置）连同
