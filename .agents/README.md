@@ -23,12 +23,12 @@
 
 `domain-modeling` 另带两个格式资源：[ADR-FORMAT.md](./skills/domain-modeling/ADR-FORMAT.md)（本仓库实际的 `## Status` 节写法、`scripts/adr_index.py` 的用法）、[GLOSSARY-FORMAT.md](./skills/domain-modeling/GLOSSARY-FORMAT.md)（单上下文术语表写法）。
 
-`map-design` 按需加载四个资源：[GATES.md](./skills/map-design/GATES.md)（几何可行性闸门的口径与公式）、[SCHEMA-AND-DERIVATION.md](./skills/map-design/SCHEMA-AND-DERIVATION.md)（yaml schema、材质、五条派生链）、[EVIDENCE.md](./skills/map-design/EVIDENCE.md)（取证、GUI、运行与内存陷阱）、[references/MAP_DESIGN_PLAYBOOK.md](./skills/map-design/references/MAP_DESIGN_PLAYBOOK.md)（**历史快照**：2026-10-31 从根目录迁入的原 Playbook，只用于追溯"为什么现在是这样"，其中数字会漂移，现行值以 `tests/w6_geometry_check.py` 为准）。
+`map-design` 按需加载四个资源：[GATES.md](./skills/map-design/GATES.md)（几何可行性闸门的口径与公式）、[SCHEMA-AND-DERIVATION.md](./skills/map-design/SCHEMA-AND-DERIVATION.md)（yaml schema、材质、五条派生链）、[EVIDENCE.md](./skills/map-design/EVIDENCE.md)（取证、GUI、运行与内存陷阱）、[references/MAP_DESIGN_PLAYBOOK.md](./skills/map-design/references/MAP_DESIGN_PLAYBOOK.md)（**历史快照**：2026-10-31 从根目录迁入的原 Playbook，只用于追溯"为什么现在是这样"，其中数字会漂移，现行值以 `tests/check_scene_geometry.py` 为准）。
 
 ## 技能格式（Harness 要求）
 
 ```text
-.agents/skills/<name>/SKILL.md   ← 只发现直属 <name>/SKILL.md，不递归找嵌套的 SKILL.md
+.agents/skills/<name>/SKILL.md ← 只发现直属 <name>/SKILL.md，不递归找嵌套的 SKILL.md
 ```
 
 - YAML frontmatter 必填 `name` 与 `description`；可选 `whenToUse`、`metadata`、`user-invocable`、`disable-model-invocation`。

@@ -6,8 +6,8 @@
 交火窗口（GROUND_APPROACH）被关闭 → `INTERCEPT_CONFIRMED/CAPTURE_NET` **永不发生**
 （实测 s08 协同臂 20/20 落 `TRACKING_SUCCESS`、`pass=false`）。
 
-测试对象是配置文件文件（`config/scenarios.yaml` + `config/w6_base.yaml`），
-与 `w6.launch.py` 的 `assertions()` 共用同一判据（此处做**全场景**静态扫描，
+测试对象是配置文件文件（`config/scenarios.yaml` + `config/base.yaml`），
+与 `main.launch.py` 的 `assertions()` 共用同一判据（此处做**全场景**静态扫描，
 启动时只校验当前场景）。
 """
 
@@ -22,7 +22,7 @@ CONFIG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__fil
 def _load():
     with open(os.path.join(CONFIG_DIR, 'scenarios.yaml')) as f:
         scenarios = yaml.safe_load(f)['scenes']   # 真源根键为 `scenes`
-    with open(os.path.join(CONFIG_DIR, 'w6_base.yaml')) as f:
+    with open(os.path.join(CONFIG_DIR, 'base.yaml')) as f:
         base = yaml.safe_load(f)
     return scenarios, base
 
@@ -166,7 +166,7 @@ def _load_spawn_layout_from(path):
     import importlib.util
     launch_dir = os.path.join(os.path.dirname(CONFIG_DIR), 'launch')
     spec = importlib.util.spec_from_file_location(
-        'w6_composition_for_test', os.path.join(launch_dir, 'w6_composition.py'))
+        'composition_for_test', os.path.join(launch_dir, 'composition.py'))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod.load_spawn_layout(os.path.dirname(CONFIG_DIR), path=path)
@@ -242,7 +242,7 @@ def test_goal_derived_from_target_and_offset():
     off = layout['goal_offset_m']
     launch_dir = os.path.join(os.path.dirname(CONFIG_DIR), 'launch')
     spec = importlib.util.spec_from_file_location(
-        'w6_composition_for_goal', os.path.join(launch_dir, 'w6_composition.py'))
+        'composition_for_goal', os.path.join(launch_dir, 'composition.py'))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
 
@@ -269,7 +269,7 @@ def _composition_module(tag='h0'):
     import importlib.util
     launch_dir = os.path.join(os.path.dirname(CONFIG_DIR), 'launch')
     spec = importlib.util.spec_from_file_location(
-        'w6_composition_for_%s' % tag, os.path.join(launch_dir, 'w6_composition.py'))
+        'composition_for_%s' % tag, os.path.join(launch_dir, 'composition.py'))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -479,7 +479,7 @@ def test_standoff_safe_max_respects_safety_floor_and_sensor_range():
     """
     import math
 
-    with open(os.path.join(CONFIG_DIR, 'w6_base.yaml')) as f:
+    with open(os.path.join(CONFIG_DIR, 'base.yaml')) as f:
         base = yaml.safe_load(f)['intruder_driver']['ros__parameters']
     air_path = os.path.join(os.path.dirname(os.path.dirname(CONFIG_DIR)), 'agc_air', 'config', 'air.yaml')
     with open(air_path) as f:
@@ -527,7 +527,7 @@ def test_standoff_stop_point_matches_safety_floor_minimally():
     """
     import math
 
-    with open(os.path.join(CONFIG_DIR, 'w6_base.yaml')) as f:
+    with open(os.path.join(CONFIG_DIR, 'base.yaml')) as f:
         base = yaml.safe_load(f)['intruder_driver']['ros__parameters']
     air_path = os.path.join(os.path.dirname(os.path.dirname(CONFIG_DIR)), 'agc_air', 'config', 'air.yaml')
     with open(air_path) as f:
@@ -556,7 +556,7 @@ def test_standoff_stop_point_matches_safety_floor_minimally():
 # H0 （2026-11-02）：s04 场景级 observe_yaw_mode=track + CLI 覆盖优先
 # ------------------------------------------------------------------------------
 def _air_merged_for(scene):
-    """按 `w6.launch.py` 的真实合并路径（air.yaml 基参 → 场景覆盖）构造 air_merged。"""
+    """按 `main.launch.py` 的真实合并路径（air.yaml 基参 → 场景覆盖）构造 air_merged。"""
     scenarios, _ = _load()
     air_path = os.path.join(os.path.dirname(os.path.dirname(CONFIG_DIR)),
                             'agc_air', 'config', 'air.yaml')
@@ -613,12 +613,12 @@ def test_cli_observe_yaw_overrides_scene_default():
     """H0 round-5：显式 CLI `observe_yaw_mode:=<mode>` **优先于**场景默认。
 
  守护的 bug 类别：把场景默认写成"无条件生效"，使历史对照臂/消融实验无法用 CLI 强制回
- `velocity` 复现旧行为。`w6.launch.py` 的顺序是「先合并场景 → 再用非空 CLI 覆盖」，
+ `velocity` 复现旧行为。`main.launch.py` 的顺序是「先合并场景 → 再用非空 CLI 覆盖」，
  本测试按同一顺序验证，并检查 manifest 来源记为 `cli`。
     """
     mod = _composition_module('h0_r5_cli')
     air_merged, sc = _air_merged_for('s04_static_static_obs_track')
-    # 模拟 w6.launch.py 的 CLI 覆盖步骤（非空才覆盖）
+    # 模拟 main.launch.py 的 CLI 覆盖步骤（非空才覆盖）
     for cli in ('velocity', 'target', 'track'):
         simulated = dict(air_merged)
         simulated['trajectory_tracker'] = dict(air_merged['trajectory_tracker'])
@@ -644,7 +644,7 @@ def test_air_yaml_global_observe_yaw_unchanged():
 
 
 # ------------------------------------------------------------------------------
-# ADR-0007：派生注入与四条启动断言（与 w6_composition._flight_altitude_assertions 同判据）
+# ADR-0007：派生注入与四条启动断言（与 composition._flight_altitude_assertions 同判据）
 # ------------------------------------------------------------------------------
 def test_apply_flight_altitude_injects_map_values():
     """派生注入必须把地图值写进**任务侧**与**空中侧**参数（两侧同源，不各写一份）。"""
@@ -714,7 +714,7 @@ def test_flight_altitude_assertions_pass_for_all_scenes():
                    (base.get('standoff_follower') or {}).get('ros__parameters') or {}),
                'takeoff_controller': dict(
                    (base.get('takeoff_controller') or {}).get('ros__parameters') or {})}
-        # air.yaml 的 standoff/takeoff 段不在 w6_base 里，从 air.yaml 取真实基线
+        # air.yaml 的 standoff/takeoff 段不在 base 里，从 air.yaml 取真实基线
         import yaml as _yaml
         air_doc = _yaml.safe_load(open(os.path.join(
             _ROOT, 'src', 'agc_air', 'config', 'air.yaml')))

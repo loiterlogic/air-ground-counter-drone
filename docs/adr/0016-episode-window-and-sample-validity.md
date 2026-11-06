@@ -23,13 +23,13 @@ accepted（2026-11-02 由 0036 / 0038 / 0043 / 0078 合并；结论未变，其�
 - 有开窗且收到**终态**（`TRACKING_SUCCESS` / `INTERCEPT_CONFIRMED` / `MISSION_FAILED` / `ABORTED` /
   `INFRA_FAILURE`）或 `IDLE` → **关窗**，记 `leave_s` / `closed` / `exit_state` / `exit_reason`；
 - 开窗期间**每一拍 `odom`** 计入当前窗口计数（`ticks_total` … `scan_samples`）；
-- `finalize()` 时若仍有开窗 → `closed=false`（显式标注未闭合），`leave_s = have_sim_ ? sim_end_s_ : 最后已知时刻`。
+- `finalize` 时若仍有开窗 → `closed=false`（显式标注未闭合），`leave_s = have_sim_ ? sim_end_s_ : 最后已知时刻`。
 
 窗口分段使**预热 / 关闭时长不改变**窗口统计。
 
 ### (b) 有效样本掩码（现行口径：`scan_frame_fresh_v2` + `window_valid_v2`）
 
-每拍（`odom` 回调）以该拍时刻 `t_now = now().seconds()` 计算三个布尔量，计数关系
+每拍（`odom` 回调）以该拍时刻 `t_now = now.seconds` 计算三个布尔量，计数关系
 `ticks_valid + ticks_invalid_scan + ticks_invalid_action == ticks_total` **不变**：
 
 - **`scan_fresh`** = **收到过 scan 帧**（`have_scan_frame_`）且 `t_now − scan_rx_s_ ≤ scan_max_age_s_`。
@@ -47,7 +47,7 @@ accepted（2026-11-02 由 0036 / 0038 / 0043 / 0078 合并；结论未变，其�
   `contact || ttc < ttc_min_s_` 计 `infeasible_ticks`）。`ticks_invalid_action` **保留**（语义 = 该拍
   「安全层不存活 / 状态未知」）。
 - **净空**：有限回波取最小值；**无回波拍**记入 `clearance_no_return_ticks`（范围内无遮挡）。
-  `not_applicable.clearance` 改判「是否有新鲜 scan 帧」——全窗无回波时 `clearance_min_m` 仍为 `null`，
+  `not_applicable.clearance` 改判「是否有新鲜 scan 帧」—— 全窗无回波时 `clearance_min_m` 仍为 `null`，
   但 `clearance` **不再**标 not_applicable（已知 = ∞）。
 - **可标定参数**：`scan_max_age_s` / `action_max_age_s`（默认 `0.5 s`），由 launch **单一注入**
   （契约 [#params](../ROS2迁移交接文档.md#params)），节点不得覆写。
@@ -125,12 +125,12 @@ accepted（2026-11-02 由 0036 / 0038 / 0043 / 0078 合并；结论未变，其�
 - **无活跃 dwell 且本拍合法** → 起新 dwell（换 id / epoch 变化后**从 0 重算**，杜绝跨段累计）。
 - **分段有效时长记录**：`dwell_segment_start_`（当前有效段起点，与 `dwell_start_` 同步）、
   `last_dwell_segment_s_`（刚被中断那段时长）、`dwell_valid_total_s_`（本 episode 累计有效时长）；
-  `interruptDwell(t, reason)` 结算 `seg = (t − dwell_segment_start_).seconds()`，并入累计后发布中断事件再清零。
+  `interruptDwell(t, reason)` 结算 `seg = (t − dwell_segment_start_).seconds`，并入累计后发布中断事件再清零。
 - **成功语义不降级**：成功仍为「**连续** `t_dwell` 有效」（`dwell_start_` 未被中断即
   `(t − dwell_start_) ≥ t_dwell_s`）→ `tracking_milestone_met_ = true` + `enterTerminal(TRACKING_SUCCESS,
   "tracking_milestone")`。**不**改为累计接近时长，**不**降低阈值。
 - **参数与事件**：`car_odom_max_age_s`（默认 `1.0`，车地面 odom 寿命门）、`dwell_event_topic`
-  （默认 `/agc/task/dwell_event`），经 `config/w6_base.yaml` 单一注入；话题 `std_msgs/String`、depth 10、**非**命令者，
+  （默认 `/agc/task/dwell_event`），经 `config/base.yaml` 单一注入；话题 `std_msgs/String`、depth 10、**非**命令者，
   事件串：起始 `DWELL_START ep=<int> target=<id>`、中断
   `DWELL_INTERRUPT ep=<int> reason=<REASON> seg=<%.3f> total=<%.3f>`。
 - **实测**：空数组跨段 → `TARGET_LOST seg=1.000 total=1.000` 且重获后 1.0 s **仍非** `TRACKING_SUCCESS`
@@ -193,4 +193,4 @@ accepted（2026-11-02 由 0036 / 0038 / 0043 / 0078 合并；结论未变，其�
   [ADR-0006](0006-experiment-artifacts-and-evidence-discipline.md#top)（产物与证据纪律）、
   [ADR-0010](0010-safety-thresholds-and-failsafe.md#top)（`proxy_v1` / `gz_contact_v1` 口径）、
   [ADR-0018](0018-acceptance-and-coverage-matrix.md#top)（验收判定）
-- 实现：`run_logger.cpp` / `task_manager.cpp` / `capture_adjudicator.cpp` / `w6_r028_check.py`
+- 实现：`run_logger.cpp` / `task_manager.cpp` / `capture_adjudicator.cpp` / `check_episode_window_samples.py`

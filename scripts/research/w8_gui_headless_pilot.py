@@ -2,7 +2,7 @@
 """w8_gui_headless_pilot —— W8-E1 GUI / headless 模式等价 pilot 编排与报告（ADR-0021）。
 
 **定位**：本脚本只做 **GUI ↔ headless 模式等价核验**：
-  * `run`：按预声明计划 `src/agc_rl/config/w8_gui_headless_plan.yaml` 逐 attempt 调用
+  * `run`：按预声明计划 `src/agc_rl/config/gui_headless_plan.yaml` 逐 attempt 调用
     `scripts/research/w7b_arms_runner.py`（**唯一差异是 `--mode`**），全部尝试保留、不重试、不覆盖；
   * `report`：读取既有 attempt 产物，复用 `scripts/research/w7b_worker_repeatability.py` 的
     arms / summary / 日志解析，产出 pilot 报告或正式等价报告。
@@ -15,7 +15,7 @@
 
 用法：
   python3 scripts/research/w8_gui_headless_pilot.py run \\
-    --plan src/agc_rl/config/w8_gui_headless_plan.yaml --pilot-id <id> --scene all --phase pilot
+    --plan src/agc_rl/config/gui_headless_plan.yaml --pilot-id <id> --scene all --phase pilot
   python3 scripts/research/w8_gui_headless_pilot.py run ... --dry-run        # 只打印序列与命令，不落盘
   python3 scripts/research/w8_gui_headless_pilot.py report \\
     --pilot-id <id> --phase pilot --out-run-id <id>
@@ -46,7 +46,7 @@ import w7b_worker_repeatability as rep  # noqa: E402 - 同目录复用只读解�
 from scipy import stats as scipy_stats  # noqa: E402
 
 ROOT = '/home/chen/AGC'
-DEFAULT_PLAN = 'src/agc_rl/config/w8_gui_headless_plan.yaml'
+DEFAULT_PLAN = 'src/agc_rl/config/gui_headless_plan.yaml'
 PLAN_KEY = 'w8_gui_headless_plan'
 MODE_TAGS = {'headless': 'h', 'gui': 'g'}
 SUCCESS_TERMINALS = rep.OK_TERMINALS          # INTERCEPT_CONFIRMED / TRACKING_SUCCESS

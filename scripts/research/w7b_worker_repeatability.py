@@ -7,7 +7,7 @@
   1. 同 seed 的 active 指标（`active_fco = active_visibility × env_occ|visible`）散布有多大；
   2. 差异落在哪条时间线上：启动状态（PX4 ready / release_control / start OK / active 窗口起点）、
      目标估计（首射 age、intruder `[tw=` 相位、目标拒绝比例）、还是交战几何（首次包络 / 捕获 / 窗口时长）；
-  3. A/B/P 预声明门（`src/agc_rl/config/w7c_admission_plan.yaml`）在**已有产物**下能评估到哪一步。
+  3. A/B/P 预声明门（`src/agc_rl/config/multi_worker_admission.yaml`）在**已有产物**下能评估到哪一步。
 
 **口径**：primary DV 用 active 窗口指标；`arms.json` 的 legacy 固定窗口指标只作描述并标注。
 缺失字段 / 缺失 summary / 缺失日志一律记为 `null` 并写进 `missing_fields`，不崩溃。
@@ -36,7 +36,7 @@ import sys
 from datetime import datetime, timezone
 
 ROOT = '/home/chen/AGC'
-DEFAULT_PLAN = 'src/agc_rl/config/w7c_admission_plan.yaml'
+DEFAULT_PLAN = 'src/agc_rl/config/multi_worker_admission.yaml'
 OK_TERMINALS = ('INTERCEPT_CONFIRMED', 'TRACKING_SUCCESS')
 
 # 需要出现在报告 / JSON 的 case 字段（缺失 -> null 并列入 missing_fields）

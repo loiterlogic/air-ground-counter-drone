@@ -1,6 +1,6 @@
 # 场景几何与飞行高度：minimal 地图的作业区与静态障碍（ADR-0007）。
-# 由 w6_composition 按地图名加载并派生注入；节点不得覆写。
-# 改几何只改对应地图文件，再跑 tests/w6_geometry_check.py 复核。
+# 由 composition 按地图名加载并派生注入；节点不得覆写。
+# 改几何只改对应地图文件，再跑 tests/check_scene_geometry.py 复核。
 map: minimal
 
 work_area:
@@ -10,7 +10,7 @@ work_area:
   origin_x: -50.0
   origin_y: -50.0
 
-# 本图固定飞行高度；运行期由 w6_composition.apply_flight_altitude_params 派生注入（ADR-0007）。
+# 本图固定飞行高度；运行期由 composition.apply_flight_altitude_params 派生注入（ADR-0007）。
 flight_altitude:
   own_track_m: 2.5
   own_takeoff_m: 2.5

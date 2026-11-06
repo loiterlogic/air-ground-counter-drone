@@ -9,7 +9,7 @@
 
 | 组 | 断言什么 | 为什么进冒烟集 |
 |---|---|---|
-| `geometry` | 几何派生链：地图配置文件 → 世界 SDF 展开一致（`tests/w6_geometry_check.py`） | 改地图/材质最常踩的坑，纯静态 |
+| `geometry` | 几何派生链：地图配置文件 → 世界 SDF 展开一致（`tests/check_scene_geometry.py`） | 改地图/材质最常踩的坑，纯静态 |
 | `messages` | 9 消息 ABI 字段与顺序不变 + `AgcTaskState` 9 个状态常量 | 契约红线，离线可判 |
 | `docs` | 活跃文档本地链接与锚点可解析（`tests/docs_link_check.py`） | 改 README / 计划文档后必跑 |
 | `index` | 脚本索引与实际文件集合一致（`scripts/adr_index.py --check` + `scripts/tests/test_scripts_index.py`） | 索引漂移靠测试拦，不靠纪律 |
@@ -55,7 +55,7 @@ GROUP_TIMEOUT_S = 300
 # 每组：(名称, 说明, 命令前缀列表)
 GROUPS = [
     ('geometry', '几何派生链：地图真源 → 世界 SDF',
-     [[sys.executable, os.path.join(ROOT, 'tests', 'w6_geometry_check.py')]]),
+     [[sys.executable, os.path.join(ROOT, 'tests', 'check_scene_geometry.py')]]),
     ('messages', '9 消息 ABI 字段序 + AgcTaskState 状态常量',
      [[sys.executable, '-m', 'pytest', '-q',
        os.path.join(ROOT, 'scripts', 'tests', 'test_demo_observability.py'),
@@ -70,9 +70,9 @@ GROUPS = [
      [[sys.executable, '-m', 'pytest', '-q', os.path.join(ROOT, 'scripts', 'tests')]]),
     # 2026-11-04：DDS 契约闸门。**必须留在默认冒烟里**——写死 LOCALHOST 曾两次让整条
     # 收发链静默零送达（本机 `lo` 无 IFF_MULTICAST），每次都花掉一整轮定位。
-    # 纯静态、秒级；判据见 tests/w6_dds_contract_check.py 的 case e。
+    # 纯静态、秒级；判据见 tests/check_dds_contract.py 的 case e。
     ('dds', 'DDS 契约：不得写死 LOCALHOST / launch 不覆盖发现范围',
-     [[sys.executable, os.path.join(ROOT, 'tests', 'w6_dds_contract_check.py')]]),
+     [[sys.executable, os.path.join(ROOT, 'tests', 'check_dds_contract.py')]]),
     # 「PX4/toolchain 可复现构建逐步固化」（2026-11-04）：pin 清单与实机一致性。
     # 纯只读、秒级；此前有单测但**没接任何门槛**，等于不跑。判据见 ADR-0005(d)。
     # 前提是 `toolchain/` 在本机存在（外部依赖、不入 git）；缺失时如实 FAIL 而不是静默跳过。

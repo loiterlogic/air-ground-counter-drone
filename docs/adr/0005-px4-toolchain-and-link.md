@@ -20,7 +20,7 @@ accepted（2026-11-02 由 0005 / 0012 / 0065 / 0067 / 0068 合并；链路协议
 ### (b) 本体形态：`toolchain/` 外部依赖 + `px4_msgs` 内联
 
 - **PX4 本体（固件 / SITL）**：作为 `toolchain/` 外部依赖，**不入 colcon、不入 git**（`toolchain/COLCON_IGNORE` + `.gitignore` 仅放行 `/toolchain/README.md`），以 **v1.15.4 + 子模块 SHA** pin 住。
-- **`px4_msgs`**：**内联入库**于 `src/`——接口包必须在工作空间内编译才能被 `ros2 interface show` 与其它包依赖发现（对照：Nav2 是运行时栈，走 apt + `<depend>`，见 [ADR-0003](0003-nav2-paradigm-absorption.md#top)）。
+- **`px4_msgs`**：**内联入库**于 `src/`—— 接口包必须在工作空间内编译才能被 `ros2 interface show` 与其它包依赖发现（对照：Nav2 是运行时栈，走 apt + `<depend>`，见 [ADR-0003](0003-nav2-paradigm-absorption.md#top)）。
 - **版本同步**：PX4 版本与 `px4_msgs` 必须同步（v1.15.4 对 `release/1.15`），升级须连同本篇复核。
 - **agent 版本适用值**：现行 **v2.4.3**（对系统 Fast DDS 2.14 / fastcdr 2.2 构建，与 ROS 2 Jazzy 同源）；v2.4.2 是早期适用值，其自建 DDS 2.11 与 ROS 侧跨版本不互通，**不回退**。
 
@@ -44,7 +44,7 @@ README 另含「从空目录恢复（配方）」节（克隆 tag + 初始化 9 
 
 ### (e) 工具链根显式注入与启动前校验
 
-- 两入口（`w6.launch.py`、`air_bringup.launch.py`）**声明** launch 参数 `agc_root`（默认 = 固定项目根 `/home/chen/AGC`，可覆盖），工具链路径由该参数派生；**移除** `parents[3]` 式深度上溯。所有 `DeclareLaunchArgument` 仍在顶层声明，保证 `--show-args` 可内省（`air_bringup` 经 `OpaqueFunction` 读参数）。
+- 两入口（`main.launch.py`、`air_bringup.launch.py`）**声明** launch 参数 `agc_root`（默认 = 固定项目根 `/home/chen/AGC`，可覆盖），工具链路径由该参数派生；**移除** `parents[3]` 式深度上溯。所有 `DeclareLaunchArgument` 仍在顶层声明，保证 `--show-args` 可内省（`air_bringup` 经 `OpaqueFunction` 读参数）。
 - **启动前校验**：两入口校验 `toolchain/bin/MicroXRCEAgent` 与 `toolchain/PX4-Autopilot/build/px4_sitl_default/bin/px4` 存在，任一缺失即 `raise RuntimeError`（含缺失路径与 `agc_root:=<path>` 提示），不静默。
 - **ROS 资产仍经 ament index**：世界 / 邻包配置仍用 `get_package_share_directory`，不改为全仓相对化。
 - **固定根约束维持**：不引入任意搬迁假设；如需可搬迁，另提根路径约束挑战与成本。
@@ -60,7 +60,7 @@ README 另含「从空目录恢复（配方）」节（克隆 tag + 初始化 9 
 
 ### (g) 空目录重建未实测（显式未决）
 
-pin 校验只证明「**现值**与记录一致」，**不**证明「空目录可恢复」。**deferred**：干净环境 / 独立目录的端到端重建实测，原因是本轮无独立干净机器且禁止复制现有 `build/` 当重建证明；归属 W3 工具链复现出口，须在 W8 对照与冻结前实测一次。实测完成前，任何「环境已可重建」的结论**不成立**。
+pin 校验只证明「**现值**与记录一致」，**不**证明「空目录可恢复」。**deferred**：干净环境 / 独立目录的端到端重建实测，原因是本轮无独立干净机器且禁止复制现有 `build/` 当重建证明；归属工具链复现出口，须在对照与冻结前实测一次。实测完成前，任何「环境已可重建」的结论**不成立**。
 
 ## 不做什么（边界）
 
@@ -83,7 +83,7 @@ pin 校验只证明「**现值**与记录一致」，**不**证明「空目录�
 
 - **正面**：链路协议与本体形态唯一；任一 pin 漂移可当场报出（25 项 PASS）；根来源唯一显式、缺失即拒启动（6 项 PASS）；资产来源 / 许可 / 哈希独立可核（26 项 PASS）；agent 版本适用关系显式化（2.4.2 → 2.4.3）。
 - **代价 / 限制**：pin 清单与实机深度耦合，产物哈希随重新构建而变，须显式更新 README 并重跑校验，不得静默接受漂移；默认根写死与固定根约束耦合，变更固定根须同步默认值；`unresolved` 字段需后续回填。
-- **未决 / 后续**：干净环境端到端重建（W8 冻结前）；Fuel 资源材料取回后置 `license_status: resolved`；多机 / CI 的工具链校验接入属 W8。
+- **未决 / 后续**：干净环境端到端重建（冻结前）；Fuel 资源材料取回后置 `license_status: resolved`；多机 / CI 的工具链校验接入属。
 
 ## 参考
 

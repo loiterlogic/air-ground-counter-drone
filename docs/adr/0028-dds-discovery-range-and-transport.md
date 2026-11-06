@@ -50,7 +50,7 @@ DDS 发现范围与传输的**唯一决定点**是 `scripts/demo/dds_transport.p
 
 已接入：`run_demo.sh`、`scripts/demo/start.py`、`scripts/demo/doctor.py`、
 `scripts/episode_runner.py`、`scripts/research/w7c_worker_run.py`、
-`tests/run_smoke.py`、`tests/w7b_fire_control_lifecycle_check.py`、
+`tests/run_smoke.py`、`tests/check_fire_control_lifecycle.py`、
 `src/agc_task/test/test_run_logger_mission_fco.py`。
 
 <a id="no-trial"></a>
@@ -63,7 +63,7 @@ DDS 发现范围与传输的**唯一决定点**是 `scripts/demo/dds_transport.p
 <a id="guard"></a>
 ### (c) 用会失败的测试防复发，不用文档
 
-新增 `tests/w6_dds_contract_check.py::case_e_no_hardcoded_localhost`：扫描全仓活跃代码
+新增 `tests/check_dds_contract.py::case_e_no_hardcoded_localhost`：扫描全仓活跃代码
 （`.py/.sh/.bash/.xml/.yaml/.yml`），发现写死即 FAIL；并已加入默认冒烟组 `dds`，
 即 `./run_demo.sh test` 每次都跑。
 
@@ -76,7 +76,7 @@ DDS 发现范围与传输的**唯一决定点**是 `scripts/demo/dds_transport.p
 <a id="worker"></a>
 ### (d) worker 隔离与连通性解耦
 
-ADR-0024 要求 W7-c worker **禁 SHM**（`/dev/shm` 不随 netns 隔离）。该要求被误实现成
+ADR-0024 要求worker **禁 SHM**（`/dev/shm` 不随 netns 隔离）。该要求被误实现成
 "同时写死 `LOCALHOST`"。现修正：worker 只覆盖 `FASTDDS_BUILTIN_TRANSPORTS=UDPv4`，
 **发现范围沿用探测结果**。隔离要求成立，且不再在无 `lo` 组播的机器上整链零送达。
 
@@ -93,10 +93,10 @@ ADR-0024 要求 W7-c worker **禁 SHM**（`/dev/shm` 不随 netns 隔离）。�
 
 ## Consequences
 
-- **原生 Linux（`lo` 有组播）行为完全不变**——策略探测会选回 `LOCALHOST` + 默认传输。
+- **原生 Linux（`lo` 有组播）行为完全不变**—— 策略探测会选回 `LOCALHOST` + 默认传输。
 - 本机（WSL2）从"按文档做必挂"变为"默认就能跑"：`agc_task` ctest 6/6、
   全量 pytest 414 passed、该测试连跑 8/8。
 - **`SHM` 选中的代价**：本机默认失去跨机器 UDP 能力。跨机器场景需显式覆盖或用将来的 `nic-udp`。
-- 排障速查 §0 与环境铁律①相应修订；判据与实测矩阵见
+- 排障速查 与环境铁律①相应修订；判据与实测矩阵见
   [整链排障速查 2d-2](../conventions/整链排障速查.md#dds-transport)。
 - 排查纪律：**判定 DDS 通不通必须用与目标同构的 1:1 拓扑**，多进程探活会骗人。

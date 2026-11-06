@@ -4,7 +4,7 @@
 # 用途：把 `COM_OF_LOSS_T` / `COM_OBL_RC_ACT` / `NAV_DLL_ACT` 的**确定性值**注入 SITL 启动
 # 参数文件，使**每次 SITL 启动**的 failsafe 行为确定化（不以源码默认代填运行值）。
 # 配置文件：src/agc_task/config/px4_failsafe_lock.yaml（**配置文件**，非 ROS 节点参数）。
-# 机制：w6.launch.py backend:=full 以 cwd=<build>/px4_sitl_default 起 PX4；rcS 末段 `. px4-rc.params`
+# 机制：main.launch.py backend:=full 以 cwd=<build>/px4_sitl_default 起 PX4；rcS 末段 `. px4-rc.params`
 # （PATH 含 `${R}etc/init.d-posix`，R=<pwd>/）→ source 本脚本写出的
 # `<build>/etc/init.d-posix/px4-rc.params`。
 # 隔离：若设置 `AGC_PX4_ETC_DIR`，写入该 worker 私有 etc

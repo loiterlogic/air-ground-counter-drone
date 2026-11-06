@@ -66,7 +66,7 @@
 # 也**不是** `/world/agc_world/model/.../sensor/imager/image` 形式的作用域名（实测无该话题）。
 #
 # ⚠ **只出现话题名 ≠ 有相机**（ 实测）：`gz topic -l` 会列出**只有订阅者**的话题，
-# 而本文件正是以订阅方式桥接 /camera —— 用缺省 `gz_x500`（无相机）时话题名照样出现，但没有帧。
+# 而本文件正是以订阅方式桥接 /camera——用缺省 `gz_x500`（无相机）时话题名照样出现，但没有帧。
 # 判「相机是否真的在发布」必须用 `gz topic -f -t /camera`，或 ROS 侧真实的帧频率 / 像素证据；
 # 不得只看 `gz topic -l` 或 `ros2 topic list`。
 
@@ -99,7 +99,7 @@
 # 两者都必须与 SDF 逐字一致；`scripts/tests/test_nadir_camera_contract.py` 静态守护这一点。
 #
 # ⚠ **话题存在 ≠ 有帧**（ 实测，见 experiments/p1-4//evidence/camera-ownership-finding.md）：
-# `gz topic -l` 会列出**只有订阅者**的话题，而本文件正是以订阅方式桥接 —— 默认臂（无相机）里
+# `gz topic -l` 会列出**只有订阅者**的话题，而本文件正是以订阅方式桥接——默认臂（无相机）里
 # `/agc/air/nadir*` 照样会出现在 `gz topic -l` / `ros2 topic list`，但**一帧都没有**。
 # 判「相机是否真的在发布」必须用 `ros2 topic hz`（≥10 Hz）、累计帧数（≥30）、
 # 或 `gz topic -f -t /agc/air/nadir` 看到真实帧；**不得**只看话题列表。

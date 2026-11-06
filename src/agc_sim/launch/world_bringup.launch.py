@@ -180,7 +180,7 @@ def _make_gz_sim(world_file, ros_gz_sim_launch, sim_share):
  世界路径经 gz_args token（按 basename 匹配替换，兼容相对/绝对）单一指定，不由上层手写。
 运行期世界文件名带地图名（`agc_world_static_obstacles_<map>.sdf`），使并行/
  连续 run 的不同地图不会互相覆盖；`minimal` 保留历史文件名 `agc_world_static_obstacles.sdf`
- （既有脚本 `scripts/archive/run_w6_r026.sh` 与 `tests/w6_r026_check.py` 按该名取证）。
+ （既有脚本 `scripts/archive/run_w6_r026.sh` 与 `tests/check_scene_axis_carriers.py` 按该名取证）。
  几何在 `_opaque` 内**按实际 `world_map`** 读取（不在 generate 阶段预读，避免读到默认图）。
     """
     def _opaque(context, *args, **kwargs):
@@ -235,10 +235,10 @@ def generate_launch_description():
     tgt_m = target['model']
     tgt_s = target['spawn']
 
-    # F1（2026-10-31）：spawn 位可被上层（`w6.launch.py` 由出生布局配置文件派生）显式覆盖；
+    # F1（2026-10-31）：spawn 位可被上层（`main.launch.py` 由出生布局配置文件派生）显式覆盖；
     # 缺省 **'auto'** = 用本文件读到的 car.yaml / target.yaml 值 → standalone 行为逐字不变。
     # 为什么需要这个口：世界 spawn 与 `/agc/scenario/reset` 的复位位置必须**同一组坐标**，
-    # 否则复位会把实体从出生点"挪走"（实测口径见 w6_composition.apply_spawn_layout）。
+    # 否则复位会把实体从出生点"挪走"（实测口径见 composition.apply_spawn_layout）。
     def _spawn_arg(name, default):
         return DeclareLaunchArgument(
             name, default_value=str(default),

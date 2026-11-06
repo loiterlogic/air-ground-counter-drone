@@ -86,7 +86,7 @@ def _generate(context, *args, **kwargs):
     gz_models = os.path.join(px4_dir, 'Tools', 'simulation', 'gz', 'models')
     gz_worlds = os.path.join(px4_dir, 'Tools', 'simulation', 'gz', 'worlds')
 
-    # ---- 本仓己方机型：ADR-0030 正下视相机 + 2026-11-05 GUI 高亮，与 w6.launch.py 同一口径 ----
+    # ---- 本仓己方机型：ADR-0030 正下视相机 + 2026-11-05 GUI 高亮，与 main.launch.py 同一口径 ----
     # 模型资产在**本仓**（install/agc_sim/share/agc_sim/models/{agc_x500_nadir,agc_x500}），
     # 不在 PX4 工具链里；机型解析走 `PX4_SYS_AUTOSTART=4001`（rcS:41-44 优先于按名反查
     # rcS:52-63）→ rcS 仍 source 官方 `4001_gz_x500`，`PX4_SIM_MODEL` 只决定 spawn 给 gz 的

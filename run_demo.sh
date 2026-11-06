@@ -9,7 +9,7 @@
 # ./run_demo.sh --gui-render-backend software # auto（默认）| d3d12 | software
 # ./run_demo.sh stop|status|doctor|test|compare # 见各子命令
 #
-# 薄封装：不复制 launch 编排，参数透传 w6.launch.py（ADR-0020）。
+# 薄封装：不复制 launch 编排，参数透传 main.launch.py（ADR-0020）。
 # 不新增命令者：不写 /agc/ground/cmd_vel、不写模型位姿（ADR-0020）。
 # 进程回收只按记录的 PID/PGID，禁止 pkill -f；stop 不删证据目录。
 
@@ -25,18 +25,18 @@ ROS_SETUP="/opt/ros/jazzy/setup.bash"
 WS_SETUP="${ROOT}/install/setup.bash"
 
 # ---------------------------- 人话错误 ----------------------------
-fail() { # fail <标题> <第1行> [第2行…]
+fail { # fail <标题> <第1行> [第2行…]
   local title="$1"; shift
   echo "" >&2
   echo "======================================================================" >&2
   echo "[run_demo] 错误：${title}" >&2
   echo "----------------------------------------------------------------------" >&2
   local line
-  for line in "$@"; do echo "  ${line}" >&2; done
+  for line in "$@"; do echo " ${line}" >&2; done
   echo "======================================================================" >&2
 }
 
-usage() {
+usage {
   sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
 }
 
@@ -48,9 +48,9 @@ SCENE=""
 DURATION=""
 BACKEND=""
 GUI_RENDER_BACKEND=""
-EXTRA=()
+EXTRA=
 DOCTOR_ONLY=""
-ARGS_REST=()
+ARGS_REST=
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -78,7 +78,7 @@ done
 
 # ---------------------------- 环境 ----------------------------
 # 自动 source（这是**脚本自身的职责**；"少 source 的故障提示"另用隔离 env 测试，见 doctor 的 inject 项）
-source_ros() {
+source_ros {
   if [ ! -f "$ROS_SETUP" ]; then
     fail "ROS 2 Jazzy 未安装" "缺少 ${ROS_SETUP}" "先装 ROS 2 Jazzy：https://docs.ros.org/en/jazzy/"
     exit 1
@@ -86,7 +86,7 @@ source_ros() {
   # shellcheck disable=SC1090
   . "$ROS_SETUP" >/dev/null 2>&1
 }
-source_ws() {
+source_ws {
   if [ ! -f "$WS_SETUP" ]; then
     fail "工作区未构建" "缺少 ${WS_SETUP}" "先构建：cd ${ROOT} && colcon build --symlink-install"
     exit 1
@@ -105,11 +105,11 @@ import os, sys
 sys.path.insert(0, os.path.join("'"${ROOT}"'", "scripts", "demo"))
 import dds_transport as d
 try:
-    print(d.describe())
-    resolved = d.resolve()
+    print(d.describe)
+    resolved = d.resolve
 except ValueError as exc:
     sys.stderr.write("[run_demo] 错误：%s\n" % exc); raise SystemExit(2)
-for key, value in d.env_for(resolved).items():
+for key, value in d.env_for(resolved).items:
     print("%s=%s" % (key, "" if value is None else value))
 ')" || exit 2
 echo "[run_demo] ${_dds_env%%$'\n'*}"
@@ -155,7 +155,7 @@ esac
 python3 "${DEMO_PY}/main.py" preflight --headless "$HEADLESS" || exit $?
 
 # 组装参数
-EXTRA_ARGS=()
+EXTRA_ARGS=
 for e in "${EXTRA[@]-}"; do [ -n "$e" ] && EXTRA_ARGS+=("$e"); done
 
 exec python3 "${DEMO_PY}/main.py" start \

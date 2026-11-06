@@ -5,7 +5,7 @@
 
 用法：
   python3 tests/run_all.py                       # 列出全部
-  python3 tests/run_all.py --run w6_r034_check.py
+  python3 tests/run_all.py --run check_lifecycle_resource_state.py
   python3 tests/run_all.py --all --timeout 600
 """
 

@@ -21,7 +21,7 @@
   </class>
   <class name="agc_control/Figure8Trajectory" type="agc_control::Figure8Trajectory"
          base_class_type="agc_control::TrajectoryGenerator">
-    <description>真八字 Gerono（周期，自交）：rx=15 / ry=9 / h=2.5，弧长参数化恒速（C1）</description>
+    <description>真八字 Gerono（周期，自交）：rx=15 / ry=9 / h=2.5，弧长参数化恒速</description>
   </class>
   <class name="agc_control/HoverTrajectory" type="agc_control::HoverTrajectory"
          base_class_type="agc_control::TrajectoryGenerator">

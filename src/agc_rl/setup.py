@@ -11,7 +11,7 @@ setup(
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/config', ['config/rl.yaml', 'config/w7.yaml']),
+        ('share/' + package_name + '/config', ['config/rl.yaml', 'config/rl_platform.yaml']),
         ('share/' + package_name + '/launch', ['launch/rl_inference.launch.py']),
         ('share/' + package_name + '/policies', glob('policies/*.json')),
     ],

@@ -4,9 +4,9 @@
 # ---- 配置文件（ADR-0007）----
 # 静态障碍**实体几何**的配置文件为 `agc_sim/config/world_geometry.yaml`（地图 `minimal`；
 # 其余地图见 `agc_sim/config/maps/`，清单 `agc_sim/launch/world_map.py`）。本文件是
-# **standalone 回退副本**（供不经 w6_composition 的 standalone perception_bringup / air_bringup
-# 使用），**只与 `minimal` 配置文件一致**（由 `tests/w6_geometry_check.py` 断言 (c) 校验）。
-# w6 运行路径的障碍文件由**所选地图配置文件**派生生成（`w6_composition.write_derived_obstacles`），
+# **standalone 回退副本**（供不经 composition 的 standalone perception_bringup / air_bringup
+# 使用），**只与 `minimal` 配置文件一致**（由 `tests/check_scene_geometry.py` 断言 (c) 校验）。
+# w6 运行路径的障碍文件由**所选地图配置文件**派生生成（`composition.write_derived_obstacles`），
 # 不读本副本；standalone 若声明非 minimal 地图，`perception_bringup` **显式拒绝**（拒绝点见该 launch 的 `_reject_non_minimal_fallback`）。
 #
 # ---- 静态先验（static 层）成文假设（2026-10-15）----

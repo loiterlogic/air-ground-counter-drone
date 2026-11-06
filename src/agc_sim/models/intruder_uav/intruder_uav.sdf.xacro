@@ -2,8 +2,8 @@
 <!--
   intruder_uav —— 入侵目标模型（双模，由 xacro 参数 `controlled` 切换）
 
-  模式（W6 前置 P 引入，见 [ADR-0015](../../../docs/adr/0015-interception-scope-physical-capture-and-behavioral-jamming.md) 修订）：
-    * controlled=false（默认）：**被动/失重**刚体（box + GZ VelocityControl），供 M0/W5 兼容使用。
+  模式（前置 P 引入，见 [ADR-0015](../../../docs/adr/0015-interception-scope-physical-capture-and-behavioral-jamming.md) 修订）：
+    * controlled=false（默认）：**被动/失重**刚体（box + GZ VelocityControl），供最小闭环兼容使用。
     * controlled=true：**PX4 可控**机型 —— 以 PX4 官方 `x500` 机型 merge 到本模型（模型名保留
       `intruder_uav`），由**第二个 PX4 SITL 实例**经 `PX4_GZ_MODEL_NAME=intruder_uav` attach 控制
       （GZ 话题 `/intruder_uav/command/motor_speed` 等由 PX4 相对模型名寻址）。
@@ -20,7 +20,7 @@
 
   <model name="intruder_uav">
     <xacro:unless value="$(arg controlled)">
-      <!-- ===== 被动版（M0/W5 兼容）：失重刚体 + 外部速度指令驱动 ===== -->
+      <!-- ===== 被动版（M0/兼容）：失重刚体 + 外部速度指令驱动 ===== -->
       <static>false</static>
 
       <link name="target/base_link">
@@ -55,14 +55,14 @@
     </xacro:unless>
 
     <xacro:if value="$(arg controlled)">
-      <!-- ===== 可控版（W6 前置 P）：PX4 x500 机型（merge），由第二 PX4 实例 attach ===== -->
+      <!-- ===== 可控版（前置 P）：PX4 x500 机型（merge），由第二 PX4 实例 attach ===== -->
       <include merge="true">
         <uri>model://x500</uri>
       </include>
 
-      <!-- ===== P1-3 演示视觉高亮（**纯视觉**，不碰物理）=====
+      <!-- =====演示视觉高亮（**纯视觉**，不碰物理）=====
            观众在 Gazebo 里要能一眼认出"目标"：x500 原厂是白机身 + 碳纤维臂，
-           100×100 m 场站俯视下只有 3~4 px，**不可辨识**（P1-3 round-1 判据 5 未达成的原因）。
+           100×100 m 场站俯视下只有 3~4 px，**不可辨识**（判据 5 未达成的原因）。
 
            **为什么是"子 link + fixed joint"而不是往 base_link 里塞 visual**
            （2026-10-30 用本机 `gz sdf -p` 实测四种写法，结论如下）：

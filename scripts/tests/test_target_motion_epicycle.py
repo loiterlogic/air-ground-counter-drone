@@ -37,7 +37,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 DRIVER = ROOT / 'src' / 'agc_task' / 'scripts' / 'intruder_driver.py'
 
-# ---- 被测参数（与 `w6_base.yaml` / `s18` 场景同值；改配置必须同步改这里并说明）----
+# ---- 被测参数（与 `base.yaml` / `s18` 场景同值；改配置必须同步改这里并说明）----
 V_MPS = 1.0          # speed_mps
 RADIUS_M = 1.8       # radius_m（轨道半径）
 DRIFT_A_M = 0.6      # drift_amplitude_m（**圆心**漂移幅度，不是半径）

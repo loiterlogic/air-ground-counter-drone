@@ -3,8 +3,8 @@
 
 `world_geometry.yaml`（minimal）与 `maps/*.yaml`（yard / open_field）都是**静态障碍 +
 作业区几何**的配置文件，只是按地图拆成多个文件。**哪张地图对应哪个文件**只在本文登记一次；
-消费者（`world_bringup.launch.py`、`agc_task/launch/w6_composition.py`、
-`agc_air/launch/air_bringup.launch.py`、`tests/w6_geometry_check.py`）一律经本模块解析。
+消费者（`world_bringup.launch.py`、`agc_task/launch/composition.py`、
+`agc_air/launch/air_bringup.launch.py`、`tests/check_scene_geometry.py`）一律经本模块解析。
 
 纪律：
  * 新增地图 = 本表加一行 + 加一个 yaml 文件；**不得**在消费方各写一份文件名表

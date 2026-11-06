@@ -35,10 +35,10 @@ marking 都算作"地图变化"，每回合二十余次伪触发重规划。三�
 
 ### (c) 规划失败 → 失效停车（fail-stop）
 
-`plan()` 返回空路径或抛异常时置 `path_valid_ = false` 并记失效日志；`tick` 对失效路径**默认发布零速**，**不再**
+`plan` 返回空路径或抛异常时置 `path_valid_ = false` 并记失效日志；`tick` 对失效路径**默认发布零速**，**不再**
 `lookaheadRef` 旧路径。既有参数 `stop_on_invalid`（默认 `true`）接线生效；置 `false` 是**显式 opt-out**（回落到旧
 路径，仅用于对照实验，默认配置不启用）。先学后做（取证）：本机 Jazzy `NavfnPlanner::createPlan` 在目标不可达 /
-出界 / 全被占时 **throw `nav2_core::PlannerException`**，故"目标不可达"实际落在 `catch` 异常分支；`poses.size() < 2`
+出界 / 全被占时 **throw `nav2_core::PlannerException`**，故"目标不可达"实际落在 `catch` 异常分支；`poses.size < 2`
 分支是对"返回空而不抛"的其它 planner 的防御分支。
 
 ### (d) 目标失效策略：有期限保留最后有效目标（bounded hold-last-valid）
@@ -50,7 +50,7 @@ marking 都算作"地图变化"，每回合二十余次伪触发重规划。三�
   **不**反射固定点、**不**刷新 stamp。
 - 超窗：**显式失效** `valid=false reason=EXPIRED`（从未有效则 `TARGET_LOST`），**不发布**带新时间戳的 goal 位姿。
 - `goal_follow_target=false`：固定任务目标恒有效，`valid=true reason=FIXED_GOAL`、`stamp=now`。
-- `goal_follow_target=true` 且 `targetFresh()`：位置 = 目标 XY、`stamp=`**目标源时刻**（非 `now`）、关联
+- `goal_follow_target=true` 且 `targetFresh`：位置 = 目标 XY、`stamp=`**目标源时刻**（非 `now`）、关联
   `target_id`、`valid=true reason=TARGET_FRESH`，并刷新"最后有效目标"缓存。
 - `/agc/task/start` 新 episode **清空**最后有效目标缓存（与既有 episode 隔离一致）。
 
@@ -58,7 +58,7 @@ marking 都算作"地图变化"，每回合二十余次伪触发重规划。三�
 
 `/agc/ground/goal_info`（`std_msgs/String`，**transient_local**，非命令者）承载
 `valid=<0|1>;reason=<...>;target_id=<id>;src_stamp=<double 秒>;age=<double 秒>`。`/agc/ground/goal` 仍是
-`geometry_msgs/PoseStamped`（`frame_id=world`、`orientation.w=1.0`），类型与语义**冻结**——这是"不改冻结接口"的
+`geometry_msgs/PoseStamped`（`frame_id=world`、`orientation.w=1.0`），类型与语义**冻结**—— 这是"不改冻结接口"的
 边界。参数 `goal_hold_valid_s`、`goal_info_topic` 由 launch / config 单一注入。
 
 ### (f) 重规划位移阈值化：移除任意浮点强制重规划
@@ -69,12 +69,12 @@ marking 都算作"地图变化"，每回合二十余次伪触发重规划。三�
 L2 距离容差**（`xy_goal_tolerance` / `euclidean_distance`）而非任意浮点相等，时限 / 有效性另行参与判据
 （`PathExpiringTimerCondition` / `IsPathValidCondition`）。
 
-### (g) 地面失效动作与 C10 空中 `freeze` 分别定义
+### (g) 地面失效动作与空中 `freeze` 分别定义
 
-- **地面 = 安全停车**：`ground_baseline` 消费 `/agc/ground/goal_info` 的 `valid=`；`valid=false` 时在 `tick()` 顶部
+- **地面 = 安全停车**：`ground_baseline` 消费 `/agc/ground/goal_info` 的 `valid=`；`valid=false` 时在 `tick` 顶部
   （`!active_` 检查之后）`publish(0,0); return;`，先于路径跟随 / 重规划。默认 `goal_valid_=true`，无该话题的旧运行
   保持既有行为。
-- **空中 = freeze**：C10 的 standoff 跟踪在目标失效（`ref_max_age_s=0.5` / 低 `confidence`）时冻结位姿 / 悬停，
+- **空中 = freeze**：的 standoff 跟踪在目标失效（`ref_max_age_s=0.5` / 低 `confidence`）时冻结位姿 / 悬停，
   保持参考、不追逐旧目标。
 - **不假定两者相同**：地面是"有期限保持最后有效目标后安全停车"，空中是"冻结位姿 / 悬停"。
 
@@ -83,14 +83,14 @@ L2 距离容差**（`xy_goal_tolerance` / `euclidean_distance`）而非任意浮
 - 话题 `/agc/ground/path`，类型 `nav_msgs/Path`，`header.frame_id = world`（Gazebo world 的 ENU 基准）；整条路径
   一次性发布，新消息**整体替换**旧路径，不做增量拼接、不做分段订阅。
 - **这是 AGC 自定义数据接口，不是 Nav2 原生入口**：Nav2 控制器的路径输入是 `FollowPath` action 的 goal 负载
-  （`goal.path` → `setPlannerPath()`），`controller_server` 全文只有一个订阅（`speed_limit`）；`planner_server` 的
+  （`goal.path` → `setPlannerPath`），`controller_server` 全文只有一个订阅（`speed_limit`）；`planner_server` 的
   `plan` 主题确实存在，但源码注释写明用途是可视化、**不驱动控制器**。
 - 代价一并登记：主题**没有 action result / error_code**，路径生命周期、失败分类、质量门三件事全由 AGC 自己定义。
 
 ### (i) 五类质量门、失效语义与路径 / goal 关系（禁止隐式回退）
 
-消费任何路径之前执行质量门：**从未收到**（启动后未收到过任何一条）/ **空**（`poses.empty()`）/ **单点**
-（`size() < 2`，无法确定行进方向）/ **帧不一致**（`frame_id` 不是 `world`，**不做**静默按同名轴解释）/ **过期**
+消费任何路径之前执行质量门：**从未收到**（启动后未收到过任何一条）/ **空**（`poses.empty`）/ **单点**
+（`size < 2`，无法确定行进方向）/ **帧不一致**（`frame_id` 不是 `world`，**不做**静默按同名轴解释）/ **过期**
 （距 `header.stamp` 超过有效期）。失效统一处置为**输出零速到既有 `cmd_vel_raw` 链**（`cmd_vel_raw` →
 `collision_monitor` → 唯一执行口保持不变）。
 
@@ -100,8 +100,8 @@ L2 距离容差**（`xy_goal_tolerance` / `euclidean_distance`）而非任意浮
 
 ### (j) 启动边界：命令源完全缺失时安全层不会兜底
 
-Nav2 `collision_monitor` 的 `process()` **只由 `cmd_vel_in` 回调触发**，文件内没有独立的定时 `process()`；
-`source_timeout` 的清零发生在 `process()` **内部**。因此**启动后从未发出过 `cmd_vel_raw` 时它一个速度消息都不发**。
+Nav2 `collision_monitor` 的 `process` **只由 `cmd_vel_in` 回调触发**，文件内没有独立的定时 `process`；
+`source_timeout` 的清零发生在 `process` **内部**。因此**启动后从未发出过 `cmd_vel_raw` 时它一个速度消息都不发**。
 现有 `stop_pub_timeout: 1.0e9` 只保证"**收到过**命令后持久发零速"，**不覆盖"从没收到"**。要求：消费者在启动后
 无路径时**仍须持续输出零速**到 `cmd_vel_raw` 并记录安全链的实际输出；三种情形须分别有行为证据——① 启动后无
 路径；② 运行中路径源消失；③ 收到路径但路径失效。**不得**靠"反正有安全层兜底"。
@@ -125,7 +125,7 @@ Nav2 `collision_monitor` 的 `process()` **只由 `cmd_vel_in` 回调触发**，
 
 ### (l) 地面侧职责分层与当前占位实现事实
 
-- 空中只提供**处理后的数据**（障碍物分布 / 全局 map），全局路径由**地面侧**规划——把规划抬到空中会削弱「地面自主
+- 空中只提供**处理后的数据**（障碍物分布 / 全局 map），全局路径由**地面侧**规划—— 把规划抬到空中会削弱「地面自主
   规划」这一研究点。地面侧占位规划器**只发布路径，不发布速度**；速度仍只由局部策略出，经安全层到唯一执行口。
 - 占位发布方 `agc_ground/placeholder_path_planner`：几何直连，非 Navfn / 非 `planner_server` / 无 costmap；无授权 /
   无目标 / 过期时**不发**（**不重发旧路径刷新 `header.stamp`**）。
@@ -141,7 +141,7 @@ Nav2 `collision_monitor` 的 `process()` **只由 `cmd_vel_in` 回调触发**，
 
 **R1 · 全局路径规划器：先占位跑通，后续接入外部独立节点**
 
-- **终局**：全局路径规划**最终由外部独立节点提供**——对方交付形态是**独立 ROS 节点**
+- **终局**：全局路径规划**最终由外部独立节点提供**—— 对方交付形态是**独立 ROS 节点**
   （**不是**本仓内部实现、**不是** Nav2 插件）。本仓须**预留可替换接入缝**，使该节点到货后能在
   **不改任务层、不改 9 消息 ABI、不改唯一执行口**的前提下接入
   （替换口径参照 [ADR-0011](0011-interception-and-fire-control.md#top)："对外零破坏、内部允许演进"）。
@@ -163,7 +163,7 @@ Nav2 `collision_monitor` 的 `process()` **只由 `cmd_vel_in` 回调触发**，
 
 | # | 未决内容 | 谁确认 |
 |---|---|---|
-| 1 | **世界表示**：外部节点消费什么——今天规划可用的只有 `z≈0.48 m` 单平面激光与 `/agc/map` 三态栅格 | 外部节点提供方 + 用户 |
+| 1 | **世界表示**：外部节点消费什么—— 今天规划可用的只有 `z≈0.48 m` 单平面激光与 `/agc/map` 三态栅格 | 外部节点提供方 + 用户 |
 | 2 | **最终消息类型与坐标系**：是否仍为 `nav_msgs/Path` + `frame_id=world`，或改为其它类型 / 帧 | 外部节点提供方 |
 | 3 | **重规划触发语义**：如何与 (a)(f) 的位移阈值 / 绑定失效口径对齐 | 外部节点提供方 + Leader |
 | 4 | **最终 fail-stop 行为**：路径失效 / 规划失败时外部节点与本仓各承担什么 | 外部节点提供方 + 用户 |
@@ -174,9 +174,9 @@ Nav2 `collision_monitor` 的 `process()` **只由 `cmd_vel_in` 回调触发**，
 ## 当前生效参数与证据
 
 - 基线（`src/agc_ground/config/baseline.yaml`）：`replan_displacement_m=1.0`、`max_path_age_s=5.0`、`replan_period_s`、`stop_on_invalid=True`、`goal_info_topic=/agc/ground/goal_info`。占位链路（`agc_rl/config/rl.yaml` + `agc_ground/config/ground.yaml`）：`path.max_age_s=5.0`、`lookahead_m=1.0`、`search_dist_m=0.0`、`goal_tol_m=0.3`、`goal_consistency_m=1.0`；`path_spacing_m=0.5`、`rate_hz=5.0`、`replan_period_s=2.0`、`replan_displacement_m=1.0`；`path.enabled` 默认 `true`（`false` 为显式对照，产物须标注）。契约参数入口**未新增**条目。
-- 证据：`experiments/w5-ground-nav-safety/20261015-w5-r012-0/metrics/r012.json`（绑定 / 增障重规划 / 不可达停车，`overall_pass=true`）、`experiments/w6-task-eval/20261018-w6-r041-0/r041/bench.json`（目标失效台架）、`experiments/w7-rl-b/20261024-w7-rl-b-p2-replan-audit/metrics/p2_replan_audit.json`（伪触发审计）、`experiments/w7-rl-b/20261024-w7-rl-b-p2-map-trigger-bench/metrics/p2_replan_bench-postfix.json`（C1–C8 回归）、GUI 双成功 `20261101-g2-r8b-track-gui-baseline` / `-rl`（终态 `TRACKING_SUCCESS`）。
-- 关键实测：C5（未知格 0 ↔ −1 翻转）14 → 0 次、C7（移动目标 marking 迁移）4 → 0 次、C8（真实增障 + 动态 marking）
-  4 → 1 次、C4 真实增障仍恰好 1 次；增障重规划延迟 0.002 s；审计前该臂每回合 23.7 次重规划。
+- 证据：`experiments/w5-ground-nav-safety/20261015-w5-r012-0/metrics/r012.json`（绑定 / 增障重规划 / 不可达停车，`overall_pass=true`）、`experiments/w6-task-eval/20261018-w6-r041-0/r041/bench.json`（目标失效台架）、`experiments/w7-rl-b/20261024-w7-rl-b-p2-replan-audit/metrics/p2_replan_audit.json`（伪触发审计）、`experiments/w7-rl-b/20261024-w7-rl-b-p2-map-trigger-bench/metrics/p2_replan_bench-postfix.json`（–回归）、GUI 双成功 `20261101-g2-r8b-track-gui-baseline` / `-rl`（终态 `TRACKING_SUCCESS`）。
+- 关键实测：（未知格 0 ↔ −1 翻转）14 → 0 次、（移动目标 marking 迁移）4 → 0 次、（真实增障 + 动态 marking）
+  4 → 1 次、真实增障仍恰好 1 次；增障重规划延迟 0.002 s；审计前该臂每回合 23.7 次重规划。
 
 ## 不做什么（边界）
 

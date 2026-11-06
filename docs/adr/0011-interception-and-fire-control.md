@@ -14,29 +14,29 @@ accepted（2026-11-02 由 ADR-0015 / ADR-0022 / ADR-0024 / ADR-0035 / ADR-0058 /
 ### (a) 拦截形态 = 物理捕获 + 行为级电子干扰
 
 - **物理捕获**：以发射式网的物理模型判定，终态 `INTERCEPT_CONFIRMED` + `reason_code = CAPTURE_NET`。
-- **电子干扰**：**行为级等价**——对入侵者强制 `RTL` / `LAND` / `HOLD`，或用「停发 Offboard 指令」触发 PX4 自身的 offboard-loss failsafe 等价「失联」；`reason_code` 区分 `JAM_RTL|JAM_LAND|JAM_HOLD|JAM_LOST`。**真实电磁场不建模**（仿真器无 EMI 传播模型，仅有路径损耗）；「停流 ≠ 数据链失联」的机制区分见 [ADR-0015](0015-jam-authorization-and-confirmation.md)。
+- **电子干扰**：**行为级等价**—— 对入侵者强制 `RTL` / `LAND` / `HOLD`，或用「停发 Offboard 指令」触发 PX4 自身的 offboard-loss failsafe 等价「失联」；`reason_code` 区分 `JAM_RTL|JAM_LAND|JAM_HOLD|JAM_LOST`。**真实电磁场不建模**（仿真器无 EMI 传播模型，仅有路径损耗）；「停流 ≠ 数据链失联」的机制区分见 [ADR-0015](0015-jam-authorization-and-confirmation.md)。
 - **执行者**：捕获 / 干扰由**地面移动平台**承载；无人机只做观测、standoff 跟踪与自保。
 - **终态分期**：**阶段 A = 跟踪、阶段 B = 拦截**；`INTERCEPT_CONFIRMED` 只在阶段 B 启用，不新增消息枚举（冻结 9 消息字段 / 顺序不得变更）。
-- **入侵者必须是自主飞控对象**：`intruder_uav` 为第二个 PX4 SITL 实例（独立 uXRCE-DDS agent + 独立命名空间 `px4_1`，`target_system=2`），不再是脚本刚体——因为「被干扰后能自主 RTL / LAND / HOLD / 失联」只有真飞控能承载。注入路径为经 uXRCE 发 `px4_msgs/VehicleCommand`（`VEHICLE_CMD_SET_NAV_STATE`）；`SIM_GZ_EN_*` / `SYS_FAILURE_EN` 在本项目 vendored 的 v1.15.4 里零命中，故**不**用 gz 故障注入。
+- **入侵者必须是自主飞控对象**：`intruder_uav` 为第二个 PX4 SITL 实例（独立 uXRCE-DDS agent + 独立命名空间 `px4_1`，`target_system=2`），不再是脚本刚体—— 因为「被干扰后能自主 RTL / LAND / HOLD / 失联」只有真飞控能承载。注入路径为经 uXRCE 发 `px4_msgs/VehicleCommand`（`VEHICLE_CMD_SET_NAV_STATE`）；`SIM_GZ_EN_*` / `SYS_FAILURE_EN` 在本项目 vendored 的 v1.15.4 里零命中，故**不**用 gz 故障注入。
 - **可行性闸门（已通过）**：双 PX4 实例共存、命名不变量（预 spawn 机型 rename 为 `intruder_uav` 后 attach，不 spawn）、mode 注入均经最小实验验证。关键坑：入侵者**必须**设 `PX4_SIM_MODEL=gz_x500`（决定 airframe 含 `SENS_EN_MAGSIM` / `SENS_EN_GPSSIM`），漏设则无磁罗盘 → 无法 arm。
 
 ### (b) 捕获机制 = 发射式网，交战包络由物理模型推导
 
 - 车载件 `car/capture_net` 的语义是**网发射器 / 发射出去的网**，不是「车顶固定圆框」；网由车射出并在空中展开，可作用于**非固定高度**的目标。
 - **网发射物理模型**：发射初速 `v0`、抛射角 `θ`、重力 `g`、空气阻力、展开时长 `t_exp`、展开后有效直径 `d`；其**可及集（reachable set）**即交战包络。包络是**可标定量**，由模型算得，**不**拍一个半径常数。
-- 基线参数（`w6_base.yaml` 单一注入，节点不得覆写）：`net_v0_mps=6.5`、`net_angle_deg=75`、`net_g=9.81`、`net_diameter_m=1.0`、`net_drag=0.9`、`net_t_exp_s=0.2`、`fire_cooldown_s=2.0`、`net_flight_timeout_s=3.0`、`launcher_height_m=0.0`。目标高度超出基线包络时，`v0` / `θ` / `timeout` 由地图几何派生（apex = 目标高度 + 0.65 m，`θ=85°`，timeout = 落地 + 0.3 s）。
+- 基线参数（`base.yaml` 单一注入，节点不得覆写）：`net_v0_mps=6.5`、`net_angle_deg=75`、`net_g=9.81`、`net_diameter_m=1.0`、`net_drag=0.9`、`net_t_exp_s=0.2`、`fire_cooldown_s=2.0`、`net_flight_timeout_s=3.0`、`launcher_height_m=0.0`。目标高度超出基线包络时，`v0` / `θ` / `timeout` 由地图几何派生（apex = 目标高度 + 0.65 m，`θ=85°`，timeout = 落地 + 0.3 s）。
 - **表述纪律**：不得把捕获表述为「目标穿越固定 2 m 圆网面」（旧判据作废），不得把 `TRACKING_SUCCESS` 表述为「拦截完成」。
 
 ### (c) 裁决器可插拔；「调用方不改」= 对外可观测契约不变
 
 - `capture adjudicator` **SHALL** 为可替换接口：现阶段闭式几何判定，后续换逐帧弹道判定器时**调用方（`task_manager`）不改**。
 - 「不改」**限定为对外可观测契约**：最终终态与 `reason_code`、冻结 9 消息 ABI、唯一执行口语义均不变，且**不新增第二 ROS 命令者**。
-- **内部允许演进**：裁决器内部可有 **shot 生命周期**（射击请求 / 发射 / 到达 / 命中 / 失手 / 取消 / 冷却）与异步事件；消费侧可在既有 ABI 内做必要的状态清理与关联。字面「零改动」的读法作废——它会把真实弹道挡死。
+- **内部允许演进**：裁决器内部可有 **shot 生命周期**（射击请求 / 发射 / 到达 / 命中 / 失手 / 取消 / 冷却）与异步事件；消费侧可在既有 ABI 内做必要的状态清理与关联。字面「零改动」的读法作废—— 它会把真实弹道挡死。
 - 替换**不是**「零改动」，而是「**对外零破坏**」；执行顺序：**先**完成 episode 隔离与事件身份（见 [ADR-0016](0016-episode-window-and-sample-validity.md)），**再**替换弹道判定器。
 
 ### (d) 占位期口径（已作废）与替换内容
 
-W6 阶段的 `capture_adjudicator` 实为「目标一进入包络即置 `INTERCEPT_CONFIRMED`」，这是**闭式占位**，只用于产出终态 / 指标与联调；它把「发射时刻判定」偷换成了「入包络即命中」，且捕获与干扰共用同一包络导致 `先命中者胜` 退化。该口径**不得**作为最终口径，**不得**据此声称实现了移动式主动拦截。
+阶段的 `capture_adjudicator` 实为「目标一进入包络即置 `INTERCEPT_CONFIRMED`」，这是**闭式占位**，只用于产出终态 / 指标与联调；它把「发射时刻判定」偷换成了「入包络即命中」，且捕获与干扰共用同一包络导致 `先命中者胜` 退化。该口径**不得**作为最终口径，**不得**据此声称实现了移动式主动拦截。
 
 替换后的口径（现已落地，见 (g)(h)）：以网到达时刻的目标预测位置判定可达（**瞄准提前量**）、引入**火控窗口**、发射后含失手 / 冷却、干扰作用包络与捕获包络**分离**。凡引用历史 `CAPTURE_NET` 数据的场合，须标注其为「闭式占位裁决（非弹道 / 火控）」。
 
@@ -76,7 +76,7 @@ W6 阶段的 `capture_adjudicator` 实为「目标一进入包络即置 `INTERCE
 
 旧 `gateStatus` 用 `d.dist > reach + 0.5·diameter` 判可交战，`reach` 只是「网落到该高度时的水平距离」，不是「该距离上一定能命中」：一是余量极薄（默认参数 0.18 m，抬到 12 m 剩 0.08 m，20 m 剩 0.008 m），抬得越高越差；二是网两次经过目标高度的两个交点之间有空隙，目标落在空隙里时「门真但必空」。
 
-现口径：以当前瞄准方向（目标滤波位置）**预演弹道**——复用 `netPos` / `radius` 同一套物理、512 步——求网心与目标的**最近距离** `d_min`，仅当
+现口径：以当前瞄准方向（目标滤波位置）**预演弹道**—— 复用 `netPos` / `radius` 同一套物理、512 步—— 求网心与目标的**最近距离** `d_min`，仅当
 
 ```
 d_min ≤ 0.5 · diameter − aim_margin
@@ -88,17 +88,17 @@ d_min ≤ 0.5 · diameter − aim_margin
 
 ### (i) 在飞生命周期与发射资格解耦
 
-**缺陷**：原 `step()` 把「位姿缺失」与「交战门」的提前返回放在 `if (in_flight_)` 之前，节点 `tick()` 也在新鲜度失败时直接 `return`。后果：网在飞期间目标短时越出高度 / 射程或输入失效时，**弹道时钟不推进、落地与超时都不结算**，一条 `SHOT_FIRED` 永久无结局（实测一条 shot 悬空约 114 s，另有 `flight=32.592 s`、`miss_dist` 达 5007.883 m 的畸形值）。
+**缺陷**：原 `step` 把「位姿缺失」与「交战门」的提前返回放在 `if (in_flight_)` 之前，节点 `tick` 也在新鲜度失败时直接 `return`。后果：网在飞期间目标短时越出高度 / 射程或输入失效时，**弹道时钟不推进、落地与超时都不结算**，一条 `SHOT_FIRED` 永久无结局（实测一条 shot 悬空约 114 s，另有 `flight=32.592 s`、`miss_dist` 达 5007.883 m 的畸形值）。
 
 现口径：
 
-- `step()` **先**处理 `in_flight_`，再处理发射资格。只要在飞，**每一控制拍**用调用方传入的仿真时刻推进弹道时钟；落地判据 `net.z < net_z0_ − 0.01`、超时判据 `t_s − t_fire_ > net_flight_timeout_s` 每拍检查。
-- 发射资格（适用高度 / 可达 / 水平射程、冷却、授权、身份、任务窗口、`TargetMotionFilter::settled()`）**只约束新发射**。`tick()` 不再早退，把 `car_fresh` / `target_fresh`（含 `confidence_min=0.5`）编码为 `Pose2.valid` 后**始终**调用 `step()`；`envelope_in` / `envelope_jam` 只在两路输入均有效时发布。
+- `step` **先**处理 `in_flight_`，再处理发射资格。只要在飞，**每一控制拍**用调用方传入的仿真时刻推进弹道时钟；落地判据 `net.z < net_z0_ − 0.01`、超时判据 `t_s − t_fire_ > net_flight_timeout_s` 每拍检查。
+- 发射资格（适用高度 / 可达 / 水平射程、冷却、授权、身份、任务窗口、`TargetMotionFilter::settled`）**只约束新发射**。`tick` 不再早退，把 `car_fresh` / `target_fresh`（含 `confidence_min=0.5`）编码为 `Pose2.valid` 后**始终**调用 `step`；`envelope_in` / `envelope_jam` 只在两路输入均有效时发布。
 - **目标缺失不判命中但照常结算**：只有 `target.valid` 才更新滤波器并做球比对，无效拍跳过命中判定（不用缓存位姿）；从未获得有效观测时 `miss_dist_m` 如实为 `inf` 并标 `miss_dist_valid=false`。
 - **唯一结局与显式中止**：每次 `SHOT_FIRED` 恰有一个终局——`SHOT_HIT`、`SHOT_MISS`，或 `SHOT_ABORTED shot=<id> reason=<episode_reset|clock_regression> t=<sim>`（追加 token，既有 `SHOT_FIRED|SHOT_HIT|SHOT_MISS` 解析不受影响；`capture_evidence` 同步标注）。`SHOT_ABORTED` **不**发 `/agc/task/capture_hit`、**不**写 `CAPTURE_NET`、**不**冒充命中 / 失手。episode 身份变化时在 `adjudicator_->reset(e)` 之前若在飞则发 `reason=episode_reset`；仿真时钟回退（`t_s < t_fire_ − 1e-6`）以 `reason=clock_regression` 结算、`flight_s` 夹到 `≥0`。结算后 `cooldown_until = t_settle + fire_cooldown_s`，同一 shot 不再产生第二个终局。
 - **时间基**：在飞推进、落地与超时结算以 ROS 仿真时钟（`use_sim_time=true`）为唯一时间基；正常 20 Hz 下 `0 ≤ flight_s ≤ net_flight_timeout_s + 1/rate_hz + 数值容差`。
 - **模型身份升版**：`model_id` 由 `net_ballistic_frame_v1` 升为 `net_ballistic_frame_v2`，仅用于区分「修复前 / 修复后」时序证据；物理参数、`t_est` 定义、弹道模型逐字不变。
-- **接口**：`DynamicFireControlAdjudicator` 抽到可单测头文件 `dynamic_fire_control.hpp`（纯标准库，无 ROS / GZ / PX4）；内部 `CaptureAdjudicator` 接口新增 `abortInFlight()` / `inFlight()`（非纯虚，缺省无在飞状态），不改变节点对可插拔实现的依赖方式。
+- **接口**：`DynamicFireControlAdjudicator` 抽到可单测头文件 `dynamic_fire_control.hpp`（纯标准库，无 ROS / GZ / PX4）；内部 `CaptureAdjudicator` 接口新增 `abortInFlight` / `inFlight`（非纯虚，缺省无在飞状态），不改变节点对可插拔实现的依赖方式。
 
 **回归**：确定性单测 `test_dynamic_fire_control.cpp` 以显式 `t_s` 覆盖目标过期 / 低置信度 / 越出上下限高度 / 越出水平射程 / 车辆位姿缺失 / 落地（`flight≈1.30 s`）/ 超时（`timeout=0.5 → 0.55 s`）/ 冷却 / 复位中止 / 时钟回退 / 唯一终局 / 正常命中，修复前首条用例为红（`scan.count=0`、`status=kInvalid`），修复后全绿；含门回归锚点后单测合计 16 条。
 
@@ -112,7 +112,7 @@ d_min ≤ 0.5 · diameter − aim_margin
 - **不**用墙钟（`steady_clock`）做超时兜底（GUI / headless 速率不同会改变结局）。
 - **不**在节点层缓存过期目标位姿继续判命中；**不**把 `SHOT_ABORTED` 并入 `SHOT_MISS`（复位 / 时钟回退不是物理失手，混用会污染命中率与时序统计）。
 - **不**在本篇范围内实现机动目标的自适应提前量（1.5 s 窗口的滞后是已知限制）。
-- **未实现 / 后续**：非协同臂包络命中提升属臂行为调参而非链路修复；小批整链诊断与 W7-b 闭合另立记录。
+- **未实现 / 后续**：非协同臂包络命中提升属臂行为调参而非链路修复；小批整链诊断与闭合另立记录。
 
 ## Considered Options
 
@@ -141,6 +141,6 @@ d_min ≤ 0.5 · diameter − aim_margin
 - 干扰授权与确认：[ADR-0015](0015-jam-authorization-and-confirmation.md)
 - episode 身份与事件隔离：[ADR-0016](0016-episode-window-and-sample-validity.md)
 - 整链覆盖与因果记录：[ADR-0018](0018-acceptance-and-coverage-matrix.md)
-- W7-b 裁定记录（含 miss 实测与决策门）：[ADR-0023](0023-w7b-adjudication-record-and-exit.md)
+-裁定记录（含 miss 实测与决策门）：[ADR-0023](0023-w7b-adjudication-record-and-exit.md)
 - 安全阈值与失效停车：[ADR-0010](0010-safety-thresholds-and-failsafe.md)
 - 契约：[终态语义](../ROS2迁移交接文档.md#terminal-semantics)、[参数入口](../ROS2迁移交接文档.md#params)、[硬约束](../ROS2迁移交接文档.md#hard-constraints)

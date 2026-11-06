@@ -28,7 +28,7 @@ accepted（2026-11-02 由 ADR-0081 / 0105 / 0107 合并；结论未变）
 
 ### (b) 规格迁入 `docs/archive/specs/`，仍然不发布
 
-- `.trae/specs/**` 整目录迁入 `docs/archive/specs/`，**不留转发文件、不留软链**——留转发只会让 Agent 继续按旧路径读到全量历史。
+- `.trae/specs/**` 整目录迁入 `docs/archive/specs/`，**不留转发文件、不留软链**—— 留转发只会让 Agent 继续按旧路径读到全量历史。
 - `.gitignore` 增**精确**规则 `/docs/archive/specs/`，继续不发布；**不** `git add -f` 规格，也**不**因换目录把它们静默提交。
 - 允许公开的只是**归档导航**与**迁移清单 / 索引**；`docs/archive/specs/README.md`、`MIGRATION.md` 同在本目录内一并被忽略，因此公开仓库既没有规格也没有指向不存在文件的死链。
 - 为什么放 `docs/archive/`：它与 Runbook、ROS1 基线同属"历史"，在一个可发现的位置；`reference/` 是旧树代码、`experiments/` 是证据，语义都不对。
@@ -61,7 +61,7 @@ accepted（2026-11-02 由 ADR-0081 / 0105 / 0107 合并；结论未变）
 
 - **删除** `docs/plan/PAUSED.md`；**暂停事实不变**，状态改由[当前方向](../plan/README.md#plan-index)单一承载。
 - 引用同步改写：`AGENTS.md`、当前方向、spec 模板、`scripts/research/README.md`，以及 `scripts/adr_index.py` 与 ADR 模板中"暂停记在 plan 的**开关文件**里"的措辞（改为"plan 的**方向索引**"）。
-- **显式澄清**：退役开关文件**不等于**恢复迁移。迁移推进、论文优先与 W8 的恢复仍须用户**显式裁定**；当前仍为暂停。
+- **显式澄清**：退役开关文件**不等于**恢复迁移。迁移推进、论文优先与的恢复仍须用户**显式裁定**；当前仍为暂停。
 
 ### (g) 作废旧候选清单 A1–E2
 
@@ -70,7 +70,7 @@ accepted（2026-11-02 由 ADR-0081 / 0105 / 0107 合并；结论未变）
 ### (h) 本地残留与缓存治理
 
 - 删除 `.trae/`、`.vscode/`（均被 `.gitignore` 排除，删除不影响版本库内容）、`.coordination/wake/` 残留回执。
-- 删除 `.pytest_cache/` 与 `__pycache__/`（纯缓存，会自动再生）；并把 `.pytest_cache/` **显式加入** `.gitignore`——它原先只靠 pytest 自写的 `.pytest_cache/.gitignore`（内容为 `*`）隐式隐身，规则来源不显式、易被误读为"未忽略"；显式化后与 `__pycache__/` 同口径。
+- 删除 `.pytest_cache/` 与 `__pycache__/`（纯缓存，会自动再生）；并把 `.pytest_cache/` **显式加入** `.gitignore`—— 它原先只靠 pytest 自写的 `.pytest_cache/.gitignore`（内容为 `*`）隐式隐身，规则来源不显式、易被误读为"未忽略"；显式化后与 `__pycache__/` 同口径。
 - `build/`、`install/`、`log/`、`experiments/`、`toolchain/` **不删**：分别是可重建的构建产物、实验证据与 PX4 外部依赖。
 
 ### (i) 「无活跃引用指向归档」的判据
@@ -103,19 +103,19 @@ accepted（2026-11-02 由 ADR-0081 / 0105 / 0107 合并；结论未变）
 - **保留 experiments 的 config 快照 / 用 Git LFS 存 experiments** —— 被否：152 MB 且含机器指纹与绝对路径；无跨机器分发需求，需要时用 Release 资产更直接。
 - **规格转正入库公开** —— 被否：与发布边界相悖，且规格含本机路径与内部过程。
 - **技能原样搬到 `.agents/skills/`** —— 被否：Trae 工具名在 DSH 下不存在，搬过去只是把坏调用换个位置。
-- **保留 `reference/` 只删引用** —— 被否：用户明确要删，且 W8 已关闭、439 MB 无使用场景。
+- **保留 `reference/` 只删引用** —— 被否：用户明确要删，且已关闭、439 MB 无使用场景。
 - **保留 `PAUSED.md` 只改文档引用** —— 被否：用户裁定开关文件作废，暂停状态已由 plan 索引承载。
 - **为凑"零命中"删掉所有历史链接** —— 被否：等于伪造记录。
 
 ## Consequences
 
 - **正面**：公开仓库只含源码 / 文档，克隆体积从 ~150 MB 降到源码量级，本机路径与内部规格不外泄；规格、Runbook、ROS1 基线统一在 `docs/archive/` 且可被索引；技能在 DSH 默认扫描根下直接可用；"暂停"回到单一真源；仓库减约 439 MB 字节 + 约 2 MB 缓存。
-- **代价 / 限制**：公开 clone **不含** specs / workstream 规格，需要时必须在本机仓库操作；**旧树事实本机不可再核对**——对旧树的溯源只能引既有 ADR 正文记录，日后若须重做 W8 对照，须先从用户备份恢复旧树；历史链接在 `docs/archive/` 与 `.coordination/archive/` 内保持原样（有意残留）。
+- **代价 / 限制**：公开 clone **不含** specs / workstream 规格，需要时必须在本机仓库操作；**旧树事实本机不可再核对**—— 对旧树的溯源只能引既有 ADR 正文记录，日后若须重做对照，须先从用户备份恢复旧树；历史链接在 `docs/archive/` 与 `.coordination/archive/` 内保持原样（有意残留）。
 - **可验证性**：迁移逐文件 `sha256` 一致、链接由脚本按解析后的绝对目标重算；`tests/docs_link_check.py` 迁移前后对比活跃范围断链为 0。
 - **不放松**：独立验收、契约真源、硬约束红线均不变。
 
 ## 参考
 
-- 相关决策：[ADR-0002](0002-docs-source-of-truth-and-reference-discipline.md#top)（文档真源分层与引用纪律）、[ADR-0006](0006-experiment-artifacts-and-evidence-discipline.md#top)（产物与证据纪律）、[ADR-0001](0001-project-positioning-and-execution-scope.md#top)（项目定位）、[ADR-0021](0021-w8-gui-headless-equivalence.md#top)（W8 关闭与平台冻结）、[ADR-0026](0026-leader-worker-collaboration-and-batch-authorization.md#top)（协作机制）
+- 相关决策：[ADR-0002](0002-docs-source-of-truth-and-reference-discipline.md#top)（文档真源分层与引用纪律）、[ADR-0006](0006-experiment-artifacts-and-evidence-discipline.md#top)（产物与证据纪律）、[ADR-0001](0001-project-positioning-and-execution-scope.md#top)（项目定位）、[ADR-0021](0021-w8-gui-headless-equivalence.md#top)（关闭与平台冻结）、[ADR-0026](0026-leader-worker-collaboration-and-batch-authorization.md#top)（协作机制）
 - 归档导航：[`docs/archive/README.md`](../archive/README.md#archive)；技能目录：[`.agents/README.md`](../../.agents/README.md#skills)
 - 入口索引：[`AGENTS.md`](../../AGENTS.md)

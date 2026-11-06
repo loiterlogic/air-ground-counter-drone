@@ -2,7 +2,7 @@
 """w7b_p1_adjudicate —— 按**预注册规则**裁定 P1（协同 vs 非协同）。
 
 输入：`experiments/<campaign>/<run_id>/metrics/arms.json`（`w7b_arms_runner.py` 产物）。
-规则真源：`src/agc_rl/config/w7b_prereg.yaml`（**单一来源**——阈值 / 样本量 / 显著性**不**在本脚本硬编码；
+规则真源：`src/agc_rl/config/research_prereg.yaml`（**单一来源**——阈值 / 样本量 / 显著性**不**在本脚本硬编码；
 本脚本只**读取**并执行，防事后改阈值，[F-13](../../docs/reviews/agc-review-2026-10-14/30-未来.md#f-13)）。
 
 判定（预注册 **v4** 口径，ADR-0022）：
@@ -37,7 +37,7 @@ import sys
 import yaml
 
 ROOT = '/home/chen/AGC'
-PREREG = os.path.join(ROOT, 'src/agc_rl/config/w7b_prereg.yaml')
+PREREG = os.path.join(ROOT, 'src/agc_rl/config/research_prereg.yaml')
 TERMINALS_OK = ('TRACKING_SUCCESS', 'INTERCEPT_CONFIRMED')
 # 字段名 → (输出标签, 失败 / 缺值是否按 0 计入分母)。角色由预注册 decision.p1 决定，
 # 这里只给稳定的输出标签（与 P2 脚本同构）。

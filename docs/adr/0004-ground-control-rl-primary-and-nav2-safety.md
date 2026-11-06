@@ -3,11 +3,11 @@
 
 ## Status
 
-accepted（2026-11-02 由 0004 / 0018 / 0026 合并；分层口径、`agc_control` 归属与 C6 标定值均未变）
+accepted（2026-11-02 由 0004 / 0018 / 0026 合并；分层口径、`agc_control` 归属与标定值均未变）
 
 ## 背景
 
-地面域要同时满足两件互相拉扯的事：RL 必须是一等公民（研究主线要有端到端的控制信号），而工程上又必须有唯一的执行口与可信的安全收敛层。同时空中与地面都需要轨迹跟踪能力——空中要 LQR 跟踪真八字与目标（standoff），地面需要一个离线对照基线控制器；若各域各自实现，会重复造轮子并引入行为不一致。
+地面域要同时满足两件互相拉扯的事：RL 必须是一等公民（研究主线要有端到端的控制信号），而工程上又必须有唯一的执行口与可信的安全收敛层。同时空中与地面都需要轨迹跟踪能力—— 空中要 LQR 跟踪真八字与目标（standoff），地面需要一个离线对照基线控制器；若各域各自实现，会重复造轮子并引入行为不一致。
 
 另有两处实现缺陷必须先定死口径：动作映射 `action_to_twist` 存在**转向符号反转**（`left` 实际输出负 `angular.z`）与**量纲混用**（无量纲 `forward_min` 与米制 `clearance_norm` 混算，改变雷达量程会无理由改变动作强度）；偏移参数 `max_offset` 是**按名称推定**的横向逃逸量，从未实测差速车能否做到，而契约要求安全滤波器参数须用真实逃逸能力。
 
@@ -47,7 +47,7 @@ accepted（2026-11-02 由 0004 / 0018 / 0026 合并；分层口径、`agc_contro
 对齐 ROS 2 / REP-103 约定（车体系 + 左 = 逆时针 = 正 `angular.z`；`sensor_msgs/LaserScan.msg` 明示 positive Z 为逆时针）：`left` / `left_fast` → **正 `angular.z`（左转）**，`right` / `right_fast` → **负 `angular.z`（右转）**。航向项与横向项**同号**：
 
 ```
-w = k_heading*heading_err + k_lateral*lateral     # 正 lateral = 左 = 正 angular.z
+w = k_heading*heading_err + k_lateral*lateral # 正 lateral = 左 = 正 angular.z
 ```
 
 ### (d) 净空量纲一致：米，且与量程解耦
@@ -57,12 +57,12 @@ w = k_heading*heading_err + k_lateral*lateral     # 正 lateral = 左 = 正 angu
 ```
 ratio = clamp((clearance_ref_m - forward_clearance_m) / clearance_ref_m, 0, 1)
 magnitude = min_offset + ratio*(max_offset - min_offset)
-forward_clearance_m = forward_clearance(sectors, ..., half) * lidar_max_range   # 归一值乘量程还原为米
+forward_clearance_m = forward_clearance(sectors, ..., half) * lidar_max_range # 归一值乘量程还原为米
 ```
 
 `action_to_twist` 签名为 `(action, heading_err, forward_clearance_m, params)`，**不再**接触任何量程参数；参数经 config 单一注入。
 
-### (e) C6 逃逸标定：`max_offset` 由 1.2 下调至 1.0 m
+### (e)逃逸标定：`max_offset` 由 1.2 下调至 1.0 m
 
 口径：反应窗口 `T = 2.0 s`（Nav2 `time_before_collision` 上界，`t_before ∈ [1.2, 2.0] s`）；理论界（常 yaw 率圆弧）`lateral(T) ≈ (v/ω)*(1 - cos(ω*T))`。
 
@@ -86,7 +86,7 @@ forward_clearance_m = forward_clearance(sectors, ..., half) * lidar_max_range   
 - **c1：RL 只出高层目标、Nav2 planner/controller 主控** —— 被否：RL 控制信号降级，削弱其作为一等公民的研究价值。
 - **独立节点 + service/action 调用控制层** —— 被否：引入通信时延，不适合高频控制内环。
 - **各域各自实现跟踪 / LQR** —— 被否：重复实现、行为漂移，违背「只实现一次」。
-- **保留 `max_offset = 1.2`（或按理想弧 / 名称推定）** —— 被否：实测多数不可达，属「命名 1.2 m 横移但差速车实际不可达」的失配，违 C6。
+- **保留 `max_offset = 1.2`（或按理想弧 / 名称推定）** —— 被否：实测多数不可达，属「命名 1.2 m 横移但差速车实际不可达」的失配，违。
 - **把净空参考继续取无量纲值 / 动作符号交由下游纠正** —— 被否：前者量纲混用、强度随量程漂移；后者污染学习接口。
 
 ## Consequences
@@ -101,4 +101,4 @@ forward_clearance_m = forward_clearance(sectors, ..., half) * lidar_max_range   
 - [ADR-0013](0013-ground-planning-path-contract.md#top) 地面规划：基线路径、重规划与外部规划器契约
 - [ADR-0010](0010-safety-thresholds-and-failsafe.md#top) 安全阈值与安全屏障
 - [ADR-0020](0020-package-boundaries-and-runtime-topology.md#top) 包边界（`agc_control` 归属）
-- 实现：`src/agc_rl/agc_rl/interface.py`、`src/agc_rl/agc_rl/inference_node.py`、`src/agc_rl/config/rl.yaml`、`src/agc_rl/test/test_interface.py`、`scripts/archive/run_w5_r011.sh`、`tests/w5_r011_check.py`
+- 实现：`src/agc_rl/agc_rl/interface.py`、`src/agc_rl/agc_rl/inference_node.py`、`src/agc_rl/config/rl.yaml`、`src/agc_rl/test/test_interface.py`、`scripts/archive/run_w5_r011.sh`、`tests/check_action_direction_escape.py`

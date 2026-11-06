@@ -13,7 +13,7 @@ accepted（2026-11-02 由 ADR-0040 / 0041 / 0046 / 0057 合并；结论未变）
 - **验收整链范围**：批量入口跑的是**轻量栈**（任务层 + 裁决器，无 PX4 / 空中链路），却把「期望终态匹配」呈现为整链完成；「轻量 PASS」可能被误读为「双 PX4 整链 / GUI 验收」。
 - **场景轴未执行**：`scenarios.yaml` 登记 `target_motion × obstacle × perception × outcome`，但运行参数没有对应实验因子——`dynamic` 无障碍驱动覆盖、`s06/s07` 无 drop / fov 参数、`none/static` 用同一世界、空中节点读独立 `air.yaml`、轻量栈不起 `intruder_driver`；名义 12 场景可能实为少量配置变种。
 
-契约真源见 [#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)（C3 / C9）、[#terminal-semantics](../ROS2迁移交接文档.md#terminal-semantics)、[#params](../ROS2迁移交接文档.md#params)（单一注入）。
+契约真源见 [#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)、[#terminal-semantics](../ROS2迁移交接文档.md#terminal-semantics)、[#params](../ROS2迁移交接文档.md#params)（单一注入）。
 
 ## 决策
 
@@ -23,9 +23,9 @@ accepted（2026-11-02 由 ADR-0040 / 0041 / 0046 / 0057 合并；结论未变）
 
 - `layer_integrity`：`started` **且** 子进程退出确认（`proc_exit_confirmed`）**且** `summary` 存在（`summary_present`）**且** 同 run 关联（`same_run_verified` + `state_run_verified`）；
 - `layer_proposition`：`expected_match`（`expected_terminal` + `expected_reason`）；
-- `layer_metrics`：C9 两指标为**有效数值**（非 `None` / 非 `not_applicable`）。
+- `layer_metrics`：两指标为**有效数值**（非 `None` / 非 `not_applicable`）。
 
-`pass = layer_integrity and layer_proposition and layer_metrics`；`expected_match` 仅属命题层，**不再**单独决定 PASS。`main()` 退出码以 `pass_count == n_episodes`（且 `n_episodes > 0`）为准。这就是**完整性**硬门（r-031）：任一基础设施失败都不允许呈现绿灯。
+`pass = layer_integrity and layer_proposition and layer_metrics`；`expected_match` 仅属命题层，**不再**单独决定 PASS。`main` 退出码以 `pass_count == n_episodes`（且 `n_episodes > 0`）为准。这就是**完整性**硬门（r-031）：任一基础设施失败都不允许呈现绿灯。
 
 ### (b) 缺 summary / 空指标集合诚实记账（不剔分母、不以 0 冒充）
 
@@ -39,7 +39,7 @@ accepted（2026-11-02 由 ADR-0040 / 0041 / 0046 / 0057 合并；结论未变）
 
 ### (d) 覆盖矩阵：backend / mode × 各轴，逐轴标注
 
-以 `lightweight / full` × `GUI(headless / gui)` × `task_start` × `own_takeover(release_control)` × `target_motion` × `real_terminal` 构造**覆盖矩阵**；每格标 **covered / uncovered / not_applicable** + **evidence 出处**（产物路径 / 源文件事实）+ 未覆盖的**如实原因**。矩阵由 `w6_r025_check.py` 静态核验源文件（后端能力列）+ 读产物生成，落 `<run_id>/coverage_matrix.md`。
+以 `lightweight / full` × `GUI(headless / gui)` × `task_start` × `own_takeover(release_control)` × `target_motion` × `real_terminal` 构造**覆盖矩阵**；每格标 **covered / uncovered / not_applicable** + **evidence 出处**（产物路径 / 源文件事实）+ 未覆盖的**如实原因**。矩阵由 `check_coverage_matrix.py` 静态核验源文件（后端能力列）+ 读产物生成，落 `<run_id>/coverage_matrix.md`。
 
 - **backend 能力列**（源文件事实）：`lightweight` = 0 PX4 实例 / 0 Agent / 无空中节点 / 无 takeover 服务端；`full` = 2 PX4 实例 / 2 Agent / 4 空中节点（`px4_adapter` / `takeoff_controller` / `trajectory_tracker` / `standoff_follower`）/ 有 takeover 服务端。
 - **未执行轴一律标 uncovered 并写明原因**；`own_takeover` 在轻量为 **not_applicable**（源事实：轻量栈不含空中链路），**不**以命名推定已覆盖。
@@ -58,9 +58,9 @@ accepted（2026-11-02 由 ADR-0040 / 0041 / 0046 / 0057 合并；结论未变）
 
 ### (f) pass 命题化（pass ↔ 明确验收命题强绑定）
 
-- `episode_runner.py`：每 episode 与 campaign report 加 `backend="lightweight"` / `launch=` 标注；每 episode 加 `proposition`（由 `expected_terminal` / `expected_reason` / `backend` 生成，如「轻量栈（headless）在 s08 达 `INTERCEPT_CONFIRMED(CAPTURE_NET)`（**非整链 / 非 C3 GUI 验收**）」）与 `pass`（= `expected_match` **且** backend 已标注）；report 加 `coverage` 汇总块（逐轴 value + evidence）。
+- `episode_runner.py`：每 episode 与 campaign report 加 `backend="lightweight"` / `launch=` 标注；每 episode 加 `proposition`（由 `expected_terminal` / `expected_reason` / `backend` 生成，如「轻量栈（headless）在 s08 达 `INTERCEPT_CONFIRMED(CAPTURE_NET)`（**非整链 / 非GUI 验收**）」）与 `pass`（= `expected_match` **且** backend 已标注）；report 加 `coverage` 汇总块（逐轴 value + evidence）。
 - `same_run.json` 亦给 `proposition` 与 `pass`。
-- **不**把「期望字符串匹配」自动等价为整链 / C3 GUI 验收。
+- **不**把「期望字符串匹配」自动等价为整链 /GUI 验收。
 
 ### (g) 轴 → 承载者登记与启动时校验（r-026）
 
@@ -97,12 +97,12 @@ accepted（2026-11-02 由 ADR-0040 / 0041 / 0046 / 0057 合并；结论未变）
 
 - 本修复**只**在 run 产物（`report.json` / `same_run.json` / `coverage_matrix.md`）如实标注后端与模式，**不改**契约文字；headless 产物**只作辅助证据**，定性验收仍需 GUI 材料。
 - 新增的仅为**非 ROS 接口**的 run 产物与**只读**探针；`/agc/task/capture_event` / `/agc/task/jam_confirm` 仍是 `std_msgs/String` **配套事件**（**非**命令者）；`/agc/task/capture_hit` 仍**恰为** `CAPTURE_NET`；**未**新增第二 ROS 命令者；冻结 **9 消息**（`src/agc_msgs/`）字段 / 顺序**未改**。
-- 验收脚本：`run_w6_r025.sh`（Phase A 轻量 → Phase B 整链 → Phase C 核查）、`run_w6_r026.sh` + `w6_r026_check.py`（轻量实跑 none/static/linear/maneuver/dropout/fov 采集 manifest 与「none 世界生成」产物，验证 dynamic 拒绝运行）、`run_w6_r031.sh` + `w6_r031_check.py`（三层判定 / 缺 summary / 空集合 / 报告三层全过 / 脚本卫生 / 9 消息 ABI）。产物落 `experiments/w6-task-eval/<run_id>/{manifests,worlds,runner,lightweight,metrics/*.json,log}`。
+- 验收脚本：`run_w6_r025.sh`（Phase A 轻量 → Phase B 整链 → Phase C 核查）、`run_w6_r026.sh` + `check_scene_axis_carriers.py`（轻量实跑 none/static/linear/maneuver/dropout/fov 采集 manifest 与「none 世界生成」产物，验证 dynamic 拒绝运行）、`run_w6_r031.sh` + `check_runner_acceptance_layers.py`（三层判定 / 缺 summary / 空集合 / 报告三层全过 / 脚本卫生 / 9 消息 ABI）。产物落 `experiments/w6-task-eval/<run_id>/{manifests,worlds,runner,lightweight,metrics/*.json,log}`。
 
 ## 不做什么（边界）
 
 - **不**把「期望字符串匹配」当整链 / GUI 验收；**不**把轻量栈声明轴谎称为已执行。
-- **不**改契约 C3 文字以允许 headless 验收（属契约裁定，非本批）。
+- **不**改契约文字以允许 headless 验收（属契约裁定，非本批）。
 - **不**把整链整段纳入批量 runner（需双 PX4，成本高）；改用**同一 run 探针**补证。
 - **不**为 `obstacle=dynamic` 新建执行节点、**不**改世界物理；显式 `unsupported` 更诚实。
 - **不**剔除缺 summary 回合的分母，**不**以 0 冒充空集合。

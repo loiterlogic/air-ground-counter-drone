@@ -229,11 +229,11 @@ def test_task_edges_are_run_composition_not_link():
 
 
 def test_task_is_declared_exec_depend_for_every_started_package():
-    """③ 每条边都必须能在 `w6.launch.py` / package.xml 里找到「起进程」的落脚点。"""
+    """③ 每条边都必须能在 `main.launch.py` / package.xml 里找到「起进程」的落脚点。"""
     xml = os.path.join(ROOT, 'src', 'agc_task', 'package.xml')
-    launch = os.path.join(ROOT, 'src', 'agc_task', 'launch', 'w6.launch.py')
+    launch = os.path.join(ROOT, 'src', 'agc_task', 'launch', 'main.launch.py')
     if not (os.path.isfile(xml) and os.path.isfile(launch)):
-        pytest.skip('缺 agc_task 的 package.xml / w6.launch.py')
+        pytest.skip('缺 agc_task 的 package.xml / main.launch.py')
     with open(xml, encoding='utf-8') as f:
         pkg = f.read()
     with open(launch, encoding='utf-8') as f:
@@ -244,7 +244,7 @@ def test_task_is_declared_exec_depend_for_every_started_package():
         assert ('<exec_depend>%s</exec_depend>' % dst) in pkg, (
             'agc_task 未 exec_depend %s，但图里画了③起进程' % dst)
         assert ("'%s'" % dst) in lch or ("\"%s\"" % dst) in lch, (
-            'agc_task/launch/w6.launch.py 未见引用 %s，③边缺落点' % dst)
+            'agc_task/launch/main.launch.py 未见引用 %s，③边缺落点' % dst)
 
 
 # --------------------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """w7_episode_runner —— W7-a **单 worker 可重放 runner**（T4 · spec R4）。
 
-对每个 attempt：按 `agc_rl.seeding` 派生种子 → 起 `w6.launch.py backend:=lightweight
+对每个 attempt：按 `agc_rl.seeding` 派生种子 → 起 `main.launch.py backend:=lightweight
 command_source:=train scene:=<scene> seed:=<spawn_seed> spawn_randomize:=true`（外部适配层作命令源）
 → `GroundAgcEnv.reset/step` 闭环（规则策略驱动）→ SIGINT 拆除进程组 → 记录回合。
 
@@ -39,7 +39,7 @@ from agc_rl.policy import load_policy       # noqa: E402
 from episode_runner import _reap_process_group   # noqa: E402
 
 WORLD = os.path.join(ROOT, 'install/agc_sim/share/agc_sim/worlds/agc_world.sdf')
-LAUNCH = 'w6.launch.py'
+LAUNCH = 'main.launch.py'
 SPAWN_TOL_M = 0.05
 
 
@@ -72,7 +72,7 @@ def run_attempt(scene, master_seed, episode_index, attempt_index, args, out_dir,
 
     env = None
     try:
-        # 参数取 `config/w7.yaml` + `config/rl.yaml`（**单一来源**，spec R6；env 内部读取）。
+        # 参数取 `config/rl_platform.yaml` + `config/rl.yaml`（**单一来源**，spec R6；env 内部读取）。
         env = env_mod.GroundAgcEnv(scene, seed_plan=plan)
         policy = load_policy('')   # 确定性规则策略（go_to_goal；avoid_obstacles=False，ADR-0004）
         ep['noise_seq'] = env.noise_sequence(20)
@@ -154,7 +154,7 @@ def main():
     ap.add_argument('--service-wait-s', type=float, default=60.0,
                     help='等待 /agc/task/start 就绪的上限（秒；runner 稳健性，非 W7 平台参数）')
     # 注：obs_version / control_dt_s / max_steps / wall_watchdog_s / obs_noise_sigma / spawn_randomize
-    # 属 W7 平台参数，**不**设 CLI —— 单一来源 `agc_rl/config/w7.yaml`（spec R6）。
+    # 属 W7 平台参数，**不**设 CLI —— 单一来源 `agc_rl/config/rl_platform.yaml`（spec R6）。
     ap.add_argument('--campaign', default=CAMPAIGN)
     ap.add_argument('--run-id', default=None)
     args = ap.parse_args()
@@ -169,7 +169,7 @@ def main():
     for sub in ('config', 'episodes', 'metrics', 'log'):
         os.makedirs(os.path.join(out_dir, sub), exist_ok=False)
 
-    # W7 平台参数：单一来源 `agc_rl/config/w7.yaml`（env 侧另读 `rl.yaml`）；缺失回落内置默认。
+    # W7 平台参数：单一来源 `agc_rl/config/rl_platform.yaml`（env 侧另读 `rl.yaml`）；缺失回落内置默认。
     _rl_p, _w7_p = env_mod._load_share_yaml()
     w7cfg = dict(env_mod._W7_DEFAULTS)
     if isinstance(_w7_p, dict):

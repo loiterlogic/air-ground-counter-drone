@@ -23,7 +23,7 @@ accepted（2026-11-02 由 ADR-0028 / 0030 / 0031 / 0037 / 0076 合并；结论�
 ## 决策
 
 ### (a) 起始事务不阻塞节点
-`main()` 由 `rclcpp::spin` 改 `MultiThreadedExecutor`；`/agc/task/start` 与 `/agc/task/abort` 放专用
+`main` 由 `rclcpp::spin` 改 `MultiThreadedExecutor`；`/agc/task/start` 与 `/agc/task/abort` 放专用
 互斥回调组（`srv_cb_group_`），服务回调可在本线程阻塞等 `reset` / `reset_phase`，订阅留在默认组、
 由执行器其它线程持续刷新。start 与 abort 同组互斥，避免并发重入；复位服务与启动定时器另置
 **独立互斥回调组**，使事务回调内的有界阻塞（静止观察 / 读回等待）期间 gt / odom 缓存仍由其它线程刷新。
@@ -36,20 +36,20 @@ accepted（2026-11-02 由 ADR-0028 / 0030 / 0031 / 0037 / 0076 合并；结论�
 
 ### (c) 时钟门 = 进展校验，世界名 = 配置校验
 1 Hz 状态计时器（默认组，服务阻塞期间持续采样）维护 `prev_clock_`；通过条件为
-`now().seconds() > 0` **且** `now() > prev_clock_`（严格推进），否则 `clock_not_progressing`。
-世界名比较保留为配置校验（`single_world_mismatch`）。各门输出 `evidenceSummary()`（epoch / 各门到达
+`now.seconds > 0` **且** `now > prev_clock_`（严格推进），否则 `clock_not_progressing`。
+世界名比较保留为配置校验（`single_world_mismatch`）。各门输出 `evidenceSummary`（epoch / 各门到达
 时刻 / 时钟采样 / 世界名）随 Trigger 应答回传并记日志，供 run 记录关联。
 
 ### (d) 复位 = 受控事务：门控窗口
 可复位态 = 全部**非 active** 态：`IDLE` + `TRACKING_SUCCESS` + `INTERCEPT_CONFIRMED(7)` +
 `MISSION_FAILED` + `ABORTED` + `INFRA_FAILURE`；active（`AIR_SEARCH` / `TARGET_ACQUIRED` /
-`GROUND_APPROACH`）一律拒（`not_resettable`）。门控通过即撤销运动许可——非 active 期间无授权命令者
+`GROUND_APPROACH`）一律拒（`not_resettable`）。门控通过即撤销运动许可—— 非 active 期间无授权命令者
 （RL 仅在 `GROUND_APPROACH` 驱动），「停止执行」在策略层面已成立。
 
 **门控窗口裁定**：契约 [#task-gating](../ROS2迁移交接文档.md#task-gating) 的「运行期」明确为
 **任务已获运动许可（active）期间**，即「复位允许窗口 = 非 active + 受控事务；禁止窗口 = active」。
-这是**措辞澄清**、非语义变更：门控意图是防「active 期间被复位覆盖 `car_start`」，而 C7 又要求 start
-前复位（此刻尚未 active）——只有把「运行期」锚定 active 才不自相矛盾。契约文字未改，裁定以本篇为准。
+这是**措辞澄清**、非语义变更：门控意图是防「active 期间被复位覆盖 `car_start`」，而又要求 start
+前复位（此刻尚未 active）—— 只有把「运行期」锚定 active 才不自相矛盾。契约文字未改，裁定以本篇为准。
 
 ### (e) 停止执行 = 门控 + 静止证据（不新增命令者）
 `scenario_reset` **SHALL NOT** 发布任何 `cmd_vel`（`/agc/ground/cmd_vel` 是唯一命令车体运动的通道，
@@ -72,8 +72,8 @@ accepted（2026-11-02 由 ADR-0028 / 0030 / 0031 / 0037 / 0076 合并；结论�
 ### (g) epoch 与 car_start 仅成功发布
 `car_start`（`/agc/scenario/car_start`）仅在完整成功后发布；每次成功复位 `reset_epoch_++` 并发布
 `/agc/scenario/reset_epoch`（`std_msgs/Int32`，transient_local depth 1），`car_start.header.stamp =
-now()`，应答含 `epoch=N`（失败保持 `reset rejected: <reason>`）。启动 4 s 初始复位走**同一门控**
-（`doReset()`，SHALL NOT bypass），保留延迟等 gz / 桥就绪；早启动时若任务 active 则被拒、不再覆盖。
+now`，应答含 `epoch=N`（失败保持 `reset rejected: <reason>`）。启动 4 s 初始复位走**同一门控**
+（`doReset`，SHALL NOT bypass），保留延迟等 gz / 桥就绪；早启动时若任务 active 则被拒、不再覆盖。
 
 ### (h) FSM 允许态矩阵
 | 命令 | 接受态 | 拒绝态（回显当前态；不 reset / 不 fail / 不覆写） |
@@ -87,7 +87,7 @@ now()`，应答含 `epoch=N`（失败保持 `reset rejected: <reason>`）。启�
 `callTrigger` 由 `bool` 改 `enum class CallOutcome { Ok, Failed, Indeterminate }`：`Ok` = 收到应答且
 `success=true`；`Failed` = 收到应答但 `success=false`（**确定性**门禁失败，允许置 `INFRA_FAILURE`）；
 `Indeterminate` = 服务未就绪或 `spin_until_future_complete` 超时 / 取消（**非确定性**，**仅**回
-`success=false`，**不改** `state_`）。超时须对 Client 调 `remove_pending_request()` 清理待决请求。
+`success=false`，**不改** `state_`）。超时须对 Client 调 `remove_pending_request` 清理待决请求。
 超时用 `reset_call_timeout_s`（默认 8.0，reset 与 reset_phase 共用）替换硬编码；best-effort 语义不变。
 
 ### (j) 终态锁存 + episode 关联
@@ -105,11 +105,11 @@ transient_local，**非命令者**）。
 ### (l) 入侵者 episode 起点协议
 - **预热独立于 episode 计时**：启动即记 `warmup_t0_`，`tw > 1.0 s` 才请求 ARM，`armed_` 且
   `nav_state_ != OFFBOARD(14)` 时请求 `VEHICLE_CMD_SET_NAV_STATE = OFFBOARD`（保留 `arm_retry_s`
-  重试）。预热时间**不进入**轨迹参数 `t`——它属链路就绪，不是任务推进。
+  重试）。预热时间**不进入**轨迹参数 `t`—— 它属链路就绪，不是任务推进。
 - **epoch 订阅**：`epoch_topic`（默认 `/agc/scenario/reset_epoch`，depth 1 + RELIABLE +
   `DurabilityPolicy.TRANSIENT_LOCAL`）。值变化即新 episode：重锚 `origins_`（下一条 odom 起算）、
   `t0_ = None`、`episode_armed_ = True`、`jammed_ = False`、`terminated_ = False`。
-- **起点协议**：`_start_pose() = _target(0)`；未进入 episode 时 setpoint **恒定**悬停、**不推进**；
+- **起点协议**：`_start_pose = _target(0)`；未进入 episode 时 setpoint **恒定**悬停、**不推进**；
   `dist ≤ start_tol_m`（0.4）且 `speed ≤ start_vel_eps_mps`（0.35）连续 `start_dwell_s`（0.5）→
   `t0_ = ts`。切换瞬间 `t ≈ 0`，与起始位姿连续、无跳跃。
 - **轨迹**：`static` → `(ox, oy, z)`；`linear` → `(ox, oy + v·t, z)`；`maneuver` →
@@ -117,11 +117,11 @@ transient_local，**非命令者**）。
   `z = oz − alt_m`。
 - **运行区边界**：`run_region_radius_m`（默认 15.0，`<= 0` 关闭）。setpoint 水平距 `origins_` 超过 R
   时夹持到边界点、置 `terminated_ = True`，此后 `t` 继续但 setpoint 停在边界（**不外推**）。
-  `_start_pose()` 亦经受同一夹持。
+  `_start_pose` 亦经受同一夹持。
 - **CLEAR 重基准**：`jammed_` True→False 且 `t0_` 已定 → `t0_ += (now - jam_on_us_)`，把暂停时长
   加回，参考从**干扰发生时刻**连续续上（不跳变）。`jammed_` 守卫提前 `return`（停发 Offboard 流 →
   PX4 failsafe）的语义不变。`jam_cmd` 的**来源**不在本篇（见 [ADR-0015](0015-jam-authorization-and-confirmation.md#top)）。
-- **参数**（`w6_base.yaml` 单一注入，节点不得覆写）：`px4_ns: "px4_1"` / `target_system: 2` /
+- **参数**（`base.yaml` 单一注入，节点不得覆写）：`px4_ns: "px4_1"` / `target_system: 2` /
   `motion: "static"` / `alt_m: 2.0` / `speed_mps: 1.0` / `radius_m: 6.0` / `rate_hz: 20.0` /
   `arm_retry_s: 2.0` / `start_tol_m: 0.4` / `start_vel_eps_mps: 0.35` / `start_dwell_s: 0.5` /
   `run_region_radius_m: 15.0`；场景层只覆盖 `motion` / `speed_mps` / `radius_m`。
@@ -129,10 +129,10 @@ transient_local，**非命令者**）。
 ### (m) capture 场景：跟踪里程碑不再等价终态
 capture 场景里里程碑先 `enterTerminal(TRACKING_SUCCESS)` → 状态离开 `GROUND_APPROACH` →
 `capture_adjudicator` 的交火窗口关闭 → `CAPTURE_NET` 永不发生（里程碑总是赢）。新增**单一注入**参数
-`task_manager.tracking_milestone_is_terminal`：基参 `w6_base.yaml` 缺省 `true`（既有行为完全不变）；
+`task_manager.tracking_milestone_is_terminal`：基参 `base.yaml` 缺省 `true`（既有行为完全不变）；
 置 `false` 时里程碑仍置 `tracking_milestone_met_ = true`（随 `/agc/task/state` 正常发布，**指标口径
 不变**）但**不**进终态，FSM 留在 `GROUND_APPROACH`，结局交由 `capture_adjudicator`
-（`INTERCEPT_CONFIRMED(CAPTURE_NET)`）或 `t_max_s` 超时（`MISSION_FAILED(TIMEOUT)`，C4 超时一律失败）。
+（`INTERCEPT_CONFIRMED(CAPTURE_NET)`）或 `t_max_s` 超时（`MISSION_FAILED(TIMEOUT)`，超时一律失败）。
 仅 capture 场景在场景层覆盖：`s08_static_none_nominal_capture` 为 `false`；
 `s12_linear_dynamic_nominal_capture` **不**覆盖（其 `interception_authorized` 缺省 false，同时关掉
 里程碑终态会注定超时，显式登记为待办）。不改 `t_dwell_s` / `d_track_m` / `t_max_s` / 网弹道 / 火控
@@ -168,7 +168,7 @@ capture 场景里里程碑先 `enterTerminal(TRACKING_SUCCESS)` → 状态离开
   `experiments/w6-task-eval/20261016-w6-r022-0/metrics/r022.json`（幂等 / 锁存 / 慢应答 6 用例 PASS）、
   `experiments/w7-rl-b/20261020-w7-rl-b-220524-1123`（s08 恢复 `INTERCEPT_CONFIRMED`，
   `expected_match=true`，`vis_rate=0.991`、`fco_rate=0.301`）。
-- **回归防线**：`w6_composition.assertions` 的 `capture_authorized_requires_nonterminal_milestone`
+- **回归防线**：`composition.assertions` 的 `capture_authorized_requires_nonterminal_milestone`
   （授权射击 ⇒ 必须关闭里程碑终态，配置自相矛盾即**拒绝运行**）+ `test_scene_config_invariants.py`
   全场景静态扫描（已接入 `colcon test`，红-绿验证）。
 - **风险标注**：入侵者闭环跃迁以**已观测 setpoint 流**验证（假 PX4 无真实机体动力学）；真实 PX4
@@ -181,4 +181,4 @@ capture 场景里里程碑先 `enterTerminal(TRACKING_SUCCESS)` → 状态离开
 - [ADR-0016](0016-episode-window-and-sample-validity.md#top)（episode 窗口与有效样本掩码）
 - [ADR-0017](0017-time-budget-and-clock-sources.md#top)（时间预算口径与时钟源）
 - [ADR-0019](0019-lifecycle-and-startup-robustness.md#top)（生命周期可重建与启动健壮性）
-- [ADR-0023](0023-w7b-adjudication-record-and-exit.md#top)（W7-b 裁定记录与出口闭合）
+- [ADR-0023](0023-w7b-adjudication-record-and-exit.md#top)（裁定记录与出口闭合）

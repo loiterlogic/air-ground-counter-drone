@@ -197,7 +197,7 @@ def check_ports():
         return (FAIL, 'Agent 端口空闲',
                 '；'.join('%d: %s' % (p, e) for p, e in busy),
                 ['找出占用者：ss -lntp | grep -E "%s"' % '|'.join(str(p) for p in AGENT_PORTS),
-                 '停掉占用进程后重试（端口 8888/8889 由 w6.launch.py 固定）'])
+                 '停掉占用进程后重试（端口 8888/8889 由 main.launch.py 固定）'])
     return (OK, 'Agent 端口空闲', '8888 / 8889 可绑定', [])
 
 

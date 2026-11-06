@@ -1,4 +1,4 @@
-# 空中链路节点参数（ADR-0008 / ADR-0010）。运行期高度等由 w6_composition 按地图派生注入；
+# 空中链路节点参数（ADR-0008 / ADR-0010）。运行期高度等由 composition 按地图派生注入；
 # 节点不得覆写。数值推导与实测结论见 ADR-0008 实施回填。
 px4_adapter:
   ros__parameters:

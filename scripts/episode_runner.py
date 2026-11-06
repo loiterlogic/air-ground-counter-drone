@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """episode_runner —— W6 评估 runner（R12 / C9）。
 
-对每个 `(scene, seed)`：起 `w6.launch.py backend:=lightweight scene:=<scene> seed:=<seed>` → 调
+对每个 `(scene, seed)`：起 `main.launch.py backend:=lightweight scene:=<scene> seed:=<seed>` → 调
 `/agc/task/start` → 追踪 `/agc/task/state` 至终态或超时 → SIGINT 拆除（令 run_logger 落
 `summary.json`）。汇总每回合 `metrics/summary.json` 为 campaign 报告（含 两指标），
 落 `experiments/<campaign>/<run_id>/`（ADR-0006）。
@@ -90,14 +90,14 @@ def _num_str(v):
 
 # 缺省轻量后端；实际标注一律取 episode / CLI 的 backend，不能用该常量冒充 full 链。
 BACKEND = 'lightweight'
-LAUNCH = 'w6.launch.py'
+LAUNCH = 'main.launch.py'
 
 # PASS 只绑定 episode 的明确命题；轻量 PASS ≠ 整链 / GUI 验收。
 def full_chain_note(backend):
     if backend == 'full':
-        return ('本报告 backend=full（w6.launch.py 双 PX4 整链）；pass 仅绑定本报告的明确命题，'
+        return ('本报告 backend=full（main.launch.py 双 PX4 整链）；pass 仅绑定本报告的明确命题，'
                 'headless 结果**不代表** C3 GUI 验收。')
-    return ('本报告 backend=lightweight（w6.launch.py 轻量栈：m0_skeleton+capture_adjudicator+jammer，'
+    return ('本报告 backend=lightweight（main.launch.py 轻量栈：m0_skeleton+capture_adjudicator+jammer，'
             '无 PX4/空中链路）；pass 仅绑定本报告的明确命题，**不代表**整链 / C3 GUI 验收。')
 
 
@@ -110,7 +110,7 @@ def build_proposition(backend, mode, scene, expected_terminal, expected_reason):
         head = '轻量栈（m0_skeleton+capture_adjudicator+jammer，%s）' % mode
         tail = '（非整链 / 非 C3 GUI 验收）'
     else:
-        head = '整链 w6.launch.py backend:=full（双 PX4，%s）' % mode
+        head = '整链 main.launch.py backend:=full（双 PX4，%s）' % mode
         tail = ''
     term = expected_terminal or '?'
     if expected_reason:
@@ -131,7 +131,7 @@ def build_coverage(mode, episodes, backend=None):
     full = backend == 'full'
     return {
         'backend': {'value': backend,
-                    'evidence': 'episode_runner 起 w6.launch.py backend:=%s（%s）' % (
+                    'evidence': 'episode_runner 起 main.launch.py backend:=%s（%s）' % (
                         backend, '双 PX4 / 空中链路' if full else 'm0_skeleton+capture_adjudicator+jammer；无 PX4/空中链路')},
         'gui': {'value': mode, 'evidence': '--mode（headless / gui）'},
         'task_start': {'value': '%d/%d episodes started' % (len(started), len(episodes)),
@@ -523,7 +523,7 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
     # 修正：`wall_start_s` 为 **monotonic**（用于时长），与 `os.path.getmtime`（epoch）**不可比**；
     # 另记 epoch 起点专供「本 run 的 summary 归属」过滤，避免静默挂到同场景同 seed 的**旧** summary。
     wall_start_unix_s = time.time()
-    launch_args = ['ros2', 'launch', 'agc_task', 'w6.launch.py',
+    launch_args = ['ros2', 'launch', 'agc_task', 'main.launch.py',
                    'backend:=%s' % backend, 'scene:=%s' % scene, 'seed:=%d' % seed,
                    'gz_args:=%s' % gz, 'command_source:=%s' % command_source,
                    'gui_render_backend:=%s' % gui_render_backend]
@@ -544,7 +544,7 @@ def run_episode(scene, seed, registry, mode, wall_watchdog_s, out_dir, carriers,
     # `px4_sim_model` 仍透传（它与视觉无关，是己方 PX4 机型选择）。
     if px4_sim_model:
         launch_args.append('px4_sim_model:=%s' % px4_sim_model)
-    # ADR-0027（uXRCE 预热 / 错峰）：仅显式给出时透传；缺省沿用 w6.launch.py 的默认
+    # ADR-0027（uXRCE 预热 / 错峰）：仅显式给出时透传；缺省沿用 main.launch.py 的默认
     # （px4_warmup=true / own_px4_delay_s=12.0），既有调用行为不变。
     if own_px4_delay_s is not None:
         launch_args.append('own_px4_delay_s:=%s' % own_px4_delay_s)
@@ -773,7 +773,7 @@ def main():
     ap.add_argument('--campaign', default='w6-task-eval')
     ap.add_argument('--run-id', default=None)
     # （R5）：命令源单一选择——`rl`（RL 主控）默认 / `baseline`（Navfn + 自研 LQR 离线对照基线）。
-    # 由 w6.launch.py 透传至 ground_bringup；缺省 `rl` → 既有 证据行为不变。
+    # 由 main.launch.py 透传至 ground_bringup；缺省 `rl` → 既有 证据行为不变。
     # 2026-11-04 清退：`--command-source` 只剩 rl / baseline（train / rl_high 随 结档删除）；
     # `--shield` 参数已删除——安全层恒定启用（见 docs/conventions/路线分支治理.md 5.3）。
     ap.add_argument('--command-source', default='rl', choices=['rl', 'baseline'])

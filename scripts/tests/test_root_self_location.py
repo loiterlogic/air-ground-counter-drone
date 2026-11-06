@@ -47,7 +47,7 @@
 
 1. 交付入口 `run_demo.sh` 的 `ROOT=` 必须是自定位（`BASH_SOURCE`），不得是字面量；
 2. `scripts/demo/common.py` 的 `ROOT` 必须由 `__file__` 推导；
-3. 冒烟/交付路径上的脚本（`tests/run_smoke.py`、`tests/w6_geometry_check.py`、
+3. 冒烟/交付路径上的脚本（`tests/run_smoke.py`、`tests/check_scene_geometry.py`、
  `scripts/tests/*.py`）不得出现**字面量赋值**形式的根（注释里提到不算）；
 4. `scripts/toolchain_root_check.py` 与 `src/agc_air/launch/air_bringup.launch.py` 的契约默认值
  **仍在**（防止有人"顺手"改掉契约）；
@@ -71,14 +71,14 @@ ALLOWED = {
     'src/agc_air/launch/air_bringup.launch.py': (
         '契约默认值：`agc_root` 的 launch 默认值，受 scripts/toolchain_root_check.py 断言保护；'
         'round-6 审查明令不得改（改它等于改契约口径）'),
-    'src/agc_task/launch/w6.launch.py': (
+    'src/agc_task/launch/main.launch.py': (
         '同上：`agc_root` 的 launch 默认值声明 + 两处报错提示文字（不参与路径解析）'),
     'scripts/toolchain_root_check.py': (
         '工具本身要**校验**这个默认值，故必须知道该字面量'),
     'src/agc_task/src/run_logger.cpp': (
         '**契约式缺省**：`experiments_root` / `git_root` 的 `declare_parameter` 默认值。'
         'round-9 已删 YAML 字面量，若再删这里，`m0_skeleton` / 研究 runner 等不经交付 launch 的'
-        '入口会失去缺省；由 `w6.launch.py` 在交付路径统一覆盖。守护见 '
+        '入口会失去缺省；由 `main.launch.py` 在交付路径统一覆盖。守护见 '
         '`test_cpp_defaults_are_preserved`'),
 }
 
@@ -87,7 +87,7 @@ MUST_SELF_LOCATE = [
     'run_demo.sh',
     'scripts/demo/common.py',
     'tests/run_smoke.py',
-    'tests/w6_geometry_check.py',
+    'tests/check_scene_geometry.py',
 ]
 
 
@@ -196,12 +196,12 @@ def test_cpp_defaults_are_preserved():
 
 
 def test_delivery_launch_overrides_both_keys():
-    """交付 launch（`w6.launch.py`）必须**显式覆盖**两个键（否则 C++ 默认值生效 → 写回主仓）。"""
-    src = _read('src/agc_task/launch/w6.launch.py')
+    """交付 launch（`main.launch.py`）必须**显式覆盖**两个键（否则 C++ 默认值生效 → 写回主仓）。"""
+    src = _read('src/agc_task/launch/main.launch.py')
     assert "'experiments_root'" in src, (
-        'w6.launch.py 未显式传 experiments_root —— 克隆跑会把评测产物写回主仓')
+        'main.launch.py 未显式传 experiments_root —— 克隆跑会把评测产物写回主仓')
     assert "'git_root'" in src, (
-        'w6.launch.py 未显式传 git_root —— 克隆跑的 summary 里 git 身份仍读主仓')
+        'main.launch.py 未显式传 git_root —— 克隆跑的 summary 里 git 身份仍读主仓')
     # 且值必须由 agc_root 派生，而不是另一个字面量
     assert "os.path.join(_agc_root, 'experiments')" in src, (
         'experiments_root 不是由 agc_root 派生（可能又写成了字面量）')

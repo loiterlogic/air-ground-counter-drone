@@ -16,10 +16,10 @@ accepted（2026-11-04）
 
 1. **目标机几乎只会悬停**。`scenarios.yaml` 的 18 个场景里 `static` 占 8 个，其余
    `linear`（6）/ `maneuver`（2）都只用 `speed_mps: 0.5`。演示上目标机要么不动、
-   要么以 0.5 m/s 缓慢平移——不像"入侵者"。
+   要么以 0.5 m/s 缓慢平移—— 不像"入侵者"。
 2. **整体观感偏慢**。基线一轮 `duration_s 149.5`（sim 116.4 s，RTF 0.776）才到终态。
 
-本轮**先反解再动手**：把四条下游影响链（感知 C10 / 跟踪安全带 / 火控提前量 / 网弹道）
+本轮**先反解再动手**：把四条下游影响链（感知/ 跟踪安全带 / 火控提前量 / 网弹道）
 逐条量化成不等式，再从约束**反解**速度，而不是先拍数再找理由。
 
 <a id="constraints"></a>
@@ -31,39 +31,39 @@ accepted（2026-11-04）
 |---|---|
 | `gt_adapter`：`rate_hz 10`、`latency_s 0.2`、`drop_prob 0.1`、`sigma_xy 0.3`、`confidence 1.0`、**无几何门控** | `agc_perception/config/perception.yaml` |
 | `standoff_follower`：`safe_min 8.0` / `safe_max 11.2` / `hyst 1.0` ⇒ 停止点 **10.2**；`max_step_m 0.1 @ 20 Hz` ⇒ **2.0 m/s** 水平上限 | `agc_air/config/air.yaml`、`standoff_follower.cpp` |
-| yard 网弹道（12 m 派生）：`v0 15.81`、`θ 85°`、`t_land 3.211 s`、`vh = 1.240 m/s` | `w6_composition.net_params_for_altitude` |
+| yard 网弹道（12 m 派生）：`v0 15.81`、`θ 85°`、`t_land 3.211 s`、`vh = 1.240 m/s` | `composition.net_params_for_altitude` |
 
 ### (b) 四条影响链
 
-**感知（C10）——目标速度不消耗预算**（预算是时间维度的）：
+**感知—— 目标速度不消耗预算**（预算是时间维度的）：
 
 ```
-latency 0.2 + 采样周期 0.1 = 0.3 s  <  ref_max_age_s 0.5 s        余量 0.2 s（40%）
-fit 窗口 1.5 s @10 Hz = 15 样本，drop 0.1 ⇒ 期望 13.5  ≥  min_samples 8   余量 5.5
-样本位移 v·Δt = 1.0×0.1 = 0.1 m  ≪  target_gate_m 1.0 m           余量 10×
+latency 0.2 + 采样周期 0.1 = 0.3 s < ref_max_age_s 0.5 s 余量 0.2 s（40%）
+fit 窗口 1.5 s @10 Hz = 15 样本，drop 0.1 ⇒ 期望 13.5 ≥ min_samples 8 余量 5.5
+样本位移 v·Δt = 1.0×0.1 = 0.1 m ≪ target_gate_m 1.0 m 余量 10×
 ```
 
 ⇒ 速度 0.5 → 1.0 **不改变任何感知门限的通过性**。速度影响感知的上界是
 `v < gate_m/Δt = 10 m/s`（每拍位移不得触发新息门重置），与本次取值差一个量级。
 
-**跟踪——闭合不等式**。初始站距 26.17 m，需收到 `safe_max 11.2` ⇒ 闭合 14.97 m，
+**跟踪—— 闭合不等式**。初始站距 26.17 m，需收到 `safe_max 11.2` ⇒ 闭合 14.97 m，
 闭合速率 `2.0 − v_t`：
 
 ```
-t_close = 14.97/(2.0 − v_t) < t_max 120 s  ⇒  v_t < 1.875 m/s   ← "追得上"的硬上界
+t_close = 14.97/(2.0 − v_t) < t_max 120 s ⇒ v_t < 1.875 m/s ← "追得上"的硬上界
 ```
 
-**火控——提前量**。网到达 12 m 的首次穿越 `t_f = 1.243 s`（解 `15.75t − 4.905t² = 12`）：
+**火控—— 提前量**。网到达 12 m 的首次穿越 `t_f = 1.243 s`（解 `15.75t − 4.905t² = 12`）：
 
 ```
-lead = v_t · 1.243 ≤ target_max_lead_m 1.5  ⇒  v_t ≤ 1.206 m/s   ← 火控上界
+lead = v_t · 1.243 ≤ target_max_lead_m 1.5 ⇒ v_t ≤ 1.206 m/s ← 火控上界
 ```
 
-超过它 `TargetMotionFilter::predicted()` 会**截断**提前量，瞄准点落后目标
+超过它 `TargetMotionFilter::predicted` 会**截断**提前量，瞄准点落后目标
 `1.243·v_t − 1.5`；`v_t=1.5` 时残差 0.36 m、网半径 0.5 ⇒ 余量只剩 0.14 m；
 `v_t=2.0` 时残差 0.99 m ⇒ **必然打空**。下界 `2×static_eps = 0.30`（低于它被判静止）。
 
-**网弹道——只由高度派生**，与水平速度无关；速度只经上面的提前量进入。
+**网弹道—— 只由高度派生**，与水平速度无关；速度只经上面的提前量进入。
 由此得一条**新约束**：新运动**不得加显著 z 运动**——`gateStatus` 用当前 `h = target.z`
 预演，z 振幅 `A_z` 直接变成瞄准残差，要求 `A_z ≤ 0.5 − 0.2 = 0.3 m`。
 
@@ -72,20 +72,20 @@ lead = v_t · 1.243 ≤ target_max_lead_m 1.5  ⇒  v_t ≤ 1.206 m/s   ← 火�
 
 | 主体 | 取值 | 上界来源 | 余量 / 失效边界 |
 |---|---|---|---|
-| **车** | `reference 1.0` / `fast 1.3` / `max 1.5` —— **不变** | `max_offset 1.0` 在 1.3 m/s 满速下 3 次实测标定（1.017/1.083/1.287，取 min）；`max_linear_velocity 1.5` 是平台顶速 | 提 `fast>1.3` ⇒ C2/C6「真实逃逸能力」标定失效 |
+| **车** | `reference 1.0` / `fast 1.3` / `max 1.5` —— **不变** | `max_offset 1.0` 在 1.3 m/s 满速下 3 次实测标定（1.017/1.083/1.287，取 min）；`max_linear_velocity 1.5` 是平台顶速 | 提 `fast>1.3` ⇒/「真实逃逸能力」标定失效 |
 | **己方机** | `2.0 m/s`（`max_step_m 0.1@20Hz`）—— **不变** | 安全层下界 `8.0+1.5+0.2×2.0+0.3 = 10.2` **恰等于**停止点 `safe_max−hyst = 10.2` | 0（相切）；抬到 3.0 m/s ⇒ 下界 10.4 > 10.2 ⇒ 与 `safe_max` 冲突 |
 | **目标机** | **1.0 m/s**（仅新运动场景；既有场景 0.5 不动） | 三条上界取最小：火控 1.206、车名义 1.0、闭合预算 1.011 | 火控 +0.206（17%）；车快速档 +0.3；闭合预算 +0.011（极薄） |
 
 **闭合预算为什么只有 0.011 仍取 1.0**：因为**运动形状**把这条约束解开了。平移目标
 （`linear`）要求车以 `1.3 − v_t` 闭合，`v_t=1.0` 时只剩 0.3 m/s、需 90 s，而实测可用
-窗口 94 s——贴着极限。有界环绕的**质心不动**，车只需闭合到环绕区（`27.15 − r` @1.3
+窗口 94 s—— 贴着极限。有界环绕的**质心不动**，车只需闭合到环绕区（`27.15 − r` @1.3
 ⇒ 16.3 s），余量 5×。**⇒ 选环绕类形状，不是选速度。**
 
 <a id="motion"></a>
 ### (d) 运动规则：`epicycle`（漂移轨道）
 
 ```
-c(t) = o + A·(sin(ω_c t), cos(ω_c t))，  ω_c = 2π/T_drift
+c(t) = o + A·(sin(ω_c t), cos(ω_c t))， ω_c = 2π/T_drift
 p(t) = c(t) + r·(cos(ω_o t), sin(ω_o t))，ω_o = v / r
 ```
 
@@ -93,7 +93,7 @@ p(t) = c(t) + r·(cos(ω_o t), sin(ω_o t))，ω_o = v / r
 
 | 性质 | 不等式 | 实测/余量 |
 |---|---|---|
-| **起点恒定** | `p(0) = (ox+r, oy+A)`（`sin0=0, cos0=1`） | 与 `_start_pose()` 逐位相等 |
+| **起点恒定** | `p(0) = (ox+r, oy+A)`（`sin0=0, cos0=1`） | 与 `_start_pose` 逐位相等 |
 | **越界安全** | `max|p−o| ≤ A+r = 2.40` | ≪ `run_region_radius_m 15.0` ⇒ 夹持**永不触发** |
 | **峰值速度** | `|dp/dt| ≤ Aω_c + rω_o = 0.126+1.000 = 1.126` | 解析上界 ≤ 1.206 ✓；**机体实测超限，见 (d)** |
 | **dwell 可达** | `A+r+goal_tol = 2.40+0.3 = 2.70 < d_track 3.0` | 目标恒在车的 `d_track` 圆内 ⇒ 不触发 `RANGE_EXCEEDED` |
@@ -105,9 +105,9 @@ p(t) = c(t) + r·(cos(ω_o t), sin(ω_o t))，ω_o = v / r
 | M1 定常圆周（= 现有 `maneuver`） | 已存在，**不产生新轴取值** ⇒ 不满足"当前有消费者" |
 | M3 多航点折线 | 顶点处**速度方向跳变** ⇒ 火控回归窗口出现阶跃；车必须停走 ⇒ `t_dwell 3.0` 反复被打断 |
 | M4 高度正弦 | 水平静止 ⇒ 位移包络不达标；且 `A_z` 直接吃网半径余量（见 (b) 网弹道） |
-| M5 规避式（远离己方机） | 需**新订 `/agc/air/odom`** ⇒ 非确定性 + 新耦合，与 C4/C5 可复现纪律冲突；且按构造最大化闭合时间 ⇒ 必然超 `t_max` |
+| M5 规避式（远离己方机） | 需**新订 `/agc/air/odom`** ⇒ 非确定性 + 新耦合，与/可复现纪律冲突；且按构造最大化闭合时间 ⇒ 必然超 `t_max` |
 
-**参数命名纪律**（写进 `w6_base.yaml` 与代码注释）：`drift_amplitude_m` 是**圆心**的漂移幅度，
+**参数命名纪律**（写进 `base.yaml` 与代码注释）：`drift_amplitude_m` 是**圆心**的漂移幅度，
 **不是**轨道半径；轨道半径仍是 `radius_m`。合成位移上界 = 两者之和。
 
 <a id="start-protocol"></a>
@@ -119,14 +119,14 @@ p(t) = c(t) + r·(cos(ω_o t), sin(ω_o t))，ω_o = v / r
 
 **实际不成立**，推理链：
 
-1. `_tick` 在 `t0_ is None` 时发的是 `_start_pose()`——**常量**，不是 `_target(now)`；
+1. `_tick` 在 `t0_ is None` 时发的是 `_start_pose`——**常量**，不是 `_target(now)`；
 2. 位置 setpoint 恒定 ⇒ 机体收敛到该点 ⇒ `speed_`（来自 odom 实测）**趋于 0**；
 3. 故 `_maybe_start` 的 `speed ≤ 0.35` 判据**能满足**，`t0_` 被正常记录；
 4. 轨迹的切线速度只在 `t0_` 记录**之后**才被真正执行。
 
 **这不是 `epicycle` 特有的**：`maneuver` 在 `t=0` 同样有切向速度（`v=0.5`），历史上能跑通，
 原因完全相同。**本运动只是把该机制写成了显式结论**，并加单测锁死
-`_start_pose()` 对 t 是常量（四种运动全测）——防止将来有人把它改成依赖 t，
+`_start_pose` 对 t 是常量（四种运动全测）—— 防止将来有人把它改成依赖 t，
 那会让 setpoint 在 episode 开始前漂走、机体永远追不上，表现为"目标机不动"且**日志无异常**。
 
 <a id="learning"></a>
@@ -144,9 +144,9 @@ p(t) = c(t) + r·(cos(ω_o t), sin(ω_o t))，ω_o = v / r
 ```cpp
 const trajectory_setpoint_s empty_trajectory_setpoint =
     {0, {NAN,NAN,NAN}, {NAN,NAN,NAN}, {NAN,NAN,NAN}, {NAN,NAN,NAN}, NAN, NAN};
-// _positionControl():
+// _positionControl:
 Vector3f vel_sp_position = (_pos_sp - _pos).emult(_gain_pos_p);
-ControlMath::addIfNotNanVector3f(_vel_sp, vel_sp_position);   // NaN ⇒ 不施加影响
+ControlMath::addIfNotNanVector3f(_vel_sp, vel_sp_position); // NaN ⇒ 不施加影响
 ```
 
 即**位置环把位置误差折成速度前馈，再与外部速度 setpoint 相加**；任一侧 NaN 即不参与。
@@ -158,13 +158,13 @@ ControlMath::addIfNotNanVector3f(_vel_sp, vel_sp_position);   // NaN ⇒ 不施�
 
 ```cpp
 bool offboard_available = (ocm.position || ocm.velocity || ocm.acceleration || ...)
-                          && data_is_recent;   // hrt_absolute_time() < ocm.timestamp + COM_OF_LOSS_T
-reporter.failsafeFlags().offboard_control_signal_lost = !offboard_available;
+                          && data_is_recent; // hrt_absolute_time < ocm.timestamp + COM_OF_LOSS_T
+reporter.failsafeFlags.offboard_control_signal_lost = !offboard_available;
 ```
 
 ⇒ **停发 `OffboardControlMode` 就会触发 offboard-loss**，无论最后一帧 setpoint 是什么。
 本仓 `intruder_driver` 的干扰路径正是依赖这一点（`jammed_` ⇒ 停发流 ⇒ PX4 offboard-loss，
-R-019/ADR-0015），**不是** data-link-loss。
+/ADR-0015），**不是** data-link-loss。
 
 ### (c) MAVLink `SET_POSITION_TARGET_LOCAL_NED` 的 `type_mask` = 逐字段 IGNORE
 
@@ -176,17 +176,17 @@ setpoint.velocity[0] = (type_mask & POSITION_TARGET_TYPEMASK_VX_IGNORE) ? NAN : 
 ```
 
 ⇒ **"位置 vs 速度 setpoint 之争"在实现层是伪命题**：协议本来就允许任意子集，
-所谓"争议"来自**上层怎么用**——位置 setpoint 会**掩盖速度语义**（机体的实际速度由位置环
+所谓"争议"来自**上层怎么用**—— 位置 setpoint 会**掩盖速度语义**（机体的实际速度由位置环
 隐式决定，不再是你指定的那个），这正是本仓需要警惕的点。
 
 ### (d) 对本仓的直接含义
 
 本仓 `intruder_driver` 用**纯位置 setpoint**（`sp.position`，`sp.yaw=0`），速度/加速度字段
-留默认 0——按上面的语义，这等价于"速度前馈 = 0，只走位置环"。三条后果：
+留默认 0—— 按上面的语义，这等价于"速度前馈 = 0，只走位置环"。三条后果：
 
 1. **轨迹的解析速度不会被执行器精确复现**，机体速度由位置环增益与 PX4 限幅（`MPC_XY_VEL_MAX`
    默认 12 m/s，远大于本仓 1.0）共同决定。故本 ADR 的"峰值速度上界 1.126"是**参考轨迹**的
-   上界，不是机体实测速度的上界——后者需 GT 实测（见 Consequences 的未完成项）。
+   上界，不是机体实测速度的上界—— 后者需 GT 实测（见 Consequences 的未完成项）。
 2. **不引入速度前馈是正确的**：`standoff_follower.cpp` 的注释记录了照搬 `move * rate_hz_`
    造成 ±13 m/s 垂直前馈、机体剧烈振荡的实测教训。位置-only 对本任务足够。
 3. **`epicycle` 的 C∞ 光滑性是必要的**：位置 setpoint 有跳变时，位置环会把跳变折成
@@ -195,11 +195,11 @@ setpoint.velocity[0] = (type_mask & POSITION_TARGET_TYPEMASK_VX_IGNORE) ? NAN : 
 <a id="not-doing"></a>
 ## 不做什么
 
-- **不改 `traj.speed`（契约 C1 的 2.0 m/s）**。反无人机场景的 `trajectory_plugin` 是
-  `agc_control/HoverTrajectory`，其 `initialize()` 只读 `use_hold_z` / `hold_z`，
+- **不改 `traj.speed`（契约的 2.0 m/s）**。反无人机场景的 `trajectory_plugin` 是
+  `agc_control/HoverTrajectory`，其 `initialize` 只读 `use_hold_z` / `hold_z`，
   **`traj.*` 整段不被读取**（`agc_control/src/trajectory_generators.cpp`；
   另有 `test_counter_uav_scenes_declare_non_motion_trajectory` 守护）。改它 = 改契约换零运行时收益。
-- **不改任何判据阈值**：`d_track_m 3.0` / `t_dwell_s 3.0` / C2 `max_offset 1.0` /
+- **不改任何判据阈值**：`d_track_m 3.0` / `t_dwell_s 3.0` /`max_offset 1.0` /
   `safe_max 11.2` / 网弹道参数，**逐项不变**（理由见 (c) 的"上界来源"列）。
 - **不提车与己方机速度**（理由见 (c)）。
 - **不做** RL 训练、不引入新依赖、不改感知链路、不新增 `xxx_mode/xxx_source/xxx_path` 类 launch 参数。
@@ -223,7 +223,7 @@ setpoint.velocity[0] = (type_mask & POSITION_TARGET_TYPEMASK_VX_IGNORE) ? NAN : 
 而是因为它的位移被限制在一个小的有界圆内：
 
 ```
-A + r + goal_tol = 0.6 + 1.8 + 0.3 = 2.70 m  <  d_track_m = 3.0 m     （余量 0.30 m）
+A + r + goal_tol = 0.6 + 1.8 + 0.3 = 2.70 m < d_track_m = 3.0 m （余量 0.30 m）
 ```
 
 ⇒ 目标**恒在车的 `d_track` 圆内**，`target_xy_distance` 不会周期性越过 3.0，
@@ -236,17 +236,17 @@ A + r + goal_tol = 0.6 + 1.8 + 0.3 = 2.70 m  <  d_track_m = 3.0 m     （余量 
 ### (a) 新增的适用边界
 
 1. `epicycle` 要求 `drift_amplitude_m + radius_m + goal_tol < d_track_m`。
-   当前 `0.6+1.8+0.3 = 2.70 < 3.0`，**余量仅 0.30 m**——调大任一项都要重验 dwell 可达性。
+   当前 `0.6+1.8+0.3 = 2.70 < 3.0`，**余量仅 0.30 m**—— 调大任一项都要重验 dwell 可达性。
 2. `epicycle` 的峰值速度上界 `A·2π/T + v ≤ 1.206`。调 `drift_amplitude_m` / `drift_period_s`
    时该不等式必须重新成立。
-3. 目标机 1.0 m/s 的失效边界：`>1.206` 火控提前量截断；`>1.875` 己方机追不上（C10 冻结）；
+3. 目标机 1.0 m/s 的失效边界：`>1.206` 火控提前量截断；`>1.875` 己方机追不上（冻结）；
    `>2.0` 必然跟丢。**当前不提供**超过 1.206 的场景档。
 
 ### (b) 对既有 ADR 的影响
 
-- [ADR-0008](0008-air-trajectory-and-tracking-calibration.md#top)（C1 八字轨迹）：**无影响**。
+- [ADR-0008](0008-air-trajectory-and-tracking-calibration.md#top)（八字轨迹）：**无影响**。
   该 ADR 的轨迹在反无人机场景本就不被读取；`traj.speed` 保持 2.0 未改。
-- [ADR-0010](0010-safety-thresholds-and-failsafe.md#top)（C2 与逃逸标定）：**无影响**。
+- [ADR-0010](0010-safety-thresholds-and-failsafe.md#top)（与逃逸标定）：**无影响**。
   车速度未改，`max_offset 1.0` 的标定前提（1.3 m/s 满速）仍成立。
 - [ADR-0011](0011-interception-and-fire-control.md#top)（网弹道与火控门）：**无影响**。
   网参数不变；目标速度 1.0 在提前量上界内（1.243 m < 1.5 m）。
@@ -257,9 +257,9 @@ A + r + goal_tol = 0.6 + 1.8 + 0.3 = 2.70 m  <  d_track_m = 3.0 m     （余量 
 ### (c) 回滚方式
 
 - 删 `scenarios.yaml` 的 `s18` 块 + `scenario_carriers.yaml` 的 `epicycle` 条目
-  ⇒ `carrier_entry()` 会对声明该轴值的场景**拒绝运行**（不会静默降级）；
-- `intruder_driver._target()` 删 `epicycle` 分支 ⇒ 未知 `motion` 回落 `static`（既有兜底行为）；
-- `w6_base.yaml` 删 `drift_amplitude_m` / `drift_period_s` 两键。
+  ⇒ `carrier_entry` 会对声明该轴值的场景**拒绝运行**（不会静默降级）；
+- `intruder_driver._target` 删 `epicycle` 分支 ⇒ 未知 `motion` 回落 `static`（既有兜底行为）；
+- `base.yaml` 删 `drift_amplitude_m` / `drift_period_s` 两键。
 三者互相独立，任一单独回滚都不会破坏其余两种运动。
 
 ### (d) 已知未完成 / 未验证
@@ -293,7 +293,7 @@ A + r + goal_tol = 0.6 + 1.8 + 0.3 = 2.70 m  <  d_track_m = 3.0 m     （余量 
 
   **解释**（机理，不是辩解）：位置-only setpoint 下，机体速度由 PX4 位置环响应决定，
   **不等于**参考轨迹的解析速度。转弯处位置环需要额外加速度，机体实际速度会**冲过**
-  参考速度再回落——这正是"先学后做"(d) 预判的「位置 setpoint 掩盖速度语义」。
+  参考速度再回落—— 这正是"先学后做"(d) 预判的「位置 setpoint 掩盖速度语义」。
 
   **对本 ADR 结论的影响**：`epicycle` 的**参考轨迹**满足 `≤1.206`，
   但**机体**在三种口径下 max 均超 1.206（1.44–1.53），超限帧占比 7%–23%。
@@ -308,7 +308,7 @@ A + r + goal_tol = 0.6 + 1.8 + 0.3 = 2.70 m  <  d_track_m = 3.0 m     （余量 
 - **A3 位移包络实测 2.622 m vs 解析上界 2.40 m**：超出 0.22 m（9.2%），属执行器跟踪误差
   （位置环超调，与上面的速度超限同源）。仍远小于 `run_region_radius_m=15.0`，夹持未触发。
   数字取自同一脚本（`analyze_traj.py` 的 `envelope_m`），窗口同 `steady`。
-- **`epicycle` 的 `drift_*` 两键未进 manifest 的 `effective_params`**：`w6_composition.py`
+- **`epicycle` 的 `drift_*` 两键未进 manifest 的 `effective_params`**：`composition.py`
   的 `intruder_driver` 白名单只列 `motion/speed_mps/radius_m`。补进去需改该文件，
   不在本批次白名单内，**留给后续**（当前可由 `params_applied.yaml` 还原）。
 - **`s04` 基线的既有不稳定**（与本 ADR 无关，但同批发现并**已取证**）。
@@ -327,16 +327,16 @@ A + r + goal_tol = 0.6 + 1.8 + 0.3 = 2.70 m  <  d_track_m = 3.0 m     （余量 
   一次成功 run（`r7`，`TRACKING_SUCCESS`）里捕获 **15 次 `DWELL_START` + 14 次 `DWELL_INTERRUPT`，
   全部 `reason=RANGE_EXCEEDED`**；分段有效时长为
   `0.30 / 0.70 / 0.50 / 0.60 / 2.88 / 0.50 / 0.10 / 0.97 / 0.38 / 0.60 / 1.20 / 2.40 / 1.60 / 1.40 s`。
-  **最长一段 2.884 s，距 `t_dwell_s=3.0` 只差 0.116 s**——第 15 次才终于攒满。
+  **最长一段 2.884 s，距 `t_dwell_s=3.0` 只差 0.116 s**—— 第 15 次才终于攒满。
   同配置的另一次 run（`r6`）则以 `MISSION_FAILED/TIMEOUT` 结束。
 
   ⇒ 机理：车在 `d_track=3.0` 边界附近，`target_xy_distance` 在 2.0–3.2 m 间抖动，
   每越过 3.0 一次就把已累计的 dwell 清零（`task_manager.cpp` 的逐拍 `RANGE_EXCEEDED` 判据），
   **能否成功取决于"哪一次恰好没被清零"**。这是**既有缺陷**（`d_track` 判据对边界抖动无滞回），
-  **不在本 ADR 范围内修**——修它要动 `d_track`/`t_dwell` 判据，属本单红线。
+  **不在本 ADR 范围内修**—— 修它要动 `d_track`/`t_dwell` 判据，属本单红线。
 
   > **证据强度说明**：本节最初只有"距离 2.5↔3.3 m 来回振荡"的**推断**（日志距离读数 + 代码符号），
-  > 在既有 run 的日志里 grep `RANGE_EXCEEDED` 是 **0 命中**——因为该事件只发布到 ROS 话题
+  > 在既有 run 的日志里 grep `RANGE_EXCEEDED` 是 **0 命中**—— 因为该事件只发布到 ROS 话题
   > `/agc/task/dwell_event`，**从不落盘**。后经 `probe_dwell_events.py` 订阅该话题才取得直接证据。
   > **第一版探针因未复用 `dds_transport` 而零送达**，差点被误读成"dwell 从未启动"——
   > 这类"探针自身缺陷伪装成阴性结论"的风险，与本 ADR 无关但值得记下。

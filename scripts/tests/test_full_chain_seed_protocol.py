@@ -16,7 +16,7 @@ PX4_SRC = REPO / 'toolchain/PX4-Autopilot/src/modules/simulation/sensor_gps_sim'
 LAUNCH = REPO / 'src/agc_task/launch'
 
 spec = importlib.util.spec_from_file_location(
-    'w6_composition', LAUNCH / 'w6_composition.py')
+    'composition', LAUNCH / 'composition.py')
 w6c = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(w6c)
 
@@ -67,7 +67,7 @@ def test_mixer_stable_and_domain():
 
 
 def test_launch_injects_derived_seeds():
-    w6 = (LAUNCH / 'w6.launch.py').read_text()
+    w6 = (LAUNCH / 'main.launch.py').read_text()
     air = (REPO / 'src/agc_air/launch/air_bringup.launch.py').read_text()
     perception = (REPO / 'src/agc_perception/launch/perception_bringup.launch.py').read_text()
 

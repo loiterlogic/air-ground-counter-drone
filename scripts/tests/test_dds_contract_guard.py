@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""`w6_dds_contract_check.py` 的 case e（防复发主闸）自身的行为测试。
+"""`check_dds_contract.py` 的 case e（防复发主闸）自身的行为测试。
 
 为什么需要：闸门如果**静默失效**（正则写窄、豁免放宽、扫描路径剪错），它就会变成
 第二份"文档劝告"——看起来有保护，实际不拦。2026-11-04 首次实现时正是一版**漏报**
@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-CHECK = ROOT / 'tests' / 'w6_dds_contract_check.py'
+CHECK = ROOT / 'tests' / 'check_dds_contract.py'
 
 
 def _load():
@@ -90,14 +90,14 @@ def test_exemptions_stay_narrow(check):
     for must_exempt in ('scripts/archive/', 'experiments/', 'dds_transport.py'):
         assert must_exempt in exempt, must_exempt
     for must_not in ('scripts/demo/start.py', 'scripts/episode_runner.py',
-                     'src/agc_task/', 'tests/w7b_fire_control_lifecycle_check.py'):
+                     'src/agc_task/', 'tests/check_fire_control_lifecycle.py'):
         assert must_not not in exempt, '豁免被放宽到活代码：%s' % must_not
 
 
 def test_guard_is_in_default_smoke(check):
     """闸门必须在默认冒烟里，否则"每次提交跑一遍"就是空话。"""
     smoke = (ROOT / 'tests' / 'run_smoke.py').read_text(encoding='utf-8')
-    assert 'w6_dds_contract_check.py' in smoke, 'DDS 契约闸门未接入默认冒烟'
+    assert 'check_dds_contract.py' in smoke, 'DDS 契约闸门未接入默认冒烟'
     assert "('dds'," in smoke, '冒烟里缺少 dds 组'
 
 
@@ -185,11 +185,11 @@ def test_vision_localization_path_is_retired():
         assert not f.exists(), '视觉定位路径已退役，但文件仍在：%s' % f
 
     # launch 侧：三个 vision 参数不得复活
-    w6 = (ROOT / 'src' / 'agc_task' / 'launch' / 'w6.launch.py').read_text(encoding='utf-8')
+    w6 = (ROOT / 'src' / 'agc_task' / 'launch' / 'main.launch.py').read_text(encoding='utf-8')
     for arg in ('perception_path', 'vision_detector', 'detector_backend',
                 'target_plane_z_m', 'vision_model_id'):
         assert ("'%s', default_value=" % arg) not in w6, \
-            'w6.launch.py 仍在声明已退役的参数 %s' % arg
+            'main.launch.py 仍在声明已退役的参数 %s' % arg
 
     # 矩阵：vision 臂必须已删除（没有"感知代价臂"了）
     import importlib.util

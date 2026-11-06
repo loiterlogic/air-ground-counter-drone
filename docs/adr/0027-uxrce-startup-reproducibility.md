@@ -35,14 +35,14 @@ accepted（2026-11-02 由 ADR-0075 / 0094 / 0100 / 0101 合并；结论未变）
 <a id="scope"></a>
 ### (a) 适用范围
 本篇只覆盖**启动可复现性**：进程清场、PX4 启动错峰、可选 warmup、空中就绪门、seed 派生与注入。
-它**不**改变估计 odom 契约、**不**替代 W8 正式测量门、**不**宣称整链确定性。per-instance seed 派生
-只适用于 W6 full 组合；W3 standalone `air_bringup.launch.py` 直传其单实例 seed，不经该协议；直接跑
+它**不**改变估计 odom 契约、**不**替代正式测量门、**不**宣称整链确定性。per-instance seed 派生
+只适用于full 组合；standalone `air_bringup.launch.py` 直传其单实例 seed，不经该协议；直接跑
 PX4 而不设变量时用其文档化兜底。上述范围澄清**不**要求改 standalone 代码。
 
 <a id="evidence"></a>
 ### (b) 证据与版本边界（先分类，再下结论）
 历史实现声明（「PX4 目标可构建」「launch 语法通过、mixer 稳定且实例 / 主种子可区分」）在 2026-10-26
-审查时**找不到可定位的执行记录**，标为**未核验**——不因此断言当时没跑过，也不得把新证据回填成当时
+审查时**找不到可定位的执行记录**，标为**未核验**—— 不因此断言当时没跑过，也不得把新证据回填成当时
 已验证。版本归属四档，缺材料不得强标：`verified_pre_seed_protocol`（有源码 / 二进制快照能证明旧实现）、
 `seed_protocol_not_attested`（只有历史叙述）、`seed_protocol_candidate_unvalidated`（当前工作区）、
 `seed_protocol_v1_attested`（满足下列全部保存与日志条件后）。
@@ -72,7 +72,7 @@ own PX4 默认延时 **12 s → 25 s**，intruder **25 s → 35 s**：25 s 避�
 `own_px4_delay_s` / `intruder_px4_delay_s` 保留，供 A/B 与回退。
 
 ### (e) 可选 sacrificial SIH warmup（默认关闭）
-`w6.launch.py` 保留一个**不参与任务**的 SIH PX4 warmup（`-i 3`、`PX4_SIMULATOR=sihsim`、
+`main.launch.py` 保留一个**不参与任务**的 SIH PX4 warmup（`-i 3`、`PX4_SIMULATOR=sihsim`、
 `PX4_SIM_MODEL=none`、绑 `agent0_port`；t=5 s / `timeout 6.5`），但默认 `px4_warmup=false`。
 A/B：warmup 组 own 640.7–752.1 ms / intruder 757.4–772.5 ms；no-warmup 组 own 694.0–703.5 ms /
 intruder 742.1–750.4 ms ⇒ **25/35 错峰后 warmup 没有额外收益**，故不设为默认，保留给极端负载 / 回退。
@@ -87,19 +87,19 @@ sleep。
 ### (g) runner 级 infra 重试（二级保险，不再是主要手段）
 判据唯一来源 = `agc_rl.termination.classify_episode_outcome` 的 `classification`：
 `infra`（`INFRA_FAILURE` / 未达终态的墙钟截断）→ 按上限**重跑**该 (arm, seed)；`mission`
-（含 `MISSION_FAILED(TIMEOUT)`，C4 超时属**任务终态**）→ **一律不重试**。实现：
+（含 `MISSION_FAILED(TIMEOUT)`，超时属**任务终态**）→ **一律不重试**。实现：
 `episode_runner.run_episode_with_infra_retry`（`infra_retries=0` = 关闭、既有行为不变）+
-`w7b_arms_runner --infra-retries`（缺省 3）。证据纪律：每次尝试**各留产物**——首试沿用原 `log_tag`，
+`w7b_arms_runner --infra-retries`（缺省 3）。证据纪律：每次尝试**各留产物**—— 首试沿用原 `log_tag`，
 第 k 次重试追加 `.r<k>` 后缀，逐次 `run_id` / 终态 / 原因记入 `infra_attempts`；上报结果 = **最后一次
 尝试**。两臂施加**同一**协议 ⇒ 不构成自变量差异。预注册 `keep_all_failures_and_infra` 不变：重试耗尽
 的 infra **仍计入分母**（primary DV 记失败），阈值 / 样本量 / 自变量均未改，infra 率与重试次数须在
 报告中如实报出、**不得**被读作臂效应。
 
 ### (h) 种子协议（full-chain）
-W6 `seed` 是**实验主种子**。`w6_composition.py` 以 `agc-px4-sim-seed-v1` 为每个 PX4 进程派生一个
+`seed` 是**实验主种子**。`composition.py` 以 `agc-px4-sim-seed-v1` 为每个 PX4 进程派生一个
 uint32 seed：实例 0 = own、实例 1 = intruder、实例 3 = 可选 warmup；派生值经 `AGC_PX4_SIM_SEED` 传入
 并记入 run manifest 的 `effective_params.seed_protocol`。`sensor_gps_sim` 改用模块私有 xorshift32 +
-Box-Muller 流，**不用** libc 的进程全局 `rand()`：变量未设 = 确定性 standalone 种子，值非法则**拒绝模块
+Box-Muller 流，**不用** libc 的进程全局 `rand`：变量未设 = 确定性 standalone 种子，值非法则**拒绝模块
 启动**；GPS 噪声模型与其配置幅度不变。同一主种子经显式 `perception_bringup` launch 参数传给
 `air_perception`，**只有** `air_perception` 收该参数（无关节点不得收到未声明参数）。
 
@@ -109,18 +109,18 @@ Box-Muller 流，**不用** libc 的进程全局 `rand()`：变量未设 = 确�
 - **仿真唯一时间源**：`UXRCE_DDS_SYNCT: 0` 纳入 `src/agc_task/config/px4_failsafe_lock.yaml` **单一
   真源**，由 `scripts/lock_px4_failsafe_params.sh` 注入 SITL 启动参数文件
   （`param set UXRCE_DDS_SYNCT 0`）；各 ROS 节点一律 `use_sim_time=true` 走 `/clock`。依据 PX4 官方
-  文档「桥时间同步在仿真中应禁用」——仿真里时钟真源只能是 `/clock`，不能让桥再引入第二个。
-- **生产者侧加固**：`Px4TimeMapper` 新增 `reset()`；`observe()` 中**偏移跳变 > 0.1 s 即重锚**（不再
-  EMA 混合，避免旧偏移把新纪元拉回错误区间）。`px4_adapter.cpp` 对映射结果做合理性校验——须**非负**
-  且与 `now()` 偏差 ≤ `stamp_max_skew_s`（单一真源 `src/agc_air/config/air.yaml`，默认 **5.0 s**）；
+  文档「桥时间同步在仿真中应禁用」—— 仿真里时钟真源只能是 `/clock`，不能让桥再引入第二个。
+- **生产者侧加固**：`Px4TimeMapper` 新增 `reset`；`observe` 中**偏移跳变 > 0.1 s 即重锚**（不再
+  EMA 混合，避免旧偏移把新纪元拉回错误区间）。`px4_adapter.cpp` 对映射结果做合理性校验—— 须**非负**
+  且与 `now` 偏差 ≤ `stamp_max_skew_s`（单一真源 `src/agc_air/config/air.yaml`，默认 **5.0 s**）；
   超界即**拒发该帧 + 一次性如实告警 + 重锚**，**不静默替换时间戳**。EKF `reset_counter` 变化同样触发
   重锚（局部原点 / 姿态跳变时世界坐标须重新标定）。
 - **消费端不替代生产者**：`air_perception.cpp` 对入站 `Header.stamp` 加 `sec < 0` **前置守卫**
-  （拒收 + 一次告警），只防崩溃、**不是根因修复**——时间戳的正确性责任仍在生产者侧。
+  （拒收 + 一次告警），只防崩溃、**不是根因修复**—— 时间戳的正确性责任仍在生产者侧。
 
 **证据**：修后 `negative time point` 崩溃 0、`px4_adapter` 映射告警 0；EKF 复位计数逐次重锚记录。
 **未决（如实登记）**：修后**观测链仍间歇**（`standoff_follower` 目标过期冻结），疑为机体固连前视
-偏航丢目标——该现象**本轮不修**，属研究问题，交接给 [ADR-0009](0009-perception-truth-derived-and-vision-path.md#top)。
+偏航丢目标—— 该现象**本轮不修**，属研究问题，交接给 [ADR-0009](0009-perception-truth-derived-and-vision-path.md#top)。
 PX4 四元数字段序 `[w,x,y,z]` 的处置见 [ADR-0019](0019-lifecycle-and-startup-robustness.md#top)，本篇不重复。
 
 ### (j) 保存与提交边界
@@ -147,7 +147,7 @@ dirty/untracked 改动及子模块状态，**不放行**额外未登记改动（
    `draft_pending_codex_review`，**不得自动冻结**执行计划。缺测处理先采用保守门：任何 mission 的新
    FCO 存在未知区间或拒算，正式门**不得**宣布等价；保留该任务及识别界，不做 available-case 删除。
    前置失败须阻塞后续；需要改 PX4 RNG / seed 协议或控制行为则交回裁定，不在本单试改。Gate 仍为
-   `not_evaluable_as_specified`；正式等价、新 pilot、headless 规模统计与 W7-c 扩容均须后续独立派工。
+   `not_evaluable_as_specified`；正式等价、新 pilot、headless 规模统计与扩容均须后续独立派工。
 
 ## 不做什么（边界）
 - **不**改 PX4 源码 / 子模块 SHA / agent 版本（放宽 1 s 预算命中 pin 红线；若要做须另立 ADR +
@@ -156,8 +156,8 @@ dirty/untracked 改动及子模块状态，**不放行**额外未登记改动（
   时首跑仍失败，且改变 transport 语义与吞吐）。
 - **不**用 watchdog 重启 own PX4（被 SIGKILL 后 gz 模型失去控制会失稳 / 坠落，重挂很可能接上已失稳
   模型并牵连 arm / 起飞时序）。
-- **不**重试至成功、**不**把 infra 记为成功（改写终态语义，违反 C4 与 infra 单列原则）。
-- **不**由 runner 自动清 `/dev/shm`；**不**以清场替代 W7-c 多 worker 隔离；**不**宣称「种子流可追溯」
+- **不**重试至成功、**不**把 infra 记为成功（改写终态语义，违反与 infra 单列原则）。
+- **不**由 runner 自动清 `/dev/shm`；**不**以清场替代多 worker 隔离；**不**宣称「种子流可追溯」
   等于整链确定性。
 
 ## Considered Options
@@ -183,7 +183,7 @@ dirty/untracked 改动及子模块状态，**不放行**额外未登记改动（
   `.../log/px4_build.log`、`.../metrics/pin_check_after.json`（41 PASS / 0 FAIL / 0 SKIP）；种子协议
   13 项测试通过（同 seed 重启一致、异 seed 区分、实例 0/1/3 私有、seed=0 映射 `0x6D2B79F5`、
   unset=1、非法值拒绝、uint32 边界接受）。
-- **未决**：① W7-c 多 worker 下 warmup / 错峰是否仍成立（每 worker 独立 agent / netns 后应成立，需
+- **未决**：①多 worker 下 warmup / 错峰是否仍成立（每 worker 独立 agent / netns 后应成立，需
   验证）；② 若必须恢复 12/25 启动时序，须另立 ADR 并给出新的 1 s 预算方案；③ **清场与并行 worker
   冲突**——`sweep_stale_processes` 按本项目特征 SIGKILL、**不区分进程属于哪个 worker**，同机并行时
   后启动者会杀掉先启动者的进程，故在隔离手段（独立 `ROS_DOMAIN_ID` 前缀 + 进程标记 + 或每 worker
@@ -195,6 +195,6 @@ dirty/untracked 改动及子模块状态，**不放行**额外未登记改动（
 - [ADR-0005](0005-px4-toolchain-and-link.md#top)（PX4 工具链与 uXRCE-DDS 链路）
 - [ADR-0006](0006-experiment-artifacts-and-evidence-discipline.md#top)（产物与证据纪律）
 - [ADR-0018](0018-acceptance-and-coverage-matrix.md#top)（验收判定与三层闸门）
-- [ADR-0021](0021-w8-gui-headless-equivalence.md#top)（W8 测量门与 P3 待办）
-- [ADR-0023](0023-w7b-adjudication-record-and-exit.md#top)（W7-b 出口闭合）
-- [ADR-0024](0024-w7c-multi-worker-isolation.md#top)（W7-c 多 worker 隔离与扩容准入）
+- [ADR-0021](0021-w8-gui-headless-equivalence.md#top)（测量门与 P3 待办）
+- [ADR-0023](0023-w7b-adjudication-record-and-exit.md#top)（出口闭合）
+- [ADR-0024](0024-w7c-multi-worker-isolation.md#top)（多 worker 隔离与扩容准入）

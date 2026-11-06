@@ -31,12 +31,12 @@ ROOT = Path(__file__).resolve().parents[2]
 CONVENTION = ROOT / 'docs' / 'conventions' / '路线分支治理.md'
 SCENARIOS = ROOT / 'src' / 'agc_task' / 'config' / 'scenarios.yaml'
 CARRIERS = ROOT / 'src' / 'agc_task' / 'config' / 'scenario_carriers.yaml'
-COMPOSITION = ROOT / 'src' / 'agc_task' / 'launch' / 'w6_composition.py'
+COMPOSITION = ROOT / 'src' / 'agc_task' / 'launch' / 'composition.py'
 PERCEPTION_LAUNCH = ROOT / 'src' / 'agc_perception' / 'launch' / 'perception_bringup.launch.py'
 PERCEPTION_YAML = ROOT / 'src' / 'agc_perception' / 'config' / 'perception.yaml'
 PERCEPTION_CMAKE = ROOT / 'src' / 'agc_perception' / 'CMakeLists.txt'
-M0_LAUNCH = ROOT / 'src' / 'agc_task' / 'launch' / 'm0_skeleton.launch.py'
-W6_LAUNCH = ROOT / 'src' / 'agc_task' / 'launch' / 'w6.launch.py'
+M0_LAUNCH = ROOT / 'src' / 'agc_task' / 'launch' / 'skeleton.launch.py'
+W6_LAUNCH = ROOT / 'src' / 'agc_task' / 'launch' / 'main.launch.py'
 
 # --------------------------------------------------------------------------------------
 # 5.2.2 批次：登记「已删除」的退役物路径（相对 ROOT）

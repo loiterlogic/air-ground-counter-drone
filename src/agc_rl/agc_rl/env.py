@@ -12,7 +12,7 @@
  * `INFRA_FAILURE` → `terminated=True` 且 `info.classification='infra'`（**不吞**入成功率，ADR-0018）。
 
 架构（与 [ADR-0021](../../docs/adr/0021-w8-gui-headless-equivalence.md#top) 决定一致）：
- * 环境 = **外部命令源**：本适配层独占发布 `/agc/ground/cmd_vel_raw`；由 `w6.launch.py`
+ * 环境 = **外部命令源**：本适配层独占发布 `/agc/ground/cmd_vel_raw`；由 `main.launch.py`
  `command_source:=train` 保证图内**不**另起 rl / baseline 发布者（安全层仍是唯一 shield）。
  * 链路与 `rl` 同构：`适配层 → cmd_vel_raw → collision_monitor → cmd_vel → 中继 → GZ`。
  * 步进模型 = **异步实时**（复用现栈，RTF≈1）：`step` 边界 = 仿真时钟推进 `control_dt_s`；
@@ -53,9 +53,9 @@ DEFAULT_CONTROL = {
     'k_heading': 1.5, 'k_lateral': 0.8, 'max_yaw_rate': 1.0, 'clearance_ref_m': 1.0,
 }
 
-# 内置回落默认（`config/*.yaml` 不可读时用）——正常运行以 share 的 `rl.yaml` + `w7.yaml`
+# 内置回落默认（`config/*.yaml` 不可读时用）——正常运行以 share 的 `rl.yaml` + `rl_platform.yaml`
 # 为**配置文件**（spec R6；docs/ROS2迁移交接文档.md#params）。obs / 控制 / 寿命参数取自 `rl.yaml`（与 agent 共用），
-# 平台参数取自 `w7.yaml`。
+# 平台参数取自 `rl_platform.yaml`。
 _ENV_DEFAULTS = {
     'base_frame': 'car/base_link', 'rate_hz': 20.0,
     'odom_topic': '/agc/ground/odom', 'scan_topic': '/agc/ground/scan',
@@ -72,7 +72,7 @@ _W7_DEFAULTS = {'obs_version': 2, 'control_dt_s': 0.1, 'max_steps': 0,
 
 
 def _load_share_yaml():
-    """读 `agc_rl` share 的 `config/rl.yaml` + `config/w7.yaml`（**单一来源**，spec R6）。
+    """读 `agc_rl` share 的 `config/rl.yaml` + `config/rl_platform.yaml`（**单一来源**，spec R6）。
 
  返回 `(rl_ros_parameters | None, w7 | None)`；未安装 / 缺失 → `(None, None)`（回落内置默认）。
     """
@@ -81,7 +81,7 @@ def _load_share_yaml():
         share = get_package_share_directory('agc_rl')
         with open(os.path.join(share, 'config', 'rl.yaml'), encoding='utf-8') as f:
             rl = yaml.safe_load(f) or {}
-        with open(os.path.join(share, 'config', 'w7.yaml'), encoding='utf-8') as f:
+        with open(os.path.join(share, 'config', 'rl_platform.yaml'), encoding='utf-8') as f:
             w7 = yaml.safe_load(f) or {}
         return (rl.get('ground_policy_rl', {}).get('ros__parameters', {}) or {},
                 w7.get('w7', {}) or {})
@@ -200,7 +200,7 @@ class GroundAgcEnv:
     metadata = {'render_modes': [], 'spec_version': 1}
 
     def __init__(self, scene, seed_plan=None, obs_version=None, **overrides):
-        # 配置文件：`rl.yaml`（obs/控制/寿命，与 agent 共用）+ `w7.yaml`（ 平台参数）。
+        # 配置文件：`rl.yaml`（obs/控制/寿命，与 agent 共用）+ `rl_platform.yaml`（ 平台参数）。
         rl_p, w7_p = _load_share_yaml()
         cfg = dict(_ENV_DEFAULTS)
         w7cfg = dict(_W7_DEFAULTS)

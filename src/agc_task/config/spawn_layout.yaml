@@ -1,6 +1,6 @@
 # 出生布局：世界 spawn / 复位位置 / 己方机起飞参考三处共用同一组坐标（ADR-0007 / ADR-0012）。
-# w6.launch.py 读本文件后显式传给 world_bringup 与 scenario_reset；己方机位由 own_uav 派生。
-# 布局意图与净空推导见 ADR-0012 实施回填；改坐标须同步 tests/w6_geometry_check.py。
+# main.launch.py 读本文件后显式传给 world_bringup 与 scenario_reset；己方机位由 own_uav 派生。
+# 布局意图与净空推导见 ADR-0012 实施回填；改坐标须同步 tests/check_scene_geometry.py。
 spawn_layout:
   car:
     x: -15.0

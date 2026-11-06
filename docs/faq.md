@@ -16,7 +16,7 @@
 `doctor` 会打印**具体缺失的路径**，照它补即可。
 
 ```bash
-./run_demo.sh doctor          # 看具体缺哪一项
+./run_demo.sh doctor # 看具体缺哪一项
 ```
 
 ## 2. 启动后卡在"等待 PX4"，以为卡死
@@ -37,7 +37,7 @@
 **原因**：环境域/发现范围不对。本仓**铁律**是 `ROS_DOMAIN_ID` 保持默认 `0`；
 自设非 0 域会让 lifecycle **服务数据面不通**（话题却正常，极难判）。
 
-> **2026-11-04 修订**：旧版此处写"发现范围用 `LOCALHOST`"，该规则**已推翻**——本机 `lo`
+> **2026-11-04 修订**：旧版此处写"发现范围用 `LOCALHOST`"，该规则**已推翻**—— 本机 `lo`
 > 没有 `IFF_MULTICAST`，`LOCALHOST` **不可靠**：1 发布↔1 订阅这种最常见的两进程拓扑
 > **稳定零送达**（多进程偶通，正是历史"忽好忽坏"的来源）。
 > 现在按能力探测，`run_demo.sh` 自动选，证据见
@@ -46,21 +46,21 @@
 **处置**：
 
 ```bash
-echo $ROS_DOMAIN_ID                    # 应为空或 0
+echo $ROS_DOMAIN_ID # 应为空或 0
 # 用脚本起实例：发现范围/传输由 dds_transport 探测，无需手工 export
-./run_demo.sh doctor                   # 会打印实际选中的策略
+./run_demo.sh doctor # 会打印实际选中的策略
 ```
 
 **另开终端手敲 `ros2` 命令时**，必须与已启动实例用**同一**策略，否则互相看不见：
 
 ```bash
-python3 -c "import sys; sys.path.insert(0,'scripts/demo'); import dds_transport as d; d.apply(); print(d.describe())"
+python3 -c "import sys; sys.path.insert(0,'scripts/demo'); import dds_transport as d; d.apply; print(d.describe)"
 # 或直接 source 出脚本算好的值：
-eval "$(python3 -c "import sys; sys.path.insert(0,'scripts/demo'); import dds_transport as d; d.apply(); [print('export %s=%s'%(k,v)) for k,v in d.env_for().items() if v is not None]")"
+eval "$(python3 -c "import sys; sys.path.insert(0,'scripts/demo'); import dds_transport as d; d.apply; [print('export %s=%s'%(k,v)) for k,v in d.env_for.items if v is not None]")"
 ```
 
 > 注意：graph 查询在本机**不可靠**，不要用 `ros2 node list` 当门禁；用首个服务调用探活
-> （见排障速查 §3）。
+> （见排障速查）。
 
 ## 4. 有残留进程 / 上次没干净退出
 
@@ -73,8 +73,8 @@ eval "$(python3 -c "import sys; sys.path.insert(0,'scripts/demo'); import dds_tr
 **处置**：
 
 ```bash
-./run_demo.sh stop      # 幂等；按记录的 PID/PGID 回收，不碰别人的进程
-./run_demo.sh status    # 只读查看现状与残留
+./run_demo.sh stop # 幂等；按记录的 PID/PGID 回收，不碰别人的进程
+./run_demo.sh status # 只读查看现状与残留
 ```
 
 `stop` 收不掉的极端情况，按 **PID** 清理：
@@ -97,9 +97,9 @@ kill <PID>
 **处置**：脚本已自动 `gui_render_backend:=auto` 探测，通常无需干预。仍黑屏时依次试：
 
 ```bash
-./run_demo.sh                        # auto（默认）
-ros2 launch agc_task w6.launch.py backend:=full gui_render_backend:=d3d12
-ros2 launch agc_task w6.launch.py backend:=full gui_render_backend:=software
+./run_demo.sh # auto（默认）
+ros2 launch agc_task main.launch.py backend:=full gui_render_backend:=d3d12
+ros2 launch agc_task main.launch.py backend:=full gui_render_backend:=software
 ```
 
 **关于"截不到图"**：本机 `DISPLAY=:0` 是 **Wayland（XWayland）**，`xwd`/`import`/`scrot`/`ffmpeg`
@@ -108,7 +108,7 @@ ros2 launch agc_task w6.launch.py backend:=full gui_render_backend:=software
 本仓世界 SDF 的 `<gui>` 块**已自带**该插件，**自然运行**即可取帧：
 
 ```bash
-./run_demo.sh &                                     # 正常启动（运行期间才能取帧）
+./run_demo.sh & # 正常启动（运行期间才能取帧）
 python3 scripts/demo/gui_capture.py snap --out /tmp/shot.png
 ```
 
@@ -123,8 +123,8 @@ python3 scripts/demo/gui_capture.py snap --out /tmp/shot.png
 **处置**：
 
 ```bash
-./run_demo.sh test --list                 # 看有哪些组
-./run_demo.sh test --verbose --only docs  # 只跑一组、打完整输出
+./run_demo.sh test --list # 看有哪些组
+./run_demo.sh test --verbose --only docs # 只跑一组、打完整输出
 ```
 
 组名：`geometry`（几何派生链）/ `messages`（9 消息 ABI）/ `docs`（文档断链）/
@@ -150,14 +150,14 @@ python3 scripts/demo/gui_capture.py snap --out /tmp/shot.png
 **症状**：终态 `TRACKING_SUCCESS`，想确认能不能说"拦截成功"。
 
 **答案**：**不能**。`TRACKING_SUCCESS` = **"抵近并持续跟踪"**（阶段 A），
-**不得**表述为"拦截完成"（[契约 C8](ROS2迁移交接文档.md#hard-constraints) 与
+**不得**表述为"拦截完成"（[契约](ROS2迁移交接文档.md#hard-constraints) 与
 [终态语义](ROS2迁移交接文档.md#terminal-semantics)）。
 阶段 B 的拦截另有终态 `INTERCEPT_CONFIRMED`（`CAPTURE_NET` 物理捕获 / `JAM_*` 行为级干扰）。
 
 另外两个口径也要一起说清，否则结论会被误读：
 
 - 主场景 `s04` 的观测指向臂是 **`track`**（机头对准 `/agc/targets` 感知航迹），
-  **不是** oracle 臂——它消费的航迹与任务同源，**不读** `/agc/gt/*`。
+  **不是** oracle 臂—— 它消费的航迹与任务同源，**不读** `/agc/gt/*`。
   该值由场景覆盖 `air.yaml` 的缺省 `velocity` 得到；`observe_yaw_mode` 的 **launch 参数已清退**，
   没有 run 级 CLI 覆盖口。`target`（真值指向）档仍在节点里，仅供研究臂；
 - 感知是**真值派生**（`gt_adapter`），不是从像素识别出来的

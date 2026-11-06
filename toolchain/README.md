@@ -37,7 +37,7 @@ cmake -S . -B build_ros \
     -I$AGC/toolchain/localdeps/sysroot/usr/include -I$AGC/toolchain/localdeps/sysroot/usr/include/x86_64-linux-gnu \
     -I$AGC/toolchain/Micro-XRCE-DDS-Agent-2.4.3/include \
     -include $AGC/toolchain/microxrce_compat/fmt_compat.hpp"
-make -C build_ros -j4     # 产出 build_ros/MicroXRCEAgent
+make -C build_ros -j4 # 产出 build_ros/MicroXRCEAgent
 ```
 
 要点：①`-I/opt/ros/jazzy/include/fastrtps`、`.../fastcdr` 是 ROS 侧的**真正头文件根**（Fast DDS 头在
@@ -74,10 +74,10 @@ agc_toolchain_pins:
   git_repos:
     - id: px4
       path: toolchain/PX4-Autopilot
-      remote: https://gitee.com/mirrors/PX4-Autopilot   # 本机使用的镜像；上游 https://github.com/PX4/PX4-Autopilot（本机直连 GitHub 极慢）
+      remote: https://gitee.com/mirrors/PX4-Autopilot # 本机使用的镜像；上游 https://github.com/PX4/PX4-Autopilot（本机直连 GitHub 极慢）
       tag: v1.15.4
       head: 99c40407ffd7ac184e2d7b4b293f36f10fe561ef
-      submodules:           # 仅列 SITL(gz) 必需且已初始化的子模块
+      submodules: # 仅列 SITL(gz) 必需且已初始化的子模块
         Tools/simulation/gz: d754381a1cecdd7f17050acd72bf5bf1327bced6
         src/drivers/gps/devices: ad769ff53d683d06937c92bae58377d65893967b
         src/lib/crypto/libtomcrypt: 673f5ce29015a9bba3c96792920a10601b5b0718
@@ -124,7 +124,7 @@ agc_toolchain_pins:
     host_fmt: 9.1.0+ds1-2
     sysroot_spdlog: 1.12.0
     sysroot_fmt: 9.1.0
-  localdeps_debs:               # 逐包 sha256（Ubuntu 24.04 noble amd64）
+  localdeps_debs: # 逐包 sha256（Ubuntu 24.04 noble amd64）
     catch2_3.4.0-1build1_amd64.deb: c5ea160f1e349c8b58a422b231872d066387177aeb751c0e0465ca71a3031656
     gcc-14-base_14.2.0-4ubuntu2~24.04.1_amd64.deb: b95c172411a7fdae70307cf33a9f5320ba5e056b556454543dd5b679d5ce1c4f
     libasio-dev_1%3a1.28.1-0.2_all.deb: 658e0aa368003d2e7a89e228f652fe7a530de3883f7acd14ec7151470720e8e0
@@ -162,7 +162,7 @@ agc_toolchain_pins:
 <a id="rebuild"></a>
 ## 从空目录恢复（配方）
 
-> **验证缺口（必须显式声明）**：本清单**本轮未在真正空目录端到端实跑**——不复制现有 `build/` 当重建证明。
+> **验证缺口（必须显式声明）**：本清单**本轮未在真正空目录端到端实跑**—— 不复制现有 `build/` 当重建证明。
 > 因此「已有机器构建成功」**不**等于环境可从空目录独立重建。该验证缺口已在 `docs/adr/0005-px4-toolchain-and-link.md` 登记为未决事项。
 
 1. **PX4 源码**：从 Gitee 镜像克隆指定 tag 并初始化所需子模块（pin 块 `git_repos[px4]` 锁定 HEAD 与 9 个子模块 SHA）：
@@ -176,7 +176,7 @@ agc_toolchain_pins:
    ```
 2. **PX4 SITL 构建**：先按 [本地补丁](#px4-local-patches) 应用清单内补丁，再构建。
    ```bash
-   make -C toolchain/PX4-Autopilot px4_sitl_default   # 等价 PX4_CONFIG=px4_sitl_default
+   make -C toolchain/PX4-Autopilot px4_sitl_default # 等价 PX4_CONFIG=px4_sitl_default
    ```
    产出 `toolchain/PX4-Autopilot/build/px4_sitl_default/bin/px4`，用脚本核对 `sha256`（pin 块 `artifacts`）。
 3. **uXRCE-DDS Agent v2.4.3**：

@@ -1,7 +1,7 @@
 <a id="notice"></a>
 # PX4 补丁来源与许可
 
-本目录 `px4-gps-seed-v1.patch` 是本项目对外部 PX4 GPS 仿真模块的本地差异快照。上游 https://github.com/PX4/PX4-Autopilot ，版权与许可保留如下；文件内上游版权头保持原样。应用基线与内容指纹的唯一 pin 清单见 [工具链](../../toolchain/README.md#px4-local-patches)，补丁身份不等于构建或运行验证。
+本目录 `px4-gps-seed-v1.patch` 是本项目对外部 PX4 GPS 仿真模块的本地差异快照。上游 https://github.com/PX4/PX4-Autopilot，版权与许可保留如下；文件内上游版权头保持原样。应用基线与内容指纹的唯一 pin 清单见 [工具链](../../toolchain/README.md#px4-local-patches)，补丁身份不等于构建或运行验证。
 
 ```text
 BSD 3-Clause License

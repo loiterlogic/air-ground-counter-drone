@@ -1,6 +1,6 @@
 """路线分支台账核对 —— launch 里出现台账外的路线分支参数即失败。
 
-**为什么存在**：2026-11-04 用户发现 `w6.launch.py` 有 18 个 launch 参数、其中 7 个是
+**为什么存在**：2026-11-04 用户发现 `main.launch.py` 有 18 个 launch 参数、其中 7 个是
 死参数或只服务已结档研究，并追问"为什么会有这种多路线"。根因是研究期开关未随研究结档收口。
 规范见 `docs/conventions/路线分支治理.md`。
 
@@ -161,7 +161,7 @@ def test_convention_forbids_unapproved_branches():
 
 
 def test_every_launch_configuration_is_declared():
-    """顶层入口 `w6.launch.py` 的 `LaunchConfiguration('x')` 引用必须都有声明。
+    """顶层入口 `main.launch.py` 的 `LaunchConfiguration('x')` 引用必须都有声明。
 
  2026-11-05 事故：清退路线分支时把 `goal_follow_target` 的声明连同相邻代码块
     整块删掉，但 `_compose` 仍 `LaunchConfiguration('goal_follow_target').perform(context)`
@@ -172,16 +172,16 @@ def test_every_launch_configuration_is_declared():
 
  **只查顶层入口**：`m0_skeleton` / `*_bringup` 等被 include 的子文件，其参数由
  父 launch 的 `launch_arguments=` 注入（部分还是 `for _arg in ('car_x', ...)` 循环
-    动态声明），不要求在本文件内自证；而 `w6.launch.py` 是 `ros2 launch` 的直接目标，
+    动态声明），不要求在本文件内自证；而 `main.launch.py` 是 `ros2 launch` 的直接目标，
  它的每个引用都必须由自己声明（事故正是发生在这里）。
     """
-    entry = ROOT / 'src' / 'agc_task' / 'launch' / 'w6.launch.py'
+    entry = ROOT / 'src' / 'agc_task' / 'launch' / 'main.launch.py'
     text = entry.read_text(encoding='utf-8', errors='replace')
     referenced = set(re.findall(
         r"LaunchConfiguration\(\s*'([a-z][a-z0-9_]*)'", text))
     undeclared = referenced - _declared_args(entry)
     assert not undeclared, (
-        'w6.launch.py 引用了**未声明**的 LaunchConfiguration（ros2 launch 会在解析期抛 '
+        'main.launch.py 引用了**未声明**的 LaunchConfiguration（ros2 launch 会在解析期抛 '
         '`launch configuration ... does not exist`，整链起不来）：%s\n'
         '补回 `DeclareLaunchArgument`，或删掉对应的 `LaunchConfiguration` 引用。'
         % ', '.join(sorted(undeclared)))
@@ -200,9 +200,9 @@ def test_target_motion_override_keeps_declared_axis_in_sync():
  且调用点在 `load_scene` 之后、两个 backend 分支之前（对 full / lightweight 都生效）。
     """
     comp = (ROOT / 'src' / 'agc_task' / 'launch' /
-            'w6_composition.py').read_text(encoding='utf-8', errors='replace')
+            'composition.py').read_text(encoding='utf-8', errors='replace')
     w6 = (ROOT / 'src' / 'agc_task' / 'launch' /
-          'w6.launch.py').read_text(encoding='utf-8', errors='replace')
+          'main.launch.py').read_text(encoding='utf-8', errors='replace')
     assert 'def apply_target_motion_override(' in comp, \
         '缺少 apply_target_motion_override（CLI 覆盖会与声明轴/证据链脱节）'
     for key in ("info['axes']['target_motion']", "info['entries']['target_motion']",

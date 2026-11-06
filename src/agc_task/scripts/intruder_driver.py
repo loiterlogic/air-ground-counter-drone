@@ -189,7 +189,7 @@ class IntruderDriver(Node):
     def _resolve_cruise_alt(self):
         """H0：把 `cruise_alt_m` / `alt_m` 收敛成**唯一**巡航高度，非法即拒绝启动。
 
- 规则（与 `config/scenarios.yaml` 场景覆盖、`w6_base.yaml` 基参的合并口径一致）：
+ 规则（与 `config/scenarios.yaml` 场景覆盖、`base.yaml` 基参的合并口径一致）：
  1. `cruise_alt_m` 显式给出（非 NaN）→ 用它；
  2. 否则 `alt_m` 显式给出（非 NaN）→ 用它（弃用别名，仅兼容）；
  3. 两者都显式且**不相等**（容差 1e-9）→ 拒绝启动（歧义叠加，必须由场景/config 消解）；

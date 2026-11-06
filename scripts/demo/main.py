@@ -126,7 +126,7 @@ def cmd_start(args):
         elif e == 'escape':
             # 目标逃逸：只由显式参数触发，默认 static 语义不变。
             # `target_motion:=epicycle` 走 ADR-0031 的漂移轨道（参数由
-            # w6_composition.apply_target_motion_override 配置文件补齐 radius_m=1.8 等）；
+            # composition.apply_target_motion_override 配置文件补齐 radius_m=1.8 等）；
             # `goal_follow_target:=true` 让任务目标跟随感知目标——否则 s04 的固定 goal
             # 在目标漂移后恒 RANGE_EXCEEDED（d_track=3.0），必然 TIMEOUT。
             # 两者都是既有 launch 参数（数值 / 任务语义），不新增路线分支。

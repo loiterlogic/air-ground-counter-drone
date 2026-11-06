@@ -14,11 +14,11 @@
 | [`run_n3_matrix.py`](./run_n3_matrix.py) | **里程碑**（N3 回归矩阵：四类要求 + vision 代价，6 格） | **是** | ~580 s |
 
 ```bash
-./run_demo.sh test                              # 离线冒烟（6 组）
-python3 tests/run_full_regression.py --list     # 整链回归：先看要跑什么
-python3 tests/run_full_regression.py            # 整链回归（定时任务用这个）
-python3 tests/run_n3_matrix.py --list           # 回归矩阵：四类要求
-python3 tests/run_n3_matrix.py                  # 回归矩阵（4 格；无目标负例与 vision 臂均已无承载者）
+./run_demo.sh test # 离线冒烟（6 组）
+python3 tests/run_full_regression.py --list # 整链回归：先看要跑什么
+python3 tests/run_full_regression.py # 整链回归（定时任务用这个）
+python3 tests/run_n3_matrix.py --list # 回归矩阵：四类要求
+python3 tests/run_n3_matrix.py # 回归矩阵（4 格；无目标负例与 vision 臂均已无承载者）
 ```
 
 **无目标负例已退役**（2026-11-06）：`s17` 原本靠 `air_perception` 的 FOV 收窄制造"看不见"，
@@ -28,7 +28,7 @@ python3 tests/run_n3_matrix.py                  # 回归矩阵（4 格；无目�
 `scripts/tests/test_retirement_ledger.py`。加严判据（`visibility_rate==0` / `reason==TIMEOUT` /
 无 `fco_exposure_s>0`）**保留**在代码里，作为将来重新立项后的判据模板。
 
-**GUI 留证**（N3）：`python3 scripts/demo/capture_run.py --out <dir> --scene <场景>`。
+**GUI 留证**：`python3 scripts/demo/capture_run.py --out <dir> --scene <场景>`。
 **必须给可达终态的场景**：默认场景在 GUI 下偶发 `air_hover_timeout`，那时时间线无状态跳变，
 三张代表帧取不到（实跑验证过）。已知局限：固定俯视机位下"启动/跟踪"两图可能几乎相同，
 工具会在 `capture-manifest.json` 的 `notes` 里如实标注，不伪装成三张不同时刻。
@@ -40,12 +40,12 @@ python3 tests/run_n3_matrix.py                  # 回归矩阵（4 格；无目�
 ## 运行
 
 ```bash
-python3 tests/run_all.py                       # 列出全部核查
-python3 tests/run_all.py --run w6_r034_check.py
-python3 tests/run_all.py --all --timeout 600   # 全跑（带超时）
+python3 tests/run_all.py # 列出全部核查
+python3 tests/run_all.py --run check_lifecycle_resource_state.py
+python3 tests/run_all.py --all --timeout 600 # 全跑（带超时）
 ```
 
-## 文档护栏（P0-3 起）
+## 文档护栏（起）
 
 下面两个是**纯静态、秒级、无副作用**的护栏，改文档后应当跑一遍：
 
@@ -54,7 +54,7 @@ python3 tests/run_all.py --all --timeout 600   # 全跑（带超时）
 | [`docs_link_check.py`](./docs_link_check.py) | 活跃范围 markdown 的**本地链接可解析、锚点存在**（显式 `<a id>` / 标题 slug / `#L<n>` / `.md:<line>`） | `python3 tests/docs_link_check.py`；`--include GLOB` 追加范围；`--strict-history` 把历史断链也算失败 |
 | [`../scripts/adr_index.py`](../scripts/adr_index.py) | `docs/adr/README.md` 与 `docs/adr/*.md` 的**编号/标题/Status/结论一致** | `python3 scripts/adr_index.py --check` |
 | [`docs_tooling_check.py`](./docs_tooling_check.py) | 上面两个工具**自身的口径**（断链/锚点/代码块排除/历史范围/索引幂等/漂移检测） | `python3 tests/docs_tooling_check.py`；不碰真实仓库，临时目录造最小项目 |
-| [`w6_dds_contract_check.py`](./w6_dds_contract_check.py) | DDS 契约（含 **case e：活跃代码不得写死 `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`**） | `python3 tests/w6_dds_contract_check.py`；已进默认冒烟组 `dds`，见 [ADR-0028](../docs/adr/0028-dds-discovery-range-and-transport.md#guard) |
+| [`check_dds_contract.py`](./check_dds_contract.py) | DDS 契约（含 **case e：活跃代码不得写死 `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`**） | `python3 tests/check_dds_contract.py`；已进默认冒烟组 `dds`，见 [ADR-0028](../docs/adr/0028-dds-discovery-range-and-transport.md#guard) |
 
 `docs_link_check.py` 的排除边界是**刻意的**，不是忽略：
 
@@ -75,13 +75,13 @@ python3 tests/run_all.py --all --timeout 600   # 全跑（带超时）
 写"改动前 vs 改动后"的回归时，基线**必须钉成常量 rev**，不能取 `HEAD`：
 
 ```python
-BASELINE_REV = 'b627043'   # 改动入库前的最后一次提交
+BASELINE_REV = 'b627043' # 改动入库前的最后一次提交
 r = sub('git -C %s show %s:%s > %s' % (ROOT, BASELINE_REV, REL_PATH, tmp))
 if r.returncode != 0:
-    pytest.skip('git 里取不到基线 %s' % BASELINE_REV)   # 跳过要**说明**，不静默通过
+    pytest.skip('git 里取不到基线 %s' % BASELINE_REV) # 跳过要**说明**，不静默通过
 ```
 
-**为什么**（2026-10-31 P2-1 实测踩到）：`test_intruder_visual_highlight.py` 曾用
+**为什么**（2026-10-31实测踩到）：`test_intruder_visual_highlight.py` 曾用
 `git show HEAD:<path>` 取"改动前"基线。当时改动尚未提交，`HEAD` 恰好等于改动前——
 但一次**正常入库**之后，`HEAD` 就变成了"改动后"，于是：
 

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-  agc_car —— 地面平台模型（真实物理，ADR-0010；W5 保形换装，ADR-0021(d)）
+  agc_car —— 地面平台模型（真实物理，ADR-0010；保形换装，ADR-0021(d)）
 
   基座来源：Gazebo Fuel 官方模型 **Clearpath Robotics Husky A200**（owner OpenRobotics）。
   资产来源 / 许可 / 署名 / sha256 见清单 `docs/conventions/第三方资产与许可.md`；上游许可**待核实**
@@ -30,14 +30,14 @@
   <xacro:arg name="max_wheel_acceleration" default="5.0"/>
   <xacro:arg name="max_linear_velocity" default="1.5"/>
   <xacro:arg name="max_angular_velocity" default="2.0"/>
-  <!-- 末端失效停车守门人（R-009，ADR-0025）：意图失效超时（s）。
+  <!-- 末端失效停车守门人（，ADR-0025）：意图失效超时（s）。
        值源自 config/car.yaml model.cmd_deadman_timeout_s，经 world_bringup 单一注入（契约 #params）。 -->
   <xacro:arg name="cmd_deadman_timeout_s" default="0.3"/>
   <xacro:arg name="body_length" default="1.0074"/>
   <xacro:arg name="body_width" default="0.5709"/>
   <xacro:arg name="body_height" default="0.2675"/>
   <xacro:arg name="body_mass" default="33.855"/>
-  <!-- 拦截载荷（W2-interception，R10）：轻量附件、无碰撞；参数落 config -->
+  <!-- 拦截载荷（-interception，R10）：轻量附件、无碰撞；参数落 config -->
   <xacro:arg name="capture_net_radius" default="1.0"/>
   <xacro:arg name="payload_mass" default="0.05"/>
 
@@ -132,7 +132,7 @@
         <geometry><mesh><uri>model://agc_car/meshes/user_rail.stl</uri></mesh></geometry>
         <material><ambient>0.2 0.2 0.2 1</ambient><diffuse>0.25 0.25 0.25 1</diffuse></material>
       </visual>
-      <!-- R-027（ADR-0010）：GZ contact 传感器——「真实碰撞」的**真值来源**。
+      <!--（ADR-0010）：GZ contact 传感器——「真实碰撞」的**真值来源**。
            挂 car/base_link，监测**同 link 内** base_collision 与其它碰撞体的接触；
            检测到接触时由世界已加载的 gz-sim-contact-system（agc_world.sdf 的
            <plugin filename="gz-sim-contact-system">）发布 gz.msgs.Contacts，经 bridge.yaml
@@ -152,8 +152,8 @@
     <xacro:wheel_link name="front_left_wheel" pose="0.256 0.285475 0.035 0 0 0"/>
     <xacro:wheel_link name="front_right_wheel" pose="0.256 -0.285475 0.035 0 0 0"/>
 
-    <!-- 3D 激光（W2-full 传感器链路；供 W4 costmap / W5 collision_monitor）
-         —— R-037 传感器高度与障碍族限制**如实登记**（ADR-0010）——
+    <!-- 3D 激光（-full 传感器链路；供costmap /collision_monitor）
+         —— 传感器高度与障碍族限制**如实登记**（ADR-0010）——
          安装高度：`car/lidar_link` **z = 0.48 m**（车顶水平面）。模型为 `gpu_lidar` 3D
          （H 360 束/360°、V 16 束 ±0.261799 rad ≈ ±15°、range [0.2,20]、10 Hz），但**安全层 / costmap
          消费的 `/agc/ground/scan_filtered` 等价于 z≈0.48 的 2D 水平面**扫描
@@ -184,17 +184,17 @@
       </sensor>
     </link>
 
-    <!-- 拦截载荷（W2-interception，R10）：轻量附件、**无碰撞**、不改动 DiffDrive 标定 -->
-    <!-- —— R-037 载荷外伸 / 碰撞口径一致化（ADR-0010）——
+    <!-- 拦截载荷（-interception，R10）：轻量附件、**无碰撞**、不改动 DiffDrive 标定 -->
+    <!-- —— 载荷外伸 / 碰撞口径一致化（ADR-0010）——
          **显式声明各自适用域**，消除「一侧计入另侧不计」的隐含不一致：
          * 净空（布局约束，ADR-0023）：载荷外伸 1.0 m 仅作**出生净空推导**的外伸登记，约束场景随机化；
          * 安全层（2D 视野）：载荷位于 z=1.60（网面）/ z=0.30（发射器），**不**在 z=0.48 扫描面 → 不进视野；
          * 物理碰撞：载荷**无 collision**（当前不参与真实接触）→ 网/干扰**行为级以外**的物理接触验证 **unsupported**；
-         * 重标定义务：载荷**物理启用（加 collision）后**，C2/C6 与本外伸/碰撞口径**必须重新标定**，不借旧标定维持。
+         * 重标定义务：载荷**物理启用（加 collision）后**，/与本外伸/碰撞口径**必须重新标定**，不借旧标定维持。
          **不改**载荷的任何物理/惯性/几何参数。 -->
-    <!-- 捕获网面：直径 2 m 的圆面，法线朝前（+x），供 W6 物理捕获"穿越判据"使用 -->
+    <!-- 捕获网面：直径 2 m 的圆面，法线朝前（+x），供物理捕获"穿越判据"使用 -->
     <link name="car/capture_net">
-      <!-- W5：抬高至传感器扫描平面上方（网面底 0.60 > 雷达 0.48），否则 2 m 网面遮挡激光前向视野
+      <!--：抬高至传感器扫描平面上方（网面底 0.60 > 雷达 0.48），否则 2 m 网面遮挡激光前向视野
            （gpu_lidar 对 visual 求交，实测网面在正前方 0.50 m 处恒返回）；同时更贴合目标机 ~2 m 高度。 -->
       <pose>0.55 0 1.60 0 0 0</pose>
       <inertial>
@@ -208,7 +208,7 @@
       </visual>
     </link>
 
-    <!-- 干扰载荷：行为级电子干扰发射器（EMI 不建模）；行为接口属 W6 -->
+    <!-- 干扰载荷：行为级电子干扰发射器（EMI 不建模）；行为接口属-->
     <link name="car/jammer">
       <pose>-0.20 0 0.30 0 0 0</pose>
       <inertial>
@@ -229,14 +229,14 @@
          为什么需要：用户实测"GUI 里看不见车"。50 m 正俯视下 1.0 m 的车只有约 14 px，
          加上深灰车体压在灰地面上，人眼难辨。1.2 m 高亮球把它抬到约 17 px 且高对比。
 
-         **几何放置（关键，不可随意改）——两条互相夹逼的硬约束**：
+         **几何放置（关键，不可随意改）—— 两条互相夹逼的硬约束**：
 
          ① 下界：球**不得**挡住激光。`gpu_lidar` 对 **visual** 求交（见本文件 `capture_net`
             注释里的实测），且本机激光是 **3D**（16 束、垂直 ±15°、range 20 m）——
             上行光束在水平距离 d 处的高度是 `0.48 + d·tan(15°)`，到 20 m 处已到 **5.84 m**。
             所以"球底高于 0.48 扫描面"**并不够**（2026-11-05 实测踩过这个坑：球心 1.15 时，
             球体 z[0.55,1.75] 仍被 0.3~2 m 处的上行束扫到）。
-            正确的下界是 **球心 − 0.6 ≥ 5.84 m** 才能完全避开扫掠——那会让球悬在车上 6 m，
+            正确的下界是 **球心 − 0.6 ≥ 5.84 m** 才能完全避开扫掠—— 那会让球悬在车上 6 m，
             俯视下荒谬。
             实测结论：球心 1.15 时的假回波**全部落在 `scan_self_filter` 矩形内**
             （`|x|≤0.6037, |y|≤0.38545`；球水平半径 0.6 与该矩形同量级，逐束逐方位枚举
@@ -330,7 +330,7 @@
       <odom_publish_frequency>30</odom_publish_frequency>
     </plugin>
 
-    <!-- 末端失效停车守门人（R-009，ADR-0025）：GZ 侧唯一写 DiffDrive 命令口者。
+    <!-- 末端失效停车守门人（，ADR-0025）：GZ 侧唯一写 DiffDrive 命令口者。
          「意图」走 gz 话题 /agc/sim/cmd_intent（bridge.yaml 把 ROS /model/agc_car/cmd_vel 桥到此
          gz 话题；ROS 侧话题名不变）；本插件 fresh→转发、stale→发零速到 DiffDrive 默认订阅的
          gz 话题 /model/agc_car/cmd_vel。插件只转发或归零，不自创运动、不发 ROS 话题（非第二命令者）。 -->

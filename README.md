@@ -38,9 +38,9 @@
 ## 快速开始
 
 ```bash
-./run_demo.sh doctor    # ① 环境自检（14 项，≤30 s，不启动任何仿真）
-./run_demo.sh           # ② 跑默认演示（GUI + yard 地图 + 主场景 s04）
-./run_demo.sh stop      # ③ 停止（另一个终端也可；幂等）
+./run_demo.sh doctor # ① 环境自检（14 项，≤30 s，不启动任何仿真）
+./run_demo.sh # ② 跑默认演示（GUI + yard 地图 + 主场景 s04）
+./run_demo.sh stop # ③ 停止（另一个终端也可；幂等）
 ```
 
 前提（三条，缺一不可）：
@@ -48,7 +48,7 @@
 1. **ROS 2 Jazzy** 已安装（`/opt/ros/jazzy/setup.bash` 存在）；
 2. **工作区已构建**：`colcon build --symlink-install`（首次约 5–6 分钟，9 个包）；
 3. **`toolchain/` 已备**：PX4 SITL + uXRCE-DDS Agent。该目录**不纳入版本控制**（`.gitignore` 只放行
-   `toolchain/README.md`），新 clone 里是空的——按 [toolchain/README](toolchain/README.md) 的
+   `toolchain/README.md`），新 clone 里是空的—— 按 [toolchain/README](toolchain/README.md) 的
    pin 清单与构建配方自行构建。
 
 > 演示入口按自身位置定位工作区，仓库可放在任意路径；评测产物与 Git 身份也跟随当前仓库。
@@ -83,7 +83,7 @@
 ```
 
 跑完在 `experiments/demo/<时间戳>/` 落：`timeline.txt`（事件流）、`panel.txt`（面板副本）、
-`terminal_explanation.txt`（**为什么成功/失败**——阈值取本 run 实际生效参数，指标只读
+`terminal_explanation.txt`（**为什么成功/失败**—— 阈值取本 run 实际生效参数，指标只读
 `summary.json`）、`metrics/summary.json`（机器可读指标）。语义见
 [演示可观测性与产物语义](docs/conventions/演示可观测性与产物语义.md#top)。
 
@@ -100,7 +100,7 @@
 > 三张取自同一次运行的不同时刻（t≈43 s / 55 s / 60 s），**同一尺寸**（831×952），
 > 视角一致（skyband 均为 **0.00**，即正俯视）。
 > **这些图是 Gazebo 3D 视图**（自然运行、正俯视 85 m）；**状态面板在终端**（2 Hz 面板 +
-> `timeline.txt` / `panel.txt`），完整演示视频由用户录制——图里看不到状态，不代表系统没在报状态。
+> `timeline.txt` / `panel.txt`），完整演示视频由用户录制—— 图里看不到状态，不代表系统没在报状态。
 > 俯视下车辆位移只有几个像素，细节可放大查看。
 
 ## 系统结构
@@ -117,14 +117,14 @@
 
 ```text
 Gazebo（世界 + 车 + 目标 + 相机）
-   ⇅  ros_gz 桥（话题 / set_pose 服务）
+   ⇅ ros_gz 桥（话题 / set_pose 服务）
 agc_perception（odom / gt / map 适配）
-   ⇅  agc_msgs（9 条消息：唯一公共接口）
+   ⇅ agc_msgs（9 条消息：唯一公共接口）
 agc_task（task_manager 状态机 · run_logger 指标 · 场景复位 · 捕获裁决）
    ⇅
-agc_air（PX4 uXRCE-DDS · LQR 跟踪）      agc_ground（RL 主控 · Nav2 collision_monitor）
-   ⇊                                       ⇊
-PX4 SITL + uXRCE-DDS Agent               /agc/ground/cmd_vel（唯一执行口）
+agc_air（PX4 uXRCE-DDS · LQR 跟踪） agc_ground（RL 主控 · Nav2 collision_monitor）
+   ⇊ ⇊
+PX4 SITL + uXRCE-DDS Agent /agc/ground/cmd_vel（唯一执行口）
 ```
 
 ## 目录导航
@@ -158,7 +158,7 @@ PX4 SITL + uXRCE-DDS Agent               /agc/ground/cmd_vel（唯一执行口�
 索引一致（ADR + 脚本）/ `scripts/tests` 全部离线单测 / DDS 契约 / 工具链 pin。
 实测 **27 s** 全绿（2026-11-06，本机）。
 
-> 它**不是**"57 个核查全绿"——那些大多要拉起完整 SITL，语义是验收不是冒烟。
+> 它**不是**"57 个核查全绿"—— 那些大多要拉起完整 SITL，语义是验收不是冒烟。
 > 详见 [tests/README](tests/README.md) 与 [`tests/run_smoke.py`](tests/run_smoke.py)。
 
 ## 常见问题
@@ -169,7 +169,7 @@ PX4 SITL + uXRCE-DDS Agent               /agc/ground/cmd_vel（唯一执行口�
 
 ## 已知边界（当前能力范围）
 
-这些是**当前版本的能力边界**，不是缺陷清单——知道边界才能正确解读结果：
+这些是**当前版本的能力边界**，不是缺陷清单—— 知道边界才能正确解读结果：
 
 1. **捕获裁决：脚本弹道预演，非真实网物理**：现行口径是「**预演弹道能命中才开火**」——
    `capture_adjudicator` 用 `net_v0_mps` / `net_angle_deg` / `net_g` 预测网到达时刻的目标位置并判可达
@@ -191,7 +191,7 @@ PX4 SITL + uXRCE-DDS Agent               /agc/ground/cmd_vel（唯一执行口�
    （[ADR-0009](docs/adr/0009-perception-truth-derived-and-vision-path.md#top)）。
    `/agc/targets` 的发布者恒为 `gt_adapter`（`air_fusion` 亦已于同日退役），**没有第二条路**。
    > `summary.json` 里仍带 `perception_path` / `vision_model` / `detector_backend` 三键，
-   > 值恒为 `truth` / `none` / `none`——那是**产物 schema 不漂移**，不表示存在可选路径。
+   > 值恒为 `truth` / `none` / `none`—— 那是**产物 schema 不漂移**，不表示存在可选路径。
 5. **换用相机机型对跟踪动力学的量化影响未知**：相机内参 / 安装位变化会改变观测噪声与视场，
    进而可能影响跟踪误差分布；本项目只测了 `gz_x500_mono_cam` 一种机型，**未做**跨机型的
    跟踪动力学量化对比。
@@ -199,9 +199,9 @@ PX4 SITL + uXRCE-DDS Agent               /agc/ground/cmd_vel（唯一执行口�
    > 相对差 −0.01%（预登记容差 20%）→ 表面 PASS，但 `standoff_follower.max_step_m=0.1` 把 p75–p95
    > 整段**饱和在 ≈0.1 m**，两臂 p95 必然相等，判据**没有判别力**；真正有区分力的是 p50（−42.41%）
    > 与 p99（−22.62%），两者均超容差。故判**完成（带已知缺口）**：不事后更换判据，若将来要下
-   > "等价 / 不等价"结论须**新任务 + 新预登记**（p50+p99 / 剔除饱和样本 / C1 速度·高度误差）。
+   > "等价 / 不等价"结论须**新任务 + 新预登记**（p50+p99 / 剔除饱和样本 /速度·高度误差）。
 6. **观测指向臂 = `track`（感知航迹指向，非 oracle）**：`observe_yaw_mode` 的 **launch 参数已于
-   2026-11-04 清退**（W7-b 对照臂结档），现在**只由 `air.yaml` 真源 + 场景覆盖**决定：
+   2026-11-04 清退**（对照臂结档），现在**只由 `air.yaml` 真源 + 场景覆盖**决定：
    `air.yaml` 缺省 `velocity`，`s04` 场景覆盖为 **`track`**（机头对准 `/agc/targets` 感知航迹）。
    ⇒ 主场景**不是** oracle 臂，机头指向消费的是与任务同源的感知航迹，**不读** `/agc/gt/*`。
    `target`（oracle 真值指向）与 `velocity` 两档仍保留在节点里供研究臂使用，
@@ -214,7 +214,7 @@ PX4 SITL + uXRCE-DDS Agent               /agc/ground/cmd_vel（唯一执行口�
 8. **机载俯视相机（opt-in，2026-11-04）**：`px4_sim_model:=gz_agc_x500_nadir` 时己方机挂一台**正下视**
    相机，桥出 `/agc/air/nadir/image_raw` + `/agc/air/nadir/camera_info`
    （[ADR-0030](docs/adr/0030-nadir-camera-capability.md#top)）。
-   **仅取证/测绘，无消费者**——识别仍靠真值（`gt_adapter`），图像**不**接入任务链；
+   **仅取证/测绘，无消费者**—— 识别仍靠真值（`gt_adapter`），图像**不**接入任务链；
    默认 `gz_x500` 行为逐字不变（无相机）。实测 `yard` 14 m 下中心 GSD 5.30 cm/px、画幅 33.9×25.5 m。
    单目正俯视只能拿 **XY 足迹**，**拿不到高度 Z**（需双视差 + 专门航线）。
 

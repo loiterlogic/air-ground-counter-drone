@@ -1,4 +1,4 @@
-# agc_ground 分层 costmap 参数（ · R3）—— 由 ground_bringup.launch.py 单一注入
+# agc_ground 分层 costmap 参数（ · R3）——由 ground_bringup.launch.py 单一注入
 #
 # 用途：**离线对照基线**（R8 的 Nav2 planner/controller）**自持**
 # （`ground_baseline` 内建 `Costmap2DROS`，节点名 `costmap`）；
@@ -29,12 +29,12 @@ costmap:
     robot_radius: 0.6
     track_unknown_space: true
     plugins: ["static_layer", "obstacle_layer", "voxel_layer", "inflation_layer"]
-    # —— static 层： 的 /agc/map ——
+    # ——static 层： 的 /agc/map——
     static_layer:
       plugin: "nav2_costmap_2d::StaticLayer"
       map_subscribe_transient_local: True
       map_topic: "/agc/map"
-    # —— obstacle 层：2D 激光 ——
+    # ——obstacle 层：2D 激光——
     obstacle_layer:
       plugin: "nav2_costmap_2d::ObstacleLayer"
       enabled: True
@@ -50,7 +50,7 @@ costmap:
         raytrace_min_range: 0.0
         obstacle_max_range: 15.0
         obstacle_min_range: 0.0
-    # —— voxel 层：3D 点云 ——
+    # ——voxel 层：3D 点云——
     voxel_layer:
       plugin: "nav2_costmap_2d::VoxelLayer"
       enabled: True
@@ -74,7 +74,7 @@ costmap:
         raytrace_min_range: 0.0
         obstacle_max_range: 15.0
         obstacle_min_range: 0.0
-    # —— inflation 层（本地）——
+    # ——inflation 层（本地）——
     inflation_layer:
       plugin: "nav2_costmap_2d::InflationLayer"
       cost_scaling_factor: 3.0

@@ -50,7 +50,7 @@
 # | 檐口 / 女儿墙 | 0.55–0.62 | 0.553 |
 #
 # **R6 实测的关键教训（不写下来会重踩）**：`metalness` 才是渲染亮度的杠杆。无环境贴图时
-# 高金属度几乎不给漫反射分量 —— 原 `steel`(0.75) 屋面在 118 m 俯视渲染里只有 **83/255**，
+# 高金属度几乎不给漫反射分量——原 `steel`(0.75) 屋面在 118 m 俯视渲染里只有 **83/255**，
 # 而旁边 `concrete`(0.00) 檐口是 **161/255**。也就是说：**给金属件提亮 albedo 是无效的**。
 #
 # ---- 配色分族（V2：按功能分族、族内一致）----
@@ -75,18 +75,18 @@
 # 视觉与碰撞同源（不做装饰性无碰撞块）；抬升 2–6 mm 避免与基层共面 z-fighting。
 #
 # ---- 分区（世界 ENU，m；作业区 [−50,50]²）----
-# 北外环 y 26..40 ：主厂房 hall_north / 仓库 hall_northeast / 办公楼 admin_block / 配电房 power_house
-# 东区 x 26..46 ：罐区 tank_farm_e（含防火堤 / 基础环）/ 管廊 pipe_rack_e / 变电站 substation_e
-# 南外环 y −44..−26 ：集装箱堆场 container_yard_a / 库房 warehouse_south / 配送库 depot_east
-# 西区 x −46..−26 ：维修车间 workshop_w / 办公楼 office_w
+# 北外环 y 26..40：主厂房 hall_north / 仓库 hall_northeast / 办公楼 admin_block / 配电房 power_house
+# 东区 x 26..46：罐区 tank_farm_e（含防火堤 / 基础环）/ 管廊 pipe_rack_e / 变电站 substation_e
+# 南外环 y −44..−26：集装箱堆场 container_yard_a / 库房 warehouse_south / 配送库 depot_east
+# 西区 x −46..−26：维修车间 workshop_w / 办公楼 office_w
 # 中央南带 y −13..−22：集装箱堆场 container_yard_b / 薄板堆 slab_s / 筒仓 silo_s / 工具房 hut_s /
 # 隔离墩列 jersey_row / 锥桶列 cone_row / 石墩列 bollard_row / 花坛列 planter_row
-# 中央北带 y 9..13 ：监控塔 tower_n / 双罐 tank_pair_n / 指路牌 sign_a
-# 南门 / 环路沿线 ：岗亭 guard_booth / 道闸 boom_gate / 大门标牌 sign_gate / 指路牌 sign_b /
+# 中央北带 y 9..13：监控塔 tower_n / 双罐 tank_pair_n / 指路牌 sign_a
+# 南门 / 环路沿线：岗亭 guard_booth / 道闸 boom_gate / 大门标牌 sign_gate / 指路牌 sign_b /
 # 消防栓 hydrant_a / 配电箱列 cabinet_row / 垃圾箱列 dumpster_row（本轮新增）
-# 周界 ：围墙 wall_n / wall_s / wall_w / wall_e（30–34 m 分段长墙 + 压顶，段间即门洞）
+# 周界：围墙 wall_n / wall_s / wall_w / wall_e（30–34 m 分段长墙 + 压顶，段间即门洞）
 #
-# ---- 实测边界（`python3 tests/w6_geometry_check.py` 断言 (o)(p) + 本图离线核验，2026-10-29）----
+# ---- 实测边界（`python3 tests/check_scene_geometry.py` 断言 (o)(p) + 本图离线核验，2026-10-29）----
 # * 实体 **36** 个；图元 **186** 个；形状 **3** 类（box / cylinder / sphere）；小型件 **19** 个；
 # 复合模型 **34** 个；材质档本图用到 **5 类**（concrete / steel / paint / glass / rubber；`asphalt` 用于地面，见 `agc_world.sdf`；`rust` 预留）；yaw 种类 **12** 种（含正交主向）。
 # * 障碍外接矩形 **X −46.2..+46.2（92.4 m）/ Y −45.4..+45.4（90.9 m）**——占 100×100 作业区约 84%。
@@ -113,7 +113,7 @@
 # * 无贴图 / 无 mesh（不引入外部资产）→ 材质只有**标量 PBR + 纯色**，出不了纹理细节；
 # 再往上要贴图就必须走 ADR-0005 的 provenance / 许可 / 哈希登记。
 #
-# ---- 派生约定（`w6_composition` / `world_map` 单一实现）----
+# ---- 派生约定（`composition` / `world_map` 单一实现）----
 # `safety_radius` = 实体**全部 part** 的水平外接圆半径（未写则自动推导，见 world_map.py）；
 # 感知先验把复合体 / cylinder / sphere **降级为水平轴对齐包络矩形**（保守外扩，不缩小实体）。
 # `finish` 只进物理世界的 `<material>`，**不进**感知先验 / 占位栅格（材质不是几何）。
@@ -127,19 +127,19 @@ work_area:
   origin_y: -50.0
 
 # ---- 飞行高度（ADR-0007；用户 2026-11-02 裁定「高度和地图绑定」）----
-# 本节是**本图固定飞行高度的配置文件**。运行期由 `w6_composition.apply_flight_altitude`
-# 派生注入 `air.yaml` / `w6_base.yaml` 的同名参数；`air.yaml` 里的同名键只作 standalone /
+# 本节是**本图固定飞行高度的配置文件**。运行期由 `composition.apply_flight_altitude`
+# 派生注入 `air.yaml` / `base.yaml` 的同名参数；`air.yaml` 里的同名键只作 standalone /
 # 单测兜底，**运行期一律被本节覆盖**（与 `safety.obstacle_*` 的派生处理同款）。
 #
 # 为什么高度是**地图属性**（不是场景参数）：用户原话「这是和地图绑定的，因为后面会做
 # 小障碍高密度和大障碍低密度等图」。换图即换高度，**代码一行不动**。
 #
 # 五键语义（与 `docs/conventions/飞行高度分层与按地图定高.md` 的 L2a/L2b/L2c 对应）：
-# own_track_m —— 己方机跟踪高度（L2b → standoff_follower.height）
-# own_takeoff_m —— 己方机起飞高度（L2c → takeoff_controller.takeoff_altitude_m）
-# target_cruise_m —— 目标机巡航高度（L2a → intruder_driver.cruise_alt_m 的**默认值**）
-# own_clearance_min_m—— 垂直净空下限 c_clear（K3）
-# derived —— 本图几何的派生量（只读；由 `height_survey` 同口径算出，供断言比对）
+# own_track_m——己方机跟踪高度（L2b → standoff_follower.height）
+# own_takeoff_m——己方机起飞高度（L2c → takeoff_controller.takeoff_altitude_m）
+# target_cruise_m——目标机巡航高度（L2a → intruder_driver.cruise_alt_m 的**默认值**）
+# own_clearance_min_m——垂直净空下限 c_clear（K3）
+# derived——本图几何的派生量（只读；由 `height_survey` 同口径算出，供断言比对）
 flight_altitude:
   own_track_m: 14.0
   own_takeoff_m: 14.0

@@ -55,7 +55,7 @@ def test_default_launch_argv_passes_oracle_mode_explicitly():
     joined = ' '.join(argv)
     for token in ('backend:=full', 'scene:=s04_static_static_obs_track',
                   'world_map:=yard', 'seed:=0',
-                  'viz:=true', 'agc_task', 'w6.launch.py'):
+                  'viz:=true', 'agc_task', 'main.launch.py'):
         assert token in joined, '默认命令行缺少 %s：%s' % (token, joined)
     # 2026-11-04：该 launch 参数已清退 → **不得**再传。ros2 launch 对未声明参数静默忽略，
     # 继续传会让产物声称一个并未生效的模式（实测过的假象）。

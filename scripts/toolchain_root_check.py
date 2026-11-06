@@ -5,7 +5,7 @@
 两处 入口的**根注入方式**与工具链二进制的**存在性**，逐项记 PASS / FAIL：
 
  静态检查（源码正则，只读）：
- (1) `src/agc_task/launch/w6.launch.py` 与 `src/agc_air/launch/air_bringup.launch.py`
+ (1) `src/agc_task/launch/main.launch.py` 与 `src/agc_air/launch/air_bringup.launch.py`
  **不得**出现基于 `parents[...]` 的项目根深度上溯；命中 -> FAIL。
  (2) 两文件**均须**声明 launch 参数 `agc_root`，默认值 `/home/chen/AGC`；缺失 -> FAIL。
 
@@ -27,7 +27,7 @@ DEFAULT_AGC_ROOT = '/home/chen/AGC'
 
 # 待核查的两处 顶层入口（相对项目根）。
 LAUNCH_FILES = [
-    os.path.join('src', 'agc_task', 'launch', 'w6.launch.py'),
+    os.path.join('src', 'agc_task', 'launch', 'main.launch.py'),
     os.path.join('src', 'agc_air', 'launch', 'air_bringup.launch.py'),
 ]
 

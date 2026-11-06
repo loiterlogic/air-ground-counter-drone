@@ -1,0 +1,183 @@
+# 场景族基参数：main.launch.py 与 scenarios.yaml 的场景覆盖合并后由 launch 注入；节点不得覆写。
+task_manager:
+  ros__parameters:
+    world_name: "agc_world"
+    goal_topic: "/agc/ground/goal"
+    # 默认场景的固定任务目标；改布局须同步（ADR-0012）。
+    goal_x: 12.5
+    goal_y: -2.0
+    goal_follow_target: false
+    # 目标失效时保留最后有效目标（含原源时刻）的时长；超窗失效并安全停车。
+    goal_hold_valid_s: 1.0
+    goal_info_topic: "/agc/ground/goal_info"
+    odom_valid_topic: "/agc/ground/odom_valid"
+    cmd_topic: "/agc/ground/cmd_vel"
+    state_topic: "/agc/task/state"
+    # lightweight 无空中链路；full 由 launch 合并后覆写为 true。
+    air_present: false
+    # 整链下等起飞悬停完成后触发控制权交接（ADR-0019）。
+    release_service: "/agc/air/release_control"
+    air_odom_topic: "/agc/air/odom"
+    air_hover_climb_m: 2.3
+    # 等待起飞完成的有界上限；超时如实拒 start（ADR-0019）。
+    air_hover_timeout_s: 45.0
+    ground_controller_name: "agc_rl"
+    d_track_m: 3.0
+    t_dwell_s: 3.0
+    t_max_s: 120.0
+    # 跟踪里程碑是否锁存终态；capture 场景在场景层覆盖为 false（ADR-0014）。
+    tracking_milestone_is_terminal: true
+    odom_valid_max_age_s: 1.0
+    jam_confirm_topic: "/agc/task/jam_confirm"
+    epoch_topic: "/agc/scenario/reset_epoch"
+    capture_event_topic: "/agc/task/capture_event"
+    reset_call_timeout_s: 8.0
+    episode_topic: "/agc/task/episode"
+    car_odom_max_age_s: 1.0
+    dwell_event_topic: "/agc/task/dwell_event"
+
+scenario_reset:
+  ros__parameters:
+    world_name: "agc_world"
+    state_topic: "/agc/task/state"
+    car_start_topic: "/agc/scenario/car_start"
+    car_x: -15.0
+    car_y: 1.0
+    car_z: 0.010
+    car_yaw: 0.0
+    target_x: 15.0
+    target_y: -2.0
+    target_z: 0.12
+    target_yaw: 0.0
+    # 车↔目标出生净空下限（ADR-0012）。
+    spawn_clearance_min_m: 6.0
+    clearance_radius_car_m: 0.5037
+    clearance_radius_uav_m: 0.25
+    clearance_radius_obstacle_m: 0.15
+    clearance_min_car_own_uav_m: -1.0
+    clearance_min_target_own_uav_m: -1.0
+    clearance_min_car_obstacle_m: -1.0
+    clearance_min_target_obstacle_m: -1.0
+    own_uav_present: false
+    own_uav_x: 0.0
+    own_uav_y: 0.0
+    spawn_randomize: false
+    spawn_seed: 0
+    spawn_search_radius_m: 3.0
+    car_entity_name: "agc_car"
+    target_entity_name: "intruder_uav"
+    car_gt_topic: "/agc/gt/agc_car"
+    target_gt_topic: "/agc/gt/intruder_uav"
+    reset_epoch_topic: "/agc/scenario/reset_epoch"
+    ground_odom_topic: "/agc/ground/odom"
+    readback_tolerance_m: 0.25
+    readback_timeout_s: 1.0
+    readback_max_age_s: 0.5
+    stop_exec_max_s: 0.5
+    quiescence_eps: 0.05
+
+intruder_driver:
+  ros__parameters:
+    px4_ns: "px4_1"
+    target_system: 2
+    motion: "static"
+    # 目标巡航高度由地图派生注入（ADR-0007）；本值仅 standalone 兜底。
+    cruise_alt_m: 2.0
+    # 弃用别名，仅为历史 run 复现保留（与 cruise_alt_m 冲突时拒启动）。
+    alt_m: 2.0
+    speed_mps: 1.0
+    radius_m: 6.0
+    # epicycle 圆心漂移幅度；轨道半径是 radius_m（ADR-0031）。
+    drift_amplitude_m: 0.6
+    drift_period_s: 30.0
+    rate_hz: 20.0
+    arm_retry_s: 2.0
+    jam_state_topic: "/agc/task/jam_state"
+    epoch_topic: "/agc/scenario/reset_epoch"
+    start_tol_m: 0.4
+    start_vel_eps_mps: 0.35
+    start_dwell_s: 0.5
+    run_region_radius_m: 15.0
+
+run_logger:
+  ros__parameters:
+    campaign: "w6-task-eval"
+    scenario: "s00"
+    seed: 0
+    odom_valid_topic: "/agc/ground/odom_valid"
+    cmd_topic: "/agc/ground/cmd_vel"
+    state_topic: "/agc/task/state"
+    ground_odom_topic: "/agc/ground/odom"
+    scan_topic: "/agc/ground/scan"
+    collision_monitor_state_topic: "/collision_monitor_state"
+    contact_topic: "/agc/ground/contact"
+    # 锁轮制动减速度，用于剩余停车裕度（ADR-0010）。
+    a_brake_mps2: 0.9
+    scan_max_age_s: 0.5
+    action_max_age_s: 0.5
+    # 可见 / 火控机会率固定观测时长，须与 runner 同值（ADR-0016）。
+    obs_window_s: 60.0
+    episode_topic: "/agc/task/episode"
+    world_file: ""
+    px4_root: ""
+
+capture_adjudicator:
+  ros__parameters:
+    ground_odom_topic: "/agc/ground/odom"
+    target_topic: "/agc/targets"
+    hit_topic: "/agc/task/capture_hit"
+    envelope_topic: "/agc/task/envelope_in"
+    capture_evidence_topic: "/agc/task/capture_evidence"
+    fire_control_topic: "/agc/task/fire_control"
+    rate_hz: 20.0
+    # 网发射初速；目标高度超基线包络时由地图派生（ADR-0011）。
+    net_v0_mps: 6.5
+    net_angle_deg: 75.0
+    net_g: 9.81
+    net_diameter_m: 1.0
+    net_drag: 0.9
+    launcher_height_m: 0.0
+    net_t_exp_s: 0.2
+    fire_cooldown_s: 2.0
+    net_flight_timeout_s: 3.0
+    # 瞄准余量：预演最近距离 ≤ 半径 − 本值才开火（ADR-0011）。
+    net_aim_margin_m: 0.0
+    target_fit_window_s: 1.5
+    target_fit_min_s: 0.75
+    target_fit_min_samples: 8
+    target_static_speed_eps_mps: 0.15
+    target_gate_m: 1.0
+    target_pos_alpha: 0.5
+    target_max_lead_m: 1.5
+    model_id: "net_ballistic_frame_v2"
+    applicable_min_alt_m: 0.0
+    # 射击授权；缺省 false，按场景 outcome 轴覆盖（ADR-0011）。
+    interception_authorized: false
+    jam_envelope_topic: "/agc/task/envelope_jam"
+    jam_model_id: "behavioral_range_gate"
+    jam_envelope_min_alt_m: 0.0
+    jam_envelope_max_alt_m: 2.0
+    jam_envelope_max_range_m: 1.0
+    task_state_topic: "/agc/task/state"
+    episode_topic: "/agc/task/episode"
+    capture_event_topic: "/agc/task/capture_event"
+    car_max_age_s: 0.5
+    target_max_age_s: 0.5
+    confidence_min: 0.5
+    required_target_id: ""
+
+jammer:
+  ros__parameters:
+    px4_ns: "px4_1"
+    target_system: 2
+    cmd_topic: "/agc/task/jam_cmd"
+    state_topic: "/agc/task/jam_state"
+    envelope_topic: "/agc/task/envelope_jam"
+    envelope_max_age_s: 0.5
+    vehicle_status_topic: "/px4_1/fmu/out/vehicle_status"
+    confirm_topic: "/agc/task/jam_confirm"
+    evidence_topic: "/agc/task/jam_evidence"
+    jam_sustain_s: 1.0
+    jam_confirm_window_s: 3.0
+    # LOST 确认期望 nav_state，见 px4_failsafe_lock.yaml（ADR-0010）。
+    lost_expected_nav_state: 2

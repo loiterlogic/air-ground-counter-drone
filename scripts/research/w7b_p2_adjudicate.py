@@ -2,7 +2,7 @@
 """w7b_p2_adjudicate —— 按**预注册规则**裁定 P2（职责分层：臂 B 规则高层 vs 臂 A c2）。
 
 输入：`experiments/<campaign>/<run_id>/metrics/arms.json`（`w7b_arms_runner.py` 产物）。
-规则真源：`src/agc_rl/config/w7b_prereg.yaml` 的 `statistics.p2` / `decision.p2`
+规则真源：`src/agc_rl/config/research_prereg.yaml` 的 `statistics.p2` / `decision.p2`
 （**单一来源**——阈值 / 样本量 / 显著性**不**在本脚本硬编码；本脚本只读取并执行，
 [F-13](../../docs/reviews/agc-review-2026-10-14/30-未来.md#f-13)）。
 
@@ -35,7 +35,7 @@ import sys
 import yaml
 
 ROOT = '/home/chen/AGC'
-PREREG = os.path.join(ROOT, 'src/agc_rl/config/w7b_prereg.yaml')
+PREREG = os.path.join(ROOT, 'src/agc_rl/config/research_prereg.yaml')
 # 复用 P1 的 DV 规约函数（同一 primary/secondary 失败口径，避免两命题漂移）。
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from w7b_p1_adjudicate import dv_value, is_infra  # noqa: E402

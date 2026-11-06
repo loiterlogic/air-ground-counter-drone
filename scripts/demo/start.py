@@ -2,7 +2,7 @@
 """`run_demo.sh` 的启动编排：组装 `ros2 launch` → 独立进程组 → 进度呈现 → 跟到终态 → 落 summary。
 
 **薄封装**：不复制任何 launch 编排，参数一律透传给
-[`w6.launch.py`](../../src/agc_task/launch/w6.launch.py)（[ADR-0020](../../docs/adr/0020-package-boundaries-and-runtime-topology.md#top) 的唯一参数化入口）。
+[`main.launch.py`](../../src/agc_task/launch/main.launch.py)（[ADR-0020](../../docs/adr/0020-package-boundaries-and-runtime-topology.md#top) 的唯一参数化入口）。
 
 对外只映射 5 个参数（参数收敛口径）：
 
@@ -76,7 +76,7 @@ def expected_terminal_for_scene(scene):
 # 期望终态由 scenarios.yaml 场景登记提供
 EXPECTED_TERMINAL = 'TRACKING_SUCCESS'
 
-# PX4 错峰窗口（w6.launch.py 默认值；进度提示必须覆盖，否则使用者以为卡死）
+# PX4 错峰窗口（main.launch.py 默认值；进度提示必须覆盖，否则使用者以为卡死）
 PX4_OWN_DELAY_S = 25.0
 PX4_INTRUDER_DELAY_S = 35.0
 
@@ -104,7 +104,7 @@ def viz_enabled(headless):
  依据状态呈现口径：
     "脚本用 `ros2 topic echo --once` 或轻量 Python 订阅（**不要**起 RViz 才能看状态）"。
  headless 用于经济快跑 / 服务器，本来就没有窗口可看，再起 `viz_markers` + `rviz2` +
- `static_tf`（[`w6.launch.py::_viz_actions`](../../src/agc_task/launch/w6.launch.py)）
+ `static_tf`（[`main.launch.py::_viz_actions`](../../src/agc_task/launch/main.launch.py)）
  只是白烧内存与 CPU（rviz2 ≈257 MB + viz_markers ≈90 MB，见 MAP_DESIGN_PLAYBOOK 16.2）。
 
     P1-2 round-3 修正：原实现无条件 `viz:=true`，导致 `--headless` 也起 RViz。
@@ -114,17 +114,17 @@ def viz_enabled(headless):
 
 def launch_argv(*, backend, scene, world_map, headless, extra=(), px4_run_root=None,
                 gui_render_backend='auto'):
-    """组装 `ros2 launch agc_task w6.launch.py …`（**不改**任何参数语义，只透传）。
+    """组装 `ros2 launch agc_task main.launch.py …`（**不改**任何参数语义，只透传）。
 
  `px4_run_root`：PX4 每实例可写运行根（[ADR-0024 (d)](../../docs/adr/0024-w7c-multi-worker-isolation.md#top)）。
  demo 传入本 run 的 `<run_dir>/px4`，让 own / intruder 各占独立 `-w` 目录；缺省 `None`
  时**不传**该参数，保持既有命令行逐字不变（`scripts/episode_runner.py` 等调用方不受影响）。
 
     `gui_render_backend`：GUI 渲染后端（[ADR-0021(d)](../../docs/adr/0021-w8-gui-headless-equivalence.md#d)），
- 透传 `w6.launch.py` 的同名参数。2026-11-05 前此处**写死 `auto`**，导致 `run_demo.sh`
+ 透传 `main.launch.py` 的同名参数。2026-11-05 前此处**写死 `auto`**，导致 `run_demo.sh`
  **无任何途径**切换后端——既不能做渲染对照，出问题也不能回退 software 让演示可见。
     """
-    argv = ['ros2', 'launch', 'agc_task', 'w6.launch.py',
+    argv = ['ros2', 'launch', 'agc_task', 'main.launch.py',
             'backend:=%s' % backend,
             'scene:=%s' % scene,
             'seed:=%d' % common.DEFAULT_SEED,

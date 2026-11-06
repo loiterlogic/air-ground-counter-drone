@@ -15,7 +15,7 @@ accepted（2026-11-02 由 ADR-0032 / ADR-0033 / ADR-0034 合并；结论未变�
 
 - **授权**：仅当「命令合法」（`key in JAM_MAP`）**且**「作用包络**新鲜**」才产出**已校验授权事件** `JAM_*`（发布到 `/agc/task/jam_state`）并 `_send_nav_state`；未知命令 / 包络外 / 包络过期（未就绪）一律**不产出事件**。
 - **包络新鲜度**：参数 `envelope_max_age_s`（默认 **0.5**）。判据 `envelope_in_ and last_env_rx_ is not None and (now − last_env_rx_) <= envelope_max_age_s`——**包络过期视同包络外**（与「包络以 20 Hz 发布、停发即失效」的语义一致）；日志区分「包络外」与「包络过期 / 未就绪」两种措辞。
-- **单一消费**：`intruder_driver` **删除**参数 `jam_cmd_topic` 与其原始命令订阅，改订 `jam_state_topic`（默认 `/agc/task/jam_state`，`std_msgs/String` depth 10），`key = m.data.strip().upper()`，`jammed = key not in ('', 'JAM_NONE')`；`jammed_` → 停发 Offboard 流（模拟链路被切断）语义不变。
+- **单一消费**：`intruder_driver` **删除**参数 `jam_cmd_topic` 与其原始命令订阅，改订 `jam_state_topic`（默认 `/agc/task/jam_state`，`std_msgs/String` depth 10），`key = m.data.strip.upper`，`jammed = key not in ('', 'JAM_NONE')`；`jammed_` → 停发 Offboard 流（模拟链路被切断）语义不变。
 - **不新增命令者 / 命令话题**：复用既有 `/agc/task/jam_state` 作已校验事件（`task_manager` 已在消费）。`JAM_NONE` = **释放**（非注入）：`''` / `NONE` / `CLEAR` 输入 → **始终**发出 `JAM_NONE`，从不受包络 / 新鲜度门控。
 
 ### (b) 真实行为确认：授权 / 发送 / ACK 单独都不算成功
@@ -57,7 +57,7 @@ accepted（2026-11-02 由 ADR-0032 / ADR-0033 / ADR-0034 合并；结论未变�
 - **不**用「收到任一 `VehicleStatus`」当确认（ACK ≠ 效果）；**不**以「达到模式」为唯一判据而不要求持续。
 - **不**让 `task_manager` 自行订 `VehicleStatus` 判定（重开双裁决）。
 - **不**运行期读 PX4 参数代替启动锁定；**不**以源码默认值代填运行值。
-- **未实现**：因子③ data-link-loss **未**隔离——本项目未切断真正的数据链（uXRCE / MAVLink），`NAV_DLL_ACT` 保持默认 `0`（Disabled），仅如实标注、不声称已隔离；报告与 `r019.json` 以 `factor_3_data_link_loss = {implemented: false, note: ...}` 记录。
+- **未实现**：因子③ data-link-loss **未**隔离—— 本项目未切断真正的数据链（uXRCE / MAVLink），`NAV_DLL_ACT` 保持默认 `0`（Disabled），仅如实标注、不声称已隔离；报告与 `r019.json` 以 `factor_3_data_link_loss = {implemented: false, note: ...}` 记录。
 - **不**在本条范围内实现真实 PX4 Offboard 动力学与真实电磁场（确认闭环以假 PX4 回读状态流验证，真实 SITL 整链对拍留待后续）。
 
 ## Considered Options
@@ -73,7 +73,7 @@ accepted（2026-11-02 由 ADR-0032 / ADR-0033 / ADR-0034 合并；结论未变�
 
 ## Consequences
 
-- **正面**：干扰授权单一化——原始意图（未知 / 包络外 / 过期）不再能切断链路；`INTERCEPT_CONFIRMED` 只由真实 `nav_state` 持续达标驱动，PX4 缺席 / 无反馈 / `target_system` 不匹配 / 命令被拒 / 模式瞬进瞬出均产出负例事件而不确认；`RTL/LAND/HOLD`（发命令）与 `LOST`（不发命令）在时序日志上可区分；offboard-loss 的因果归因 = 运行时锁定参数。
+- **正面**：干扰授权单一化—— 原始意图（未知 / 包络外 / 过期）不再能切断链路；`INTERCEPT_CONFIRMED` 只由真实 `nav_state` 持续达标驱动，PX4 缺席 / 无反馈 / `target_system` 不匹配 / 命令被拒 / 模式瞬进瞬出均产出负例事件而不确认；`RTL/LAND/HOLD`（发命令）与 `LOST`（不发命令）在时序日志上可区分；offboard-loss 的因果归因 = 运行时锁定参数。
 - **代价 / 限制**：`JAM_NONE` 无条件释放，`CLEAR` 后参考从干扰发生时刻连续续上（`|Δ| < 0.3 m`，重基准语义不变）；因子③未实现，需后续 workstream 单列；确认闭环的置信度受限于假 PX4 harness。
 - **证据**：`experiments/w6-task-eval/20261016-w6-r018-0/metrics/r018.json`（无状态 / `target_system` 不匹配 / 未达模式 / 短暂进入 / 持续达标 / 仅授权事件六类用例）与 `experiments/w6-task-eval/20261016-w6-r019-0/metrics/r019.json`（`LOST` 无 `SET_NAV_STATE`、`RTL` 有命令、运行时参数三源一致、因子③限制）均 `overall_pass: true`。
 

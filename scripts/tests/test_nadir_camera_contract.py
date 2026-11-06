@@ -46,7 +46,7 @@ MODEL_DIR = ROOT / 'src' / 'agc_sim' / 'models' / 'agc_x500_nadir'
 MODEL_SDF = MODEL_DIR / 'model.sdf'
 MODEL_CONFIG = MODEL_DIR / 'model.config'
 BRIDGE = ROOT / 'src' / 'agc_sim' / 'config' / 'bridge.yaml'
-W6_LAUNCH = ROOT / 'src' / 'agc_task' / 'launch' / 'w6.launch.py'
+W6_LAUNCH = ROOT / 'src' / 'agc_task' / 'launch' / 'main.launch.py'
 AIR_LAUNCH = ROOT / 'src' / 'agc_air' / 'launch' / 'air_bringup.launch.py'
 PX4_AIRFRAMES = (ROOT / 'toolchain' / 'PX4-Autopilot' / 'ROMFS' / 'px4fmu_common'
                  / 'init.d-posix' / 'airframes')

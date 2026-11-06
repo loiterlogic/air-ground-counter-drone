@@ -46,7 +46,7 @@ from launch_ros.actions import Node
 def _reject_non_minimal_fallback(context, *args, **kwargs):
     """P1-1：**回退副本只支持 minimal**（规格「同步回退副本与核查」）。
 
- standalone 直接起 `perception_bringup`（不经过 `w6_composition` 派生）时，`map_file` /
+ standalone 直接起 `perception_bringup`（不经过 `composition` 派生）时，`map_file` /
  `obstacles_file` 用包内回退副本，它们只与 **minimal** 配置文件一致。若此时声明
  `world_map != minimal`，用回退几何跑「yard 场景」会得到「世界有墙、地图没有」——
  显式拒绝（比静默用错几何好）。w6 路径按配置文件派生注入，不经本检查。
@@ -63,7 +63,7 @@ def _reject_non_minimal_fallback(context, *args, **kwargs):
         raise RuntimeError(
             'perception_bringup: world_map=%s 但 map_file/obstacles_file 指向包内回退副本'
             '（仅与 minimal 真源一致）→ 拒绝运行。非 minimal 地图须由上层按几何真源派生注入'
-            '（见 w6_composition.write_derived_*）。' % name)
+            '（见 composition.write_derived_*）。' % name)
     return []
 
 

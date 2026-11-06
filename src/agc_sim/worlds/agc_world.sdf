@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!--
-  agc_world —— AGC 空地协同的唯一世界（GZ Sim / Harmonic，W2-min）
+  agc_world —— AGC 空地协同的唯一世界（GZ Sim / Harmonic，-min）
 
   **base world**（ADR-0007）：本文件**不含**静态障碍 `pole_*` 块，是
   障碍生成所依据的 base。静态障碍几何的唯一真源为 `config/world_geometry.yaml`，
@@ -15,9 +15,9 @@
       （max_step_size=0.004、real_time_update_rate=250），改则须重新标定 /clock。
     * 地面车 agc_car 与目标 intruder_uav **不在本 world 内**：由 world_bringup.launch.py
       经 ros_gz_sim create 按 config/*.yaml 参数 spawn（参数单一来源）。
-    * 静态障碍 pole_1 / pole_2 的形态（0.3×0.3×3）沿用旧树；pose 于 **W3 打补丁**重排入 80×80 作业区（ADR-0019）。
+    * 静态障碍 pole_1 / pole_2 的形态（0.3×0.3×3）沿用旧树；pose 于 **打补丁**重排入 80×80 作业区（ADR-0019）。
       几何值现**只**存于 `config/world_geometry.yaml`（ADR-0007）。
-    * **W3 打补丁**：补 PX4 必需系统插件 + `spherical_coordinates`；作业区放大到 80×80（车/目标 spawn 分离 ~30 m）。
+    * **打补丁**：补 PX4 必需系统插件 + `spherical_coordinates`；作业区放大到 80×80（车/目标 spawn 分离 ~30 m）。
 -->
 <sdf version="1.8">
   <world name="agc_world">
@@ -536,13 +536,13 @@
       <real_time_update_rate>250</real_time_update_rate>
     </physics>
 
-    <!-- 系统插件：**显式全量声明且按顺序**（W3 打补丁：补 PX4 必需插件）。
+    <!-- 系统插件：**显式全量声明且按顺序**（打补丁：补 PX4 必需插件）。
          顺序与 PX4 官方 Tools/simulation/gz/worlds/default.sdf 一致：
          Physics → UserCommands → SceneBroadcaster → Contact → Imu → AirPressure
          → ApplyLinkWrench → NavSat → Sensors。
          原因：默认 server.config 只含前三个；若仅额外声明 Sensors 而其余靠默认，
          插件加载顺序会错位（Sensors 先于 Physics/SceneBroadcaster），导致 server 在加载阶段挂死。
-         Contact / Imu / AirPressure / ApplyLinkWrench / NavSat 为 PX4 SITL 挂入本 world 所需（W3-a，ADR-0019）。 -->
+         Contact / Imu / AirPressure / ApplyLinkWrench / NavSat 为 PX4 SITL 挂入本 world 所需（，ADR-0019）。 -->
     <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
     <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
     <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
@@ -555,17 +555,17 @@
       <render_engine>ogre2</render_engine>
     </plugin>
 
-    <!-- 视觉：**关闭默认地面网格**（P1-1；来源：用户 2026-10-29 15:39 「GUI 地图中间的网格不需要」）。
+    <!-- 视觉：**关闭默认地面网格**（；来源：用户 2026-10-29 15:39 「GUI 地图中间的网格不需要」）。
          Gazebo 的地面网格来自 world 的 `<scene><grid>`（SDF 缺省 true），**不是** `ground_plane`
-         的几何——它由 GUI 按 cell 大小绘制，不参与碰撞 / 物理 / 任何真源几何。
+         的几何—— 它由 GUI 按 cell 大小绘制，不参与碰撞 / 物理 / 任何真源几何。
          故此处**只**在视觉层关闭它：`<grid>false</grid>`。物理（`<physics>`）、地面碰撞
          （`ground_plane` 的 `<collision>`）与静态障碍真源（`config/world_geometry.yaml` /
-         `config/maps/*.yaml`）**全部不动**。核查见 `tests/w6_geometry_check.py` 断言 (n)。 -->
+         `config/maps/*.yaml`）**全部不动**。核查见 `tests/check_scene_geometry.py` 断言 (n)。 -->
     <scene>
       <grid>false</grid>
     </scene>
 
-    <!-- 视觉：GUI **相机预设**（P1-1；来源：用户 2026-10-29「地图是斜的 / 截图取证」问题）。
+    <!-- 视觉：GUI **相机预设**（；来源：用户 2026-10-29「地图是斜的 / 截图取证」问题）。
          官方可复现写法取自 PX4 官方世界 `Tools/simulation/gz/worlds/baylands.sdf` 的
          `<gui><plugin MinimalScene><camera_pose>`（同为 GZ Sim 8）。此前靠在 GUI 里累积
          `/gui/move_to/pose` 拖视角，**不可复现**、每次截图朝向都不同（用户看到的就是斜的）。
@@ -588,7 +588,7 @@
         <scene>scene</scene>
         <ambient_light>0.45 0.45 0.45</ambient_light>
         <background_color>0.78 0.82 0.86</background_color>
-        <!-- P2-1 round-4（2026-10-31）：相机高度 118 → 85 m。118 m 时 100×100 作业区只占
+        <!--（2026-10-31）：相机高度 118 → 85 m。118 m 时 100×100 作业区只占
              画面约 65%，用户反馈"太远看不清"；85 m 使其约占 90%（边距仍在）。
              **纯 GUI 视觉**：只改视图相机高度，不碰物理 / 传感器 / 几何真源 / 光照。 -->
         <!-- 2026-11-05（用户裁定）：相机高度 85 → **50 m**。
@@ -626,11 +626,11 @@
         <iterations>1</iterations>
       </plugin>
 
-      <!-- Screenshot（P2-1 α，2026-10-31）：**GUI 取证用；不进入仿真、不改变任何物理/感知口径**。
+      <!-- Screenshot（α，2026-10-31）：**GUI 取证用；不进入仿真、不改变任何物理/感知口径**。
            存在的唯一理由：本块（<gui>）覆盖了发行版默认 gui.config，其中不含本插件，
-           于是 /gui/screenshot 服务不上线、无法从 3D 视图相机取真实帧（round-3 实测 0 帧）。
+           于是 /gui/screenshot 服务不上线、无法从 3D 视图相机取真实帧（实测 0 帧）。
            它只注册一个 GUI 服务（把相机视图存 PNG），**不订阅话题、不发命令、不碰模型位姿**，
-           因此与唯一执行口（#execution-port）和 C3 口径无关。
+           因此与唯一执行口（#execution-port）和口径无关。
            取证方式见 scripts/demo/gui_capture.py（`data` 传**目录**，服务立即返回 true，
            存盘在下一个 Render 事件 → 必须轮询新增 png）。
            属性照抄发行版 gui.config 的同名块（仅影响工具条外观，不影响取到的画面）。 -->
@@ -651,7 +651,7 @@
     <!-- 静态障碍 pole_1 / pole_2 **不**在本 base world 内：几何真源见 config/world_geometry.yaml，
          由 world_bringup.launch.py 生成运行期世界时按 world_obstacles 注入（ADR-0007）。 -->
 
-    <!-- WGS84 / ENU 基准（W3 打补丁）：PX4 NavSat 等所需，与 agc_world 的 ENU 基准一致。 -->
+    <!-- WGS84 / ENU 基准（打补丁）：PX4 NavSat 等所需，与 agc_world 的 ENU 基准一致。 -->
     <spherical_coordinates>
       <surface_model>EARTH_WGS84</surface_model>
       <world_frame_orientation>ENU</world_frame_orientation>

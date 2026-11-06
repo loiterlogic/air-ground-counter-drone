@@ -7,28 +7,28 @@
 ## 1. 数据形态
 
 ```yaml
-map: <地图名>                    # 必须与清单键一致（核查 (a) 比对）
-work_area:                       # 五键齐备，缺一即 schema 不合法
+map: <地图名> # 必须与清单键一致（核查 (a) 比对）
+work_area: # 五键齐备，缺一即 schema 不合法
   resolution: <m/cell>
   size_x: <m>
   size_y: <m>
-  origin_x: <m>                  # 栅格覆盖 [origin, origin+size]
+  origin_x: <m> # 栅格覆盖 [origin, origin+size]
   origin_y: <m>
 
 obstacles:
-  - id: <唯一名>                  # pole_* 命名被断言 (b) 依赖，minimal 不得删改
+  - id: <唯一名> # pole_* 命名被断言 (b) 依赖，minimal 不得删改
     shape: box | cylinder | sphere # 可省略，缺省 box；其余值拒绝运行
     x: <m>
     y: <m>
     z: <几何中心高度 m>
     yaw: <rad>
-    size: [a, b, c]              # 形状相关口径见下
-    color: [r, g, b]             # 仅视觉，非几何
-    finish: <材质档>              # 可省略；省略 = 旧行为（不写 PBR 块）
-    safety_radius: <m>            # 可省略；缺省由足迹推导
+    size: [a, b, c] # 形状相关口径见下
+    color: [r, g, b] # 仅视觉，非几何
+    finish: <材质档> # 可省略；省略 = 旧行为（不写 PBR 块）
+    safety_radius: <m> # 可省略；缺省由足迹推导
 
   - id: <复合体>
-    x: / y: / z: 0.0 / yaw:       # 复合体锚点 **z 必须为 0**
+    x: / y: / z: 0.0 / yaw: # 复合体锚点 **z 必须为 0**
     parts:
       - {shape: box, size: [...], x: 0, y: 0, z: <绝对高度偏移>, yaw: 0.0, finish: concrete}
 ```
@@ -61,11 +61,11 @@ obstacles:
 空中安全层用**水平外接圆半径**，缺省按下式推导（`world_map.obstacle_safety_radius`）：
 
 ```text
-显式给出            → 用它
-box                → 半对角 = hypot(sx, sy) / 2
-cylinder / sphere  → r
-复合体              → max over parts( hypot(part.x, part.y) + part 足迹半径 )
-足迹为 0            → 兜底 DEFAULT_SAFETY_RADIUS（历史 pole 标定值）
+显式给出 → 用它
+box → 半对角 = hypot(sx, sy) / 2
+cylinder / sphere → r
+复合体 → max over parts(hypot(part.x, part.y) + part 足迹半径)
+足迹为 0 → 兜底 DEFAULT_SAFETY_RADIUS（历史 pole 标定值）
 ```
 
 **后果（必须提前想到）**：细长实体的外接圆半径 ≈ **半长**。
@@ -77,10 +77,10 @@ cylinder / sphere  → r
 | # | 派生点 | 位置 | 常见漏点 |
 |---|---|---|---|
 | 1 | GZ 物理世界 | `world_bringup._inject_static_obstacles` | 以为"改 SDF 就行"（改 SDF 是错的） |
-| 2 | 感知障碍先验 | `w6_composition.write_derived_obstacles` | 复合体降级成包络矩形后忘了它不等于原几何 |
-| 3 | 感知 Map 几何 | `w6_composition.write_derived_map` | `work_area` 变了没同步 |
-| 4 | 空中安全圆盘列表 | `w6_composition.apply_air_geometry` | 以为是"与障碍数对齐的定长列表"（旧坑，已消除） |
-| 5 | `scenario_reset` 校验几何 | `w6_composition.compose_params` | 边界/障碍坐标写死在别处 |
+| 2 | 感知障碍先验 | `composition.write_derived_obstacles` | 复合体降级成包络矩形后忘了它不等于原几何 |
+| 3 | 感知 Map 几何 | `composition.write_derived_map` | `work_area` 变了没同步 |
+| 4 | 空中安全圆盘列表 | `composition.apply_air_geometry` | 以为是"与障碍数对齐的定长列表"（旧坑，已消除） |
+| 5 | `scenario_reset` 校验几何 | `composition.compose_params` | 边界/障碍坐标写死在别处 |
 
 **第 1 条的运行期事实**：世界是 launch 时**生成到 `/tmp`** 的临时 SDF
 （base world + 注入的障碍块），不是仓库里的 `agc_world.sdf`。所以：
@@ -103,14 +103,14 @@ cylinder / sphere  → r
 地图选择优先级（`load_scene` 单一实现，**不要**在别处再解析一遍）：
 
 ```text
-launch world_map:=<name>        （显式覆盖，未知值拒绝运行）
+launch world_map:=<name> （显式覆盖，未知值拒绝运行）
   ↓ 空
-scenarios.yaml 的 world_map 键   （场景登记）
+scenarios.yaml 的 world_map 键 （场景登记）
   ↓ 空
 DEFAULT_WORLD_MAP
 ```
 
-未知地图名**一律拒绝运行**，不静默回退——静默回退会让不同域读到不同真源。
+未知地图名**一律拒绝运行**，不静默回退—— 静默回退会让不同域读到不同真源。
 
 **standalone 回退副本纪律**：`agc_perception/config/{obstacles,map}.yaml` 是**只给 minimal** 的
 回退副本，必须与 minimal 真源一致（断言 (c)）。非 minimal 地图在 standalone 路径上
@@ -172,16 +172,16 @@ DEFAULT_WORLD_MAP
   PNG 被当 sRGB、`<diffuse>` 是线性（落盘前做线性 → sRGB 编码）。
 - **UV 限制**：`box` / `plane` 没有 UV 缩放，一张图会被拉到整个面 → 只做**低频斑驳 + 细颗粒**；
   分格 / 标线这类有绝对尺度的信息继续用**真几何**。
-- 可复现性：种子用 `zlib.crc32`，**不要用内置 `hash()`**（受 `PYTHONHASHSEED` 随机化）。
+- 可复现性：种子用 `zlib.crc32`，**不要用内置 `hash`**（受 `PYTHONHASHSEED` 随机化）。
 - 世界文件生成在 `/tmp` → SDF 里引用贴图用**安装目录绝对路径**。
 
 ## 7. 改完之后
 
 ```bash
-python3 tests/w6_geometry_check.py                        # 三图全查，退出码 0 = PASS
-python3 tests/w6_geometry_check.py --maps <name> --out /tmp/geom.json
+python3 tests/check_scene_geometry.py # 三图全查，退出码 0 = PASS
+python3 tests/check_scene_geometry.py --maps <name> --out /tmp/geom.json
 ```
 
 核查断言的语义以脚本的**代码**为准（文档里的"断言条数"不可信：断言随需求追加，而
-`tests/w6_geometry_check.py` 的 docstring 曾与实现不同步，例如仍写 `shape ∈ {box, cylinder}`
+`tests/check_scene_geometry.py` 的 docstring 曾与实现不同步，例如仍写 `shape ∈ {box, cylinder}`
 而代码支持 3 类）；**任何一组 FAIL 都整体 FAIL**，先修再谈视觉。

@@ -1,4 +1,4 @@
-"""`w6.launch.py` 演示叠加层（viz）注册次数的回归测试（T0：不启任何进程）。
+"""`main.launch.py` 演示叠加层（viz）注册次数的回归测试（T0：不启任何进程）。
 
 **守护的缺陷**（ 实测， 修复）：
 `_compose()` 末尾曾有 `actions.extend(_viz_actions(context, sim_share))`，
@@ -11,7 +11,7 @@
 "把两处都删掉"同样能让断言通过（0 份 → 如果只断言"不是 2 份"）。四格同时要求
 `viz=true → 恰好 1 份` 与 `viz=false → 0 份`，任何一侧漏注册 / 多注册都会失败。
 
-**做法**：真实 `import` `w6.launch.py`，把 `DeclareLaunchArgument` 的**真实默认值**填进
+**做法**：真实 `import` `main.launch.py`，把 `DeclareLaunchArgument` 的**真实默认值**填进
 `LaunchContext`，再执行 `LaunchDescription` 里的全部 `OpaqueFunction` —— 即真实走一遍
 `_compose`（含场景加载 / 参数合并 / manifest 生成，全部只写 `/tmp` 必需文件，
 **不 Popen 任何进程**），最后按 `Node(package, executable)` 计数。
@@ -30,7 +30,7 @@ import pytest
 # 项目根**自定位**（2026-10-31 ，裁定 A）：本文件在 `<ROOT>/scripts/tests/`，上溯三级即根。
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 LAUNCH_DIR = os.path.join(ROOT, 'src', 'agc_task', 'launch')
-W6 = os.path.join(LAUNCH_DIR, 'w6.launch.py')
+W6 = os.path.join(LAUNCH_DIR, 'main.launch.py')
 
 # 被守护的三个节点（`package/executable` → 期望份数）
 VIZ_NODES = (

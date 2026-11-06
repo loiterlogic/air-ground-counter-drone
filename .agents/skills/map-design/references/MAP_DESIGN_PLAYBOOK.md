@@ -8,7 +8,7 @@
 > 那是迁移**之前**的状态，保留它是为了不伪造历史（[ADR-0002](../../../../docs/adr/0002-docs-source-of-truth-and-reference-discipline.md#top)）。
 >
 > **它是历史快照，不是现行约束**：文中所有数字（实体数 / 覆盖率 / 净空 / 内存占用）都是
-> **当时**的实测值，会漂移；现行值一律跑 `python3 tests/w6_geometry_check.py` 读 JSON。
+> **当时**的实测值，会漂移；现行值一律跑 `python3 tests/check_scene_geometry.py` 读 JSON。
 > 现行流程见 [SKILL.md](../SKILL.md)，闸门口径见 [GATES.md](../GATES.md)，
 > schema 与派生链见 [SCHEMA-AND-DERIVATION.md](../SCHEMA-AND-DERIVATION.md)，
 > 取证纪律见 [EVIDENCE.md](../EVIDENCE.md)。
@@ -56,25 +56,25 @@
 几何**只有一个家**，其余全部派生（[ADR-0007](../../../../docs/adr/0007-scene-geometry-single-source-and-layout.md#top)）：
 
 ```text
-world_geometry.yaml        ← minimal（核查基线，pole 双柱，几何逐值不变）
-maps/yard.yaml             ← 演示主地图（36 实体 / 100×100 工业场站）
-maps/open_field.yaml       ← 能力对照 / 快跑（5 实体，故意稀疏）
+world_geometry.yaml ← minimal（核查基线，pole 双柱，几何逐值不变）
+maps/yard.yaml ← 演示主地图（36 实体 / 100×100 工业场站）
+maps/open_field.yaml ← 能力对照 / 快跑（5 实体，故意稀疏）
         │
-        │  ← 三者的路径表**只在** world_map.py 写一次（MAP_GEOMETRY_FILES）
-        │     未知地图名一律拒绝运行，不静默回退
+        │ ← 三者的路径表**只在** world_map.py 写一次（MAP_GEOMETRY_FILES）
+        │ 未知地图名一律拒绝运行，不静默回退
         ▼
   ┌─────────────────────────────────────────────────────────┐
-  │ world_map.py（只做路径与形状规范化，253 行，可单测）      │
+  │ world_map.py（只做路径与形状规范化，253 行，可单测） │
   └─────────────────────────────────────────────────────────┘
         │
         ├─→ world_bringup._inject_static_obstacles
-        │      → 运行期 SDF（把 obstacle 块注入 base world 的 </world> 前）
-        │      → GZ 物理世界（collision 与 visual **同一 geometry 片段**）
+        │ → 运行期 SDF（把 obstacle 块注入 base world 的 </world> 前）
+        │ → GZ 物理世界（collision 与 visual **同一 geometry 片段**）
         │
-        ├─→ w6_composition.write_derived_obstacles  → 感知障碍先验
-        ├─→ w6_composition.write_derived_map        → 感知 OccupancyGrid 几何
-        ├─→ w6_composition.apply_air_geometry       → 空中安全圆盘列表
-        └─→ w6_composition.compose_params           → scenario_reset 校验用几何
+        ├─→ composition.write_derived_obstacles → 感知障碍先验
+        ├─→ composition.write_derived_map → 感知 OccupancyGrid 几何
+        ├─→ composition.apply_air_geometry → 空中安全圆盘列表
+        └─→ composition.compose_params → scenario_reset 校验用几何
 ```
 
 **三条铁律**：
@@ -82,7 +82,7 @@ maps/open_field.yaml       ← 能力对照 / 快跑（5 实体，故意稀疏�
 1. **改地图 = 改一份 yaml**；碰 SDF 就是错的（唯一例外：地面分层这类**非障碍**的纯视觉层）。
 2. **视觉与碰撞同源** —— 同一个 `<geometry>` 注入 collision 与 visual，禁止装饰性无碰撞块
    （否则出现"看着撞了却穿过去"的演示事故）。
-3. **每改一次真源，立刻跑核查**（[`tests/w6_geometry_check.py`](../../../../tests/w6_geometry_check.py)）。
+3. **每改一次真源，立刻跑核查**（[`tests/check_scene_geometry.py`](../../../../tests/check_scene_geometry.py)）。
 
 ---
 
@@ -113,14 +113,14 @@ maps/open_field.yaml       ← 能力对照 / 快跑（5 实体，故意稀疏�
 ## 3. 流程：八个步骤
 
 ```text
-① 先学后做      → 查本机同版本可运行实现，得出可迁移的范式
-② 先设计后动手  → 写只读设计核验器，迭代到全闸门通过（不要先改 yaml）
-③ 布局范式      → 功能分区 + 网格对齐 + 道路留白 + 尺寸长尾 + 中央留空
-④ 几何闸门      → 7 项判据逐项核过（8 字净空 / 环带 / C7 / 重叠 / 可见性 / 覆盖 / 实体内涵）
-⑤ schema 表达   → 用统一 schema 写出同一份几何（box/cylinder/sphere + parts + finish）
-⑥ 视觉保真      → 材质档 / 配色分族 / 建筑细部 / 地面分层（只改视觉，不改判据）
-⑦ 派生链落地    → 改 yaml 后确认 5 条派生路径全部跟上
-⑧ 核查          → w6_geometry_check 三图 PASS，否则不提交
+① 先学后做 → 查本机同版本可运行实现，得出可迁移的范式
+② 先设计后动手 → 写只读设计核验器，迭代到全闸门通过（不要先改 yaml）
+③ 布局范式 → 功能分区 + 网格对齐 + 道路留白 + 尺寸长尾 + 中央留空
+④ 几何闸门 → 7 项判据逐项核过（8 字净空 / 环带 // 重叠 / 可见性 / 覆盖 / 实体内涵）
+⑤ schema 表达 → 用统一 schema 写出同一份几何（box/cylinder/sphere + parts + finish）
+⑥ 视觉保真 → 材质档 / 配色分族 / 建筑细部 / 地面分层（只改视觉，不改判据）
+⑦ 派生链落地 → 改 yaml 后确认 5 条派生路径全部跟上
+⑧ 核查 → w6_geometry_check 三图 PASS，否则不提交
 ```
 
 **顺序不可交换**：③ 会改变 ④ 的结果，⑤ 只是把 ③ 写下来。跳过 ② 直接写 yaml 是本项目历史上
@@ -157,18 +157,18 @@ maps/open_field.yaml       ← 能力对照 / 快跑（5 实体，故意稀疏�
 
 **做法**：写一个只读脚本，**复刻正式核查的口径**，对候选布局算全部闸门，迭代到全绿再写真源。
 
-复刻的口径清单（必须与 [`w6_geometry_check.py`](../../../../tests/w6_geometry_check.py) **逐项一致**，
+复刻的口径清单（必须与 [`check_scene_geometry.py`](../../../../tests/check_scene_geometry.py) **逐项一致**，
 否则你在假绿上做设计）：
 
 ```text
-安全盘半径   = safety_radius + obstacle_margin(2.5) + extra(0.7)
-  extra      = reaction_time_s(0.2) × max_speed_mps(2.0) + reachability_margin(0.3) = 0.7
+安全盘半径 = safety_radius + obstacle_margin(2.5) + extra(0.7)
+  extra = reaction_time_s(0.2) × max_speed_mps(2.0) + reachability_margin(0.3) = 0.7
 待机环带半径 = target_min_dist(8.0) + target_margin(1.5) + extra(0.7) = 10.2
-8 字轨迹     = rx 15.0 / ry 9.0 / h 2.5（契约 C1，**不改**）
-C7 出生净空  = 逐图元足迹距离（**不是**实体中心距离）
-实体重叠     = 逐图元 SAT（**不是**包围盒相交）
-可见性       = 每个实体在 z = 0.48 处有水平截面
-覆盖率       = 并集投影面积 / 作业区面积，栅格 res = 0.2 m
+8 字轨迹 = rx 15.0 / ry 9.0 / h 2.5（契约，**不改**）
+出生净空 = 逐图元足迹距离（**不是**实体中心距离）
+实体重叠 = 逐图元 SAT（**不是**包围盒相交）
+可见性 = 每个实体在 z = 0.48 处有水平截面
+覆盖率 = 并集投影面积 / 作业区面积，栅格 res = 0.2 m
 ```
 
 ### 5.2 迭代轨迹（R4 实证：5 版才全绿）
@@ -184,7 +184,7 @@ C7 出生净空  = 逐图元足迹距离（**不是**实体中心距离）
 ### 5.3 这一步最容易犯的两个错（本项目都犯过）
 
 1. **`cylinder` / `sphere` 的 `size[0]` 是半径，不是直径。** 当成直径除以 2 会让
-   **重叠判定与 C7 全部偏松**——是"会掩盖问题"的错，比偏严更危险。
+   **重叠判定与全部偏松**—— 是"会掩盖问题"的错，比偏严更危险。
 2. **单图元实体的 `yaw` 被重复叠加一次**（复合体的 part yaw 已是相对量）。
    修完后本地口径 10.32% 才与官方 10.33% 对齐。
 
@@ -240,7 +240,7 @@ C7 出生净空  = 逐图元足迹距离（**不是**实体中心距离）
 |---|---|---|---|---|
 | 1 | **8 字轨迹净空**（安全盘不切轨迹） | ≥ 0 m | **+1.31 m**（最紧 `sign_a`） | ⚠ 仅在离线核验器里，**不在正式断言** |
 | 2 | **待机环带可行解** | 最长连续可行弧 ≥ 90° | **81.53% / 293.5°**（r = 10.2 m） | (i) |
-| 3 | **C7 出生净空** | 逐足迹净空 > 0，车↔目标 ≥ 6.0 m | 车 **8.67** / 目标 **6.48** / 己方机 **9.07** m；车↔目标 **11.85 m** | (g) |
+| 3 | **出生净空** | 逐足迹净空 > 0，车↔目标 ≥ 6.0 m | 车 **8.67** / 目标 **6.48** / 己方机 **9.07** m；车↔目标 **11.85 m** | (g) |
 | 4 | **实体互不重叠** | SAT 无交 | 无 | 离线核验器 |
 | 5 | **地面激光可见性**（z=0.48） | 每个实体在该面有水平截面 | 全部可见 | (h) |
 | 6 | **并集覆盖率** | 5%–12%（yard） | **11.48%**（R6 加参照物后） | (o) |
@@ -279,21 +279,21 @@ work_area: {resolution: 0.5, size_x: 100.0, size_y: 100.0, origin_x: -50.0, orig
 obstacles:
   # 单图元实体
   - id: silo_s
-    shape: cylinder        # box(缺省) | cylinder | sphere
+    shape: cylinder # box(缺省) | cylinder | sphere
     x: 0.0
     y: -18.0
-    z: 1.6                 # 几何**中心**高度（box 与 cylinder 同口径）
+    z: 1.6 # 几何**中心**高度（box 与 cylinder 同口径）
     yaw: 0.0
-    size: [1.8, 1.8, 3.2]  # box:[x,y,z] / cylinder:[r,r,h] / sphere:[r,r,r]
+    size: [1.8, 1.8, 3.2] # box:[x,y,z] / cylinder:[r,r,h] / sphere:[r,r,r]
     color: [0.72, 0.74, 0.76]
-    finish: steel          # 材质档（可选）
-    safety_radius: 1.8     # 可选，缺省由足迹推导
+    finish: steel # 材质档（可选）
+    safety_radius: 1.8 # 可选，缺省由足迹推导
 
   # 复合实体（一个 <model> 含多个 static <link>）
   - id: hall_north
     x: -26
     y: 30
-    z: 0.0                 # ⚠ 复合体锚点 z **必须为 0**（part 的 z 是绝对高度偏移）
+    z: 0.0 # ⚠ 复合体锚点 z **必须为 0**（part 的 z 是绝对高度偏移）
     yaw: 0.0
     parts:
       - {shape: box, size: [14.5, 9.5, 7.5], x: 0, y: 0, z: 3.75, finish: concrete, color: [...]}
@@ -305,7 +305,7 @@ obstacles:
 1. **cylinder / sphere 的口径是半径**，`size[0] == size[1]`（cylinder）或三值相等（sphere），
    不相等**拒绝运行**。
 2. **复合体锚点 `z` 必须为 0**。曾经把 `wall_w` 写成 `z: 1.1`，注入器又叠加 part z →
-   **整段围墙悬空 1.1 m**，靠断言 (h) 才抓到。现在 `obstacle_parts()` 里有启动期守卫。
+   **整段围墙悬空 1.1 m**，靠断言 (h) 才抓到。现在 `obstacle_parts` 里有启动期守卫。
 3. **缺省不写 `finish` = 旧行为**（无 `<pbr>` 块），保证 minimal / open_field 与历史证据
    **逐字节不漂移**。这条兼容纪律必须保持。
 
@@ -318,11 +318,11 @@ obstacles:
 ### 8.3 `safety_radius` 的推导规则
 
 ```text
-显式给出           → 用它
-否则 box           → 半对角 = hypot(sx, sy) / 2
+显式给出 → 用它
+否则 box → 半对角 = hypot(sx, sy) / 2
 否则 cylinder/sphere → r
-否则复合体          → max over parts( hypot(part.x, part.y) + part 足迹半径 )
-全部为 0           → 兜底 2.0（历史 pole 标定值）
+否则复合体 → max over parts(hypot(part.x, part.y) + part 足迹半径)
+全部为 0 → 兜底 2.0（历史 pole 标定值）
 ```
 
 **后果**：细长实体的外接圆半径 ≈ **半长**。这是 6.2 第 2 条（不能用通长围墙）的根因。
@@ -400,9 +400,9 @@ obstacles:
 | # | 派生点 | 函数 | 常见漏点 |
 |---|---|---|---|
 | 1 | GZ 物理世界 | `world_bringup._inject_static_obstacles` | 以为改 SDF 就行 |
-| 2 | 感知障碍先验 | `w6_composition.write_derived_obstacles` | 复合体降级为包络矩形 |
-| 3 | 感知 Map 几何 | `w6_composition.write_derived_map` | `work_area` 变了没同步 |
-| 4 | 空中安全圆盘列表 | `w6_composition.apply_air_geometry` | **定长列表**是历史坑（已消除） |
+| 2 | 感知障碍先验 | `composition.write_derived_obstacles` | 复合体降级为包络矩形 |
+| 3 | 感知 Map 几何 | `composition.write_derived_map` | `work_area` 变了没同步 |
+| 4 | 空中安全圆盘列表 | `composition.apply_air_geometry` | **定长列表**是历史坑（已消除） |
 | 5 | `scenario_reset` 校验几何 | `compose_params` | 边界写死 |
 
 **回退副本纪律**：`agc_perception/config/{obstacles,map}.yaml` 是 standalone 回退副本，
@@ -412,7 +412,7 @@ obstacles:
 **地图选择优先级**（`load_scene`）：
 
 ```text
-launch world_map:=<name>   （显式覆盖，未知值拒绝运行）
+launch world_map:=<name> （显式覆盖，未知值拒绝运行）
   ↓ 空
 scenarios.yaml 的 world_map 键 （场景登记：s04 → yard，其余 → minimal）
   ↓ 空
@@ -427,9 +427,9 @@ scenarios.yaml 的 world_map 键 （场景登记：s04 → yard，其余 → min
 ### 11.1 一条命令
 
 ```bash
-python3 tests/w6_geometry_check.py                    # 三图全查
-python3 tests/w6_geometry_check.py --maps yard        # 只查一张
-python3 tests/w6_geometry_check.py --out /tmp/g.json  # 落盘 JSON 摘要
+python3 tests/check_scene_geometry.py # 三图全查
+python3 tests/check_scene_geometry.py --maps yard # 只查一张
+python3 tests/check_scene_geometry.py --out /tmp/g.json # 落盘 JSON 摘要
 ```
 
 **退出码语义：0 = PASS**。当前状态：`PASS (maps=minimal,yard,open_field)`。
@@ -442,9 +442,9 @@ python3 tests/w6_geometry_check.py --out /tmp/g.json  # 落盘 JSON 摘要
 | (b) | 世界生成 == 真源，且**视觉 == 碰撞**；minimal 的 `pole_*` 逐值不变；`none` 世界无障碍 |
 | (c) | standalone 回退副本与 minimal 一致 |
 | (d) | `air.yaml` 已无硬编码几何**与半径列表** |
-| (e) | `w6_base.yaml` 已去硬编码；composition 派生 == 真源 |
+| (e) | `base.yaml` 已去硬编码；composition 派生 == 真源 |
 | (f) | `geometry_sha256` 稳定且**按图区分**；manifest 几何块 == 真源 |
-| (g) | **C7 出生净空**（与 `scenario_reset.validateCandidate` 同判据）|
+| (g) | **出生净空**（与 `scenario_reset.validateCandidate` 同判据）|
 | (h) | **z=0.48 障碍族可见性** |
 | (i) | **空中安全层存在可行解**（环带可行率 > 0 且最长连续可行弧 ≥ 90°）|
 | (j) | 回退副本边界（非 minimal 不读副本）|
@@ -458,11 +458,11 @@ python3 tests/w6_geometry_check.py --out /tmp/g.json  # 落盘 JSON 摘要
 ### 11.3 当前实测（yard）
 
 ```text
-n_obstacles = 36        n_parts = 186          composite = 34      small_parts = 19
-coverage_union_pct = 10.89                     material_kinds = 5  shape_kinds = 3
-size_ratio = 566.67     yaw_kinds = 12         central_count = 4
-ring: feasible 81.53% / max_free_arc 293.5°    (r = 10.2 m)
-C7: car 8.67 / target 6.48 / own_uav 9.07 m    car↔target 11.85 m
+n_obstacles = 36 n_parts = 186 composite = 34 small_parts = 19
+coverage_union_pct = 10.89 material_kinds = 5 shape_kinds = 3
+size_ratio = 566.67 yaw_kinds = 12 central_count = 4
+ring: feasible 81.53% / max_free_arc 293.5° (r = 10.2 m)
+car 8.67 / target 6.48 / own_uav 9.07 m car↔target 11.85 m
 ```
 
 ---
@@ -487,7 +487,7 @@ C7: car 8.67 / target 6.48 / own_uav 9.07 m    car↔target 11.85 m
 | # | 陷阱 | 后果 | 防法 |
 |---|---|---|---|
 | 1 | 复合体锚点 `z ≠ 0` | 整段模型悬空/埋地 | 启动期守卫（已加） |
-| 2 | cylinder 半径当直径 | **重叠与 C7 偏松**，掩盖问题 | 核验器写完先自测 |
+| 2 | cylinder 半径当直径 | **重叠与偏松**，掩盖问题 | 核验器写完先自测 |
 | 3 | part 的 yaw 与实体 yaw 重复叠加 | 布局错位 | 复合体 part yaw 是相对量 |
 | 4 | 改 minimal 忘同步回退副本 | 断言 (c) FAIL | 改完立刻跑核查 |
 | 5 | 以为 GUI 网格来自 `ground_plane` | 找不到"网格从哪来" | 它在 `<scene><grid>`，非 `ground_plane` |
@@ -511,9 +511,9 @@ C7: car 8.67 / target 6.48 / own_uav 9.07 m    car↔target 11.85 m
 | # | 位置 | 漂移内容 | 实际 |
 |---|---|---|---|
 | 1 | [`world_geometry.yaml:11`](../../../../src/agc_sim/config/world_geometry.yaml) | 写 yard 是"29 实体 / 107 图元" | **36 / 186**（R5 已改，注释未跟上） |
-| 2 | [`world_geometry.yaml:13`](../../../../src/agc_sim/config/world_geometry.yaml) | 引用 `w6_composition.resolve_geometry_file` | 该函数**不存在**，实际是 `world_map.geometry_path` |
-| 3 | [`w6_geometry_check.py:8`](../../../../tests/w6_geometry_check.py) | docstring 写 `shape ∈ {box, cylinder}` | 代码用 `SHAPES`（**3 类**，含 sphere） |
-| 4 | P1-1 规格（已删除，见 [ADR-0025](../../../../docs/adr/0025-publishing-boundary-and-retirement.md#top)）C7 值 6.49 / 9.04 | 与实测 6.48 / 9.07 有 0.01–0.03 偏差 | 实测优先 |
+| 2 | [`world_geometry.yaml:13`](../../../../src/agc_sim/config/world_geometry.yaml) | 引用 `composition.resolve_geometry_file` | 该函数**不存在**，实际是 `world_map.geometry_path` |
+| 3 | [`check_scene_geometry.py:8`](../../../../tests/check_scene_geometry.py) | docstring 写 `shape ∈ {box, cylinder}` | 代码用 `SHAPES`（**3 类**，含 sphere） |
+| 4 |规格（已删除，见 [ADR-0025](../../../../docs/adr/0025-publishing-boundary-and-retirement.md#top)）值 6.49 / 9.04 | 与实测 6.48 / 9.07 有 0.01–0.03 偏差 | 实测优先 |
 | 5 | [`world_bringup.launch.py:380`](../../../../src/agc_sim/launch/world_bringup.launch.py) | `plugin_dir` 算成 `install/agc_sim/share/lib`（**不存在**） | 真实插件在 `install/agc_sim/lib`；详见 [14.2](#run) |
 
 **另有一处结构性风险（比上面 5 条严重）**：
@@ -535,9 +535,9 @@ source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 # ⚠ 必须先设这个，否则 launch 立刻失败（见 14.2）
 export GZ_SIM_SYSTEM_PLUGIN_PATH="/home/chen/AGC/install/agc_sim/lib"
-ros2 launch agc_task w6.launch.py backend:=lightweight scene:=s04_static_static_obs_track
+ros2 launch agc_task main.launch.py backend:=lightweight scene:=s04_static_static_obs_track
 # 想同时看 RViz 语义层（GUI 保持纯场景）：
-ros2 launch agc_task w6.launch.py backend:=lightweight \
+ros2 launch agc_task main.launch.py backend:=lightweight \
   scene:=s04_static_static_obs_track viz:=true
 ```
 
@@ -567,7 +567,7 @@ ros2 launch agc_task w6.launch.py backend:=lightweight \
    → 得到 `install/agc_sim/share/lib`，**该目录不存在**。真实插件在 `install/agc_sim/lib`。
    即：即使变量存在，追加进去的也是**无效路径**（`os.path.exists` 实测 `False`）。
 
-**修法（短期）**——直接导出**正确**路径，不要照抄 14.1 之外的猜测：
+**修法（短期）**—— 直接导出**正确**路径，不要照抄 14.1 之外的猜测：
 
 ```bash
 export GZ_SIM_SYSTEM_PLUGIN_PATH="/home/chen/AGC/install/agc_sim/lib"
@@ -582,7 +582,7 @@ export GZ_SIM_SYSTEM_PLUGIN_PATH="/home/chen/AGC/install/agc_sim/lib"
 
 - 把 `plugin_dir` 改对：`os.path.join(os.path.dirname(os.path.dirname(share)), 'lib')`；
 - 让追加对未定义变量容错（用 `EnvironmentVariable(..., default="")` 或先判断），
-  避免"必须记得 export"的隐性前置条件——这属于入口健壮性问题，与地图无关。
+  避免"必须记得 export"的隐性前置条件—— 这属于入口健壮性问题，与地图无关。
 
 ### 14.3 运行陷阱二：PX4 / EKF
 
@@ -594,7 +594,7 @@ export GZ_SIM_SYSTEM_PLUGIN_PATH="/home/chen/AGC/install/agc_sim/lib"
 ### 14.4 只验证地图渲染（不起全链）
 
 ```bash
-gz sim -r -v 3 <生成的运行期 world>        # GUI，看画面
+gz sim -r -v 3 <生成的运行期 world> # GUI，看画面
 gz sdf -p src/agc_sim/worlds/agc_world.sdf # 只验解析，秒级
 ```
 
@@ -617,7 +617,7 @@ gz sdf -p src/agc_sim/worlds/agc_world.sdf # 只验解析，秒级
 | ④ | 地面贴图 | `materials/gen_textures.py` 产 4 张 512² albedo（concrete/asphalt/apron/gravel）+ `manifest.json` | 贴到 10 个地面模型；渲染 σ 从 **0.00 → 4.20** |
 | ⑤ | RViz 语义层 | `agc_task/scripts/viz_markers.py` + `config/agc_demo.rviz` + `viz:=true` | 静态 278 个 marker：障碍几何 234 + 安全圆盘 42 + 作业区 + 8 字参考 |
 
-**渲染实测（118 m 俯视，sRGB）**——这是"看得见"的口径，比 albedo 更硬：
+**渲染实测（118 m 俯视，sRGB）**—— 这是"看得见"的口径，比 albedo 更硬：
 
 | 层 | 亮度 | 占比 |
 |---|---|---|
@@ -630,17 +630,17 @@ gz sdf -p src/agc_sim/worlds/agc_world.sdf # 只验解析，秒级
 
 ### 15.2 四条被实测推翻的设计判断（**最重要的部分**）
 
-**（1）"区分度低是配色问题"——错，是几何缺陷。**
+**（1）"区分度低是配色问题"—— 错，是几何缺陷。**
 实测发现 5 栋建筑的「女儿墙压顶」被做成了**整块盖板**（`size` ≥ 本体足迹、`z` 在最上层），
 把金属屋面**完全盖住**。俯视看到的其实是压顶（L≈0.49），比地面（0.67）还暗。
 → 光调 albedo 没有用，必须**改几何**（把压顶变成"檐 + 下沉屋面"的台阶关系）。
 
-**（2）"提高 albedo 就能提亮屋面"——对金属件无效。**
+**（2）"提高 albedo 就能提亮屋面"—— 对金属件无效。**
 金属度 0.75 的 `steel` 在"只有方向光 + 环境光、无环境贴图"的场景里几乎没有漫反射分量：
 渲染只有 **83/255**，而旁边 metalness=0 的混凝土檐是 **161/255**。
 **`metalness` 才是亮度杠杆。** → 新增 `roofpanel`(0.06/0.40)，并把 `steel` 从 0.75 下调到 0.35。
 
-**（3）"加贴图就会有材质感"——先要过两道编码关。**
+**（3）"加贴图就会有材质感"—— 先要过两道编码关。**
 - `<albedo_map>` 与 `<diffuse>`/`<ambient>` 是**相乘**的：基色仍 0.52 时渲染从 150 掉到 **76**。
   → 带贴图的材质必须把基色置**白**，颜色交给贴图。
 - PNG 被当 **sRGB**、SDF `<diffuse>` 是**线性**：直接把线性值写进 PNG 会整体压暗一档（150 → **106**）。
@@ -648,7 +648,7 @@ gz sdf -p src/agc_sim/worlds/agc_world.sdf # 只验解析，秒级
 - 且 `box`/`plane` **没有 UV 缩放**：一张图会被拉到整个面，200 m 地面与 12×9 场坪密度差 20 倍。
   → 只做**低频斑驳 + 细颗粒**，分格/拉线继续用真几何。
 
-**（4）"GUI 里叠一层"——技术上走不通。**
+**（4）"GUI 里叠一层"—— 技术上走不通。**
 本机 `libros_gz_bridge.so` **不映射 `visualization_msgs`**（实测只有 sensor_msgs / nav_msgs /
 geometry_msgs / tf2 / ros_gz_interfaces）。→ 语义层只能用 RViz（原生支持 OccupancyGrid /
 Path / LaserScan / MarkerArray），GUI 保持纯场景。
@@ -675,12 +675,12 @@ Path / LaserScan / MarkerArray），GUI 保持纯场景。
 
 ### 15.4 一个仍然存在的验证缺口
 
-**8 字轨迹净空没有正式断言。** 官方 `w6_geometry_check.py` 只查"待机环带可行弧 ≥ 90°"，
+**8 字轨迹净空没有正式断言。** 官方 `check_scene_geometry.py` 只查"待机环带可行弧 ≥ 90°"，
 不查"安全盘是否切断 8 字轨迹"。R4/R5 靠临时核验器算过（+1.31 m），但那个核验器在 `/tmp`
 已丢失。**下一轮优先把它做成 `tests/` 里的正式断言**，否则这条最危险的判据永远靠人肉。
 
 另注：本轮参照物全部落在 y≈−30..−40 的外环，远离 8 字带（|y|≤7.7）与待机环带，故
-净空不可能被改变——但这是**推理**，不是**验证**。
+净空不可能被改变—— 但这是**推理**，不是**验证**。
 
 ---
 
@@ -776,7 +776,7 @@ swap=2GB
 
 ## 16. 下一步（未做，按优先级）
 
-1. **把 8 字净空做成正式断言**（见 15.4）——最高优先，补上唯一没有自动化的致命判据。
+1. **把 8 字净空做成正式断言**（见 15.4）—— 最高优先，补上唯一没有自动化的致命判据。
 2. **贴图往建筑外墙扩展**：需要解决 UV 拉伸（本机 SDF 无 UV 缩放）→ 要么接受 mesh，要么放弃。
 3. **RViz 的 `Map` 显示在本机有 GLSL 报错**（`indexed_8bit_image` 着色器链接失败：
    "active samplers with a different type refer to the same texture image unit"）——

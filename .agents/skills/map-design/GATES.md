@@ -4,14 +4,14 @@
 阈值属于**验收口径**：要改就交回 Leader 裁定，别在核验器里偷偷放宽。
 
 > 本文只给**公式与判据**，不给"当前值"。当前值跑：
-> `python3 tests/w6_geometry_check.py --out /tmp/geom.json`（约 15 s，只读，退出码 0 = PASS）。
+> `python3 tests/check_scene_geometry.py --out /tmp/geom.json`（约 15 s，只读，退出码 0 = PASS）。
 
 ## 0. 先复刻，再设计
 
 **做法**：写一个**只读**脚本，对候选布局算下面全部闸门，迭代到全绿才写真源。
 要求：
 
-- 口径必须与 [`tests/w6_geometry_check.py`](../../../tests/w6_geometry_check.py) **逐项一致**，
+- 口径必须与 [`tests/check_scene_geometry.py`](../../../tests/check_scene_geometry.py) **逐项一致**，
   否则你在"假绿"上做设计；
 - 沙箱路径独占（`/tmp/<本单前缀>-*`），脚本**入库**到 `tests/` 或 `scripts/`
   （历史版丢在 `/tmp` 被清理，最危险的判据因此整轮无法复现）；
@@ -30,7 +30,7 @@
 
 ```text
 disk_r(entity) = safety_radius + obstacle_margin + extra
-extra         = reaction_time_s × max_speed_mps + reachability_margin
+extra = reaction_time_s × max_speed_mps + reachability_margin
 ```
 
 `obstacle_margin` / `reaction_time_s` / `max_speed_mps` / `reachability_margin` 是**安全余量参数**，
@@ -52,7 +52,7 @@ ring_r = target_min_dist + target_margin + extra
 
 ### (1) 8 字轨迹净空 —— **没有正式断言，须自己算，且别把结论说过头**
 
-`w6_geometry_check.py` **只查待机环带**，不查参考轨迹是否被静态膨胀圆盘切到。
+`check_scene_geometry.py` **只查待机环带**，不查参考轨迹是否被静态膨胀圆盘切到。
 所以设计时要自己算；算出来的**含义**必须说准。
 
 轨迹形状以 `agc_air/config/air.yaml` 的 `traj.rx / traj.ry` 与 `agc_control` 的
@@ -61,17 +61,17 @@ ring_r = target_min_dist + target_margin + extra
 
 ```text
 x(θ) = center_x + rx · sinθ
-y(θ) = center_y + ry · sinθ · cosθ        （= (ry/2)·sin2θ）
+y(θ) = center_y + ry · sinθ · cosθ （= (ry/2)·sin2θ）
 ```
 
 **判据（与安全层同口径，推荐）**：在轨迹上密采样 θ，对每个实体算
 
 ```text
-min_θ [ ‖p(θ) − anchor(entity)‖ − disk_r(entity) ]  ≥ 0
+min_θ [ ‖p(θ) − anchor(entity)‖ − disk_r(entity) ] ≥ 0
 ```
 
 历史核验器记录的最紧实体是小型标志物这类**边缘件**，说明最优点常出现在轨迹与实体的
-"擦边"处——采样要密，别只查端点。
+"擦边"处—— 采样要密，别只查端点。
 
 **辅助口径（几何，不是安全层）**：`点到实体水平足迹的距离 − 足迹外伸 ≥ 0`。
 两条口径**不等价**（圆盘是外接圆，比足迹保守得多），报告时写清用的是哪一条。
@@ -95,20 +95,20 @@ min_θ [ ‖p(θ) − anchor(entity)‖ − disk_r(entity) ]  ≥ 0
 在 `ring_r` 的圆周上做**密集角向采样**（数千点，脚本里是 `3600`）；某样本被任一实体圆盘覆盖即"阻塞"。
 
 ```text
-可行率 = 未阻塞样本 / 总样本                 （> 0）
-最长连续可行弧（环形遍历） ≥ 90°             （够 standoff 驻留）
+可行率 = 未阻塞样本 / 总样本 （> 0）
+最长连续可行弧（环形遍历） ≥ 90° （够 standoff 驻留）
 ```
 
 "相对 minimal 新增多少阻塞单元"**只登记、不参与 pass**：中央加了内容后环带受挤压是**预期**
 （但增加多少要实测，不要预设）；判据是"仍存在可行解"，不是"不比 minimal 多"。
 
-### (3) C7 出生净空 —— 核查断言 (g)
+### (3)出生净空 —— 核查断言 (g)
 
 与 `scenario_reset.validateCandidate` **同一判据**：用逐**图元足迹**距离，
 不是实体中心距离。
 
 - 每个实体 ↔ 车 / 目标 / 己方机的**足迹净空 > 0**；
-- 车 ↔ 目标 ≥ C7 标定下限（阈值在核查脚本里，与 `scenario_reset.validateCandidate` 同判据）；
+- 车 ↔ 目标 ≥标定下限（阈值在核查脚本里，与 `scenario_reset.validateCandidate` 同判据）；
 - 车仍在作业区边界内缩范围内。
 
 出生点常量在核查脚本里（`CAR_XY` / 目标 / `OWN_XY`）+ `scenarios.yaml` 的 `scenario_reset`。
@@ -142,7 +142,7 @@ min_θ [ ‖p(θ) − anchor(entity)‖ − disk_r(entity) ]  ≥ 0
 - 栅格 `res = 0.2 m`，逐图元多边形（box 4 角 / cylinder、sphere 用 16 边形近似）做点在多边形内；
 - 区间与实体上限是**验收口径**，断言名与阈值以核查脚本为准（不在本文抄数字）。
 
-同类断言还要求**尺寸 / 高度 / 朝向 / 形状长尾**与"中央有内容"——它们是"真实感"的量化来源，
+同类断言还要求**尺寸 / 高度 / 朝向 / 形状长尾**与"中央有内容"—— 它们是"真实感"的量化来源，
 不是审美：全部等大 = 玩具感。阈值见核查脚本，**不要**在核验器里另设一套。
 
 **加任何物件之前先算面积余量。** 覆盖率上限很紧，等核查 FAIL 才发现就晚了。
@@ -155,7 +155,7 @@ L = 0.2126·r + 0.7152·g + 0.0722·b
 ```
 
 且屋面必须用 `roofpanel` 档（低金属度）。**关键实测结论**：无环境贴图时
-`metalness` 才是亮度杠杆——给高金属度件"提亮 albedo"几乎无效。
+`metalness` 才是亮度杠杆—— 给高金属度件"提亮 albedo"几乎无效。
 判据取 `finish: roofpanel` 图元 `color` 的最小亮度；地面若带 `albedo_map`，
 基色要去 `src/agc_sim/materials/manifest.json` 的 `base_srgb` 取（不是 SDF 里的白）。
 

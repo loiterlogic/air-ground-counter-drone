@@ -52,7 +52,7 @@ TOP_LEVEL = frozenset({
     'third_party_asset_check.py',   # 第三方资产 provenance
     'toolchain_pin_check.py',       # 工具链 pin 核对
     'toolchain_root_check.py',      # 工具链根注入校验
-    'w3_target_driver.py',          # 目标驱动（运行时）
+    'target_driver.py',          # 目标驱动（运行时）
 })
 
 TOP_LEVEL_LIMIT = 12

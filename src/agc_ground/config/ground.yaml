@@ -1,4 +1,4 @@
-# agc_ground 参数—— 由 ground_bringup.launch.py 单一注入，节点不得覆写（docs/ROS2迁移交接文档.md#params）
+# agc_ground 参数——由 ground_bringup.launch.py 单一注入，节点不得覆写（docs/ROS2迁移交接文档.md#params）
 #
 # 安全层：Nav2 collision_monitor（直接复用 Nav2 组件，ADR-0004 / ADR-0003）。
 # 链路：RL/占位策略 → /agc/ground/cmd_vel_raw → collision_monitor → /agc/ground/cmd_vel
@@ -27,7 +27,7 @@
 # * 紧急档 = stop（1.0 m 区立即停车，最后防线）
 # * approach 档 = Nav2 时间窗（time_before_collision），体现"按速度留时间"口径
 #
-# —— 扫掠几何推导（2026-10-15，评审风险 ）——
+# ——扫掠几何推导（2026-10-15，评审风险）——
 # 车体（Husky A200 保形换装，agc_car.sdf.xacro）：碰撞盒 1.0074 × 0.5709 × 0.2675，
 # 半长 a = 0.5037 m、半宽 b = 0.28545 m、半对角 r_fp = sqrt(a² + b²) = 0.5789 m；
 # 车最大线速 v_max = 1.5 m/s、制动 a ≈ 0.9 m/s²、ω_max = 2.0 rad/s（ADR-0010 实测）。
@@ -47,12 +47,12 @@
 # 会返回车体自身（如车头/外伸）；逐束把落在车体矩形（|x| ≤ a+margin，|y| ≤ b+margin）内的返回置
 # +inf。参数 footprint_half_length_m 0.5037 / footprint_half_width_m 0.28545 /
 # self_filter_margin_m 0.10（实测自返回极值后微调，见 w5 tasks 修订）。
-# —— 安全层与 costmap 消费自滤后的 **/agc/ground/scan_filtered**。
+# ——安全层与 costmap 消费自滤后的 **/agc/ground/scan_filtered**。
 # min_points 标定（360 束/360°：半径 D 处相邻束间距 ≈ 0.01745·D）：
 # 障碍张角对应束数 ≈ 宽 /(0.01745·D)。薄障碍（细柱/薄板）在停车区边缘命中束数很少
 # （见 w5 tasks 修订实测），故三档 min_points 下调为 **2**（能把薄障碍检出的最小值）。
 #
-# —— 传感器高度与障碍族限制**如实登记** + 安全声明**收窄**（2026-10-17，评审风险 ）——
+# ——传感器高度与障碍族限制**如实登记** + 安全声明**收窄**（2026-10-17，评审风险）——
 # 安装高度：`car/lidar_link` **z = 0.48 m**（车顶水平面，agc_car.sdf.xacro）。
 # 本安全层 / costmap 消费的 `/agc/ground/scan_filtered` 为 **z≈0.48 的 2D 水平面扫描**
 # （`scan` 源无高度带；对齐 Nav2 collision_monitor：`scan` 源只覆盖扫描平面那一层，
@@ -69,7 +69,7 @@
 # → **不**进本安全层视野、**不**参与真实物理接触（物理接触验证 unsupported）；外伸 1.0 m 仅作
 # **出生净空推导**登记（ADR-0012）；载荷**物理启用后必须重标** / 与本口径。详见 ADR-0009。
 #
-# —— 失源停车窗口标定（2026-10-15，评审风险 ）——
+# ——失源停车窗口标定（2026-10-15，评审风险）——
 # source_timeout **不再沿用** Nav2 官方示例（5.0 s，未经本车标定）——原值失源盲行可达 1.5×5.0=7.5 m，
 # 与 4 m 安全档严重不匹配。改由**本车实测**动力学与链路推导（详见 collision_monitor 段内注释）；
 # 失源后总停距 < 碰撞档 2.0 m，窗口 T 与 `agc_perception/config/perception.yaml` 的
@@ -83,7 +83,7 @@ collision_monitor:
     cmd_vel_out_topic: "/agc/ground/cmd_vel"
     state_topic: "collision_monitor_state"
     transform_tolerance: 0.3
-    # —— 失源失效停车窗口（2026-10-15，评审风险 ）——
+    # ——失源失效停车窗口（2026-10-15，评审风险）——
     # semantic：观察源 scan（/agc/ground/scan_filtered）超过 source_timeout 未更新 → 源失效；
     # 本机 Jazzy `nav2_collision_monitor` 的 `Source::getData` 对失效源「return false → 封锁机器人」
     # （非静默透传原命令）——见 source.hpp 注释与 故障注入实测（r008.json）。
@@ -103,7 +103,7 @@ collision_monitor:
     # 契约要求 /agc/ground/cmd_vel 为 TwistStamped（docs/ROS2迁移交接文档.md#namespace）
     enable_stamped_cmd_vel: True
     polygons: ["SlowSafety", "StopCollision", "StopEmergency"]
-    # —— 安全档（扫掠 4.0 m，slowdown）——
+    # ——安全档（扫掠 4.0 m，slowdown）——
     SlowSafety:
       type: "velocity_polygon"
       action_type: "slowdown"
@@ -137,7 +137,7 @@ collision_monitor:
         linear_max: 1.5
         theta_min: -2.0
         theta_max: 2.0
-    # —— 碰撞档（扫掠 2.0 m，stop）——
+    # ——碰撞档（扫掠 2.0 m，stop）——
     StopCollision:
       type: "velocity_polygon"
       action_type: "stop"
@@ -170,7 +170,7 @@ collision_monitor:
         linear_max: 1.5
         theta_min: -2.0
         theta_max: 2.0
-    # —— 紧急档（扫掠 1.0 m，stop，最后防线）——
+    # ——紧急档（扫掠 1.0 m，stop，最后防线）——
     StopEmergency:
       type: "velocity_polygon"
       action_type: "stop"
@@ -212,7 +212,7 @@ collision_monitor:
       topic: "/agc/ground/scan_filtered"
       enabled: True
 
-# · ：自体过滤节点参数（节点名 = scan_self_filter，由 ground_bringup 单一注入）
+# ·：自体过滤节点参数（节点名 = scan_self_filter，由 ground_bringup 单一注入）
 # 几何/直连占位全局规划器（ADR-0013 当前占位阶段）。
 # **只发路径，不发速度**：因此不是第二命令者，也不进 `command_source` 互斥域。
 # **不是** Navfn / planner_server / costmap：路径是"当前车位 → goal"的直线，只在
@@ -241,7 +241,7 @@ scan_self_filter:
     footprint_half_width_m: 0.28545
     self_filter_margin_m: 0.10
 
-# —— 执行中继硬化（2026-10-15，评审风险 ）——
+# ——执行中继硬化（2026-10-15，评审风险）——
 # 背景：GZ DiffDrive 插件**没有**命令超时（本机 libgz-sim8-diff-drive-system.so 参数清单仅
 # max_linear_velocity / max_angular_velocity / odom_topic 等，无 timeout/deadman），
 # 故中继自身死亡或时钟异常时末端可能持续执行最后命令。本段只做**中继自身**的鲁棒化：

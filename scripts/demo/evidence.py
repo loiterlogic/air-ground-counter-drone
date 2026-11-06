@@ -43,7 +43,7 @@ TF_STATIC = 'static_transform_publisher'
 
 MISSING, OK, NA = 'missing', 'ok', 'not_applicable'
 
-# 叠加层的 TF 是 **map→world** 恒等变换（`w6.launch.py::_viz_actions`，RViz Fixed Frame=map 的前提）。
+# 叠加层的 TF 是 **map→world** 恒等变换（`main.launch.py::_viz_actions`，RViz Fixed Frame=map 的前提）。
 # world_bringup 另有 2 个 car 相关 static_tf（car/base_link→car/lidar_link 等），**必须排除**，
 # 否则"单份"判据会被正常进程污染（ 实测：按可执行名计数得 3，实为 1 个叠加 + 2 个自带）。
 WORLD_TF_FRAMES = ('map world', 'map->world')

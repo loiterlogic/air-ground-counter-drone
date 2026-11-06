@@ -27,11 +27,11 @@ accepted（2026-11-02 由 0007 / 0044 / 0045 / 0063 / 0064 合并；结论未变
 
 ```
 experiments/<campaign>/<run_id>/
-  ├── config/     本次参数快照（必需，可复现）
-  ├── bag/        ros2 bag
-  ├── log/        运行日志 / run logger 输出
-  ├── metrics/    结构化指标（含 shield_infeasible_rate、reset_failure_rate）
-  └── figures/    出图
+  ├── config/ 本次参数快照（必需，可复现）
+  ├── bag/ ros2 bag
+  ├── log/ 运行日志 / run logger 输出
+  ├── metrics/ 结构化指标（含 shield_infeasible_rate、reset_failure_rate）
+  └── figures/ 出图
 ```
 
 **禁止**在其它任何位置写实验产物。`experiments/` 整体 git 忽略，仅 `experiments/README.md` 与
@@ -42,9 +42,9 @@ experiments/<campaign>/<run_id>/
 - `run_id` 生成改为 `<YYYYMMDD>-<scenario>-<seed>-<HHMMSS>-<rand4>`（时刻 + 随机后缀），并**保留**
   `-<scenario>-<seed>` 子串以兼容既有 `*-<scenario>-<seed>-...` glob 定位。
 - run 目录以 `fs::create_directory` **独占创建**（已存在即失败）：先建 campaign 父目录，再对 run 目录独占创建；
-  失败则置 `dir_ok_ = false` 并报错。`main()` 在 `dirOk() == false` 时**退出码 2**，**不重写**已有 `summary.json`。
+  失败则置 `dir_ok_ = false` 并报错。`main` 在 `dirOk == false` 时**退出码 2**，**不重写**已有 `summary.json`。
 - `run_id_override` 参数**只替换 run 目录名**（供确定性复现「已有目录 → 拒写」的验证 / 审计），
-  **独占创建仍拒绝已有目录**，因此**不削弱**唯一性；默认空 = 走 `makeRunId()`。
+  **独占创建仍拒绝已有目录**，因此**不削弱**唯一性；默认空 = 走 `makeRunId`。
 - campaign 的 `run_id` 同样唯一：`<YYYYMMDD>-<campaign>-<HHMMSS>-<rand4>`，同日同 campaign 连跑落到不同目录。
 - 临时文件（`write_temp_params` / `write_manifest` 及派生的障碍 / 地图 / 空中参数临时文件）文件名追加**唯一 token**
   （时刻 + 进程 + 随机），避免并发 / 重复 run 互相覆盖。
@@ -66,7 +66,7 @@ experiments/<campaign>/<run_id>/
 
 `episode_runner` 收集 summary 改为 glob `*-<scenario>-<seed>*/metrics/summary.json`，并以
 `mtime >= 本 episode 墙钟起点 − 1.0` 过滤，取最新候选；再以 `run_id` 含 `-<scenario>-<seed>-` 记
-`same_run_verified`（**同一 run 关联**）。就绪改为**有界轮询** `wait_ready()`（以 `/agc/task/start` 服务就绪为门槛）
+`same_run_verified`（**同一 run 关联**）。就绪改为**有界轮询** `wait_ready`（以 `/agc/task/start` 服务就绪为门槛）
 替代固定 `time.sleep(18)`，随后仅有界稳定窗口收集 `/clock` 起点。
 
 ### (e) campaign 归属：报告归 `metrics/` 并引用每 run
@@ -82,14 +82,14 @@ campaign 汇总报告 `report.{json,md}` 落 campaign run 的 **`metrics/`**（�
   - 运行身份 `campaign` / `run_id` / `episode_id` / `git_commit` / `backend`（缺失记 `null`，**不**以 0 冒充）；
   - 生成器版本 `generator` + `generator_version` + `manifest_version`；
   - 访问位置与保留期 `archive.path` + `archive.checksum_file` + `archive.retrieval_record` + `retention`
-    （长期保留，≥ W8 对照冻结）。
+    （长期保留，≥对照冻结）。
   - `config/**` 已放行入库，故 manifest 天然入库，**无需**改放行规则；manifest **不含自身哈希**
     （`self_excluded` 显式标注），避免自引用。
 - **本地不可变归档** `experiments/_archive/<campaign>/<run_id>.tar`（**只读**）：run 目录打包（**含**
   `config/evidence_manifest.json`），成员路径以 `<run_id>/` 为前缀便于取回还原，`uid/gid/uname/gname` 归一以利确定性；
   归档 `sha256` 记入同名 `.tar.sha256`（`sha256sum` 格式）；归档与侧车生成后置 `0444` 并标 `retention`；
   **大归档不入 git**（`experiments/_archive/` 加忽略规则）。
-- **跨路径取回验证**（证明「可取回」而不只写路径）：解包到 `tempfile.mkdtemp()` 另一路径并**逐文件哈希比对**
+- **跨路径取回验证**（证明「可取回」而不只写路径）：解包到 `tempfile.mkdtemp` 另一路径并**逐文件哈希比对**
   （含 manifest 自身），结果落 `<run_id>.tar.retrieval.json`（`verified` / `method` / `files_checked` /
   `mismatches` / `archive_sha256` / `verified_at`）；`mismatches` 非空即判失败。
 - **保护现有证据**：对现存 run 生成 manifest + 归档是**新增**产物，**不**改写 run 内既有 `params` / `summary` /
@@ -111,7 +111,7 @@ campaign 汇总报告 `report.{json,md}` 落 campaign run 的 **`metrics/`**（�
 - **不**把大 `bag/` / `log/` 直接入 git（仓体膨胀、二进制不可 diff）。
 - **不**只写归档路径而不验证可取回；**不**让 manifest 含自身哈希或归档哈希（自引用循环，哈希不可闭合）。
 - **不**伪造 / 重建已丢失的历史原件，**不**以旧路径名冒充复核；**不**凭推断改写 Runbook 完成状态。
-- **不**改契约冻结 9 消息 ABI、**不**改 C9 指标语义 / 三层验收、**不**新增第二 ROS 命令者。
+- **不**改契约冻结 9 消息 ABI、**不**改指标语义 / 三层验收、**不**新增第二 ROS 命令者。
 
 ## Considered Options
 
@@ -138,7 +138,7 @@ campaign 汇总报告 `report.{json,md}` 落 campaign run 的 **`metrics/`**（�
   run 后续追加产物即**非最新**（需 `--force` 重建并**重记哈希**，旧哈希随之失效）；依赖固定临时文件名的既有脚本与
   读 campaign 报告路径的 check 脚本须同步更新。
 - **未决 / 后续**：`fingerprint_sha256` 目前只覆盖 `HEAD + status + diff`，未纳入未跟踪文件**内容**（仅列名）；
-  多后端（含 PX4）工具链身份待 `px4_root` 实跑回填；外部（异地）归档与分发属 W8 正式冻结项；
+  多后端（含 PX4）工具链身份待 `px4_root` 实跑回填；外部（异地）归档与分发属正式冻结项；
   「小审定摘要入 git」按项目裁定另行决定；证据丢失事故的重做一致性结论待据实回填。
 
 ## 参考
@@ -152,5 +152,5 @@ campaign 汇总报告 `report.{json,md}` 落 campaign run 的 **`metrics/`**（�
   [ADR-0018](0018-acceptance-and-coverage-matrix.md#top)（验收判定与覆盖矩阵）、
   [ADR-0019](0019-lifecycle-and-startup-robustness.md#top)（生命周期可重建）、
   [ADR-0025](0025-publishing-boundary-and-retirement.md#top)（发布边界与退役清理）
-- 实现：`run_logger.cpp` / `episode_runner.py` / `w6_composition.py` / `scripts/evidence_archive.py` / `.gitignore` /
+- 实现：`run_logger.cpp` / `episode_runner.py` / `composition.py` / `scripts/evidence_archive.py` / `.gitignore` /
   `experiments/README.md`

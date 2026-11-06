@@ -1,4 +1,4 @@
-# agc_rl 参数—— 由 rl_inference.launch.py 单一注入，节点不得覆写（docs/ROS2迁移交接文档.md#params）
+# agc_rl 参数——由 rl_inference.launch.py 单一注入，节点不得覆写（docs/ROS2迁移交接文档.md#params）
 #
 # RL 接口契约（obs / action 空间）见 `agc_rl/interface.py`；本文件只给**取值**。
 # 链路：ground_policy_rl → cmd_vel_raw → collision_monitor → 唯一执行口 → 中继 → GZ。

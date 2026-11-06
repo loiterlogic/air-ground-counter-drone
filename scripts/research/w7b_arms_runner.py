@@ -46,7 +46,7 @@ P2_SCENE = P1_SCENE
 # 通用字段缺省（保持既有轻量臂不变）：backend=lightweight / target_source='' / observe_yaw_mode=''
 #
 # ⚠ 2026-11-04：`ARMS` 里的 `target_source='air_fusion'` 是**历史臂定义**（与冻结预注册
-#   `w7b_prereg.yaml` 逐值一致，不得追改）。`air_fusion` 退役后这些臂**不可复现**：
+#   `research_prereg.yaml` 逐值一致，不得追改）。`air_fusion` 退役后这些臂**不可复现**：
 #   `target_source=air_fusion` 会让 `gt_adapter` 不发布 `/agc/targets` → 无目标源。
 #   本 runner 当前仅用于**复算历史产物**；要重跑须新立预注册版本并显式记录可比性断裂。
 ARMS = [
@@ -93,7 +93,7 @@ ARMS = [
 
 def paired_deltas(results):
     """CRN 配对（R1）：按 seed 对齐 P1 两臂，给**逐 seed 配对差**（协同 − 非协同）+ 汇总。
-    判定（显著性 / 置信区间 / 阈值）**不在**此处——由步 3 按 `w7b_prereg.yaml` 执行。"""
+    判定（显著性 / 置信区间 / 阈值）**不在**此处——由步 3 按 `research_prereg.yaml` 执行。"""
     by = {(r['arm'], r['seed']): r for r in results}
     seeds = sorted({r['seed'] for r in results if r['group'] == 'R1'})
     rows = []
@@ -124,7 +124,7 @@ def paired_deltas(results):
         'mean_d_fire_control_opportunity_rate': mean('d_fire_control_opportunity_rate'),
         'mean_d_visibility_rate': mean('d_visibility_rate'),
         'mean_d_min_clearance_m': mean('d_min_clearance_m'),
-        'adjudication': 'not_executed（步 3：按 src/agc_rl/config/w7b_prereg.yaml 判定）',
+        'adjudication': 'not_executed（步 3：按 src/agc_rl/config/research_prereg.yaml 判定）',
     }
 
 
@@ -288,7 +288,7 @@ def main():
     # ADR-0023：场景覆盖（pilot / 新固定条件用；缺省 '' = 用 ARMS 内各臂自带场景）。
     ap.add_argument('--scene', default='', help='覆盖所选臂的场景（缺省沿用 ARMS 定义）')
     # ADR-0022：终态后继续采到**固定观测时长**（自 start 起、仿真钟秒）；须与 run_logger 的
-    # `obs_window_s` 同值（w6_base.yaml，缺省 60.0），否则 visibility_metrics 窗口采不满。
+    # `obs_window_s` 同值（base.yaml，缺省 60.0），否则 visibility_metrics 窗口采不满。
     ap.add_argument('--obs-horizon-s', type=float, default=60.0)
     # 放宽（2026-10-20）：/agc/task/start 等待上限（s；须 ≥ task_manager 的 air_hover_timeout_s=45）
     ap.add_argument('--start-timeout-s', type=float, default=60.0)
@@ -296,7 +296,7 @@ def main():
     #   `air_hover_timeout` / `odom_invalid` 等 `classification=='infra'` 结果按本上限**重跑**；
     #   mission 结果（含 TIMEOUT）**一律不重试**。0 = 关闭。逐次产物（日志 .rN / run_id）全留。
     ap.add_argument('--infra-retries', type=int, default=3)
-    # ADR-0027（uXRCE 预热 / 错峰）：仅显式给出时透传 w6.launch.py；缺省沿用 launch 默认
+    # ADR-0027（uXRCE 预热 / 错峰）：仅显式给出时透传 main.launch.py；缺省沿用 launch 默认
     #   （px4_warmup=true / own_px4_delay_s=12.0）。
     ap.add_argument('--own-px4-delay-s', type=float, default=None)
     ap.add_argument('--intruder-px4-delay-s', type=float, default=None)
@@ -422,7 +422,7 @@ def main():
     report = {
         'run_id': run_id, 'campaign': args.campaign, 'mode': args.mode,
         'backend': backends[0] if len(backends) == 1 else 'mixed', 'backends': backends,
-        'launch': 'w6.launch.py', 'seeds': seeds,
+        'launch': 'main.launch.py', 'seeds': seeds,
         'px4_run_root': args.px4_run_root,
         'n_runs': len(results), 'wall_elapsed_s': time.monotonic() - t0,
         'arms': results,

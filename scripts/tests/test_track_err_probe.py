@@ -3,7 +3,7 @@
 
 断言的是"两个**已定位**的脆弱点不再存在"，不是"跑起来看着对"：
 
- 1. **预热进程必须有确定上界，且上界必须能兑现**：`w6.launch.py` 的 prewarm 命令必须是
+ 1. **预热进程必须有确定上界，且上界必须能兑现**：`main.launch.py` 的 prewarm 命令必须是
  `timeout -k <K> <N> …`。**只给 `timeout <N>` 不够**——GNU `timeout` 到点只发 SIGTERM
  然后无限期等子进程； T-B 的失败形态正是该进程 SIGINT 5 s / SIGTERM 10 s 都不退，
  只能 SIGKILL。此时 `timeout` 自身永不返回 → `OnProcessExit` 依旧不触发 → 修复等于没做。
@@ -22,7 +22,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[2]
-W6 = REPO / 'src' / 'agc_task' / 'launch' / 'w6.launch.py'
+W6 = REPO / 'src' / 'agc_task' / 'launch' / 'main.launch.py'
 PROBE = REPO / 'scripts' / 'tracking' / 'track_err_probe.py'
 
 FROZEN_9 = {

@@ -10,10 +10,10 @@
 ## 生成与复现
 
 ```bash
-python3 src/agc_sim/materials/gen_textures.py   # 固定种子 20261030，输出 albedo/*.png + manifest.json
+python3 src/agc_sim/materials/gen_textures.py # 固定种子 20261030，输出 albedo/*.png + manifest.json
 ```
 
-**必须可复现**：种子由 `zlib.crc32(name)` 派生，**不能用内置 `hash()`**（它受 `PYTHONHASHSEED`
+**必须可复现**：种子由 `zlib.crc32(name)` 派生，**不能用内置 `hash`**（它受 `PYTHONHASHSEED`
 随机化，同一脚本两次运行会产出不同贴图）。
 
 `manifest.json` 记录每张图的 sha256 / 尺寸 / 基色 / 字节数，供溯源与回归比对。
