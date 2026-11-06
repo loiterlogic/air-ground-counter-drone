@@ -9,7 +9,7 @@
 
 * 它把路径变成一个**参考点/航向**，交给同一套既有 `action_to_twist` 映射；
 * 它**不改变** `agc_rl.interface` 的 obs / action 空间，也**不**让路径进入训练观测
-  （传输缝 ≠ 模型观测缝，ADR-0013）；
+ （传输缝 ≠ 模型观测缝，ADR-0013）；
 * 因此"能沿路径走"**不是**"训练 RL 已具备路径跟踪能力"。
 
 ## 五类质量门（ADR-0013）
@@ -79,13 +79,13 @@ def _xy(pose_stamped):
 def check_path_gate(path, expected_frame, age_s, max_age_s, ever_received):
     """五类质量门。返回 `PathGateResult`；`path` 为 `None` 表示当前无路径。
 
-    参数
-    ----
-    path : nav_msgs/Path 或 None
-    expected_frame : str，期望的顶层坐标系（本仓为 `world`）
-    age_s : float 或 None，源 stamp 与**仿真时钟当前值**之差（秒）；`None` = 无法计算
-    max_age_s : float，有效期（秒）；`<= 0` 表示不做过期检查（显式关闭）
-    ever_received : bool，启动后是否曾收到过路径
+ 参数
+ ----
+ path : nav_msgs/Path 或 None
+ expected_frame : str，期望的顶层坐标系（本仓为 `world`）
+ age_s : float 或 None，源 stamp 与**仿真时钟当前值**之差（秒）；`None` = 无法计算
+ max_age_s : float，有效期（秒）；`<= 0` 表示不做过期检查（显式关闭）
+ ever_received : bool，启动后是否曾收到过路径
     """
     if path is None:
         return PathGateResult(False, NEVER_RECEIVED if not ever_received else STALE)
@@ -148,8 +148,8 @@ def _interpolate(points, cum, s):
 def nearest_index(points, cum, robot_xy, search_dist):
     """在**起点起 search_dist 弧长窗口**内找离车最近的路径点索引。
 
-    限界的意义：路径折返时，全路径线性扫会把"返程段"误判为更近，从而选到后段。
-    返回 `(index, dist)`；`search_dist <= 0` 表示不限界。
+ 限界的意义：路径折返时，全路径线性扫会把"返程段"误判为更近，从而选到后段。
+ 返回 `(index, dist)`；`search_dist <= 0` 表示不限界。
     """
     limit = cum[-1] if search_dist is None or search_dist <= 0.0 else min(search_dist, cum[-1])
     rx, ry = robot_xy
@@ -175,17 +175,17 @@ def _advance_index(points, cum, start_i, advance_m):
 def tracking_reference(path, robot_xy, params):
     """由合格路径算出跟踪参考。
 
-    返回 dict：
-      * `point`      —— 参考点 (x, y)（world 系）
-      * `nearest`    —— 限界最近的路径点 (x, y)
-      * `nearest_idx`/`target_idx` —— 索引（便于日志）
-      * `remaining_m`—— 参考点到路径末端的剩余弧长
-      * `finished`   —— 参考点是否已到路径末端且距末端小于 `goal_tol_m`
+ 返回 dict：
+ * `point` —— 参考点 (x, y)（world 系）
+ * `nearest` —— 限界最近的路径点 (x, y)
+ * `nearest_idx`/`target_idx` —— 索引（便于日志）
+ * `remaining_m`—— 参考点到路径末端的剩余弧长
+ * `finished` —— 参考点是否已到路径末端且距末端小于 `goal_tol_m`
 
-    `params` 键：
-      * `search_dist_m`   —— 最近点搜索窗口（弧长，`<=0` 不限界）
-      * `lookahead_m`     —— 前视弧长（"局部策略看多远"的唯一参数）
-      * `goal_tol_m`      —— 末端到位容差
+ `params` 键：
+ * `search_dist_m` —— 最近点搜索窗口（弧长，`<=0` 不限界）
+ * `lookahead_m` —— 前视弧长（"局部策略看多远"的唯一参数）
+ * `goal_tol_m` —— 末端到位容差
     """
     points = [_xy(p) for p in path.poses]
     cum = _cumulative(points)
@@ -219,7 +219,7 @@ def tracking_reference(path, robot_xy, params):
 def goal_consistent_with_path(path, goal_xy, tol_m):
     """路径末端与 goal 是否一致（防止"路径指向旧目标、goal 已换"）。
 
-    不一致时**不得**继续跟踪该路径，也**不得**静默退回 goal-only——由调用方按零速处理。
+ 不一致时**不得**继续跟踪该路径，也**不得**静默退回 goal-only——由调用方按零速处理。
     """
     if path is None or not getattr(path, 'poses', None):
         return False

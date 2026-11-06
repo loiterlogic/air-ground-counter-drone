@@ -1,44 +1,44 @@
-// run_logger —— run 产物落盘（W6 加厚 / C9）
+// run_logger —— run 产物落盘（ 加厚 / ）
 //
 // 按 ADR-0006 落 experiments/<campaign>/<run_id>/{config,metrics}：
-//   * config/：参数快照 + git commit hash
-//   * metrics/summary.json：见下 finalize()。
-// C9 两指标（契约 #hard-constraints）：
-//   * shield_infeasible_rate —— **重定义**：安全层触发（collision_monitor STOP/SLOWDOWN）
-//     且"触发时不可行"（前向扫描 ≤ contact_dist_m，或 TTC < ttc_min_s）的事件占比 =
-//     infeasible_ticks / triggered_ticks（无触发时记 0）。与旧义（RL 安全集为空）**不可对照**。
-//   * reset_failure_rate —— 本 episode 复位重试耗尽（>3）或复位服务调用失败 → 1.0，否则 0.0
-//     （跨 episode 的比率由评估 runner 汇总）。
+// * config/：参数快照 + git commit hash
+// * metrics/summary.json：见下 finalize。
+// 两指标（docs/ROS2迁移交接文档.md#hard-constraints）：
+// * shield_infeasible_rate —— **重定义**：安全层触发（collision_monitor STOP/SLOWDOWN）
+// 且"触发时不可行"（前向扫描 ≤ contact_dist_m，或 TTC < ttc_min_s）的事件占比 =
+// infeasible_ticks / triggered_ticks（无触发时记 0）。与旧义（RL 安全集为空）**不可对照**。
+// * reset_failure_rate —— 本 episode 复位重试耗尽（>3）或复位服务调用失败 → 1.0，否则 0.0
+// （跨 episode 的比率由评估 runner 汇总）。
 //
-// R-027（ADR-0010）—— 安全不可行率**诚实口径**与**真实接触证据**：
-//   本节点同时输出**两套口径**并显式标注，互不冒充：
-//   ① **proxy_v1**（历史口径，保留字段不动）：`shield_infeasible_rate` / `ticks_*` ——
-//      「安全层触发且前向扫描 ≤ contact_dist_m」的**触发拍代理**，**不要求**实际接触 / 制动失败。
-//   ② **gz_contact_v1**（新增真实口径）：以 GZ contact sensor（车模 base_collision ↔ 其它碰撞体）
-//      为「真实碰撞」的**真值**，另记 `collision_count` / `collision_events` / `trigger_events` /
-//      `intervention_duration_s` / `stopping_margin_*` / `true_shield_infeasible(_rate)`。
-//      真实碰撞 = 「车↔非车」接触对，且**排除世界地面**（base_collision 复位瞬间没入 ground_plane
-//      属建模产物，非障碍 / 实体碰撞）。
-//   除旧字段外，额外输出 `definition_version` 与 `metrics_comparability`：**proxy_v1 与 gz_contact_v1
-//   均不与旧 RL 安全集指标直接对照**。零速停于阈值外 → 无 GZ 接触 → `collision_count==0`（天然满足，
-//   **不**用 scan≤contact 去推导 collision）。缺数据段以 `not_applicable` 掩码如实标注，**不**以 0 冒充。
-//   新增订阅 / 参数（`contact_topic` / `a_brake_mps2`）均为**诊断类**，非 ROS 命令者；**不改**冻结 9 消息 ABI。
+// （ADR-0010）—— 安全不可行率**诚实口径**与**真实接触证据**：
+// 本节点同时输出**两套口径**并显式标注，互不冒充：
+// ① **proxy_v1**（历史口径，保留字段不动）：`shield_infeasible_rate` / `ticks_*` ——
+// 「安全层触发且前向扫描 ≤ contact_dist_m」的**触发拍代理**，**不要求**实际接触 / 制动失败。
+// ② **gz_contact_v1**（新增真实口径）：以 GZ contact sensor（车模 base_collision ↔ 其它碰撞体）
+// 为「真实碰撞」的**真值**，另记 `collision_count` / `collision_events` / `trigger_events` /
+// `intervention_duration_s` / `stopping_margin_*` / `true_shield_infeasible(_rate)`。
+// 真实碰撞 = 「车↔非车」接触对，且**排除世界地面**（base_collision 复位瞬间没入 ground_plane
+// 属建模产物，非障碍 / 实体碰撞）。
+// 除旧字段外，额外输出 `definition_version` 与 `metrics_comparability`：**proxy_v1 与 gz_contact_v1
+// 均不与旧 RL 安全集指标直接对照**。零速停于阈值外 → 无 GZ 接触 → `collision_count==0`（天然满足，
+// **不**用 scan≤contact 去推导 collision）。缺数据段以 `not_applicable` 掩码如实标注，**不**以 0 冒充。
+// 新增订阅 / 参数（`contact_topic` / `a_brake_mps2`）均为**诊断类**，非 ROS 命令者；**不改**冻结 9 消息 ABI。
 //
-// W7-b 修订（2026-10-19，ADR-0016「修订」节）—— scan 有效样本掩码 `scan_frame_fresh_v2`：
-//   v1 把 `scan_fresh` 与「前向锥**有有限回波**」绑定 → **无障碍物场景**（如 s01/s08）前向锥全 inf，
-//   整窗被误判为「无效 scan」（实测 `ticks_invalid_scan = ticks_total`）、净空 `null`。修订后：
-//   * `scan_fresh` = **收到过 scan 帧**且未超龄（回波有无与数据可得性分离）；
-//   * 净空 = 有限回波取最小值；**无回波**记入 `clearance_no_return_ticks`（= 范围内无遮挡），
-//     `command_attribution.not_applicable.clearance` 只看「是否有新鲜帧」；
-//   * 口径版本入 `definition_version`（`scan_valid_mask` / `command_attribution` → `raw_effective_v2`），
-//     `metrics_comparability` 显式标注与 v1 **不可逐值对照**。
+// 修订（2026-10-19，ADR-0016「修订」节）—— scan 有效样本掩码 `scan_frame_fresh_v2`：
+// v1 把 `scan_fresh` 与「前向锥**有有限回波**」绑定 → **无障碍物场景**（如 s01/s08）前向锥全 inf，
+// 整窗被误判为「无效 scan」（实测 `ticks_invalid_scan = ticks_total`）、净空 `null`。修订后：
+// * `scan_fresh` = **收到过 scan 帧**且未超龄（回波有无与数据可得性分离）；
+// * 净空 = 有限回波取最小值；**无回波**记入 `clearance_no_return_ticks`（= 范围内无遮挡），
+// `command_attribution.not_applicable.clearance` 只看「是否有新鲜帧」；
+// * 口径版本入 `definition_version`（`scan_valid_mask` / `command_attribution` → `raw_effective_v2`），
+// `metrics_comparability` 显式标注与 v1 **不可逐值对照**。
 //
-// W7-b 修订二（2026-10-19，ADR-0016「修订二」节）—— 窗口有效样本掩码 `window_valid_v2`（action 档）：
-//   v1 要求 `collision_monitor_state` **逐拍新鲜**（≤ `action_max_age_s`）。实证：Nav2 的 `state_topic`
-//   是**边沿（动作变化）发布**、**非心跳**——动作长期不变时不发（full 无障碍场景整窗实测 **0 条**），
-//   于是整窗被判「无效 action」（`ticks_invalid_action = ticks_total`、`ticks_valid = 0`）。
-//   修订后：action 档 = 「**状态已知**（曾收到过 state，其值即当前动作）**且安全层存活**（唯一执行口
-//   `/agc/ground/cmd_vel` 新鲜）」；口径版本 `shield_infeasible_rate_window → window_valid_v2`。
+// 修订二（2026-10-19，ADR-0016「修订二」节）—— 窗口有效样本掩码 `window_valid_v2`（action 档）：
+// v1 要求 `collision_monitor_state` **逐拍新鲜**（≤ `action_max_age_s`）。实证：Nav2 的 `state_topic`
+// 是**边沿（动作变化）发布**、**非心跳**——动作长期不变时不发（full 无障碍场景整窗实测 **0 条**），
+// 于是整窗被判「无效 action」（`ticks_invalid_action = ticks_total`、`ticks_valid = 0`）。
+// 修订后：action 档 = 「**状态已知**（曾收到过 state，其值即当前动作）**且安全层存活**（唯一执行口
+// `/agc/ground/cmd_vel` 新鲜）」；口径版本 `shield_infeasible_rate_window → window_valid_v2`。
 
 #include <algorithm>
 #include <array>
@@ -90,7 +90,7 @@ public:
     campaign_ = declare_parameter<std::string>("campaign", "m0-skeleton");
     scenario_ = declare_parameter<std::string>("scenario", "flat");
     seed_ = declare_parameter<int>("seed", 0);
-    // R-026：scene_manifest（声明轴 + 承载者 + 实际生效参数）与合并后参数文件路径；
+    // scene_manifest（声明轴 + 承载者 + 实际生效参数）与合并后参数文件路径；
     // 由顶层 launch 生成并经参数单一注入（缺省空 = 不落，不影响既有调用方）。
     scene_manifest_file_ = declare_parameter<std::string>("scene_manifest_file", "");
     params_file_in_ = declare_parameter<std::string>("params_file", "");
@@ -98,7 +98,7 @@ public:
       declare_parameter<std::string>("odom_valid_topic", "/agc/ground/odom_valid");
     const auto cmd_topic =
       declare_parameter<std::string>("cmd_topic", "/agc/ground/cmd_vel");
-    // —— W7-b（T1 / E1，F-06）：raw / effective 命令归因 ——
+    // —— （T1 / E1，F-06）：raw / effective 命令归因 ——
     // raw = 安全层**输入**（命令源原创）；effective = 安全层**输出**（唯一执行口值）。
     // 在**同一 odom 采样拍**取两者快照 → 记录干预量 / 干预时长 / 净空，防「靠 shield 成功」误归因。
     // 纯诊断，**不**新增命令者；不改冻结 9 消息 ABI。
@@ -111,13 +111,13 @@ public:
     // launch 传入的 'true'/'false' 由 launch_ros 归一为 **bool**，故此处按 bool 声明。
     shield_layer_enabled_ = declare_parameter<bool>("shield_layer_enabled", true);
     // —— 感知路径与视觉模型标识：**2026-11-04 起不再读参数，恒写固定值** ——
-    // 历史：P1-4 用这五个键区分 truth / vision 产物（ADR-0009「证据必须可区分」）。
+    // 历史： 用这五个键区分 truth / vision 产物（ADR-0009「证据必须可区分」）。
     // 现状：视觉定位路径**整体退役**（项目不做目标识别，目标位置始终由真值给出），
-    //   `perception_path` 恒 `truth`、`detector_backend` / `vision_model.id` 恒 `none`。
+    // `perception_path` 恒 `truth`、`detector_backend` / `vision_model.id` 恒 `none`。
     //
     // 为什么**保留字段而不删**：`summary.json` 是对外产物 schema，历史 run 都带这些键。
-    //   删键会让新旧 run 不可直接对比，也违反「产物字段只增不改语义」的既有纪律。
-    //   保留后审查看到的仍是明确值，而不是"忘了记"。
+    // 删键会让新旧 run 不可直接对比，也违反「产物字段只增不改语义」的既有纪律。
+    // 保留后审查看到的仍是明确值，而不是"忘了记"。
     //
     // 语义边界：这几个字段是**标签**，不参与任何终态 / 安全 / 评估计算。
     perception_path_ = "truth";
@@ -126,10 +126,10 @@ public:
     vision_model_name_.clear();
     vision_model_version_.clear();
     vision_model_sha256_.clear();
-    // —— W7-b（T3 / E3，F-10）：可见性度量口径（按 episode active 窗口切分）——
+    // —— （T3 / E3，F-10）：可见性度量口径（按 episode active 窗口切分）——
     // N4（2026-11-04）：空中跟踪误差与 hold 计数的取证输入（纯诊断，非 ABI）。
-    //   为什么必须在 run_logger 里取：N4 出口判据 1 要"逐档记录 hold 次数与跟踪误差 p50/p95"，
-    //   而 summary.json 是唯一落盘产物；此前这些数只能靠 grep 日志（逐拍重复，无法当事件计数）。
+    // 为什么必须在 run_logger 里取：N4 出口判据 1 要"逐档记录 hold 次数与跟踪误差 p50/p95"，
+    // 而 summary.json 是唯一落盘产物；此前这些数只能靠 grep 日志（逐拍重复，无法当事件计数）。
     air_odom_topic_ = declare_parameter<std::string>("air_odom_topic", "/agc/air/odom");
     air_tracking_ref_topic_ = declare_parameter<std::string>(
       "air_tracking_ref_topic", "/agc/air/tracking_ref");
@@ -141,7 +141,7 @@ public:
     const auto target_topic = declare_parameter<std::string>("target_topic", "/agc/targets");
     envelope_topic_ = declare_parameter<std::string>("envelope_topic", "/agc/task/envelope_in");
     visibility_max_age_s_ = declare_parameter<double>("visibility_max_age_s", 0.5);
-    // W7-b（ADR-0022，DV 口径修正）：可见 / 火控机会率改按**固定观测时长**计（自首个 active 拍起
+    // （ADR-0022，DV 口径修正）：可见 / 火控机会率改按**固定观测时长**计（自首个 active 拍起
     // `obs_window_s` 秒），**不**随"早成功"在终态处截断——否则该 DV 在早成功臂上**饱和**且受
     // "成功需可见"的**选择效应**影响（实测：两臂都 ≈0.98，对"指向"自变量不敏感）。
     obs_window_s_ = declare_parameter<double>("obs_window_s", 60.0);
@@ -164,37 +164,37 @@ public:
       declare_parameter<std::string>("reset_retries_topic", "/agc/task/reset_retries");
     const auto reset_failed_topic =
       declare_parameter<std::string>("reset_failed_topic", "/agc/task/reset_failed");
-    // C9 口径阈值（可标定；与 C2 碰撞档 2.0 m 对齐）
+    // 口径阈值（可标定；与 碰撞档 2.0 m 对齐）
     contact_dist_m_ = declare_parameter<double>("contact_dist_m", 2.0);
     ttc_min_s_ = declare_parameter<double>("ttc_min_s", 1.0);
     forward_cone_rad_ = declare_parameter<double>("forward_cone_rad", 0.9);
-    // R-027（ADR-0010）：接触真值话题（GZ contact sensor → ROS，ros_gz_interfaces/Contacts）；
+    // （ADR-0010）：接触真值话题（GZ contact sensor → ROS，ros_gz_interfaces/Contacts）；
     // **空字符串 = 接触真值不可用**（not_applicable.collision_truth=true）。由 launch 单一注入。
     contact_topic_ = declare_parameter<std::string>("contact_topic", "/agc/ground/contact");
-    // R-027：锁轮制动减速度（m/s^2）——取自 ADR-0010 实测锁轮制动；供剩余停车裕度
+    // 锁轮制动减速度（m/s^2）——取自 ADR-0010 实测锁轮制动；供剩余停车裕度
     // brake_d = v^2/(2a)、margin = scan_min_forward - brake_d（可标定量，非保证）。
     a_brake_mps2_ = declare_parameter<double>("a_brake_mps2", 0.9);
-    // R-028：有效样本掩码的采样新鲜度上限（s）——odom 拍时刻与最近 scan / 安全层存活证据的年龄
+    // 有效样本掩码的采样新鲜度上限（s）——odom 拍时刻与最近 scan / 安全层存活证据的年龄
     // 超过此上限即视为该拍无效样本（陈旧 scan 不按新 odom 重复计数）。由 launch 单一注入
     // （默认值仅作缺省；节点不得覆写）。
-    // W7-b 修订二（window_valid_v2）：本参数**不再**约束 `collision_monitor_state` 的逐拍新鲜度
+    // 修订二（window_valid_v2）：本参数**不再**约束 `collision_monitor_state` 的逐拍新鲜度
     // （该话题是**边沿发布**，非心跳，见 evaluateTick 注释），改为约束**安全层存活证据**的年龄——
     // 即唯一执行口 `/agc/ground/cmd_vel`（collision_monitor 的 `cmd_vel_out`）最近一次到达的年龄。
     scan_max_age_s_ = declare_parameter<double>("scan_max_age_s", 0.5);
     action_max_age_s_ = declare_parameter<double>("action_max_age_s", 0.5);
-    // R-029（ADR-0006）：episode 身份话题（std_msgs/Int32，transient_local；task_manager start 成功后发布）。
+    // （ADR-0006）：episode 身份话题（std_msgs/Int32，transient_local；task_manager start 成功后发布）。
     const auto episode_topic = declare_parameter<std::string>("episode_topic", "/agc/task/episode");
-    // R-029：世界模型文件（sha256 记入 config/toolchain_world.json；空 = 不记）。
+    // 世界模型文件（sha256 记入 config/toolchain_world.json；空 = 不记）。
     world_file_ = declare_parameter<std::string>("world_file", "");
-    // R-029：可选 PX4 根目录（记其 git HEAD 作工具链身份；空 = 不记）。
+    // 可选 PX4 根目录（记其 git HEAD 作工具链身份；空 = 不记）。
     px4_root_ = declare_parameter<std::string>("px4_root", "");
-    // R-029：确定性验证 / 审计用 run_id 覆盖（空 = 用 makeRunId() 生成唯一 id）。
+    // 确定性验证 / 审计用 run_id 覆盖（空 = 用 makeRunId 生成唯一 id）。
     // 仅改**名字**；独占创建仍拒绝已有目录 → 不削弱「唯一不可覆盖」。
     const auto run_id_override = declare_parameter<std::string>("run_id_override", "");
 
     run_id_ = run_id_override.empty() ? makeRunId() : run_id_override;
     run_dir_ = fs::path(experiments_root_) / campaign_ / run_id_;
-    // R-029：独占创建——先建父目录（campaign），再对 run 目录独占创建；已存在 → 拒绝写入。
+    // 独占创建——先建父目录（campaign），再对 run 目录独占创建；已存在 → 拒绝写入。
     std::error_code ec;
     fs::create_directories(fs::path(experiments_root_) / campaign_, ec);
     if (ec || !fs::create_directory(run_dir_, ec) || ec) {
@@ -215,11 +215,11 @@ public:
     cmd_sub_ = create_subscription<geometry_msgs::msg::TwistStamped>(
       cmd_topic, 50,
       [this](geometry_msgs::msg::TwistStamped::SharedPtr m) {++cmd_count_; onEffective(*m);});
-    // W7-b（T1/E1）：raw 命令（安全层输入）快照订阅——纯诊断。
+    // （T1/E1）：raw 命令（安全层输入）快照订阅——纯诊断。
     cmd_raw_sub_ = create_subscription<geometry_msgs::msg::TwistStamped>(
       cmd_raw_topic_, 50,
       [this](geometry_msgs::msg::TwistStamped::SharedPtr m) {onRaw(*m);});
-    // W7-b（T3/E3）：目标观测新鲜度 + 可交战包络（可见性 / 有效火控机会；纯诊断）
+    // （T3/E3）：目标观测新鲜度 + 可交战包络（可见性 / 有效火控机会；纯诊断）
     target_sub_ = create_subscription<agc_msgs::msg::TargetTrackArray>(
       target_topic, 20,
       [this](agc_msgs::msg::TargetTrackArray::SharedPtr m) {onTargets(*m);});
@@ -265,7 +265,7 @@ public:
     reset_failed_sub_ = create_subscription<std_msgs::msg::Bool>(
       reset_failed_topic, rclcpp::QoS(1).transient_local(),
       [this](std_msgs::msg::Bool::SharedPtr m) {reset_failed_ = m->data;});
-    // R-029（ADR-0006）：episode 身份贯穿日志 / config / summary（非命令者，诊断类）。
+    // （ADR-0006）：episode 身份贯穿日志 / config / summary（非命令者，诊断类）。
     episode_sub_ = create_subscription<std_msgs::msg::Int32>(
       episode_topic, rclcpp::QoS(1).transient_local(),
       [this](std_msgs::msg::Int32::SharedPtr m) {
@@ -275,7 +275,7 @@ public:
         writeText(run_dir_ / "config" / "episode_id.txt", std::to_string(episode_id_) + "\n");
         RCLCPP_INFO(get_logger(), "episode_id = %d", episode_id_);
       });
-    // R-027（ADR-0010）：真实接触真值订阅（GZ contact sensor → ROS）。空话题 = 不可用（不订阅）。
+    // （ADR-0010）：真实接触真值订阅（GZ contact sensor → ROS）。空话题 = 不可用（不订阅）。
     if (!contact_topic_.empty()) {
       contact_sub_ = create_subscription<ros_gz_interfaces::msg::Contacts>(
         contact_topic_, 10,
@@ -306,17 +306,17 @@ public:
     const double shield_rate = triggered_ticks_ > 0 ?
       static_cast<double>(infeasible_ticks_) / triggered_ticks_ : 0.0;
     const double reset_rate = reset_failed_ ? 1.0 : 0.0;
-    // R-027（ADR-0010）：诚实口径量 + 有效样本掩码
+    // （ADR-0010）：诚实口径量 + 有效样本掩码
     const bool scan_derived_na = (total_ticks_ == 0) || (scan_samples_ == 0);
     const bool trigger_derived_na = (trigger_events_ == 0);
     const bool collision_truth_na = contact_topic_.empty();
-    // R-027：若 episode 在**仍处于触发期**时结束且该触发期内已发生真实接触，则未发生下降沿——
+    // 若 episode 在**仍处于触发期**时结束且该触发期内已发生真实接触，则未发生下降沿——
     // 此处补记一次「真实安全不可行」，避免漏报（honest 优先）。
     const long infeasible_events_total = infeasible_trigger_events_ +
       ((in_trigger_ && current_trigger_has_contact_) ? 1 : 0);
     const bool true_shield_infeasible = infeasible_events_total > 0;
 
-    // R-028（ADR-0016）：finalize 时若仍有开窗 → 关闭它，closed=false（显式标注未闭合）。
+    // （ADR-0016）：finalize 时若仍有开窗 → 关闭它，closed=false（显式标注未闭合）。
     if (current_window_ >= 0) {
       EpisodeWindow & w = windows_[current_window_];
       w.leave_s = have_sim_ ? sim_end_s_ : last_tick_sim_s_;
@@ -326,12 +326,12 @@ public:
       closeVisibilityGap(w, w.leave_s);
       current_window_ = -1;
     }
-    // R-028：终态锁存输出（首个终态；无则回落到最后 state_name；再空则回退 IDLE）。
+    // 终态锁存输出（首个终态；无则回落到最后 state_name；再空则回退 IDLE）。
     const std::string terminal_state_out = !terminal_state_.empty() ? terminal_state_ :
       (!last_state_name_.empty() ? last_state_name_ : std::string("IDLE"));
     const std::string terminal_state_source = terminal_latched_ ? "first_terminal_latched" :
       (!last_state_name_.empty() ? "last_state_no_terminal" : "none");
-    // R-028：episode 窗口聚合 + 拒绝可用评价（无任务 / 无 scan / 无 odom 拍 → 不以 0 冒充）。
+    // episode 窗口聚合 + 拒绝可用评价（无任务 / 无 scan / 无 odom 拍 → 不以 0 冒充）。
     const bool has_window = !windows_.empty();
     long agg_ticks_total = 0, agg_ticks_valid = 0;
     long agg_ticks_invalid_scan = 0, agg_ticks_invalid_action = 0;
@@ -339,7 +339,7 @@ public:
     long agg_ticks_intervened = 0;   // W7-b（T1/E1）
     long agg_vis_total = 0, agg_vis_visible = 0, agg_vis_opportunity = 0;
     double agg_vis_gap_longest = 0.0, agg_vis_recovery_last = 0.0;
-    // W7-b（T4）：窗口级新诊断的聚合（只增不改；相对时刻取各窗口最早值，窗口起点仍为各自 enter_s）。
+    // （T4）：窗口级新诊断的聚合（只增不改；相对时刻取各窗口最早值，窗口起点仍为各自 enter_s）。
     long agg_envelope_in = 0;
     double agg_first_fco_s = -1.0, agg_first_envelope_in_s = -1.0;
     for (const auto & w : windows_) {
@@ -385,7 +385,7 @@ public:
       std::to_string(static_cast<double>(agg_ticks_invalid_action) / agg_ticks_total) : std::string("null");
     const std::string window_rate = (evaluation_applicable && agg_triggered_ticks > 0) ?
       std::to_string(static_cast<double>(agg_infeasible_ticks) / agg_triggered_ticks) : std::string("null");
-    // W7-b（T1/E1）：窗口内干预拍占比（raw≠effective）——分母 = 窗口有效拍数（无有效拍 → null）。
+    // （T1/E1）：窗口内干预拍占比（raw≠effective）——分母 = 窗口有效拍数（无有效拍 → null）。
     const std::string window_intervention_ratio =
       (evaluation_applicable && agg_ticks_total > 0) ?
       std::to_string(static_cast<double>(agg_ticks_intervened) / agg_ticks_total) : std::string("null");
@@ -420,14 +420,14 @@ public:
         << "  \"ticks_total\": " << total_ticks_ << ",\n"
         << "  \"ticks_triggered\": " << triggered_ticks_ << ",\n"
         << "  \"ticks_infeasible\": " << infeasible_ticks_ << ",\n"
-        // R-024 时间口径标注 + 起止事件 + RTF（新增键；duration_s 语义不变）
+        // 时间口径标注 + 起止事件 + RTF（新增键；duration_s 语义不变）
         << "  \"duration_kind\": \"process_wall_incl_warmup_shutdown\",\n"
         << "  \"wall_start_unix_s\": " << agc_task::formatEpochSeconds(wall_start_unix_s_) << ",\n"
         << "  \"wall_end_unix_s\": " << agc_task::formatEpochSeconds(wall_end_unix_s_) << ",\n"
         << "  \"sim_start_s\": " << (have_sim_ ? std::to_string(sim_start_s_) : std::string("null")) << ",\n"
         << "  \"sim_end_s\": " << (have_sim_ ? std::to_string(sim_end_s_) : std::string("null")) << ",\n"
         << "  \"rtf\": " << (have_sim_ && dur > 0.0 ? std::to_string(sim_delta / dur) : std::string("null")) << ",\n"
-        // === R-027 新增：口径版本 + 真实接触证据（gz_contact_v1）===
+        // === 新增：口径版本 + 真实接触证据（gz_contact_v1）===
         << "  \"definition_version\": {\"shield_infeasible_rate\": \"proxy_v1\", "
            "\"collision_truth\": \"gz_contact_v1\", \"true_shield_infeasible\": \"gz_contact_v1\", "
            "\"shield_infeasible_rate_window\": \"window_valid_v2\", "
@@ -473,7 +473,7 @@ public:
         << ", \"episode_window\": " << (episode_window_na ? "true" : "false")
         << ", \"window_scan\": " << (window_scan_na ? "true" : "false")
         << ", \"window_action\": " << (window_action_na ? "true" : "false") << "},\n"
-        // === R-028 新增：episode 窗口统计 / 有效样本掩码 / 拒绝可用评价 ===
+        // === 新增：episode 窗口统计 / 有效样本掩码 / 拒绝可用评价 ===
         << "  \"evaluation_applicable\": " << (evaluation_applicable ? "true" : "false") << ",\n"
         << "  \"evaluation_na_reasons\": [";
     for (size_t i = 0; i < na_reasons.size(); ++i) {
@@ -495,7 +495,7 @@ public:
         << ", \"vis_ticks_total\": " << agg_vis_total
         << ", \"vis_ticks_visible\": " << agg_vis_visible
         << ", \"ticks_fire_control_opportunity\": " << agg_vis_opportunity
-        // === W7-b（T4，ADR-0023 后续诊断）：窗口级机会 / 包络（**只增不改**）===
+        // === （T4，ADR-0023 后续诊断）：窗口级机会 / 包络（**只增不改**）===
         // first_* 为**相对窗口 enter_s** 的时刻（s）；-1 = 窗口内未发生（输出 null）。
         // envelope_in_* 为**无条件**包络占用（env_ok ∧ envelope_in_，**不**与 visible 取交）；
         // 分母沿用同窗口逐拍计数 agg_vis_total（与 visibility_rate 分母同源）。
@@ -532,7 +532,7 @@ public:
           << ", \"vis_ticks_visible\": " << w.vis_ticks_visible
           << ", \"ticks_fire_control_opportunity\": " << w.vis_ticks_opportunity
           << ", \"vis_gap_longest_s\": " << w.vis_gap_longest_s
-          // W7-b（T4）：窗口级机会 / 无条件包络（相对本窗口 enter_s；-1 → null）。
+          // （T4）：窗口级机会 / 无条件包络（相对本窗口 enter_s；-1 → null）。
           << ", \"first_fire_control_opportunity_s\": "
           << (w.first_fire_control_opportunity_s >= 0.0 ?
               std::to_string(w.first_fire_control_opportunity_s) : std::string("null"))
@@ -550,7 +550,7 @@ public:
           << "}";
     }
     out << "],\n"
-        // === W7-b T1/E1（F-06）：raw / effective 命令归因（策略原动作 vs 安全修正）===
+        // === T1/E1（F-06）：raw / effective 命令归因（策略原动作 vs 安全修正）===
         << "  \"command_attribution\": {\n"
         << "    \"definition_version\": \"raw_effective_v2\",\n"
         << "    \"semantics\": \"raw = 安全层输入（命令源原创）；effective = 安全层输出（唯一执行口值）；"
@@ -572,7 +572,7 @@ public:
         << "    \"clearance_min_at_intervention_m\": "
         << (have_attr_clearance_intervened_ ?
             std::to_string(attr_clearance_min_intervened_m_) : std::string("null")) << ",\n"
-        // W7-b 修订（scan_fresh_v2）：净空**已知**拍数 + 其中**无回波**（前向锥全 inf = 范围内无遮挡）子计数；
+        // 修订（scan_fresh_v2）：净空**已知**拍数 + 其中**无回波**（前向锥全 inf = 范围内无遮挡）子计数；
         // 全窗无回波时 clearance_min_m 为 null 但 `clearance` **仍 applicable**（已知 = ∞，非缺数据）。
         << "    \"clearance_ticks\": " << attr_clearance_ticks_ << ",\n"
         << "    \"clearance_no_return_ticks\": " << attr_clearance_no_return_ticks_ << ",\n"
@@ -587,8 +587,8 @@ public:
            "纯仿真对照臂，**不**用于实际部署（ADR-0022）；净空口径 scan_fresh_v2（ADR-0016 修订）："
            "无回波拍记入 clearance_no_return_ticks（范围内无遮挡），clearance_min_m 仅取有限回波最小值\"\n"
         << "  },\n"
-        // === W7-b T3/E3（F-10）· ADR-0022 修订：可见性度量按**固定观测时长**（自首个 active 拍起
-        //     `obs_window_s` 秒；**不**随终态截断）——分母与"是否早成功"解耦（消除饱和 / 选择效应）===
+        // === T3/E3（F-10）· ADR-0022 修订：可见性度量按**固定观测时长**（自首个 active 拍起
+        // `obs_window_s` 秒；**不**随终态截断）——分母与"是否早成功"解耦（消除饱和 / 选择效应）===
         << "  \"visibility_metrics\": {\n"
         << "    \"definition_version\": \"window_fixed_v1\",\n"
         << "    \"window_s\": " << obs_window_s_ << ",\n"
@@ -616,7 +616,7 @@ public:
   }
 
 private:
-  // R-027：一次**真实碰撞事件**（GZ contact 真值；独立于 proxy_v1「触发拍代理」计数）。
+  // 一次**真实碰撞事件**（GZ contact 真值；独立于 proxy_v1「触发拍代理」计数）。
   struct CollisionEvent
   {
     double t_sim_s{0.0};   // now().seconds()（可能为 0 —— 仿真时间未起步；如实记录）
@@ -627,7 +627,7 @@ private:
     double pos_x{0.0}, pos_y{0.0}, pos_z{0.0};  // 该对接触的首个接触点（world 系；无 → null）
   };
 
-  // R-028（ADR-0016）：一次 episode 事件窗口（task 进入 active 开窗、离开 active（终态 / IDLE）关窗）。
+  // （ADR-0016）：一次 episode 事件窗口（task 进入 active 开窗、离开 active（终态 / IDLE）关窗）。
   // 窗口内以**同时间快照 + 有效样本掩码**逐拍计数（陈旧 scan 一律进 ticks_invalid_scan）。
   struct EpisodeWindow
   {
@@ -638,18 +638,18 @@ private:
     long ticks_total{0}, ticks_valid{0}, ticks_invalid_scan{0}, ticks_invalid_action{0};
     long triggered_ticks{0}, infeasible_ticks{0}, scan_samples{0};
     long ticks_intervened{0};   // W7-b（T1/E1）：本窗口内 raw≠effective（安全层干预）的拍数
-    // W7-b（T3/E3，F-10）：可见性（分母 = 本窗口拍数）
+    // （T3/E3，F-10）：可见性（分母 = 本窗口拍数）
     long vis_ticks_total{0}, vis_ticks_visible{0}, vis_ticks_opportunity{0};
     double vis_gap_longest_s{0.0}, vis_recovery_last_s{0.0};
     double vis_gap_start_s{-1.0};
-    // W7-b（T4，ADR-0023 后续诊断；**只增不改**）：窗口级机会 / 包络诊断。
+    // （T4，ADR-0023 后续诊断；**只增不改**）：窗口级机会 / 包络诊断。
     // 相对时刻一律以**本窗口 enter_s**（既有字段）为起点；-1 = 窗口内未发生。
     double first_fire_control_opportunity_s{-1.0};  // 首次 FCO（visible ∧ envelope_in）相对时刻
     long envelope_in_ticks{0};                      // **无条件**包络占用拍数（env_ok ∧ envelope_in_，不与 visible 取交）
     double first_envelope_in_s{-1.0};               // 首次包络进入相对时刻
   };
 
-  // R-028：active / 终态判据（与 task_manager 对齐；active = AIR_SEARCH|TARGET_ACQUIRED|GROUND_APPROACH）。
+  // active / 终态判据（与 task_manager 对齐；active = AIR_SEARCH|TARGET_ACQUIRED|GROUND_APPROACH）。
   static bool isActiveState(uint8_t s)
   {
     return s == agc_msgs::msg::AgcTaskState::AIR_SEARCH ||
@@ -683,7 +683,7 @@ private:
     have_scan_ = std::isfinite(min_r);
   }
 
-  // W7-b（T3/E3，F-10）：目标观测新鲜度——tgt_age = now − header.stamp。
+  // （T3/E3，F-10）：目标观测新鲜度——tgt_age = now − header.stamp。
   void onTargets(const agc_msgs::msg::TargetTrackArray & m)
   {
     ++target_msgs_;
@@ -691,7 +691,7 @@ private:
     target_present_ = true;
     target_last_stamp_s_ = rclcpp::Time(m.tracks.front().header.stamp).seconds();
     // N4 判据 2「延迟可测」：交付时刻 − 源采样时刻。track.header.stamp 是**源采样时刻**
-    //   （gt_adapter 明确不刷新为 now），故该差值就是 `latency_s` 链路延迟的实测值。
+    // （gt_adapter 明确不刷新为 now），故该差值就是 `latency_s` 链路延迟的实测值。
     {
       const double lat = now().seconds() - target_last_stamp_s_;
       if (lat >= 0.0 && lat < 10.0) {   // 上界剔除时钟跳变造成的伪值
@@ -710,15 +710,15 @@ private:
   // `scripts/tracking/track_err_probe.py` 是独立进程，产物不进 summary.json；而日志里的
   // "冻结跟踪（hold）"是**逐拍重复**的 WARN，grep 出来的行数不是事件次数。
   // 因此把三件事做进唯一落盘产物：
-  //   * `hold_events` —— 边沿计数（frozen false→true 才算一次）；
-  //   * `track_err_*` —— 生效参考（tracking_ref）与 /agc/air/odom 的最近邻配对误差分位；
-  //   * `target_obs_latency_*` —— 交付时刻 − track.header.stamp（N4 判据 2 的"延迟可测"）。
+  // * `hold_events` —— 边沿计数（frozen false→true 才算一次）；
+  // * `track_err_*` —— 生效参考（tracking_ref）与 /agc/air/odom 的最近邻配对误差分位；
+  // * `target_obs_latency_*` —— 交付时刻 − track.header.stamp（N4 判据 2 的"延迟可测"）。
   //
   // ## 口径（不得混读）
   // * 主指标 `err_eff` = ‖tracking_ref − air_odom‖（水平 XY）。tracking_ref 是 standoff 发布的
-  //   **生效参考**，所以这确实是"跟踪误差"，不是"标称八字偏离"。
+  // **生效参考**，所以这确实是"跟踪误差"，不是"标称八字偏离"。
   // * 配对用**仿真时间戳最近邻**（|Δt| ≤ air_pair_max_dt_s），不按到达顺序硬配。
-  // * 全部是**派生诊断**，不是契约 C1 口径，也不进任何验收判定。
+  // * 全部是**派生诊断**，不是契约 口径，也不进任何验收判定。
 
   void onAirOdom(const nav_msgs::msg::Odometry & m)
   {
@@ -809,7 +809,7 @@ private:
     return v[lo] * (1.0 - frac) + v[hi] * frac;
   }
 
-  // W7-b（T3/E3）：按 episode active 窗口逐拍判可见 / 有效火控机会，记最长失联与恢复时长。
+  // （T3/E3）：按 episode active 窗口逐拍判可见 / 有效火控机会，记最长失联与恢复时长。
   void evaluateVisibility(double t_now)
   {
     const bool target_ok = target_have_ && target_present_;
@@ -818,7 +818,7 @@ private:
     const bool visible = target_ok && age >= 0.0 && age <= visibility_max_age_s_;
     const bool env_ok = have_envelope_ && (t_now - envelope_rx_s_) <= attr_max_gap_s_;
     // —— ADR-0022（DV 口径 `window_fixed_v1`）：固定观测时长窗口（自首个 active 拍起 obs_window_s 秒），
-    //    **不**随终态截断 → 消除"早成功→分母截断→饱和 + 选择效应"。这是 `visibility_metrics` 的来源。
+    // **不**随终态截断 → 消除"早成功→分母截断→饱和 + 选择效应"。这是 `visibility_metrics` 的来源。
     if (obs_start_s_ >= 0.0 && (t_now - obs_start_s_) <= obs_window_s_) {
       ++obs_vis_total_;
       if (visible) {++obs_vis_visible_;}
@@ -837,7 +837,7 @@ private:
     EpisodeWindow & w = windows_[current_window_];
     ++w.vis_ticks_total;
     if (visible) {++w.vis_ticks_visible;}
-    // W7-b（T4）：**无条件**包络占用（env_ok ∧ envelope_in_，不与 visible 取交）——只增不改。
+    // （T4）：**无条件**包络占用（env_ok ∧ envelope_in_，不与 visible 取交）——只增不改。
     if (env_ok && envelope_in_) {
       ++w.envelope_in_ticks;
       if (w.first_envelope_in_s < 0.0) {
@@ -846,7 +846,7 @@ private:
     }
     if (visible && env_ok && envelope_in_) {
       ++w.vis_ticks_opportunity;
-      // W7-b（T4）：首次 FCO 相对时刻（= 可见 ∧ 包络内；**首次开火时刻不得替代**）。
+      // （T4）：首次 FCO 相对时刻（= 可见 ∧ 包络内；**首次开火时刻不得替代**）。
       if (w.first_fire_control_opportunity_s < 0.0) {
         w.first_fire_control_opportunity_s = t_now - w.enter_s;
       }
@@ -870,7 +870,7 @@ private:
     }
   }
 
-  // W7-b（T1/E1，F-06）：raw 命令快照——纯诊断，不新增命令者。
+  // （T1/E1，F-06）：raw 命令快照——纯诊断，不新增命令者。
   void onRaw(const geometry_msgs::msg::TwistStamped & m)
   {
     ++raw_msgs_;
@@ -881,7 +881,7 @@ private:
     have_raw_ = true;
   }
 
-  // W7-b（T1/E1，F-06）：effective（安全层**输出** = 唯一执行口值）命令快照。
+  // （T1/E1，F-06）：effective（安全层**输出** = 唯一执行口值）命令快照。
   void onEffective(const geometry_msgs::msg::TwistStamped & m)
   {
     ++eff_msgs_;
@@ -892,7 +892,7 @@ private:
     have_eff_ = true;
   }
 
-  // W7-b（T1/E1，F-06）：同一 odom 采样拍取 raw / effective 快照 → 干预归因。
+  // （T1/E1，F-06）：同一 odom 采样拍取 raw / effective 快照 → 干预归因。
   // 「同时间」= **同一采样拍**（两话题各自最近快照均在新鲜窗口内）；另**如实**统计 header.stamp
   // 是否被安全层保持（collision_monitor 可能重打 stamp）——归因**不**以 stamp 相等为前提，
   // 否则重打 stamp 时会漏记（诚实优先）。
@@ -913,7 +913,7 @@ private:
     const double dw = eff_w_ - raw_w_;
     attr_max_abs_dv_ = std::max(attr_max_abs_dv_, std::fabs(dv));
     attr_max_abs_dw_ = std::max(attr_max_abs_dw_, std::fabs(dw));
-    // W7-b 修订（ADR-0016 scan_fresh_v2）：净空可"已知"= 该拍**有新鲜 scan 帧**；有回波取有限最小
+    // 修订（ADR-0016 scan_fresh_v2）：净空可"已知"= 该拍**有新鲜 scan 帧**；有回波取有限最小
     // 距离，**无回波**（前向锥全 inf）记「范围内无遮挡」——**不**再把"无障碍"当"缺数据"。
     const bool scan_tick_fresh = have_scan_frame_ && (t_now - scan_rx_s_) <= scan_max_age_s_;
     if (scan_tick_fresh) {
@@ -956,7 +956,7 @@ private:
     if (current_window_ >= 0) {++windows_[current_window_].ticks_intervened;}
   }
 
-  // R-028：task 状态回调——① 终态锁存（首个终态，之后不得覆写）；② episode 事件窗口分段
+  // task 状态回调——① 终态锁存（首个终态，之后不得覆写）；② episode 事件窗口分段
   // （进入 active 开窗、离开 active（终态 / IDLE）关窗）。active / 终态定义见
   // [#glossary] …… 与 task_manager 对齐：active = AIR_SEARCH|TARGET_ACQUIRED|GROUND_APPROACH。
   void onState(const agc_msgs::msg::AgcTaskState & m)
@@ -996,7 +996,7 @@ private:
       m.state_name, m.reason_code, state_stamp_s, state_stamp_s > 0.0, now().seconds());
   }
 
-  // R-027（ADR-0010）：GZ contact 真值回调——逐帧判定**车↔非车**接触对，按**上升沿去重**计真实碰撞事件。
+  // （ADR-0010）：GZ contact 真值回调——逐帧判定**车↔非车**接触对，按**上升沿去重**计真实碰撞事件。
   // 车侧：名字含 `agc_car`；另一侧：名字非空且不含 `agc_car`（车↔车 / 非车↔非车 / 名缺失不计）。
   void onContacts(const ros_gz_interfaces::msg::Contacts & m)
   {
@@ -1017,7 +1017,7 @@ private:
       } else {
         continue;  // 非「车↔非车」对：非本口径的真实碰撞
       }
-      // R-027：排除世界地面（base_collision 在复位瞬间轻微没入 ground_plane 属建模产物，
+      // 排除世界地面（base_collision 在复位瞬间轻微没入 ground_plane 属建模产物，
       // 非**障碍 / 实体**碰撞；真实碰撞只对场景实体）。车体正常由车轮触地，非 base_collision。
       if (other.find("ground_plane") != std::string::npos) {continue;}
       frame_pairs.insert(other);
@@ -1027,7 +1027,7 @@ private:
       }
       auto it = frame_depth.find(other);
       if (it == frame_depth.end() || d < it->second) {frame_depth[other] = d;}
-      // R-027：记该对**首个接触点**（world 系；供「接触事件含几何」证据）
+      // 记该对**首个接触点**（world 系；供「接触事件含几何」证据）
       if (frame_pos.find(other) == frame_pos.end() && !c.positions.empty() &&
         std::isfinite(c.positions.front().x) && std::isfinite(c.positions.front().y) &&
         std::isfinite(c.positions.front().z))
@@ -1059,7 +1059,7 @@ private:
     contact_pairs_prev_ = std::move(frame_pairs);
   }
 
-  // R-024：在 odom 回调时间轴上采到首个非零仿真时间（run 证据 sim_start_s）
+  // 在 odom 回调时间轴上采到首个非零仿真时间（run 证据 sim_start_s）
   void noteSim()
   {
     if (!have_sim_ && now().seconds() > 0.0) {
@@ -1068,20 +1068,20 @@ private:
     }
   }
 
-  // C9 shield_infeasible_rate【proxy_v1，保留历史口径】 + R-027【gz_contact_v1 真实口径】。
+  // shield_infeasible_rate【proxy_v1，保留历史口径】 + 【gz_contact_v1 真实口径】。
   void evaluateTick()
   {
     noteSim();
     ++total_ticks_;
     const bool triggered = (cm_action_ == 1 /*STOP*/ || cm_action_ == 2 /*SLOWDOWN*/);
     const double t_now = now().seconds();
-    // R-028：同时间快照 + 有效样本掩码——该拍此刻的 scan / collision action 新鲜度。
-    // W7-b 修订（scan_fresh_v2）：scan 有效性 = **帧新鲜**（收到过 scan 帧且未超龄），**不**要求
+    // 同时间快照 + 有效样本掩码——该拍此刻的 scan / collision action 新鲜度。
+    // 修订（scan_fresh_v2）：scan 有效性 = **帧新鲜**（收到过 scan 帧且未超龄），**不**要求
     // 前向锥有有限回波——无障碍物时前向锥全 inf 属**有效**读数（净空 = 无遮挡），非缺数据。
     const bool scan_fresh = have_scan_frame_ && (t_now - scan_rx_s_) <= scan_max_age_s_;
-    // W7-b（T1/E1）：无 shield 对照臂（shield_layer_enabled_=false）**无** collision_monitor →
+    // （T1/E1）：无 shield 对照臂（shield_layer_enabled_=false）**无** collision_monitor →
     // action 档**不适用**（否则整窗判为无效样本，污染评价）。默认 true → 行为不变。
-    // W7-b 修订二（window_valid_v2，ADR-0016）：action 档**不再**要求 `collision_monitor_state`
+    // 修订二（window_valid_v2，ADR-0016）：action 档**不再**要求 `collision_monitor_state`
     // **逐拍新鲜**——Nav2 的 `state_topic` 是**边沿（动作变化）发布**、**非心跳**：动作长期不变
     // （如整场 DO_NOTHING）时一条都不发；实测 full 无障碍场景整窗 0 条 → 逐拍新鲜门把**有效知识**
     // 误判为**缺数据**（轻量栈有障碍场景因动作频繁跳变而侥幸命中，掩盖了该缺陷）。
@@ -1092,18 +1092,18 @@ private:
     const bool action_known = !shield_layer_enabled_ || (have_cm_state_ && eff_fresh);
     const bool tick_valid = scan_fresh && action_known;
 
-    // R-027：触发事件计数（上升沿 triggered && !prev_triggered_）；进入触发期时重置「本触发期是否有真实接触」。
+    // 触发事件计数（上升沿 triggered && !prev_triggered_）；进入触发期时重置「本触发期是否有真实接触」。
     if (triggered && !prev_triggered_) {
       ++trigger_events_;
       current_trigger_has_contact_ = false;
     }
-    // R-027：干预时长——触发期间按仿真时钟增量累计（dt>0 才累加）。
+    // 干预时长——触发期间按仿真时钟增量累计（dt>0 才累加）。
     if (triggered) {
       const double dt = t_now - last_tick_sim_s_;
       if (dt > 0.0) {intervention_duration_s_ += dt;}
     }
     last_tick_sim_s_ = t_now;
-    // R-027：触发结束（下降沿 !triggered && prev_triggered_）——若本触发期发生过真实碰撞 → 真实安全不可行。
+    // 触发结束（下降沿 !triggered && prev_triggered_）——若本触发期发生过真实碰撞 → 真实安全不可行。
     if (!triggered && prev_triggered_ && current_trigger_has_contact_) {
       ++infeasible_trigger_events_;
     }
@@ -1116,7 +1116,7 @@ private:
       if (!have_scan_) {
         ++ticks_triggered_no_scan_;  // R-027：无 scan 的触发拍（not_applicable.scan_derived 的证据）
       } else {
-        // R-027：剩余停车裕度 brake_d = v^2/(2a)、margin = scan_min_forward - brake_d。
+        // 剩余停车裕度 brake_d = v^2/(2a)、margin = scan_min_forward - brake_d。
         const double v = std::abs(vx_body_);
         const double brake_d = (a_brake_mps2_ > 1e-6) ? (v * v) / (2.0 * a_brake_mps2_) : 0.0;
         const double margin = scan_min_forward_ - brake_d;
@@ -1130,7 +1130,7 @@ private:
       }
     }
 
-    // === R-028：episode 窗口逐拍计数（仅当有开窗）===
+    // === ：episode 窗口逐拍计数（仅当有开窗）===
     // 关键语义：陈旧 scan 段落一律进 ticks_invalid_scan，**不**计入窗口 valid / triggered /
     // infeasible —— 即「陈旧 scan 不按新 odom 重复计数」。
     if (current_window_ >= 0) {
@@ -1152,9 +1152,9 @@ private:
       }
     }
 
-    // === W7-b（T1/E1，F-06）：raw / effective 同拍归因 ===
+    // === （T1/E1，F-06）：raw / effective 同拍归因 ===
     evaluateAttribution(t_now);
-    // === W7-b（T3/E3，F-10）：可见性口径（按 episode active 窗口） ===
+    // === （T3/E3，F-10）：可见性口径（按 episode active 窗口） ===
     evaluateVisibility(t_now);
     // === ADR-0021：固定预算任务 FCO（独立积分器；predicate 与旧口径同源） ===
     mission_fco_.onTick({
@@ -1312,7 +1312,7 @@ private:
 
   std::string makeRunId() const
   {
-    // R-029：唯一且保留 `-<scenario>-<seed>` 子串（既有 glob 兼容）+ 时刻 + 随机后缀。
+    // 唯一且保留 `-<scenario>-<seed>` 子串（既有 glob 兼容）+ 时刻 + 随机后缀。
     const auto t = std::time(nullptr);
     char day[16], hms[16];
     std::strftime(day, sizeof(day), "%Y%m%d", std::localtime(&t));
@@ -1388,9 +1388,9 @@ private:
   /// N4（2026-11-04）：跟踪误差 / hold / 观测延迟的 JSON 块。
   ///
   /// 三个指标各自的**分母与不适用条件**都显式写出，避免"没有数"被读成"误差为零"：
-  ///   * `hold_events` —— 来自 tracking_status 的 `frozen` 边沿；无该话题 → `applicable=false`。
-  ///   * `track_err_*` —— 需要配对样本；`paired_samples==0` → 分位为 null（不是 0）。
-  ///   * `obs_latency_*` —— 需要 `/agc/targets` 非空样本。
+  /// * `hold_events` —— 来自 tracking_status 的 `frozen` 边沿；无该话题 → `applicable=false`。
+  /// * `track_err_*` —— 需要配对样本；`paired_samples==0` → 分位为 null（不是 0）。
+  /// * `obs_latency_*` —— 需要 `/agc/targets` 非空样本。
   std::string trackingErrorJson() const
   {
     std::ostringstream o;
@@ -1456,7 +1456,7 @@ private:
            << "forward_cone_rad: " << forward_cone_rad_ << "\n";
     std::ofstream commit(run_dir_ / "config" / "git_commit.txt");
     commit << git_commit_ << "\n";
-    // R-026：把本题的 scene_manifest（声明轴 / 承载者 / 实际生效参数）与合并后参数文件
+    // 把本题的 scene_manifest（声明轴 / 承载者 / 实际生效参数）与合并后参数文件
     // 拷入 run 的 config/（ADR-0006 唯一落点），使「用的是哪套栈 / 声明轴 / 实际参数」可复核。
     copyIntoConfig(scene_manifest_file_, "scene_manifest.json");
     copyIntoConfig(params_file_in_, "params_applied.yaml");
@@ -1464,13 +1464,13 @@ private:
     writeIdentity();
   }
 
-  // R-029：episode_id 初值（-1 = 未收到）；收到 /agc/task/episode 后覆写。
+  // episode_id 初值（-1 = 未收到）；收到 /agc/task/episode 后覆写。
   void writeEpisodePlaceholder() const
   {
     writeText(run_dir_ / "config" / "episode_id.txt", "-1\n");
   }
 
-  // R-029（ADR-0006）：代码身份 / dirty diff / 未跟踪清单 / 内容指纹 + 工具链与世界模型哈希。
+  // （ADR-0006）：代码身份 / dirty diff / 未跟踪清单 / 内容指纹 + 工具链与世界模型哈希。
   // 只落 run 的 config/（ADR-0006）；dirty 工作区非禁跑，但 run 可据此重建。
   void writeIdentity() const
   {
@@ -1540,27 +1540,27 @@ private:
   bool dir_ok_{true};
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr episode_sub_;
   int seed_{0};
-  // R-028（ADR-0016）：终态锁存——terminal_state_ = **首个**终态 state_name（空=未观测）；
+  // （ADR-0016）：终态锁存——terminal_state_ = **首个**终态 state_name（空=未观测）；
   // last_state_name_ = 最后观测到的 state_name；terminal_latched_ 标注是否已锁存。
   std::string terminal_state_, last_state_name_, terminal_reason_code_, reason_code_;
   bool terminal_latched_{false};
   size_t odom_valid_total_{0}, odom_valid_true_{0}, cmd_count_{0};
   double contact_dist_m_{2.0}, ttc_min_s_{1.0}, forward_cone_rad_{0.9};
-  // R-027（ADR-0010）：接触真值话题（空 = 不可用）+ 锁轮制动减速度
+  // （ADR-0010）：接触真值话题（空 = 不可用）+ 锁轮制动减速度
   std::string contact_topic_;
   double a_brake_mps2_{0.9};
 
-  // C9
+  // 
   int reset_retries_{0};
   bool reset_failed_{false};
   uint8_t cm_action_{0};
   double vx_body_{0.0}, scan_min_forward_{0.0};
-  // W7-b 修订（ADR-0016 scan_fresh_v2）：`have_scan_frame_` = **收到过 scan 帧**（有效样本掩码只看帧新鲜度）；
+  // 修订（ADR-0016 scan_fresh_v2）：`have_scan_frame_` = **收到过 scan 帧**（有效样本掩码只看帧新鲜度）；
   // `have_scan_` = 前向锥**有有限回波**（无障碍物时全 inf → 无回波 ≠ 无数据）。
   bool have_odom_{false}, have_scan_frame_{false}, have_scan_{false};
   size_t total_ticks_{0}, triggered_ticks_{0}, infeasible_ticks_{0};
 
-  // R-027（gz_contact_v1）：真实接触事件 + 触发事件 / 干预时长 / 剩余停车裕度 / 有效样本掩码
+  // （gz_contact_v1）：真实接触事件 + 触发事件 / 干预时长 / 剩余停车裕度 / 有效样本掩码
   uint64_t collision_count_{0}, contact_msgs_received_{0}, scan_samples_{0};
   long trigger_events_{0}, infeasible_trigger_events_{0};
   long ticks_triggered_no_scan_{0}, stopping_margin_negative_ticks_{0};
@@ -1571,18 +1571,18 @@ private:
   std::vector<CollisionEvent> collision_events_;
   std::unordered_set<std::string> contact_pairs_prev_;
 
-  // R-028（ADR-0016）：有效样本掩码新鲜度阈值（scan 帧 / 安全层存活证据到达时刻）+ episode 事件窗口。
+  // （ADR-0016）：有效样本掩码新鲜度阈值（scan 帧 / 安全层存活证据到达时刻）+ episode 事件窗口。
   double scan_max_age_s_{0.5}, action_max_age_s_{0.5};
   double scan_rx_s_{0.0};
   bool have_cm_state_{false};
   std::vector<EpisodeWindow> windows_;
   int current_window_{-1};
 
-  // W7-b（T1/E1，F-06）：raw / effective 命令归因——同一 odom 拍快照 + 干预量 / 时长 / 净空。
+  // （T1/E1，F-06）：raw / effective 命令归因——同一 odom 拍快照 + 干预量 / 时长 / 净空。
   std::string cmd_raw_topic_;
   double cmd_max_age_s_{0.5}, attr_delta_epsilon_{1e-3}, attr_max_gap_s_{1.0};
   bool shield_layer_enabled_{true};
-  // P1-4（ADR-0009）：感知路径与视觉模型标识（新键；默认 = truth / none，既有行为不变）
+  // （ADR-0009）：感知路径与视觉模型标识（新键；默认 = truth / none，既有行为不变）
   std::string perception_path_, vision_model_id_, vision_model_name_,
     vision_model_version_, vision_model_sha256_;
   // 识别后端标签：视觉定位路径退役后恒为 none（字段保留仅为 schema 不漂移）
@@ -1598,16 +1598,16 @@ private:
   bool have_attr_last_intervened_{false};
   double attr_clearance_min_m_{0.0}, attr_clearance_min_intervened_m_{0.0};
   bool have_attr_clearance_{false}, have_attr_clearance_intervened_{false};
-  // W7-b 修订（scan_fresh_v2）：净空**已知**拍数（有新鲜 scan 帧）与其**无回波**（范围内无遮挡）子计数。
+  // 修订（scan_fresh_v2）：净空**已知**拍数（有新鲜 scan 帧）与其**无回波**（范围内无遮挡）子计数。
   uint64_t attr_clearance_ticks_{0}, attr_clearance_no_return_ticks_{0};
   uint64_t attr_clearance_intervened_ticks_{0}, attr_clearance_intervened_no_return_ticks_{0};
   bool attr_clearance_known_{false}, attr_clearance_intervened_known_{false};
   rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr cmd_raw_sub_;
 
-  // W7-b（T3/E3，F-10）：可见性口径
+  // （T3/E3，F-10）：可见性口径
   std::string envelope_topic_;
   double visibility_max_age_s_{0.5};
-  // W7-b（ADR-0022）：固定观测时长窗口（自首个 active 拍起）；口径版本 `window_fixed_v1`
+  // （ADR-0022）：固定观测时长窗口（自首个 active 拍起）；口径版本 `window_fixed_v1`
   double obs_window_s_{60.0};
   double obs_start_s_{-1.0};            // 首个 active 拍时刻（<0 = 未开始）
   long obs_vis_total_{0}, obs_vis_visible_{0}, obs_vis_opportunity_{0};
@@ -1642,7 +1642,7 @@ private:
   agc_task::MissionFcoFixedBudget mission_fco_;
 
   std::chrono::steady_clock::time_point start_wall_;
-  // R-024：起止事件 + RTF（sim 缺省 -1.0；have_sim_ 标注是否采到仿真时间）
+  // 起止事件 + RTF（sim 缺省 -1.0；have_sim_ 标注是否采到仿真时间）
   double sim_start_s_{-1.0}, sim_end_s_{-1.0};
   bool have_sim_{false};
   double wall_start_unix_s_{0.0}, wall_end_unix_s_{0.0};
@@ -1654,7 +1654,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
   rclcpp::Subscription<nav2_msgs::msg::CollisionMonitorState>::SharedPtr cm_sub_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr reset_retries_sub_;
-  // R-027：接触真值订阅（contact_topic 为空时不创建）
+  // 接触真值订阅（contact_topic 为空时不创建）
   rclcpp::Subscription<ros_gz_interfaces::msg::Contacts>::SharedPtr contact_sub_;
 };
 

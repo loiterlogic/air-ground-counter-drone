@@ -1,45 +1,45 @@
-// map_adapter —— 场景地图适配器（W4-c，spec R7；R-006 修订 2026-10-15）
+// map_adapter —— 场景地图适配器（，spec R7； 修订 2026-10-15）
 //
 // 发布 /agc/map（nav_msgs/OccupancyGrid，world 系，latched）：三态栅格
-//   0 = free / 100 = occupied / -1 = unknown（对齐 Nav2 占据栅格约定）。
+// 0 = free / 100 = occupied / -1 = unknown（对齐 Nav2 占据栅格约定）。
 // 另发布 /agc/map/version_hash（std_msgs/String，latched）、/agc/map/update_seq（std_msgs/UInt64，latched）
-//   与 /agc/map/valid（Bool，latched）。
+// 与 /agc/map/valid（Bool，latched）。
 //
-// R-040 地图内容身份与单调更新序号（评审风险 R-040；见 ADR-0007）：
-//   * **内容身份 hash**（/agc/map/version_hash 的内容）= FNV-1a(frame_id, 障碍源版本, 场景版本,
-//     resolution, width, height, origin_x, origin_y, data) —— **不只** data 字节串：相同 data 在
-//     不同几何 / 源版本下身份**不同**（消除「同 data 可代表不同地图」）。
-//   * **单调更新序号** update_seq_（/agc/map/update_seq）：初始 0，**仅**在实质重建（栅格内容或身份
-//     改变）时 +1；与内容 hash **分别**可查询（诊断，非 ABI）。
-//   * **等价判定**按**真实 raster**：把候选有效障碍集合**实际栅格化**，与当前栅格**逐字节比较**；
-//     相等即内容等价（不重建、不发布、序号不变），不同即采用 + 序号递增。真实 raster 相等是
-//     **精确等价**、天然**不欠包**（边缘跨格必被捕获），**弃用**原 `sameObstacles` 的分辨率分箱 +
-//     固定 0.1 yaw 容差（不保证边缘跨格后栅格相同）。
+// 地图内容身份与单调更新序号（评审风险 ；见 ADR-0007）：
+// * **内容身份 hash**（/agc/map/version_hash 的内容）= FNV-1a(frame_id, 障碍源版本, 场景版本,
+// resolution, width, height, origin_x, origin_y, data) —— **不只** data 字节串：相同 data 在
+// 不同几何 / 源版本下身份**不同**（消除「同 data 可代表不同地图」）。
+// * **单调更新序号** update_seq_（/agc/map/update_seq）：初始 0，**仅**在实质重建（栅格内容或身份
+// 改变）时 +1；与内容 hash **分别**可查询（诊断，非 ABI）。
+// * **等价判定**按**真实 raster**：把候选有效障碍集合**实际栅格化**，与当前栅格**逐字节比较**；
+// 相等即内容等价（不重建、不发布、序号不变），不同即采用 + 序号递增。真实 raster 相等是
+// **精确等价**、天然**不欠包**（边缘跨格必被捕获），**弃用**原 `sameObstacles` 的分辨率分箱 +
+// 固定 0.1 yaw 容差（不保证边缘跨格后栅格相同）。
 //
-// R-006 三分语义（评审风险 R-006 地图知识保留）：
-//   * 静态先验 static_prior_：**无论** obstacles_source 取何值，均从 obstacles.yaml 加载，
-//     作为地图的 static 层（场景作者给定的静止障碍，与 agc_world.sdf 一致、真值派生 ADR-0009，
-//     即 **非**实时传感器；假设一次 run 内场景静止家具已知且不变）。空/丢观测数组 **SHALL NOT**
-//     清除它——立柱可见→遮挡→恢复时静态立柱永不被清除。
-//   * 动态观测 live_：**2026-11-04 起不可达**——唯一动态源 air_fusion 已退役，
-//     故 live_ 恒为空（见下方构造函数）。保留成员是为了将来有障碍观测源时可直接接上；
-//     届时须按 docs/conventions/路线分支治理.md 2.2 节四项重新立项。
-//     （历史：曾由 obstacles_source==air_fusion 时订阅 /agc/obstacles 更新；每条 track 记
-//     2026-11-04：air_fusion 已退役 → 该分支**当前不可达**（/agc/obstacles 无发布者）。
-//     代码保留是为了将来有障碍观测源时可直接接上；届时须按路线分支治理 2.2 节重新立项。
-//     last_seen_s = Header.stamp（最后真实观测时刻）。动态轨按「最后观测年龄 > dynamic_max_age_s_」
-//     过期 -> 其覆盖格标记 unknown（而非自由），并从 live_ 移除（不即时遗忘、也不永久驻留）。
-//   * 未知 unknown_idx_：已过期动态轨曾覆盖、且当前无来源支撑的栅格单元（值 -1）。
-//   可见（新鲜）时用实测几何，遮挡/过期时静态先验回退。
+// 三分语义（评审风险 地图知识保留）：
+// * 静态先验 static_prior_：**无论** obstacles_source 取何值，均从 obstacles.yaml 加载，
+// 作为地图的 static 层（场景作者给定的静止障碍，与 agc_world.sdf 一致、真值派生 ADR-0009，
+// 即 **非**实时传感器；假设一次 run 内场景静止家具已知且不变）。空/丢观测数组 **SHALL NOT**
+// 清除它——立柱可见→遮挡→恢复时静态立柱永不被清除。
+// * 动态观测 live_：**2026-11-04 起不可达**——唯一动态源 air_fusion 已退役，
+// 故 live_ 恒为空（见下方构造函数）。保留成员是为了将来有障碍观测源时可直接接上；
+// 届时须按 docs/conventions/路线分支治理.md 2.2 节四项重新立项。
+// （历史：曾由 obstacles_source==air_fusion 时订阅 /agc/obstacles 更新；每条 track 记
+// 2026-11-04：air_fusion 已退役 → 该分支**当前不可达**（/agc/obstacles 无发布者）。
+// 代码保留是为了将来有障碍观测源时可直接接上；届时须按路线分支治理 2.2 节重新立项。
+// last_seen_s = Header.stamp（最后真实观测时刻）。动态轨按「最后观测年龄 > dynamic_max_age_s_」
+// 过期 -> 其覆盖格标记 unknown（而非自由），并从 live_ 移除（不即时遗忘、也不永久驻留）。
+// * 未知 unknown_idx_：已过期动态轨曾覆盖、且当前无来源支撑的栅格单元（值 -1）。
+// 可见（新鲜）时用实测几何，遮挡/过期时静态先验回退。
 //
-// /agc/map/valid = geometry_ok_ && knowledge_current()：
-//   （历史）config 模式 -> 静态先验即来源，知识恒新鲜；air_fusion 模式 -> 收到过 /agc/obstacles 且
-//   源静默不超过 source_max_age_s_。**SHALL NOT** 仅因几何可栅格化即 true。知识不新鲜时仍
-//   照常发布静态层地图，只是 valid=false。
+// /agc/map/valid = geometry_ok_ && knowledge_current：
+// （历史）config 模式 -> 静态先验即来源，知识恒新鲜；air_fusion 模式 -> 收到过 /agc/obstacles 且
+// 源静默不超过 source_max_age_s_。**SHALL NOT** 仅因几何可栅格化即 true。知识不新鲜时仍
+// 照常发布静态层地图，只是 valid=false。
 //
-// 分层语义（ADR-0003 W4 落点）：本节点承载 costmap 的 **static / obstacle** 语义（数据契约）；
-//   **inflation / voxel** 层与 costmap 组装归 **W5**。W4 **不引入** nav2_map_server /
-//   nav2_costmap_2d 运行时进程（仅对齐其数据/格式约定）。相同障碍去重，避免融合噪声引发重规划风暴。
+// 分层语义（ADR-0003 落点）：本节点承载 costmap 的 **static / obstacle** 语义（数据契约）；
+// **inflation / voxel** 层与 costmap 组装归 ****。 **不引入** nav2_map_server /
+// nav2_costmap_2d 运行时进程（仅对齐其数据/格式约定）。相同障碍去重，避免融合噪声引发重规划风暴。
 
 #include <yaml-cpp/yaml.h>
 
@@ -92,8 +92,8 @@ bool rectObbOverlap(
 }
 
 // FNV-1a 64 位字节哈希（对 int8_t 字节序列），输出 16 进制串。
-// R-040：保留为**底层字节哈希工具**——内容身份 hash 由它 + 几何/源版本元数据组装后喂入（见
-//   contentIdentityHash），故本函数仍被复用。
+// 保留为**底层字节哈希工具**——内容身份 hash 由它 + 几何/源版本元数据组装后喂入（见
+// contentIdentityHash），故本函数仍被复用。
 std::string hashBytes(const std::vector<int8_t> & data)
 {
   uint64_t h = 1469598103934665603ULL;
@@ -120,10 +120,10 @@ public:
     obstacle_source_ = declare_parameter<std::string>("obstacles_source", "config");
     rate_hz_ = declare_parameter<double>("rate_hz", 2.0);
     map_topic_ = declare_parameter<std::string>("map_topic", "/agc/map");
-    // R-040：场景 / 源版本（折入内容身份 hash）；单调更新序号诊断话题
+    // 场景 / 源版本（折入内容身份 hash）；单调更新序号诊断话题
     scenario_version_ = declare_parameter<std::string>("scenario_version", "");
     update_seq_topic_ = declare_parameter<std::string>("update_seq_topic", "/agc/map/update_seq");
-    // R-006：动态轨最后观测年龄期限（s）与 /agc/obstacles 源静默期限（s）
+    // 动态轨最后观测年龄期限（s）与 /agc/obstacles 源静默期限（s）
     dynamic_max_age_s_ = declare_parameter<double>("dynamic_max_age_s", 1.5);
     source_max_age_s_ = declare_parameter<double>("source_max_age_s", 1.0);
 
@@ -134,13 +134,13 @@ public:
     valid_pub_ = create_publisher<std_msgs::msg::Bool>("/agc/map/valid", latched);
 
     loadMapGeometry();
-    // 静态先验（static 层）：无论 obstacles_source 取何值都加载为已知静态事实（R-006）
+    // 静态先验（static 层）：无论 obstacles_source 取何值都加载为已知静态事实
     loadStaticObstacles();
-    // R-038（见 ADR-0009）：地图几何 / 障碍几何 / 角度**启动期合法性校验**，非法即**拒绝启动**
-    //   （**不**带非法配置运行；与既有 rebuild() 运行期守卫并存）。
+    // （见 ADR-0009）：地图几何 / 障碍几何 / 角度**启动期合法性校验**，非法即**拒绝启动**
+    // （**不**带非法配置运行；与既有 rebuild 运行期守卫并存）。
     validateStartupOrThrow();
     // 2026-11-04：air_fusion 退役 → `/agc/obstacles` 无发布者，**不再订阅**。
-    //   静态先验是本节点的唯一障碍来源（与既有 config 模式等价）。
+    // 静态先验是本节点的唯一障碍来源（与既有 config 模式等价）。
     RCLCPP_INFO(get_logger(), "map_adapter：静态先验来自 %s（动态障碍源已退役，不再订阅 /agc/obstacles）",
       obstacles_file_.c_str());
     rebuild();
@@ -159,8 +159,8 @@ private:
     double last_seen_s{0.0};   // 最后真实观测时刻（track Header.stamp）
   };
 
-  // R-038（见 ADR-0009）：启动期几何 / 角度合法性校验，非法**明确拒绝**（抛错使节点 configure 失败；
-  //   **不**静默以默认值运行）。既有 rebuild() 的 `res_<=0 || width<=0 || height<=0` 运行期守卫保留。
+  // （见 ADR-0009）：启动期几何 / 角度合法性校验，非法**明确拒绝**（抛错使节点 configure 失败；
+  // **不**静默以默认值运行）。既有 rebuild 的 `res_<=0 || width<=0 || height<=0` 运行期守卫保留。
   void validateStartupOrThrow() const
   {
     std::ostringstream bad;
@@ -237,7 +237,7 @@ private:
   // 动态观测：整集合不再整体替换；逐 track 记录最后观测时刻，静态 id 也记（可见时用实测几何）。
   //
   // **2026-11-04：当前无调用方**——air_fusion 退役后 `/agc/obstacles` 无发布者，构造函数
-  // 不再建该订阅。保留本函数与 `live_` / `expireDynamic()` 是为了将来有动态障碍源时能直接接上
+  // 不再建该订阅。保留本函数与 `live_` / `expireDynamic` 是为了将来有动态障碍源时能直接接上
   // （届时须按 docs/conventions/路线分支治理.md 2.2 节四项重新立项，并**同时**恢复订阅）。
   void onObstacles(const agc_msgs::msg::ObstacleTrackArray & msg)
   {
@@ -308,7 +308,7 @@ private:
   bool knowledge_current()
   {
     // 2026-11-04：唯一来源是静态先验（配置声明的事实）→ 知识恒新鲜。
-    //   原 air_fusion 模式的时效判定（收到过消息 && 年龄 <= source_max_age_s_）已随该节点退役删除。
+    // 原 air_fusion 模式的时效判定（收到过消息 && 年龄 <= source_max_age_s_）已随该节点退役删除。
     return true;
   }
 
@@ -343,9 +343,9 @@ private:
       if ((now_s - kv.second.last_seen_s) <= dynamic_max_age_s_) {eff.push_back(kv.second.geo);}
     }
 
-    // R-040：等价判定按**真实 raster**——把候选有效障碍集合**实际栅格化**，与当前栅格**逐字节比较**。
-    //   相同 -> 内容（空间）精确等价，不重建、不发布、序号不变；不同 -> 采用 + 序号递增。
-    //   真实 raster 相等天然**不欠包**（边缘跨格必被捕获），弃用原分箱 + 固定 yaw 容差判定。
+    // 等价判定按**真实 raster**——把候选有效障碍集合**实际栅格化**，与当前栅格**逐字节比较**。
+    // 相同 -> 内容（空间）精确等价，不重建、不发布、序号不变；不同 -> 采用 + 序号递增。
+    // 真实 raster 相等天然**不欠包**（边缘跨格必被捕获），弃用原分箱 + 固定 yaw 容差判定。
     std::vector<int8_t> data(static_cast<size_t>(width) * height, 0);
     for (size_t idx : unknown_idx_) {
       if (idx < data.size()) {data[idx] = -1;}   // unknown
@@ -377,12 +377,12 @@ private:
     return true;
   }
 
-  // R-040 内容身份 hash：把**几何元数据与源版本**与 data 字节一并折叠（**不只** data 字节串）。
-  //   组装顺序（须与核查脚本一致，见 ADR-0007）：
-  //     frame_id/NUL, obstacles_source/NUL, scenario_version/NUL,
-  //     resolution(8B), width(8B), height(8B), origin_x(8B), origin_y(8B), data...
-  //   double/uint64 按**本机 IEEE-754 binary64 / little-endian 内存字节**直接喂入（本项目全链同机
-  //   同架构，字节序稳定；避免文本格式化的精度 / 舍入歧义）。
+  // 内容身份 hash：把**几何元数据与源版本**与 data 字节一并折叠（**不只** data 字节串）。
+  // 组装顺序（须与核查脚本一致，见 ADR-0007）：
+  // frame_id/NUL, obstacles_source/NUL, scenario_version/NUL,
+  // resolution(8B), width(8B), height(8B), origin_x(8B), origin_y(8B), data...
+  // double/uint64 按**本机 IEEE-754 binary64 / little-endian 内存字节**直接喂入（本项目全链同机
+  // 同架构，字节序稳定；避免文本格式化的精度 / 舍入歧义）。
   std::string contentIdentityHash(
     const std::vector<int8_t> & data, int width, int height) const
   {
@@ -436,7 +436,7 @@ private:
       h.data = grid_.hash;
       hash_pub_->publish(h);
     }
-    // R-040：单调更新序号（latched 诊断；与内容 hash 分别可查询）
+    // 单调更新序号（latched 诊断；与内容 hash 分别可查询）
     std_msgs::msg::UInt64 seq;
     seq.data = update_seq_;
     seq_pub_->publish(seq);

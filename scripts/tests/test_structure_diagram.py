@@ -3,15 +3,15 @@
 
 守护的缺陷（来自 2026-10-31 F2 前的实际漂移，不只是理论风险）：
 
-1. **图与真源漂移**：旧图把 `agc_sim → agc_msgs` 画成①消息依赖，而 `src/agc_sim/package.xml`
-   与源码里**都没有** `agc_msgs`（它只经 ros_gz 桥发标准消息）。读者会据此以为仿真是接口层消费者。
+1. **图与配置文件漂移**：旧图把 `agc_sim → agc_msgs` 画成①消息依赖，而 `src/agc_sim/package.xml`
+ 与源码里**都没有** `agc_msgs`（它只经 ros_gz 桥发标准消息）。读者会据此以为仿真是接口层消费者。
 2. **②库链接被放宽**：`agc_control` 是 [ADR-0004](../../docs/adr/0004-ground-control-rl-primary-and-nav2-safety.md#top)
-   允许的**唯一**共享库例外；出现第二条库链接边即边界被悄悄改。
+ 允许的**唯一**共享库例外；出现第二条库链接边即边界被悄悄改。
 3. **`agc_msgs` 不再是叶依赖**：它若有①出边，依赖图成环或分层失效。
 4. **`agc_task → 域包`被画成②**：[ADR-0020](../../docs/adr/0020-package-boundaries-and-runtime-topology.md#top)
-   的核心澄清是「起进程 ≠ 链接库」。
+ 的核心澄清是「起进程 ≠ 链接库」。
 5. **版式不可读**：旧图 1844 px 宽在 README 里按 820 显示 → 缩放 0.44，12 px 正文实际 5.3 px；
-   19 条中心到中心直线穿过框体与文字。**"看起来还行"不是判据**，故本文件同时断言几何与光栅。
+ 19 条中心到中心直线穿过框体与文字。**"看起来还行"不是判据**，故本文件同时断言几何与光栅。
 6. **渲染不确定**：图若含时间戳/随机，每次 diff 都变，漂移就再也看不出来。
 
 **为什么既验 SVGT 文本又验光栅**（避免"只凭字符串断言宣称美观"）：
@@ -38,10 +38,10 @@ import render_structure_svg as R  # noqa: E402
 
 BOUNDARY_DOC = os.path.join(ROOT, 'docs', 'conventions', '包边界.md')
 STRUCTURE_DOC = os.path.join(ROOT, 'docs', 'conventions', '系统结构图.md')
-SVG_PATH = os.path.join(ROOT, 'docs', 'plan', 'assets', 'system-structure.svg')
-PNG_PATH = os.path.join(ROOT, 'docs', 'plan', 'assets', 'system-structure.png')
-DETAIL_SVG = os.path.join(ROOT, 'docs', 'plan', 'assets', 'system-structure-detail.svg')
-DETAIL_PNG = os.path.join(ROOT, 'docs', 'plan', 'assets', 'system-structure-detail.png')
+SVG_PATH = os.path.join(ROOT, 'docs', 'conventions', 'assets', 'system-structure.svg')
+PNG_PATH = os.path.join(ROOT, 'docs', 'conventions', 'assets', 'system-structure.png')
+DETAIL_SVG = os.path.join(ROOT, 'docs', 'conventions', 'assets', 'system-structure-detail.svg')
+DETAIL_PNG = os.path.join(ROOT, 'docs', 'conventions', 'assets', 'system-structure-detail.png')
 README = os.path.join(ROOT, 'README.md')
 
 THIRD_PARTY_NAMES = {'px4_msgs'}   # 内联第三方**包**（EXTERNAL 里其余是外部系统，不是包）
@@ -111,7 +111,7 @@ def _ink(img, rect=None):
 
 
 # --------------------------------------------------------------------------------------
-# 1. 表 ↔ 包边界真源
+# 1. 表 ↔ 包边界配置文件
 # --------------------------------------------------------------------------------------
 
 
@@ -158,7 +158,7 @@ def test_package_set_matches_colcon_when_available():
 def test_declared_package_xml_matches_edges():
     """每个包在 `package.xml` 里真实声明的包间依赖，必须与图里的①②③边一致。
 
-    这条是**反漂移的主判据**：图不是"人对文档的理解"，而是"manifest 的投影"。
+ 这条是**反漂移的主判据**：图不是"人对文档的理解"，而是"manifest 的投影"。
     """
     if not os.path.isdir(os.path.join(ROOT, 'src')):
         pytest.skip('无 src/')
@@ -208,7 +208,7 @@ def test_sim_does_not_depend_on_msgs():
     """回归本任务修掉的实际漂移：`agc_sim` **不**依赖 `agc_msgs`。
 
     依据：`src/agc_sim/package.xml` 无 agc_msgs、`CMakeLists.txt` 无 find_package(agc_msgs)、
-    源码无 include。旧图把它画成①依赖，属真源漂移。
+ 源码无 include。旧图把它画成①依赖，属配置文件漂移。
     """
     edges = {(s, d) for s, d, _k in R.PACKAGE_EDGES}
     assert ('agc_sim', 'agc_msgs') not in edges, 'agc_sim 不应有到 agc_msgs 的边'
@@ -261,8 +261,8 @@ def test_validate_passes():
 def test_text_width_model_matches_real_font(qt):
     """**字宽模型必须与真实字体对齐**：否则"按像素换行"只是自欺。
 
-    这条把渲染器里的 `_EM` 字宽表与 Qt 的实测 advance 对比（逐类采样），偏差 > 6% 即失败。
-    图里所有"放得下"的结论都建立在这个模型上，它一旦失真，几何自检就失去意义。
+ 这条把渲染器里的 `_EM` 字宽表与 Qt 的实测 advance 对比（逐类采样），偏差 > 6% 即失败。
+ 图里所有"放得下"的结论都建立在这个模型上，它一旦失真，几何自检就失去意义。
     """
     from PyQt5 import QtGui
     samples = ['agc_perception', 'ament_cmake + rosidl', '仿真世界与模型',
@@ -308,11 +308,11 @@ def test_no_line_crosses_a_box_or_another_label():
 def test_canvas_width_equals_readme_display_width():
     """**画布宽必须等于 README 的显示宽**，否则又回到"缩放到 5 px 字"。
 
-    旧图 1844 px 被 README 以 820 显示 = 0.44 缩放，是本次重画的首要动因。
+ 旧图 1844 px 被 README 以 820 显示 = 0.44 缩放，是本次重画的首要动因。
     """
     with open(README, encoding='utf-8') as f:
         readme = f.read()
-    m = re.search(r'<img src="docs/plan/assets/system-structure\.svg"\s+width="(\d+)"', readme)
+    m = re.search(r'<img src="docs/conventions/assets/system-structure\.svg"\s+width="(\d+)"', readme)
     assert m, 'README 里没有系统结构图的 820 宽显示区（或写法变了）'
     assert int(m.group(1)) == R.CANVAS_W, (
         'README 显示宽 %s ≠ 画布宽 %d：会出现缩放，字会糊'
@@ -326,8 +326,8 @@ def test_canvas_width_equals_readme_display_width():
 def test_font_sizes_meet_review_requirement():
     """按 round-1 审查要求：**包名 ≥ 15 px，主要职责正文 ≥ 12 px**。
 
-    这条是**下限断言**，不是"等于某个值"——可以继续调大，不能为了通过测试而调小。
-    注释里写明历史：round-1 交付时正文只有 10 px，被审查判为偏小。
+ 这条是**下限断言**，不是"等于某个值"——可以继续调大，不能为了通过测试而调小。
+ 注释里写明历史： 交付时正文只有 10 px，被审查判为偏小。
     """
     assert R.FS_NODE >= 15, '包名字号 %.1f px < 15 px' % R.FS_NODE
     for name in ('FS_ROLE', 'FS_DESC', 'FS_EXT'):
@@ -355,7 +355,7 @@ def test_detail_svg_exists_and_is_separate_asset():
         overview = f.read()
     with open(DETAIL_SVG, encoding='utf-8') as f:
         detail = f.read()
-    # 概览不应再内嵌完整边清单（旧 round-1 的 B 面板那种卡片列表）
+    # 概览不应再内嵌完整边清单（旧 的 B 面板那种卡片列表）
     assert '库链接依赖（2 条' not in overview, '概览里仍内嵌完整边清单（应移到明细图）'
     assert '库链接依赖（2 条' in detail, '明细图里没有 ② 的完整清单'
     # 明细图必须覆盖四类
@@ -424,9 +424,9 @@ def test_no_content_is_clipped_at_canvas_edges(qt):
 def test_body_text_is_legible_at_820px_width(qt):
     """820 px 实宽下正文**真的可读**：用像素核对笔画分离度，而不是只断言字号。
 
-    做法：取一段已知正文（`agc_msgs` 的说明行）的包围盒，1x 光栅化后统计
-    「墨/背景」交替次数——文字被渲染成可分辨的笔画时，横扫一行的黑白翻转次数会远高于糊成
-    一条灰带的情况。阈值取 >= 6（实测该行约 30+，纯灰带 < 3）。
+ 做法：取一段已知正文（`agc_msgs` 的说明行）的包围盒，1x 光栅化后统计
+ 「墨/背景」交替次数——文字被渲染成可分辨的笔画时，横扫一行的黑白翻转次数会远高于糊成
+ 一条灰带的情况。阈值取 >= 6（实测该行约 30+，纯灰带 < 3）。
     """
     img = qt['raster'](scale=1)
     nodes, _bands, _frame = R.layout()
@@ -580,8 +580,8 @@ def _mermaid_block():
 def test_mermaid_four_edges_match_declaration_table():
     """**Mermaid 的 ④ 边必须与 EXT_RELATIONS 逐条一致**（round-1 审查指出的 drift）。
 
-    旧文档的 Mermaid 少了 `task → px4_msgs`，还多画了 `ground → Agent`（`agc_ground` 根本不
-    起 Agent）。这条把 Mermaid 文本解析成边集合，与声明表做双向差集——任一方向都不许有差。
+ 旧文档的 Mermaid 少了 `task → px4_msgs`，还多画了 `ground → Agent`（`agc_ground` 根本不
+ 起 Agent）。这条把 Mermaid 文本解析成边集合，与声明表做双向差集——任一方向都不许有差。
     """
     block = _mermaid_block()
     mermaid = {(MERMAID_NODE[a], MERMAID_EXT[b])

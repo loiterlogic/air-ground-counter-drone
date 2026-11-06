@@ -5,13 +5,13 @@
 `visualization_msgs`（实测：只映射 sensor_msgs / nav_msgs / geometry_msgs / tf2 /
 ros_gz_interfaces），所以"在 Gazebo GUI 里叠加"技术上走不通；而 RViz 对
 OccupancyGrid / Path / LaserScan / MarkerArray 是原生支持。分工：
-  * **GZ GUI** = 纯场景（好看）
-  * **RViz**   = 语义层（可读）：栅格 / 路径 / 三机 / 障碍
-                  （三机 = 车 / 己方机 / 目标，统一由 `_body_markers` 画
-                   「方向箭头 + 机体位置球 + 箭尾定位点」，外观只由类常量控制）
-                 （**不含 8 字轨迹**——反无人机场景不用预设轨迹，2026-11-04 用户裁定删除）
+ * **GZ GUI** = 纯场景（好看）
+ * **RViz** = 语义层（可读）：栅格 / 路径 / 三机 / 障碍
+ （三机 = 车 / 己方机 / 目标，统一由 `_body_markers` 画
+ 「方向箭头 + 机体位置球 + 箭尾定位点」，外观只由类常量控制）
+ （**不含 8 字轨迹**——反无人机场景不用预设轨迹，2026-11-04 用户裁定删除）
 
-发布的 marker 全部**由几何真源派生**（经 `agc_sim/launch/world_map.py` 单一清单），
+发布的 marker 全部**由配置文件派生**（经 `agc_sim/launch/world_map.py` 单一清单），
 不手写坐标；`/agc/viz/markers` 只读不参与任何决策。
 """
 import math
@@ -64,7 +64,7 @@ class VizMarkers(Node):
             import yaml
             geom = yaml.safe_load(open(path))
             # 静态障碍几何：**把 Gazebo 里的"地图"镜像进 RViz**（RViz 渲染不了 gz 场景，
-            # 但可以从同一份真源派生几何 marker）。逐 part 一个半透明立方体。
+            # 但可以从同一份配置文件派生几何 marker）。逐 part 一个半透明立方体。
             bi = 1000
             for ob in geom.get('obstacles') or []:
                 for pt in mod.obstacle_parts(ob):
@@ -125,12 +125,12 @@ class VizMarkers(Node):
         # 该插件**不读 `traj.*` 段** ⇒ 8 字**根本不会被执行**。
         #
         # 后果不是"多画了一条线"，而是**误导**：RViz 里那条大 8 字会让人以为
-        # 己方机按 8 字飞（契约 C1 的八字），而实际行为是悬停/跟踪。
+        # 己方机按 8 字飞（契约 的八字），而实际行为是悬停/跟踪。
         # 用户 2026-11-04 实测看到该 marker 并质询「那玩意不是早就不用了吗」——据此删除。
         #
         # 保留说明：`agc_control/Figure8Trajectory` 插件本身**仍然存在**（流程验证场景
         # 可显式选用，见 ADR-0031 / 场景不变量测试的 `usage=flow_validation` 出口）；
-        # 本篇只删**演示叠加层**里对它的无条件绘制，不删插件、不改 C1 契约值。
+        # 本篇只删**演示叠加层**里对它的无条件绘制，不删插件、不改 契约值。
 
     def _world_map(self):
         try:
@@ -177,10 +177,10 @@ class VizMarkers(Node):
     def _body_markers(self, ns, pose, color):
         """一台机体 = 方向箭头 + 机体位置球 + 箭尾定位点。
 
-        三机（车 / 己方机 / 目标）**统一走本方法**，外观只由本类常量控制，
-        不再有目标专属的手写球体。改 BODY_DOT / TAIL_DOT 会让三机**同时**变化。
-        ARROW 的 pivot 在尾部、沿 +X ⇒ pose.position 即机体位置（也是箭尾）。
-        各 marker 必须用不同 ns，否则 RViz 按 (ns, id) 唯一标识，会互相覆盖。
+ 三机（车 / 己方机 / 目标）**统一走本方法**，外观只由本类常量控制，
+ 不再有目标专属的手写球体。改 BODY_DOT / TAIL_DOT 会让三机**同时**变化。
+ ARROW 的 pivot 在尾部、沿 +X ⇒ pose.position 即机体位置（也是箭尾）。
+ 各 marker 必须用不同 ns，否则 RViz 按 (ns, id) 唯一标识，会互相覆盖。
         """
         r, g, b = color
 

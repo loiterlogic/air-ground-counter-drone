@@ -19,26 +19,26 @@ headless（`gz sim -s`）**不启动渲染客户端**，根本不会生成画面
 的相机**直接取帧，**不经过**窗口合成器——所以 Wayland 也取得到。
 
 **前置条件（α，2026-10-31 已落地）**：本仓 `agc_world.sdf` 的 `<gui>` 块**自带**该插件。
-（该块覆盖发行版默认 `gui.config`；此前不含此插件，服务不上线 → 0 帧，见 round-3 报告。）
+（该块覆盖发行版默认 `gui.config`；此前不含此插件，服务不上线 → 0 帧，见 报告。）
 因此**自然运行**（`./run_demo.sh`，不带任何 `--gui-config`）即可取帧。
 
 > ⚠ **不要**用 `--gui-config` 取交付图：gz-gui 在加载它之后**还会再加载**
 > `~/.gz/sim/<ver>/gui.config` 并**覆盖** `camera_pose` → 视角被换成 3/4 斜视，
 > 取到的图**不代表用户所见**（实测 skyband 0.2848 vs 俯视 0.06）。
-> 该机制已在本轮移除（round-3 审查裁定 ②），`run_demo.sh` 也不再支持。
+> 该机制已在本轮移除（ 审查裁定 ②），`run_demo.sh` 也不再支持。
 
-## 与 P1-1 round-6 结论的关系（必须写清，不得改写历史）
+## 与 结论的关系（必须写清，不得改写历史）
 
-P1-1 round-6 记录"本机无可用截屏工具（xwd/import/ffmpeg/scrot 全缺），故不宣称像素级截图证据"。
+ 记录"本机无可用截屏工具（xwd/import/ffmpeg/scrot 全缺），故不宣称像素级截图证据"。
 那条结论**在当时成立且未被推翻**：它列的工具确实全缺。本脚本是**新增的第四条路径**
-（Gazebo 内部相机取帧），不在原清单内。**不追溯改写** round-6 的结论，只补一条可用的新手段。
+（Gazebo 内部相机取帧），不在原清单内。**不追溯改写** 的结论，只补一条可用的新手段。
 
 ## 纪律
 
 * **只取真实帧**：本脚本不合成、不裁剪、不叠字；取到的就是 ogre2 渲染出的画面。
 * **取不到就报失败**：服务不在、响应 false、文件没生成 → 非 0 退出，**不得**用旧图或示意图冒充。
 * **不启停仿真**：本脚本只发服务调用，进程生命周期仍归 `run_demo.sh` / `start.py`。
-* 输出目录由调用方给，本脚本不写项目内文件（`docs/plan/assets/` 由调用方显式指定）。
+* 输出目录由调用方给，本脚本不写项目内文件（`docs/conventions/assets/` 由调用方显式指定）。
 
 ## 用法
 
@@ -99,36 +99,36 @@ def service_present(timeout_ms=3000):
 def snap(out_path, timeout_ms=15000, retries=1, wait_s=6.0, check_service=True):
     """请求一帧并落到 out_path。返回 (ok, detail)。
 
-    ## 服务的真实语义（读上游源码后确认，2026-10-31）
+ ## 服务的真实语义（读上游源码后确认，2026-10-31）
 
-    `gz-gui` 的 `Screenshot::ScreenshotService`（`gz-gui8/src/plugins/screenshot/Screenshot.cc`）：
+ `gz-gui` 的 `Screenshot::ScreenshotService`（`gz-gui8/src/plugins/screenshot/Screenshot.cc`）：
 
-    ```cpp
+ ```cpp
     bool Screenshot::ScreenshotService(const msgs::StringMsg &_msg, msgs::Boolean &_res)
-    {
+ {
       if (!_msg.data().empty())
         this->dataPtr->directory = _msg.data();   // ← data 是**目录**，不是文件路径
-      this->dataPtr->dirty = true;
+ this->dataPtr->dirty = true;
       _res.set_data(true);                        // ← **立即**返回 true，尚未存盘
-      return true;
-    }
-    ```
+ return true;
+ }
+ ```
 
-    存盘发生在**下一个 Render 事件**里（`eventFilter` 收到 `events::Render::kType` 且 dirty）：
+ 存盘发生在**下一个 Render 事件**里（`eventFilter` 收到 `events::Render::kType` 且 dirty）：
 
-    ```cpp
+ ```cpp
     std::string time = common::systemTimeISO() + ".png";
     std::string savePath = common::joinPaths(this->dataPtr->directory, time);
-    ```
+ ```
 
-    **两个后果，都踩过**：
+ **两个后果，都踩过**：
 
-    1. 把**完整文件路径**当 `data` 传进去 → 插件把它当目录名，文件实际落在
-       `<那个"路径">/<ISO时间戳>.png`，**永远不会**出现在我等的那个文件名上 → 0 帧；
-    2. 服务**立刻**返回 `true` → 不能把"响应 true"当作"已存盘"，必须**轮询新文件出现**。
+ 1. 把**完整文件路径**当 `data` 传进去 → 插件把它当目录名，文件实际落在
+ `<那个"路径">/<ISO时间戳>.png`，**永远不会**出现在我等的那个文件名上 → 0 帧；
+ 2. 服务**立刻**返回 `true` → 不能把"响应 true"当作"已存盘"，必须**轮询新文件出现**。
 
-    本实现因此：`data` 传**目录**（`out_path` 的父目录），调用前后记录目录内文件集合，
-    轮询**新增**的那个 `.png`，再把它移动/改名成调用方要的 `out_path`。
+ 本实现因此：`data` 传**目录**（`out_path` 的父目录），调用前后记录目录内文件集合，
+ 轮询**新增**的那个 `.png`，再把它移动/改名成调用方要的 `out_path`。
     """
     gz = _gz()
     if not gz:
@@ -140,7 +140,7 @@ def snap(out_path, timeout_ms=15000, retries=1, wait_s=6.0, check_service=True):
         os.remove(out_abs)          # 防止把旧文件当本次结果
     if check_service:
         # ⚠ 每次 snap 都做一次 `gz service -l`（全量服务查询）实测要 1–2 s，
-        # 会把 1 Hz 节拍拖成 4–6 s（round-4 实测：8 帧 / 34 s）。批量录制时首帧后跳过。
+        # 会把 1 Hz 节拍拖成 4–6 s（ 实测：8 帧 / 34 s）。批量录制时首帧后跳过。
         present, detail = service_present()
         if not present:
             return False, '取帧服务不可用：%s' % detail

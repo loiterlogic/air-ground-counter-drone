@@ -3,9 +3,9 @@
 
 在顶层 launch 运行中、**链路尚未就绪时尽早**介入：先观察 `/agc/task/start` 因门禁未过
 失败（odom / cmd 回环未就绪），再到链路就绪后成功；据此校验：
-  * 门禁真实生效（未就绪必拒，非静默放行）；
-  * `scenario_reset → /agc/air/reset_phase → 门禁校验` 之后 start 成功；
-  * 无 `ODOM_INVALID` 自伤误判（成功那次的原因码不含 odom_invalid；失败-成功序列可达）。
+ * 门禁真实生效（未就绪必拒，非静默放行）；
+ * `scenario_reset → /agc/air/reset_phase → 门禁校验` 之后 start 成功；
+ * 无 `ODOM_INVALID` 自伤误判（成功那次的原因码不含 odom_invalid；失败-成功序列可达）。
 结果落 `experiments/w6-task-eval/<run_id>/metrics/r2.json`（ADR-0006）。
 
 用法（launch 刚起时即执行，勿等待）：

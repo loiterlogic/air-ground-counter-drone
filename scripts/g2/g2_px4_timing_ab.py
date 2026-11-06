@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """G2 round-6：PX4 GPS 自举时序 A/B 运行器。
 
-**为什么需要这个包装**：`scripts/episode_runner.py` 的 `run_episode()` 已经支持
+**为什么需要这个包装**：`scripts/episode_runner.py` 的 `run_episode` 已经支持
 `own_px4_delay_s` / `intruder_px4_delay_s` / `px4_warmup`，但 `main()` 的 argparse
-**没有暴露**这三个参数（它们只被 W7-c worker 路径使用）。本轮需要在不改动公共
+**没有暴露**这三个参数（它们只被 worker 路径使用）。本轮需要在不改动公共
 脚本的前提下做时序 A/B，故在此复用其函数并透传。
 
 **不做的事**：
-  * 不改 `episode_runner.py` 一行；
-  * 不改 PX4 toolchain、failsafe、目标模型/高度/轨迹；
+ * 不改 `episode_runner.py` 一行；
+ * 不改 PX4 toolchain、failsafe、目标模型/高度/轨迹；
   * 只跑 `--mode gui`（用户要求今天全部 GUI），headless 会被直接拒绝。
 
 用法：
@@ -56,7 +56,7 @@ def main(argv=None):
     import episode_runner as er
 
     # `run_episode` 内部会创建 rclpy 节点（用于等待 /agc/task/start 服务），
-    # 但 `episode_runner.main()` 才负责 `rclpy.init()`；本包装直接调函数，故须自行初始化。
+    # 但 `episode_runner.main` 才负责 `rclpy.init`；本包装直接调函数，故须自行初始化。
     rclpy.init()
 
     registry = er._registry()

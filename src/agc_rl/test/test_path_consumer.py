@@ -114,8 +114,8 @@ def test_nearest_bounded_search_stays_in_near_window():
 def test_nearest_unbounded_would_pick_later_segment():
     """反证：不限界时，几何上更近的后段会被选中——说明限界不是装饰。
 
-    折返路径（同一条直线往返）两段**几何完全重合**，最近点序号取决于扫描顺序，
-    不能作为判据；这里用"绕远后回到起点附近"的路径做反证，后段确实几何更近。
+ 折返路径（同一条直线往返）两段**几何完全重合**，最近点序号取决于扫描顺序，
+ 不能作为判据；这里用"绕远后回到起点附近"的路径做反证，后段确实几何更近。
     """
     path = _Path([(0.0, 0.0), (10.0, 0.0), (10.0, 5.0), (0.3, 0.05)], frame_id=WORLD)
     bounded = pc.tracking_reference(path, (0.3, 0.0), dict(PARAMS, search_dist_m=2.0))
@@ -150,7 +150,7 @@ def test_finished_requires_car_within_tolerance():
 def test_degenerate_two_identical_points_finished_when_at_goal():
     """退化到位路径（两点重合）：车在末端容差内 → finished=True（本轮返工 B2）。
 
-    修复前：累计弧长全 0 → `_advance_index` 只能停在 index 0 → finished 永假 → 到点后不零速。
+ 修复前：累计弧长全 0 → `_advance_index` 只能停在 index 0 → finished 永假 → 到点后不零速。
     """
     path = _Path([(5.0, 3.0), (5.0, 3.0)], frame_id=WORLD)
     ref = pc.tracking_reference(path, (5.0, 3.0), dict(PARAMS, lookahead_m=1.0))

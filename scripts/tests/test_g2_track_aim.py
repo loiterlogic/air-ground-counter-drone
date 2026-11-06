@@ -5,7 +5,7 @@
 1. `track` 分支**只**用感知航迹（`target_pos_`），**不读** GT（`yaw_aim_pos_`）；
 2. `/agc/gt/*` 指向订阅**仅在** `observe_yaw_mode == "target"` 时创建；
 3. 无 fresh 航迹时有**确定性搜索**（三角波扫掠，含折返），且**不使用真值播种**
-   （相位基准取接管机头 `search_center_yaw_`）；
+ （相位基准取接管机头 `search_center_yaw_`）；
 4. 搜索**只改偏航**：不触碰轨迹/平移/高度基准；
 5. reset 同时重置搜索相位基准与"已指向/已搜索"日志锁（不沿用上一集）；
 6. `velocity`（默认）与 oracle `target` 分支语义未被改动；
@@ -127,8 +127,8 @@ def test_episode_runner_offers_track():
 def test_no_gt_subscription_or_read_for_track(code):
     """`track` 不得新建 GT 订阅、也不得读 GT 变量。
 
-    注意：日志文本里出现 "/agc/gt" 字样是**免责声明**（"未使用 /agc/gt"），不是订阅行为；
-    因此判据只查**代码行为**：`create_subscription` 与 `yaw_aim_` 变量。
+ 注意：日志文本里出现 "/agc/gt" 字样是**免责声明**（"未使用 /agc/gt"），不是订阅行为；
+ 因此判据只查**代码行为**：`create_subscription` 与 `yaw_aim_` 变量。
     """
     track_block = code[code.index('observe_yaw_mode_ == "track"'):
                        code.index('if (observe_yaw_mode_ == "target" && aim_fresh)')]

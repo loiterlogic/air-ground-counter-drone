@@ -6,8 +6,8 @@
 
 对外只映射 5 个参数（参数收敛口径）：
 
-  | 对外 | 内部 launch 参数 | 默认 |
-  |---|---|---|
+ | 对外 | 内部 launch 参数 | 默认 |
+ |---|---|---|
   | `--map` | `world_map` | `yard` |
   | `--scene` | `scene` | `s04_static_static_obs_track` |
   | `--headless` | `gz_args` 去 GUI（加 `-s`） | GUI |
@@ -21,17 +21,17 @@
 `observe_yaw_mode` 的 launch 参数已清退，本脚本**不再**传它——
 不是默认 `velocity`，也不代表真实视觉识别。启动横幅必须显式打出这一行。
 
-**P1-3 呈现层**（[演示可观测性与产物语义](../../docs/conventions/演示可观测性与产物语义.md#top)）：
+** 呈现层**（[演示可观测性与产物语义](../../docs/conventions/演示可观测性与产物语义.md#top)）：
 
-  | 产物 | 谁写 | 内容 |
-  |---|---|---|
-  | 终端 2 Hz 面板 | [`panel.Panel`](panel.py) | 状态 / 说明 / 原因 / 目标距离 / 观测年龄 / 控制者 / 已用时 |
-  | `panel.txt` | 同上（同一渲染） | 终端被关掉后的复核副本 |
-  | `timeline.txt` | [`timeline.Timeline`](timeline.py) | 状态跳变 + 生命周期节点（人读，不替代 summary） |
-  | `terminal_explanation.txt` | [`verdict.explain`](verdict.py) | 终态判定说明（指标只来自 summary，阈值只来自 params_applied） |
+ | 产物 | 谁写 | 内容 |
+ |---|---|---|
+ | 终端 2 Hz 面板 | [`panel.Panel`](panel.py) | 状态 / 说明 / 原因 / 目标距离 / 观测年龄 / 控制者 / 已用时 |
+ | `panel.txt` | 同上（同一渲染） | 终端被关掉后的复核副本 |
+ | `timeline.txt` | [`timeline.Timeline`](timeline.py) | 状态跳变 + 生命周期节点（人读，不替代 summary） |
+ | `terminal_explanation.txt` | [`verdict.explain`](verdict.py) | 终态判定说明（指标只来自 summary，阈值只来自 params_applied） |
 
 三者**只读**既有数据：`/agc/task/state`、`metrics/summary.json`、`config/params_applied.yaml`。
-文案统一走 [`status_map`](status_map.py)（唯一映射，C8 表述红线在此实现并自检）。
+文案统一走 [`status_map`](status_map.py)（唯一映射， 表述红线在此实现并自检）。
 
 **不做**：不写 `/agc/ground/cmd_vel`、不写模型位姿、不发任务目标
 （唯一执行口 [execution-port](../../docs/ROS2迁移交接文档.md#execution-port)）。任务启动只用
@@ -56,8 +56,8 @@ import verdict
 GT_FRESH_S = 1.0
 AIR_FRESH_S = 1.0
 CMD_FRESH_S = 1.0
-# 任务终态：**单一来源** `status_map.TERMINAL_NAMES`（与 `agc_rl.termination.TERMINALS` 同口径）。
-# P1-3 前这里是本文件自己的一份副本；现在收敛到映射模块，避免"两处终态集合"漂移。
+# 任务终态：**配置文件** `status_map.TERMINAL_NAMES`（与 `agc_rl.termination.TERMINALS` 同口径）。
+# 前这里是本文件自己的一份副本；现在收敛到映射模块，避免"两处终态集合"漂移。
 TERMINALS = status_map.TERMINAL_NAMES
 
 def expected_terminal_for_scene(scene):
@@ -84,15 +84,15 @@ PX4_INTRUDER_DELAY_S = 35.0
 def gz_args(headless):
     """`gz_args`：GUI = `-r -v 3 <world>`；headless = `-s -r -v 3 <world>`。
 
-    `-s` 是 gz sim 的**服务端（无渲染客户端）**开关——这是 GUI / headless 的**唯一**结构性区别。
+ `-s` 是 gz sim 的**服务端（无渲染客户端）**开关——这是 GUI / headless 的**唯一**结构性区别。
 
-    **刻意不提供 `--gui-config` 开关**（2026-10-31 P2-1 round-4 移除，理由见下）：
+    **刻意不提供 `--gui-config` 开关**（2026-10-31 移除，理由见下）：
     gz-gui 在加载 `--gui-config` 之后**还会再加载** `~/.gz/sim/<ver>/gui.config` 并**覆盖**
-    同名属性——用户私有配置里的 `camera_pose` 会把本仓 SDF 的**正俯视**换成 3/4 斜视
+ 同名属性——用户私有配置里的 `camera_pose` 会把本仓 SDF 的**正俯视**换成 3/4 斜视
     （实测 skyband 0.2848 vs 俯视 0.06）。于是"带 `--gui-config` 取到的图"**不代表用户所见**。
-    α（SDF `<gui>` 块自带 `Screenshot` 插件）落地后，自然运行即可取帧，该开关的唯一理由消失，
-    留着只会静默改变视角 → 属脚枪，故移除（round-3 审查裁定 ②）。
-    需要取证时用 `scripts/demo/gui_capture.py`（自然运行下即可，见其文件头）。
+ α（SDF `<gui>` 块自带 `Screenshot` 插件）落地后，自然运行即可取帧，该开关的唯一理由消失，
+ 留着只会静默改变视角 → 属脚枪，故移除（ 审查裁定 ②）。
+ 需要取证时用 `scripts/demo/gui_capture.py`（自然运行下即可，见其文件头）。
     """
     prefix = '-s -r -v 3 ' if headless else '-r -v 3 '
     return prefix + common.WORLD_SDF
@@ -101,11 +101,11 @@ def gz_args(headless):
 def viz_enabled(headless):
     """RViz 叠加层是否该起：**只有 GUI 形态需要**。
 
-    依据状态呈现口径：
+ 依据状态呈现口径：
     "脚本用 `ros2 topic echo --once` 或轻量 Python 订阅（**不要**起 RViz 才能看状态）"。
-    headless 用于经济快跑 / 服务器，本来就没有窗口可看，再起 `viz_markers` + `rviz2` +
-    `static_tf`（[`w6.launch.py::_viz_actions`](../../src/agc_task/launch/w6.launch.py)）
-    只是白烧内存与 CPU（rviz2 ≈257 MB + viz_markers ≈90 MB，见 MAP_DESIGN_PLAYBOOK 16.2）。
+ headless 用于经济快跑 / 服务器，本来就没有窗口可看，再起 `viz_markers` + `rviz2` +
+ `static_tf`（[`w6.launch.py::_viz_actions`](../../src/agc_task/launch/w6.launch.py)）
+ 只是白烧内存与 CPU（rviz2 ≈257 MB + viz_markers ≈90 MB，见 MAP_DESIGN_PLAYBOOK 16.2）。
 
     P1-2 round-3 修正：原实现无条件 `viz:=true`，导致 `--headless` 也起 RViz。
     """
@@ -116,13 +116,13 @@ def launch_argv(*, backend, scene, world_map, headless, extra=(), px4_run_root=N
                 gui_render_backend='auto'):
     """组装 `ros2 launch agc_task w6.launch.py …`（**不改**任何参数语义，只透传）。
 
-    `px4_run_root`：PX4 每实例可写运行根（[ADR-0024 (d)](../../docs/adr/0024-w7c-multi-worker-isolation.md#top)）。
-    demo 传入本 run 的 `<run_dir>/px4`，让 own / intruder 各占独立 `-w` 目录；缺省 `None`
-    时**不传**该参数，保持既有命令行逐字不变（`scripts/episode_runner.py` 等调用方不受影响）。
+ `px4_run_root`：PX4 每实例可写运行根（[ADR-0024 (d)](../../docs/adr/0024-w7c-multi-worker-isolation.md#top)）。
+ demo 传入本 run 的 `<run_dir>/px4`，让 own / intruder 各占独立 `-w` 目录；缺省 `None`
+ 时**不传**该参数，保持既有命令行逐字不变（`scripts/episode_runner.py` 等调用方不受影响）。
 
     `gui_render_backend`：GUI 渲染后端（[ADR-0021(d)](../../docs/adr/0021-w8-gui-headless-equivalence.md#d)），
-    透传 `w6.launch.py` 的同名参数。2026-11-05 前此处**写死 `auto`**，导致 `run_demo.sh`
-    **无任何途径**切换后端——既不能做渲染对照，出问题也不能回退 software 让演示可见。
+ 透传 `w6.launch.py` 的同名参数。2026-11-05 前此处**写死 `auto`**，导致 `run_demo.sh`
+ **无任何途径**切换后端——既不能做渲染对照，出问题也不能回退 software 让演示可见。
     """
     argv = ['ros2', 'launch', 'agc_task', 'w6.launch.py',
             'backend:=%s' % backend,
@@ -131,9 +131,9 @@ def launch_argv(*, backend, scene, world_map, headless, extra=(), px4_run_root=N
             'world_map:=%s' % world_map,
             'gz_args:=%s' % gz_args(headless),
             # 2026-11-04：`observe_yaw_mode:=...` **不再传**——该 launch 参数已清退，
-            #   现由场景覆盖决定（s04 → `track`）。ros2 launch 会**静默忽略**未声明参数，
-            #   继续传会让产物声称一个并未生效的模式（实测过的假象）。
-            # P1-1 的 RViz 叠加能力（GUI 纯场景 + RViz 语义层）；headless 不需要 → false
+            # 现由场景覆盖决定（s04 → `track`）。ros2 launch 会**静默忽略**未声明参数，
+            # 继续传会让产物声称一个并未生效的模式（实测过的假象）。
+            # 的 RViz 叠加能力（GUI 纯场景 + RViz 语义层）；headless 不需要 → false
             'viz:=%s' % ('true' if viz_enabled(headless) else 'false'),
             'gui_render_backend:=%s' % gui_render_backend,
             'agc_root:=%s' % common.ROOT]
@@ -146,8 +146,8 @@ def launch_argv(*, backend, scene, world_map, headless, extra=(), px4_run_root=N
 def launch_env(base=None):
     """启动环境：显式补齐两处**会直接抛异常**的前置（不覆盖使用者已设的值）。
 
-    DDS 发现范围 / 传输按本机能力探测（单一真源 `dds_transport`）：原先无条件写死
-    `LOCALHOST`，在 `lo` 无 IFF_MULTICAST 的机器上（本机 WSL2 即如此）整链零送达。
+ DDS 发现范围 / 传输按本机能力探测（配置文件 `dds_transport`）：原先无条件写死
+ `LOCALHOST`，在 `lo` 无 IFF_MULTICAST 的机器上（本机 WSL2 即如此）整链零送达。
     """
     env = dict(base or os.environ)
     dds_transport.apply(env)
@@ -169,8 +169,8 @@ def launch_env(base=None):
 class Progress:
     """分段进度 + 同时写 `progress.log`（证据）与终端（给人看）。
 
-    P1-3：与 2 Hz 面板**共用终端**。面板用 `\\r` 原地重绘方框，进度行若直接 `print`，
-    会插在框中间把版面撕开 —— 故 `Progress` 持一个可选的 `panel` 引用，写终端前先
+与 2 Hz 面板**共用终端**。面板用 `\\r` 原地重绘方框，进度行若直接 `print`，
+ 会插在框中间把版面撕开 —— 故 `Progress` 持一个可选的 `panel` 引用，写终端前先
     `panel.erase()`，写完由下一帧面板自己重画（`progress.log` 内容不受影响）。
     """
 
@@ -258,8 +258,8 @@ def launch_log_path(run_dir):
 class TaskMonitor:
     """轻量订阅：`/agc/task/state` + 就绪所需的新鲜度信号 + `/clock`。
 
-    数据源全部是**既有**话题（状态呈现数据源口径）：
-    `/agc/task/state`（`AgcTaskState`）、`/clock`、真值旁路、`/agc/ground/cmd_vel`、
+ 数据源全部是**既有**话题（状态呈现数据源口径）：
+ `/agc/task/state`（`AgcTaskState`）、`/clock`、真值旁路、`/agc/ground/cmd_vel`、
     `/agc/ground/odom_valid`、`/agc/air/odom`。**不**用 `ros2 topic echo` 起子进程（省一次 DDS 发现）。
     """
 
@@ -279,7 +279,7 @@ class TaskMonitor:
         self.state_name = ''
         self.reason = ''
         self.dist_m = None
-        # P1-3 面板直接呈现的**既有** `AgcTaskState` 字段（不新增任何字段 / 话题）
+        # 面板直接呈现的**既有** `AgcTaskState` 字段（不新增任何字段 / 话题）
         self.obs_age_s = None
         self.air_controller = ''
         self.ground_controller = ''
@@ -415,8 +415,8 @@ class TaskMonitor:
 def find_summary(campaign_root, scenario, seed, not_before_unix):
     """按 `-<scenario>-<seed>-` 子串 + mtime ≥ 起始时刻定位**本 run** 的 summary。
 
-    与 `episode_runner` 的同 run 关联同口径（suffix 容忍，不猜固定路径）；额外要求
-    `run_id` 里含 `-<scenario>-<seed>-`，命不中即如实报"未找到"，不拿旧 summary 冒充。
+ 与 `episode_runner` 的同 run 关联同口径（suffix 容忍，不猜固定路径）；额外要求
+ `run_id` 里含 `-<scenario>-<seed>-`，命不中即如实报"未找到"，不拿旧 summary 冒充。
     """
     import glob
     pat = os.path.join(campaign_root, '*-%s-%d*/metrics/summary.json' % (scenario, seed))
@@ -462,8 +462,8 @@ def summary_slice(doc):
 class DemoRun:
     """一次完整演示：预检 → 启动 → 等待 → 呈现 → 终态 → 收尾 → 证据。
 
-    生命周期与 `run_demo.sh stop` / `Ctrl-C` 解耦：本对象只在**前台监督进程**里存在，
-    `stop` 通过 `experiments/demo/.run/current.json` 的 PGID 在另一个终端回收它。
+ 生命周期与 `run_demo.sh stop` / `Ctrl-C` 解耦：本对象只在**前台监督进程**里存在，
+ `stop` 通过 `experiments/demo/.run/current.json` 的 PGID 在另一个终端回收它。
     """
 
     def __init__(self, opts, stream=None):
@@ -478,7 +478,7 @@ class DemoRun:
         self.log_fh = None
         self.lock_fd = None
         self.monitor = None
-        # P1-3 呈现层三件套（`panel` 只画、`timeline` 只记、`verdict` 只解释，均不造数据）
+        # 呈现层三件套（`panel` 只画、`timeline` 只记、`verdict` 只解释，均不造数据）
         self.panel = None
         self.timeline = None
         self._last_panel_state = None
@@ -506,7 +506,7 @@ class DemoRun:
         self._ev_running = None
         self._disabled = set()
 
-    # -- P1-3 呈现层 --
+    # -- 呈现层 --
     def _open_presentation(self):
         """开面板 + 时间线（**只读**呈现，不改任何起停语义；**失败只降级不终止**）。"""
         self._safe('timeline_open', self._open_timeline)
@@ -567,8 +567,8 @@ class DemoRun:
     def _safe(self, what, fn):
         """呈现层降级执行：异常记进 `result['presentation_errors']` 并**继续运行**。
 
-        为什么不 `raise`：面板 / 时间线 / 判定说明都是**旁路**产物，它们的缺陷不该
-        让一次已经跑起来的真实实验白跑（round-1 实测踩过）。错误如实记账，不静默吞掉。
+ 为什么不 `raise`：面板 / 时间线 / 判定说明都是**旁路**产物，它们的缺陷不该
+ 让一次已经跑起来的真实实验白跑（ 实测踩过）。错误如实记账，不静默吞掉。
         """
         try:
             return fn()
@@ -761,7 +761,7 @@ class DemoRun:
                                % (mon.state_name or '?',
                                   status_map.state_by_name(mon.state_name)['text'], dist))
             # 时间线：只在**状态跳变**时记（同一状态刷新不记，避免刷屏）
-            # P1-3 round-1 实测教训：呈现层缺陷曾把整场演示打断（TypeError 冒到 run() 外，
+            # 实测教训：呈现层缺陷曾把整场演示打断（TypeError 冒到 run 外，
             # 进程组仍在跑）。呈现是**旁路**，失败只允许"该产物缺失"，绝不允许终止任务。
             self._safe('timeline', lambda: self.timeline.state(
                 mon.state_name, mon.reason, mon.dist_m,
@@ -912,7 +912,7 @@ class DemoRun:
         # 3) 复现信息 + 结果（先落退出码，判定说明的脚注要引用它）
         self.result['finished_at'] = common.now_iso()
         self.result['exit_code'] = code
-        # 4) P1-3 终态判定说明（**指标只来自 summary，阈值只来自本 run 的 params_applied.yaml**）
+        # 4) 终态判定说明（**指标只来自 summary，阈值只来自本 run 的 params_applied.yaml**）
         self._final_explanation(path, doc, code)
         self.result['verdict'] = (self.expected_terminal
                                   if self.result.get('terminal_state') == self.expected_terminal
@@ -1002,7 +1002,7 @@ class DemoRun:
             if vis:
                 lines.append('| `visibility_rate` | `%s`（%s/%s tick） |' % (
                     vis.get('visibility_rate'), vis.get('ticks_visible'), vis.get('ticks_total')))
-        # P1-3：呈现层产物索引（人读件；机器可读件仍是 summary.json）
+        # 呈现层产物索引（人读件；机器可读件仍是 summary.json）
         tl = r.get('timeline') or {}
         pn = r.get('panel') or {}
         ex = r.get('terminal_explanation') or {}

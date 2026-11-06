@@ -8,9 +8,9 @@
 `hashlib.sha256` 做层级派生；RNG 取 stdlib `random.Random`（无第三方依赖，spec R2/R3 选择）。
 
 三级语义：
-  * **scene**     —— 场景级（同 `master_seed` + `scene_id`）→ `scene_seed`；
-  * **episode**   —— 第 N 回合（同 scene）→ `episode_seed`；
-  * **attempt**   —— 同回合的**重试**（如 infra 后重跑）→ **仅**改变 `policy` 流。
+ * **scene** —— 场景级（同 `master_seed` + `scene_id`）→ `scene_seed`；
+ * **episode** —— 第 N 回合（同 scene）→ `episode_seed`；
+ * **attempt** —— 同回合的**重试**（如 infra 后重跑）→ **仅**改变 `policy` 流。
 
 **共同外生随机过程**（CRN）：`spawn / sensor / channel / target / physics` **只由 (scene, episode)
 决定**，**不**随 `attempt` 变化——故同一回合的不同 attempt 面对**相同的外生随机过程**，可用于
@@ -18,7 +18,7 @@
 
 不可复现边界（成文）：外生流（spawn / 噪声序列）**逐位可复现**；但**物理步进调度**（实时异步
 墙钟调度，见 [ADR-0021](../../docs/adr/0021-w8-gui-headless-equivalence.md#top)(b)）**不承诺** bitwise
-一致——轨迹在时间维度上的分叉属**已知边界**，由 W7 runner 记录（spec R3）。
+一致——轨迹在时间维度上的分叉属**已知边界**，由 runner 记录（spec R3）。
 """
 
 import hashlib

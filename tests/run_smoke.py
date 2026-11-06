@@ -3,13 +3,13 @@
 
 ## 为什么有这个文件
 
-`tests/` 有 57 个验收核查，但**没有"一次跑完并全绿"的入口**（P2-1 出口判据第 6 项）。
+`tests/` 有 57 个验收核查，但**没有"一次跑完并全绿"的入口**（ 出口判据第 6 项）。
 57 个里很多要拉起完整 SITL / 整链仿真，跑一遍几十分钟，**不适合**作为"新人改完一行代码
 先跑这个"的门槛。本文件只挑**秒级、只读、无副作用**的那几项，构成可信的冒烟集：
 
 | 组 | 断言什么 | 为什么进冒烟集 |
 |---|---|---|
-| `geometry` | 几何派生链：地图真源 → 世界 SDF 展开一致（`tests/w6_geometry_check.py`） | 改地图/材质最常踩的坑，纯静态 |
+| `geometry` | 几何派生链：地图配置文件 → 世界 SDF 展开一致（`tests/w6_geometry_check.py`） | 改地图/材质最常踩的坑，纯静态 |
 | `messages` | 9 消息 ABI 字段与顺序不变 + `AgcTaskState` 9 个状态常量 | 契约红线，离线可判 |
 | `docs` | 活跃文档本地链接与锚点可解析（`tests/docs_link_check.py`） | 改 README / 计划文档后必跑 |
 | `index` | 脚本索引与实际文件集合一致（`scripts/adr_index.py --check` + `scripts/tests/test_scripts_index.py`） | 索引漂移靠测试拦，不靠纪律 |
@@ -22,7 +22,7 @@
 ## 用法
 
 ```bash
-./run_demo.sh test              # 全部 5 组
+./run_demo.sh test # 全部 5 组
 ./run_demo.sh test --list       # 只列出组与命令，不执行
 ./run_demo.sh test --only docs  # 只跑某组（可多次）
 ./run_demo.sh test --verbose    # 失败时打印完整输出（默认只打最后 20 行）
@@ -36,7 +36,7 @@
 * **不启仿真**：不 `ros2 launch`、不起 GZ / PX4 / GUI；只调离线脚本与 pytest；
 * **预算**：单组超时 300 s（`--timeout` 可调），整轮超预算即判失败并报出耗时；
 * 需要 ROS 环境（`xacro` / `agc_msgs`）时先 `source /opt/ros/jazzy/setup.bash` 与
-  `source install/setup.bash`；缺环境时**如实报错**，不静默跳过。
+ `source install/setup.bash`；缺环境时**如实报错**，不静默跳过。
 """
 
 import argparse
@@ -49,7 +49,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 ROS_SETUP = '/opt/ros/jazzy/setup.bash'
 WS_SETUP = os.path.join(ROOT, 'install', 'setup.bash')
 
-# 整轮预算：P2-1 出口判据要求"5 分钟内全绿"
+# 整轮预算： 出口判据要求"5 分钟内全绿"
 TOTAL_BUDGET_S = 300
 GROUP_TIMEOUT_S = 300
 
@@ -74,7 +74,7 @@ GROUPS = [
     # 纯静态、秒级；判据见 tests/w6_dds_contract_check.py 的 case e。
     ('dds', 'DDS 契约：不得写死 LOCALHOST / launch 不覆盖发现范围',
      [[sys.executable, os.path.join(ROOT, 'tests', 'w6_dds_contract_check.py')]]),
-    # N3「PX4/toolchain 可复现构建逐步固化」（2026-11-04）：pin 清单与实机一致性。
+    # 「PX4/toolchain 可复现构建逐步固化」（2026-11-04）：pin 清单与实机一致性。
     # 纯只读、秒级；此前有单测但**没接任何门槛**，等于不跑。判据见 ADR-0005(d)。
     # 前提是 `toolchain/` 在本机存在（外部依赖、不入 git）；缺失时如实 FAIL 而不是静默跳过。
     ('toolchain', '工具链 pin 清单与实机一致（ADR-0005）',
@@ -91,10 +91,10 @@ def _color(text, code, enabled):
 def _env():
     """source ROS + 工作区后执行（与 `run_demo.sh` 同口径，避免"少 source"误报失败）。
 
-    DDS 发现范围 / 传输走**单一真源**（`scripts/demo/dds_transport.py`），与
-    `run_demo.sh` / `episode_runner` / 测试完全一致。原先此处写死 `LOCALHOST`，
-    在 `lo` 无 `IFF_MULTICAST` 的机器上会让任何**跨进程收发**的组静默全 0 失败——
-    本组目前恰好不需要收发，才侥幸没暴露（见 docs/conventions/整链排障速查.md#dds-transport）。
+ DDS 发现范围 / 传输走**配置文件**（`scripts/demo/dds_transport.py`），与
+ `run_demo.sh` / `episode_runner` / 测试完全一致。原先此处写死 `LOCALHOST`，
+ 在 `lo` 无 `IFF_MULTICAST` 的机器上会让任何**跨进程收发**的组静默全 0 失败——
+ 本组目前恰好不需要收发，才侥幸没暴露（见 docs/conventions/整链排障速查.md#dds-transport）。
     """
     env = dict(os.environ)
     env.setdefault('ROS_DOMAIN_ID', '0')

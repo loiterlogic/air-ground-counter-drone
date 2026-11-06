@@ -2,18 +2,18 @@
 """终端状态面板（2 Hz，人眼可读，不刷屏）——P1-3 出口判据 2。
 
 数据**全部**来自既有 `/agc/task/state`（`AgcTaskState`，[#messages]）与既有 `/clock`；
-本模块**不新增话题、不发布任何东西**，也不自己算任何指标（指标真源是 `run_logger`）。
+本模块**不新增话题、不发布任何东西**，也不自己算任何指标（配置文件是 `run_logger`）。
 
 两副外观，**判据相同**：
 
-  * 终端（tty）→ 方框原地重绘（`\\r` + 清行，2 Hz）；
-  * 非终端（重定向 / 管道 / CI）→ 每 2 Hz 一行 `[mm:ss] 状态 · 说明 · 距离 · 用时`，
-    行数受 `max_lines` 限流，避免日志洪水。
+ * 终端（tty）→ 方框原地重绘（`\\r` + 清行，2 Hz）；
+ * 非终端（重定向 / 管道 / CI）→ 每 2 Hz 一行 `[mm:ss] 状态 · 说明 · 距离 · 用时`，
+ 行数受 `max_lines` 限流，避免日志洪水。
 
-**headless 一样可用**：面板不依赖 GUI / RViz / 渲染（P1-3 计划"不要把可观测性绑死在渲染上"）。
+**headless 一样可用**：面板不依赖 GUI / RViz / 渲染（ 计划"不要把可观测性绑死在渲染上"）。
 屏幕上的每一格都还会同步落一份 `panel.txt`（同一渲染的纯文本快照），供无终端场景复核。
 
-文案来源**唯一**：全部走 [`status_map`](status_map.py)（P1-3 出口判据 1 的"一处映射多处引用"）。
+文案来源**唯一**：全部走 [`status_map`](status_map.py)（ 出口判据 1 的"一处映射多处引用"）。
 """
 
 import os
@@ -133,14 +133,14 @@ class Panel:
 
     两种外观，同一份 `snapshot()` 数据、同一个 2 Hz 节拍：
 
-      * **终端（tty）**：方框原地重绘，每帧 `1/2 = 0.5 s`（真正 2 Hz，人眼可读、不刷屏）；
-      * **非终端（重定向 / 管道 / 日志）**：退化为单行 + `line_every_s` 心跳。理由：
-        计划要求"日志文件里只记跳变"，非终端没有"原地刷新"可言，硬刷 2 Hz 只会制造
-        日志洪水；状态跳变本身由进度行与 `timeline.txt` 各记一次，这里不重复。
-        真正的 2 Hz 节奏记在 `renders`（每帧都计数）与 `panel.txt` 里。
+ * **终端（tty）**：方框原地重绘，每帧 `1/2 = 0.5 s`（真正 2 Hz，人眼可读、不刷屏）；
+ * **非终端（重定向 / 管道 / 日志）**：退化为单行 + `line_every_s` 心跳。理由：
+ 计划要求"日志文件里只记跳变"，非终端没有"原地刷新"可言，硬刷 2 Hz 只会制造
+ 日志洪水；状态跳变本身由进度行与 `timeline.txt` 各记一次，这里不重复。
+ 真正的 2 Hz 节奏记在 `renders`（每帧都计数）与 `panel.txt` 里。
 
-    `snapshot_path` 非空时每 `persist_every_s` 秒落一行 `panel.txt`：
-    终端被关掉 / 会话断开后仍有可复核的面板证据。
+ `snapshot_path` 非空时每 `persist_every_s` 秒落一行 `panel.txt`：
+ 终端被关掉 / 会话断开后仍有可复核的面板证据。
     """
 
     def __init__(self, stream=None, snapshot_path=None, min_interval_s=REFRESH_S,
@@ -179,7 +179,7 @@ class Panel:
     def erase(self):
         """擦掉当前方框，把光标留给别的内容（`progress` 行）；下一次 `render` 重画。
 
-        `line` 外观下是**空操作**（单行本来就只是一行）。
+ `line` 外观下是**空操作**（单行本来就只是一行）。
         """
         if self.mode != 'box' or not self._box_rows:
             return

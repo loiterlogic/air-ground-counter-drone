@@ -4,16 +4,16 @@
 定位：把 2026-11-03 那一轮"目标机永不起飞"排障中**真实确认过的三个缺陷**固化成断言，
 防止它们在后续改动里悄悄回归。判据全部来自**实测**，不是推测：
 
-  a) `/agc/gt/**` 的**发布端类型**是 `geometry_msgs/PoseStamped`（唯一真源 `gt_bypass`）。
-     任何按 `nav_msgs/Odometry` 订阅它的节点都会**静默收 0 条**（DDS 按类型匹配，不报错）。
+ a) `/agc/gt/**` 的**发布端类型**是 `geometry_msgs/PoseStamped`（配置文件 `gt_bypass`）。
+ 任何按 `nav_msgs/Odometry` 订阅它的节点都会**静默收 0 条**（DDS 按类型匹配，不报错）。
      实测症状：守卫恒报 `have_gt=0`，而 `ros2 topic hz` 同话题明明有数据。
-  b) 仿真磁力计必须开：`SENS_EN_MAGSIM=1` 经 lock yaml → `px4-rc.params` 注入。
-     PX4 官方 gz 机型 `x500` 没有 magnetometer 传感器，而该参数**定义默认值就是 0**；
-     不开则 `Compass missing` → `Yaw estimate error` → EKF 不发布 odometry → 目标机不 ARM。
-     **同时**断言没有退回 `SYS_HAS_MAG=0` / `EKF2_MAG_TYPE=5`——实测那两条会让
-     `Ready for takeoff` 从 2 次降到 0 次。
-  c) 起飞守卫的超时**不短于**实测标定的启动时长下限。实测目标机 `Armed` 落在 tw≈110 s；
-     原 60 s 会在正常时序**之前**判死（实测超时点比 ARM 成功早约 6 s）。
+ b) 仿真磁力计必须开：`SENS_EN_MAGSIM=1` 经 lock yaml → `px4-rc.params` 注入。
+ PX4 官方 gz 机型 `x500` 没有 magnetometer 传感器，而该参数**定义默认值就是 0**；
+ 不开则 `Compass missing` → `Yaw estimate error` → EKF 不发布 odometry → 目标机不 ARM。
+ **同时**断言没有退回 `SYS_HAS_MAG=0` / `EKF2_MAG_TYPE=5`——实测那两条会让
+ `Ready for takeoff` 从 2 次降到 0 次。
+ c) 起飞守卫的超时**不短于**实测标定的启动时长下限。实测目标机 `Armed` 落在 tw≈110 s；
+ 原 60 s 会在正常时序**之前**判死（实测超时点比 ARM 成功早约 6 s）。
 
 不做：不启动 SITL / 不查 ROS 图 / 不依赖 `/dev/shm` 状态（那些是运行时事实，见
 `docs/conventions/整链排障速查.md#orphan-dds`）。本核查只守**代码与配置契约**。
@@ -82,7 +82,7 @@ def case_b_magsim(res):
     sh = _read(P['lock_sh'])
     launch = _read(P['launch'])
 
-    # 允许行尾注释（真源 yaml 的每个键都带说明）
+    # 允许行尾注释（配置文件 yaml 的每个键都带说明）
     m = re.search(r'^\s*sensor_en_magsim\s*:\s*(\d+)\s*(?:#.*)?$', yaml_text, re.M)
     res['lock_yaml_sensor_en_magsim'] = int(m.group(1)) if m else None
     res['magsim_is_1'] = (res['lock_yaml_sensor_en_magsim'] == 1)
@@ -139,9 +139,9 @@ def case_c_guard_timeout(res):
 def case_d_no_discovery_range_override(res):
     """launch **不得**自行覆盖 `ROS_AUTOMATIC_DISCOVERY_RANGE`。
 
-    2026-11-03 实测（A/B 各 2 次）：把它设成 SUBNET 或 LOCALHOST 与起飞成败**无因果关系**
-    （LOCALHOST 1 败 1 成、SUBNET 2 成）。该变量的口径由入口脚本 + 排障速查#0 统一规定，
-    launch 再插一手会制造"两处真源"，且本机 SUBNET 在 WSL2 上有已知间歇失效。
+ 2026-11-03 实测（A/B 各 2 次）：把它设成 SUBNET 或 LOCALHOST 与起飞成败**无因果关系**
+ （LOCALHOST 1 败 1 成、SUBNET 2 成）。该变量的口径由入口脚本 + 排障速查#0 统一规定，
+ launch 再插一手会制造"两处配置文件"，且本机 SUBNET 在 WSL2 上有已知间歇失效。
     """
     launch = _read(P['launch'])
     hits = re.findall(
@@ -169,8 +169,8 @@ _HARDCODE_EXEMPT_FILES = (
 _HARDCODE_SUFFIXES = ('.py', '.sh', '.bash', '.xml', '.yaml', '.yml')
 
 # 覆盖全部真实写法（实测这些才是仓库里出现过的形态）：
-#   os.environ["…"] = "LOCALHOST"     env['…'] = 'LOCALHOST'
-#   env.update({'…': 'LOCALHOST'})    export …=LOCALHOST
+# os.environ["…"] = "LOCALHOST" env['…'] = 'LOCALHOST'
+# env.update({'…': 'LOCALHOST'}) export …=LOCALHOST
 # 容忍：变量名两侧的引号/方括号、赋值号两侧的引号与空格。
 _HARDCODED_LOCALHOST = re.compile(
     r"""ROS_AUTOMATIC_DISCOVERY_RANGE['"\]]*\s*(?:=|:)\s*['"]?LOCALHOST""")
@@ -179,10 +179,10 @@ _HARDCODED_LOCALHOST = re.compile(
 def _line_hardcodes_localhost(line):
     """一行是否把 discovery range 写死成 LOCALHOST。
 
-    额外排除两种**非赋值**语境，避免误报把闸门变噪音：
-      * 纯注释/文档行里讲解用法（`# … LOCALHOST`、`：…LOCALHOST`）—— 只在行首是注释符时排除；
-      * 形如 `'ROS_AUTOMATIC_DISCOVERY_RANGE=%s'` 的格式化串（值不是字面量 LOCALHOST，
-        本正则也不会命中它，因为 `%s` 不是 LOCALHOST）。
+ 额外排除两种**非赋值**语境，避免误报把闸门变噪音：
+ * 纯注释/文档行里讲解用法（`# … LOCALHOST`、`：…LOCALHOST`）—— 只在行首是注释符时排除；
+ * 形如 `'ROS_AUTOMATIC_DISCOVERY_RANGE=%s'` 的格式化串（值不是字面量 LOCALHOST，
+ 本正则也不会命中它，因为 `%s` 不是 LOCALHOST）。
     """
     if not _HARDCODED_LOCALHOST.search(line):
         return False
@@ -204,12 +204,12 @@ def _line_hardcodes_localhost(line):
 def case_e_no_hardcoded_localhost(res):
     """**活跃代码不得写死 `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`**（防复发主闸）。
 
-    为什么这条必须存在（2026-11-04 实测）：本机 `lo` 无 `IFF_MULTICAST`，写死 LOCALHOST
-    在 **1 发布 ↔ 1 订阅** 拓扑下**稳定零送达**（≥2 发布进程时偶通 → 这正是历史
-    "忽好忽坏"的来源）。本项目已为此浪费过两次整轮定位；文档劝告没挡住，所以把它变成
-    **会失败的测试**。
+ 为什么这条必须存在（2026-11-04 实测）：本机 `lo` 无 `IFF_MULTICAST`，写死 LOCALHOST
+ 在 **1 发布 ↔ 1 订阅** 拓扑下**稳定零送达**（≥2 发布进程时偶通 → 这正是历史
+ "忽好忽坏"的来源）。本项目已为此浪费过两次整轮定位；文档劝告没挡住，所以把它变成
+ **会失败的测试**。
 
-    唯一合法出处：`scripts/demo/dds_transport.py`（策略 `localhost-udp`）。需要 LOCALHOST
+ 唯一合法出处：`scripts/demo/dds_transport.py`（策略 `localhost-udp`）。需要 LOCALHOST
     的地方请调 `dds_transport.apply()/env_for()`，不要自己拼字符串。
     """
     offenders = []
@@ -234,7 +234,7 @@ def case_e_no_hardcoded_localhost(res):
             except OSError:
                 continue
             scanned += 1
-            # 逐行判（保留精确行号），再做一次**跨行**判，防 `'KEY':\n  'LOCALHOST'` 漏网。
+            # 逐行判（保留精确行号），再做一次**跨行**判，防 `'KEY':\n 'LOCALHOST'` 漏网。
             hits = set()
             for i, line in enumerate(text.splitlines(), 1):
                 if _line_hardcodes_localhost(line):

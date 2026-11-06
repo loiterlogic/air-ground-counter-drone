@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """perception_bringup —— W4 感知一键启动（spec R3/R8）。
 
-由上层 launch（air_bringup / m0_skeleton）**include**；参数单一来源 `config/perception.yaml`。
+由上层 launch（air_bringup / m0_skeleton）**include**；参数配置文件 `config/perception.yaml`。
 
 分段：
-  * W4-a：gt_bypass（真值旁路）+ ground_odom_adapter + gt_adapter
-  * W4-c：map_adapter
+ * ：gt_bypass（真值旁路）+ ground_odom_adapter + gt_adapter
+ * ：map_adapter
 
 ## 已退役的路线（用户裁定）
 
@@ -29,7 +29,7 @@
 下游不得据任何"传感器量程 / FOV / 丢包"配置宣称本仓当前存在感知质量差异。
 
 `/agc/map` 链（map_adapter → /agc/map → costmap）**不在本次清退范围**：它是 `baseline`
-命令源（规范 5.1 已批准分支）的组成部分，状态为「待建」，见治理规范 5.3 台账。
+命令源（规范 已批准分支）的组成部分，状态为「待建」，见治理规范 台账。
 """
 
 
@@ -46,10 +46,10 @@ from launch_ros.actions import Node
 def _reject_non_minimal_fallback(context, *args, **kwargs):
     """P1-1：**回退副本只支持 minimal**（规格「同步回退副本与核查」）。
 
-    standalone 直接起 `perception_bringup`（不经过 `w6_composition` 派生）时，`map_file` /
-    `obstacles_file` 用包内回退副本，它们只与 **minimal** 真源一致。若此时声明
-    `world_map != minimal`，用回退几何跑「yard 场景」会得到「世界有墙、地图没有」——
-    显式拒绝（比静默用错几何好）。w6 路径按真源派生注入，不经本检查。
+ standalone 直接起 `perception_bringup`（不经过 `w6_composition` 派生）时，`map_file` /
+ `obstacles_file` 用包内回退副本，它们只与 **minimal** 配置文件一致。若此时声明
+ `world_map != minimal`，用回退几何跑「yard 场景」会得到「世界有墙、地图没有」——
+ 显式拒绝（比静默用错几何好）。w6 路径按配置文件派生注入，不经本检查。
     """
     name = (LaunchConfiguration('world_map').perform(context) or 'minimal').strip()
     map_file_ = LaunchConfiguration('map_file').perform(context)
@@ -75,12 +75,12 @@ def generate_launch_description():
 
     use_sim_time = LaunchConfiguration('use_sim_time')
     target_source = LaunchConfiguration('target_source')
-    # S-06（ADR-0007）：地图几何文件由上层经**单一真源**派生注入（缺省 = 包内回退副本）。
+    # （ADR-0007）：地图几何文件由上层经**配置文件**派生注入（缺省 = 包内回退副本）。
     obstacles_file = LaunchConfiguration('obstacles_file')
     map_file = LaunchConfiguration('map_file')
-    # P1-1：地图名（仅用于**显式拒绝**不受支持的回退路径，见 `_reject_non_minimal_fallback`）。
+    # 地图名（仅用于**显式拒绝**不受支持的回退路径，见 `_reject_non_minimal_fallback`）。
     world_map = LaunchConfiguration('world_map')
-    # R-040（ADR-0007）：场景 / 源版本 → 折入地图内容身份 hash（诊断，非 ABI）
+    # （ADR-0007）：场景 / 源版本 → 折入地图内容身份 hash（诊断，非 ABI）
     scenario_version = LaunchConfiguration('scenario_version')
 
     declared = [
@@ -93,8 +93,8 @@ def generate_launch_description():
                               description='R-026 障碍真值文件（缺省 = 包内默认；none 场景传空障碍文件）'),
         DeclareLaunchArgument('map_file', default_value=default_map_file,
                               description='S-06 地图几何文件（缺省 = 包内回退副本；由上层按真源派生注入）'),
-        # P1-1：地图名。**回退副本只支持 minimal**——standalone 启动若声明非 minimal 地图
-        #   （且未显式给派生文件），必须显式报错（比静默用错几何好）。
+        # 地图名。**回退副本只支持 minimal**——standalone 启动若声明非 minimal 地图
+        # （且未显式给派生文件），必须显式报错（比静默用错几何好）。
         DeclareLaunchArgument('world_map', default_value='minimal',
                               description='P1-1 地图名（minimal | yard | open_field）；'
                                           '回退副本仅支持 minimal，其余须由上层派生注入'),
@@ -104,7 +104,7 @@ def generate_launch_description():
 
     common = [params_file, {'use_sim_time': use_sim_time}]
 
-    # ---- W4-a · 适配层（gt_bypass / ground_odom_adapter）----
+    # ---- · 适配层（gt_bypass / ground_odom_adapter）----
     shared_a = [
         Node(package='agc_perception', executable='gt_bypass',
              name='gt_bypass', parameters=common, output='screen'),
@@ -112,7 +112,7 @@ def generate_launch_description():
              name='ground_odom_adapter', parameters=common, output='screen'),
     ]
 
-    # ---- W4-c · 地图 ----
+    # ---- · 地图 ----
     map_node = Node(package='agc_perception', executable='map_adapter',
                     name='map_adapter',
                     parameters=common + [{'map_file': map_file,
@@ -122,7 +122,7 @@ def generate_launch_description():
                                           'scenario_version': scenario_version}],
                     output='screen')
 
-    # ---- W4 真值链：唯一发布者 gt_adapter ----
+    # ---- 真值链：唯一发布者 gt_adapter ----
     # `air_fusion` 已于 2026-11-04 退役；`air_perception`（/agc/air/obs）及其无消费者的
     # 通道配置已于 2026-11-06 一并删除。本链现在只剩 gt_adapter 一个节点。
     gt_node = Node(package='agc_perception', executable='gt_adapter',

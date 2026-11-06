@@ -1,59 +1,6 @@
-# AGC 场景几何单一真源 · 地图 `minimal`（评审 S-06；ADR-0007；P1-1）
-#
-# 本文件是**静态障碍实体几何 + 作业区几何**的**唯一真源**（按地图分文件，见下）。物理世界 /
-# 空中安全列表 / 感知先验 / 感知地图 / `scenario_reset` 校验均由所选地图文件**派生**（launch
-# 生成或 composition 注入）。节点不得覆写（契约 [参数入口] ../../docs/ROS2迁移交接文档.md#params）。
-#
-# ---- 三张地图（P1-1；`world_map` 参数选择）----
-#   * `minimal`     —— 本文件：既有 pole_1 / pole_2（0.3×0.3×3 m），**几何逐值不变**，
-#                      `tests/w6_geometry_check.py` 的稳定基线；(b) 断言依赖 `pole_*` 命名。
-#   * `yard`        —— maps/yard.yaml：演示主地图（2026-10-29 用户裁定重做为 **100×100 工业物流场站**：
-#                      29 实体 / 107 图元 / 7 个功能分区 / 分段围墙；见该文件头部布局范式与实测边界）。
-#   * `open_field`  —— maps/open_field.yaml：能力对照 / 快跑地图（1 栋棚屋 + 4 个圆柱）。
-# 选文件由 `w6_composition.resolve_geometry_file` 单一实现；未知地图名**拒绝运行**（不静默回退）。
-#
-# ---- 作业区尺寸（2026-10-29 用户裁定）----
-# 用户原话：「在空地协同反无人机中 80*80 可能不太够，改成 100*100」。
-# → **三张地图的 `work_area` 统一为 100×100 m（origin −50,−50）**；`minimal` 的**障碍几何逐值不变**
-#   （仅作业区放大，断言 (b) 的 pole 基线不受影响）；`agc_perception/config/map.yaml`（standalone
-#   回退副本）随之同步（断言 (c) 校验二者一致）。8 字轨迹仍是契约 C1 的 rx=15 / ry=9（**未改**）。
-#   栅格 100/0.5 = 200×200 = 40000 单元（原 160×160）。
-#
-# ---- schema ----
-# `work_area`（作业区 / 地图栅格几何）：
-#   * `resolution` —— m/cell；栅格覆盖 [origin, origin+size]²（容纳真八字足迹与柱）。
-# `obstacles`（静态障碍实体）：每实体
-#   * `id`        —— 唯一名；`pole_*` 命名被核查断言 (b) 依赖，minimal 不得删除/改名；
-#   * `shape`     —— 可省略，缺省 `box`；支持 `box` | `cylinder` | `sphere`（其余值拒绝运行）；
-#                    cylinder 口径 `[r, r, h]`、sphere 口径 `[r, r, r]`（前若干值必须相等，否则拒绝运行）；
-#   * `parts`     —— 可省略；**复合模型**（一个实体 = 一个 `<model>` 含多个 static `<link>`）。
-#                    每 part 形如 `{shape, x, y, z, yaw, size, color?}`，`x/y` 是**相对锚点**的局部偏移、
-#                    `z` 是**绝对高度偏移**；复合模型的**锚点 `z` 必须为 0**（注入器不叠加），否则拒绝运行。
-#   * `x/y/z/yaw` —— m / rad；`z` 为**几何中心高度**（box 与 cylinder 同口径）；
-#   * `size`      —— box: `[长(x), 宽(y), 高(z)]`；cylinder: `[半径, 半径, 高]`（前两值相等，
-#                    不一致即拒绝运行）；物理世界 `<pose>` 由 `x y z 0 0 yaw` 生成；
-#   * `color`     —— `[r,g,b]`，**仅视觉保真，非几何**；part 亦可覆盖 `color`；
-#   * `safety_radius` —— 可省略，缺省按**足迹推导**（历史 pole 标定值 2.0 仅在足迹为 0 时兜底）；
-#                    语义 = 该障碍在水平面的**外接圆半径**（空中安全层是二维静态圆盘模型，
-#                    必须覆盖实体几何）。box 取半对角、cylinder/sphere 取半径、复合体取
-#                    「max(part 偏心 + part 足迹半径)」；**不再**用与障碍数对齐的定长列表
-#                    （旧 `air.yaml: obstacle_safety_radius: [2.0, 2.0]` 已消除）。
-#                    ⚠ 细长实体的外接圆半径 ≈ 半长：长围墙的安全圆盘会侵占空域，见 yard.yaml「已知限制」。
-#   * `occludes`  —— 可省略，缺省 `true`；是否参与感知遮挡。**无消费者**：
-#                    原 `perception_sensors.yaml`（`occlusion.enabled` 默认 false）已随
-#                    `perception` 场景轴于 2026-11-06 退役；本字段为 P1-4 预置的透传位，
-#                    **不作**能力声明。
-#
-# 纪律：
-#   * 修改几何**只改对应地图文件**；各域随之派生（`python3 tests/w6_geometry_check.py` 可复核，
-#     对三张地图逐一断言）。
-#   * 本真源为**物理 / 真值**事实——**不等于**「所有算法都可读真值」；感知静态先验仍受
-#     ADR-0009 成文假设约束（见 agc_perception/config/obstacles.yaml 头部）。
-#   * 障碍族边界（ADR-0009）：地面激光为 z≈0.48 m 的**单一水平面**扫描。本文件三张地图的
-#     障碍在 z=0.48 处**均有水平截面**（即对地面激光可见，核查 (h) 静态断言）；若新增
-#     **矮墙 / 悬空结构 / 薄片**，必须在 `docs/plan/p1-1-地图与场景资产.md` 如实标注
-#     「该障碍对地面激光不可见」，不得假装能避。
-#   * 不引入外部资产（无 mesh / 贴图）；视觉与碰撞同源，禁止装饰性不可碰撞实体。
+# 场景几何与飞行高度：minimal 地图的作业区与静态障碍（ADR-0007）。
+# 由 w6_composition 按地图名加载并派生注入；节点不得覆写。
+# 改几何只改对应地图文件，再跑 tests/w6_geometry_check.py 复核。
 map: minimal
 
 work_area:
@@ -63,20 +10,7 @@ work_area:
   origin_x: -50.0
   origin_y: -50.0
 
-# ---- 飞行高度（ADR-0007；用户 2026-11-02 裁定「高度和地图绑定」）----
-# 本节是**本图固定飞行高度的唯一真源**。运行期由 `w6_composition.apply_flight_altitude()`
-# 派生注入 `air.yaml` / `w6_base.yaml` 的同名参数；`air.yaml` 里的同名键只作 standalone /
-# 单测兜底，**运行期一律被本节覆盖**（与 `safety.obstacle_*` 的派生处理同款）。
-#
-# 为什么高度是**地图属性**（不是场景参数）：用户原话「这是和地图绑定的，因为后面会做
-# 小障碍高密度和大障碍低密度等图」。换图即换高度，**代码一行不动**。
-#
-# 五键语义（与 `docs/conventions/飞行高度分层与按地图定高.md` 的 L2a/L2b/L2c 对应）：
-#   own_track_m        —— 己方机跟踪高度（L2b → standoff_follower.height）
-#   own_takeoff_m      —— 己方机起飞高度（L2c → takeoff_controller.takeoff_altitude_m）
-#   target_cruise_m    —— 目标机巡航高度（L2a → intruder_driver.cruise_alt_m 的**默认值**）
-#   own_clearance_min_m—— 垂直净空下限 c_clear（K3）
-#   derived            —— 本图几何的派生量（只读；由 `height_survey` 同口径算出，供断言比对）
+# 本图固定飞行高度；运行期由 w6_composition.apply_flight_altitude_params 派生注入（ADR-0007）。
 flight_altitude:
   own_track_m: 2.5
   own_takeoff_m: 2.5
@@ -88,11 +22,9 @@ flight_altitude:
     h_max_env_m: 0.0            # 两柱距目标 14.14 / 17.82 m，均在 11.2 m 环带外
     h_max_env_id: null
     rule_version: 1
-  # 取值依据：本图**维持既有值不变**。作业包络内无任何障碍（H_max_env=0），
-  #   抬高只会恶化 dz（K1/K2），无收益。C1 真八字 / 历史证据基线依赖 2.5，不得改动。
 
+# 基线双柱（ADR-0007）；安全圆盘半径与场景复位净空校验同源。
 obstacles:
-  # ---- 基线双柱（geometry 逐值不变；ADR-0007 决策 1）----
   - id: pole_1
     shape: box
     x: 0.0

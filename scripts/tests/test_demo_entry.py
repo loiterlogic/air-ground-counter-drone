@@ -1,16 +1,16 @@
 """`run_demo.sh` 一键演示入口的离线回归（**不启任何仿真**）。
 
-守护 P1-2 的五条硬性质——全部可在无 GUI / 无 ROS 图的情况下判定：
+守护 的五条硬性质——全部可在无 GUI / 无 ROS 图的情况下判定：
 
 1. **默认口径**：不带参数时必须是 `full + yard + s04`；观测指向臂由**场景覆盖**决定
-   （`s04` → `track`），**不**经 launch 参数传入，
-   且 `target` 是**显式**写在命令行里的（不能靠 `air.yaml` 的默认 `velocity` 蒙过去）；
+ （`s04` → `track`），**不**经 launch 参数传入，
+ 且 `target` 是**显式**写在命令行里的（不能靠 `air.yaml` 的默认 `velocity` 蒙过去）；
 2. **不新增命令者**：演示代码不发布 `/agc/ground/cmd_vel`、不写模型位姿
-   （[#execution-port](../../docs/ROS2迁移交接文档.md#execution-port)）；
+ （[#execution-port](../../docs/ROS2迁移交接文档.md#execution-port)）；
 3. **禁止 `pkill -f`**：回收只按 PID/PGID（[整链排障速查](../../docs/conventions/整链排障速查.md#0-三条环境铁律)）；
 4. **doctor 有区分度**：端口被占 / 有残留 / 未 source 时**真的**为 FAIL（不是恒 OK 的摆设）；
 5. **等价比较有区分度**：`EQUIVALENT` / `NOT_EQUIVALENT` / `NOT_COMPARABLE` / `INCOMPLETE`
-   四种结论都能被真实数据触发，且缺值**不**被当作相等。
+ 四种结论都能被真实数据触发，且缺值**不**被当作相等。
 
 运行：
   python3 -m pytest scripts/tests/test_demo_entry.py -q       # 纯离线，无需 source ROS
@@ -64,7 +64,7 @@ def test_default_launch_argv_passes_oracle_mode_explicitly():
 
 
 # --------------------------------------------------------------------------------------
-# 1b. RViz 叠加层只在 GUI 形态启用（P1-2 round-3 修正）
+# 1b. RViz 叠加层只在 GUI 形态启用（ 修正）
 # --------------------------------------------------------------------------------------
 
 def test_gui_enables_viz_overlay():
@@ -78,8 +78,8 @@ def test_gui_enables_viz_overlay():
 def test_headless_disables_viz_overlay():
     """headless：`viz:=false` —— 不起 rviz2 / viz_markers / static_tf。
 
-    依据：P1-2 自己规定"**不要**起 RViz 才能看状态"，且 headless 用于经济快跑；
-    rviz2 ≈257 MB + viz_markers ≈90 MB（MAP_DESIGN_PLAYBOOK 16.2）纯属浪费。
+ 依据： 自己规定"**不要**起 RViz 才能看状态"，且 headless 用于经济快跑；
+ rviz2 ≈257 MB + viz_markers ≈90 MB（MAP_DESIGN_PLAYBOOK 16.2）纯属浪费。
     """
     assert demo_start.viz_enabled(headless=True) is False
     argv = demo_start.launch_argv(backend='full', scene=common.DEFAULT_SCENE,
@@ -92,8 +92,8 @@ def test_headless_disables_viz_overlay():
 def test_headless_and_gui_differ_only_in_gz_s_and_viz():
     """GUI / headless 的差异必须**可枚举**且只有两处：`gz_args` 的 `-s` 与 `viz`。
 
-    这条同时守护两件事：① headless 不偷偷少传/多传别的参数（否则等价比较的自变量不清）；
-    ② round-3 的 viz 修正确实只动了这一处。
+ 这条同时守护两件事：① headless 不偷偷少传/多传别的参数（否则等价比较的自变量不清）；
+ ② 的 viz 修正确实只动了这一处。
     """
     gui = demo_start.launch_argv(backend='full', scene=common.DEFAULT_SCENE,
                                  world_map=common.DEFAULT_MAP, headless=False)
@@ -127,10 +127,10 @@ def test_demo_passes_px4_run_root_under_run_dir():
     """demo 必须传 `px4_run_root`，且落点在本 run 目录内（不与共享 build 抢 `rootfs/`）。
 
     根因：不隔离时 own(0) / intruder(1) 共用 `build/px4_sitl_default/rootfs/` 这一个工作
-    目录（PX4 见 `PX4_BINARY_DIR/etc` 存在就落 `rootfs/` 且**不**追加实例号），两实例
-    互相覆写同一份 `parameters.bson` / `dataman` → `px4_1` EKF 间歇报
-    `Preflight Fail: Yaw estimate error` → 不发布 `vehicle_odometry` → `intruder_driver`
-    收不到 odom → 不 ARM → 目标机停地面 → 全程 `AIR_SEARCH` 失败。
+ 目录（PX4 见 `PX4_BINARY_DIR/etc` 存在就落 `rootfs/` 且**不**追加实例号），两实例
+ 互相覆写同一份 `parameters.bson` / `dataman` → `px4_1` EKF 间歇报
+ `Preflight Fail: Yaw estimate error` → 不发布 `vehicle_odometry` → `intruder_driver`
+ 收不到 odom → 不 ARM → 目标机停地面 → 全程 `AIR_SEARCH` 失败。
     """
     run_dir = os.path.join(common.DEMO_ROOT, '20990101-000000')
     root = common.px4_run_root(run_dir)
@@ -236,7 +236,7 @@ def test_only_reads_existing_state_topics():
 def _code_lines(text):
     """只取**可执行**行：去掉空行、纯注释行、docstring 之外的行内代码保留。
 
-    这样"注释里写'不靠 pkill -f'"不会被误判成使用；而真的写 `pkill -f x` 一定被抓到。
+ 这样"注释里写'不靠 pkill -f'"不会被误判成使用；而真的写 `pkill -f x` 一定被抓到。
     """
     out = []
     for line in text.splitlines():
@@ -250,7 +250,7 @@ def _code_lines(text):
 def _strip_strings(line):
     """把字符串字面量抹成空，避免"说明文字里提到"被当成"调用"。
 
-    只对 `'…'` / `"…"` 生效；三引号 docstring 由 `_python_code_only` 先剥离。
+ 只对 `'…'` / `"…"` 生效；三引号 docstring 由 `_python_code_only` 先剥离。
     """
     return re.sub(r"'[^']*'|\"[^\"]*\"", "''", line)
 
@@ -315,7 +315,7 @@ def test_stop_only_signals_recorded_supervisor_pid():
         assert target == 'sup', (
             'stop 只允许向状态文件里的监督进程发信号（实际目标变量：%s）' % target)
     assert "cur.get('supervisor_pid')" in src, '监督 PID 必须取自 current.json'
-    # 全机扫描只允许用于 `status` 的**只读**呈现；`stop()` 本体不得借它发信号
+    # 全机扫描只允许用于 `status` 的**只读**呈现；`stop` 本体不得借它发信号
     stop_body = src[src.index('def stop('):src.index('def status(')]
     assert 'project_processes' not in stop_body, (
         'stop() 不得对全机扫描出的进程发信号（只回收本实例的 PGID）')
@@ -652,15 +652,15 @@ def test_launch_log_evidence_counts_each_node():
 
 
 # --------------------------------------------------------------------------------------
-# 7. 回收判据口径（round-2 实测修正的回归）
+# 7. 回收判据口径（ 实测修正的回归）
 # --------------------------------------------------------------------------------------
 
 def test_reap_confirm_uses_non_zombie_members_not_killpg_probe():
     """`confirmed` 必须以**非僵尸成员清零**为准。
 
-    实测缺陷（round-2）：Ctrl-C 回收 36 个进程全清、`ps` 无任何残留，却因
+ 实测缺陷：Ctrl-C 回收 36 个进程全清、`ps` 无任何残留，却因
     `killpg(pgid, 0)` 对"只剩僵尸"的组仍返回成功而判 FAIL（`members_after=[]` 与
-    `confirmed=False` 自相矛盾）。本条锁住修正后的口径。
+ `confirmed=False` 自相矛盾）。本条锁住修正后的口径。
     """
     src = open(os.path.join(DEMO, 'common.py'), encoding='utf-8').read()
     body = src[src.index('def reap_process_group'):]
@@ -685,15 +685,15 @@ def test_interrupt_exit_code_is_130_not_task_failure():
 
 
 # --------------------------------------------------------------------------------------
-# 8. `--duration` 分支记账口径（P1-2 round-3）
+# 8. `--duration` 分支记账口径
 # --------------------------------------------------------------------------------------
 
 def test_duration_branch_is_recorded_even_when_not_reached():
     """`--duration` 未触达时必须**显式记账**，不得静默当作"已验证主动停"。
 
     round-3 实测：`--duration 15` 时任务在 13.61 s 先达 `TRACKING_SUCCESS`，
-    `duration_limit` 分支未执行。若代码不记账，产物看起来与"到时主动停"一模一样，
-    后来人会把"未验证的分支"读成"已验证"。
+ `duration_limit` 分支未执行。若代码不记账，产物看起来与"到时主动停"一模一样，
+ 后来人会把"未验证的分支"读成"已验证"。
     """
     src = open(os.path.join(DEMO, 'start.py'), encoding='utf-8').read()
     assert "self.result['duration_branch_taken'] = True" in src, (

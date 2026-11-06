@@ -1,10 +1,10 @@
-// dynamic_fire_control.hpp —— 最小动态火控状态机（W7-b T2/E2；ADR-0011；ADR-0011）
+// dynamic_fire_control.hpp —— 最小动态火控状态机（ T2/E2；ADR-0011；ADR-0011）
 //
 // 纯标准库实现（可单测；不依赖 ROS / GZ / PX4）。节点 capture_adjudicator.cpp 只做 I/O 与事件发布，
 // 状态机与弹道在本头文件内，便于确定性 gtest 以显式 t_s 驱动。
 //
 // 生命周期（ADR-0011）：已发射网的在飞推进 / 落地 / 超时结算与发射资格解耦；
-//   目标无效时不判命中但继续结算；复位 / 时钟回退以 SHOT_ABORTED 显式中止。
+// 目标无效时不判命中但继续结算；复位 / 时钟回退以 SHOT_ABORTED 显式中止。
 
 #pragma once
 
@@ -43,13 +43,13 @@ struct FireParams
   double cooldown_s{2.0};        // 射击后冷却 s
   double flight_timeout_s{3.0};  // 网飞行总时长上限 s（超时＝失手）
   // ADR-0011：瞄准余量 m——只有「预演弹道的最近距离 ≤ 网半径 − 本值」才允许开火。
-  //   0 = 只要预演能擦到就开火（最宽松）；调大 = 更靠近目标才开火（命中余量更大）。
+  // 0 = 只要预演能擦到就开火（最宽松）；调大 = 更靠近目标才开火（命中余量更大）。
   double aim_margin{0.0};
   // ADR-0011（B2）：目标运动估计参数（时间窗回归 + 静止阈值 + 新息门 + 提前量上限）
   TargetMotionFilter::Params target_filter{};
 };
 
-// 裁决结果：命中 + 交战门 + 火控事件（W7-b T2 扩展）。
+// 裁决结果：命中 + 交战门 + 火控事件（ T2 扩展）。
 enum class CaptureStatus
 {
   kHit,                    // 本拍判定命中
@@ -137,7 +137,7 @@ public:
       const agc_task::Vec3d tf = target_filter_.position();
       const double dx = tf.x - car.x, dy = tf.y - car.y;
       d.dist = std::hypot(dx, dy);
-      // R-020：高度含车体——h = target.z − car.z − launcher_h。
+      // 高度含车体——h = target.z − car.z − launcher_h。
       d.h = tf.z - car.z - p_.launcher_h;
       gateStatus(d, car);   // ① 适用高度 → 可达 → 瞄准解算
     }
@@ -256,14 +256,14 @@ private:
   // ① 交战门：适用高度 → 可达 → **瞄准解算**（只决定 engaged / 门失败状态，不阻断在飞）。
   //
   // ADR-0011（本轮修正）：旧式用 `dist ≤ reach + d/2` 作开火判据，即在**包络最外沿**就开火；
-  //   而网在该距离处恰处于**最远命中点**，余量只剩「网半径 − 最近距离」的残余量
-  //   （现状默认参数实测仅 0.18 m；抬到 h=12 m 后降到 0.08 m，h=20 m 时 0.008 m）。
-  //   更根本的是：`reach` 只是「网落到该高度的水平距离」，并不代表**这个距离上一定能命中**——
-  //   当目标位于网弹道的两个高度交点之间时（环带空隙），门为真却必空。
+  // 而网在该距离处恰处于**最远命中点**，余量只剩「网半径 − 最近距离」的残余量
+  // （现状默认参数实测仅 0.18 m；抬到 h=12 m 后降到 0.08 m，h=20 m 时 0.008 m）。
+  // 更根本的是：`reach` 只是「网落到该高度的水平距离」，并不代表**这个距离上一定能命中**——
+  // 当目标位于网弹道的两个高度交点之间时（环带空隙），门为真却必空。
   //
-  //   新式：以**当前瞄准方向**（目标滤波位置）预演整条弹道，求网心与目标的**最近距离**，
-  //   仅当 `最近距离 ≤ 半径 − aim_margin` 才判定可交战。门为真 ⇔ 此刻开火**必然命中**。
-  //   这使 `envelope_in`（可交战）与 `capture_hit`（命中）口径一致，不再存在「门真但必空」。
+  // 新式：以**当前瞄准方向**（目标滤波位置）预演整条弹道，求网心与目标的**最近距离**，
+  // 仅当 `最近距离 ≤ 半径 − aim_margin` 才判定可交战。门为真 ⇔ 此刻开火**必然命中**。
+  // 这使 `envelope_in`（可交战）与 `capture_hit`（命中）口径一致，不再存在「门真但必空」。
   void gateStatus(CaptureDecision & d, const Pose2 & car) const
   {
     if (d.h < 0.0 || d.h < p_.applicable_min || d.h > p_.applicable_max) {
@@ -291,8 +291,8 @@ private:
   }
 
   // 预演：从当前位置按给定瞄准方向发射，网心与「水平距离 target_dist、相对高度 h」处目标的
-  //   最近距离（m）。完全复用 netPos / radius 的同一套物理，保证「门」与「命中判定」同源。
-  //   target_dist 为 0（车恰在目标正下方）时沿 +x 方向预演，只用于判定能否打中。
+  // 最近距离（m）。完全复用 netPos / radius 的同一套物理，保证「门」与「命中判定」同源。
+  // target_dist 为 0（车恰在目标正下方）时沿 +x 方向预演，只用于判定能否打中。
   double aimMissDistance(double h, double target_dist, double ux, double uy) const
   {
     const double vy0 = p_.v0 * std::sin(p_.angle_rad);
@@ -337,7 +337,7 @@ private:
   }
 
   // 目标预测：按预测到达时间（水平射程 / 网水平速度）迭代求交会点，再乘滤波后速度。
-  //   ADR-0011：不使用逐帧位置差分；静止目标的提前量为 0，移动目标提前量有上限。
+  // ADR-0011：不使用逐帧位置差分；静止目标的提前量为 0，移动目标提前量有上限。
   Vec3 predictTarget(const Pose2 & car, const agc_task::Vec3d & tp, double & t_est_out) const
   {
     const double vh = std::max(p_.v0 * std::cos(p_.angle_rad) * p_.drag, 1e-3);

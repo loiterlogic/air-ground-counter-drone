@@ -3,8 +3,8 @@
 
 对 `src/agc_*` 各包核对：
   1. `CMakeLists.txt` 的 `find_package(X)` → 必须在 `package.xml` 声明（含别名映射）；
-  2. `launch/*.py` 与 `setup.py` 的 Python import（`launch` / `launch_ros` /
-     `ament_index_python` / `yaml` / `rclpy` / `xacro`）→ 必须声明 `exec_depend`。
+ 2. `launch/*.py` 与 `setup.py` 的 Python import（`launch` / `launch_ros` /
+ `ament_index_python` / `yaml` / `rclpy` / `xacro`）→ 必须声明 `exec_depend`。
 
 **仅**作前置（不足以证明可重建）；隔离最小环境验证另计。用法：`python3 scripts/dep_audit.py`。
 """

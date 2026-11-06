@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """G2 round-6 判据：从 PX4 `ulg` 提取"GPS 自举是否成功"的可复跑证据。
 
-为什么用 ulg 而不是日志文本：round-5 的判别完全依赖 ulg 里的
+为什么用 ulg 而不是日志文本： 的判别完全依赖 ulg 里的
 `sensor_gps` / `vehicle_global_position` / `sensor_mag` 条数与 `reset_count_quat`；
 日志文本只能看到 "invalid setpoints" 这类**下游症状**。
 
 判据（每条都可被 ulg 直接证伪）：
 
-  * `gps_ok`     —— `sensor_gps` 条数 ≥ `--min-gps` **且** 时间跨度 ≥ `--min-span`；
-  * `gpos_ok`    —— `vehicle_global_position` 条数 ≥ `--min-gpos`；
-  * `mag_ok`     —— `sensor_mag` 条数 ≥ `--min-mag`；
-  * `quat_ok`    —— `reset_count_quat` ≥ 2（航向完成二次收敛，round-5 的强判别量）；
-  * `failsafe`   —— `vehicle_status.failsafe` 是否出现 1。
+  * `gps_ok` —— `sensor_gps` 条数 ≥ `--min-gps` **且** 时间跨度 ≥ `--min-span`；
+  * `gpos_ok` —— `vehicle_global_position` 条数 ≥ `--min-gpos`；
+  * `mag_ok` —— `sensor_mag` 条数 ≥ `--min-mag`；
+ * `quat_ok` —— `reset_count_quat` ≥ 2（航向完成二次收敛， 的强判别量）；
+ * `failsafe` —— `vehicle_status.failsafe` 是否出现 1。
 
 用法：
     python3 scripts/g2/g2_px4_bootstrap_check.py --log-dir <ulg 目录> [--since <unix 时间>]

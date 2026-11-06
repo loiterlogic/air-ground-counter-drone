@@ -88,7 +88,7 @@ def test_launch_starts_planner_only_in_rl_branch():
     """`command_source` 互斥：规划器只挂在 rl 分支，其它分支不得起。"""
     src = _read(GROUND_LAUNCH)
     # rl 分支（else）是最后一个 `else:`，规划器装配必须出现在它之后
-    idx_else = src.rindex('    else:\n        # W5-b')
+    idx_else = src.rindex('\n    else:')
     before, after = src[:idx_else], src[idx_else:]
     assert "executable='placeholder_path_planner'" not in before
     assert "executable='placeholder_path_planner'" in after
@@ -152,7 +152,7 @@ def test_interface_obs_action_space_unchanged():
         assert iface.N_ACTIONS == 5
         assert iface.obs_dim(12) == 12 + 3 + 5
         assert set(iface.ACTION_NAMES) == {0, 1, 2, 3, 4}
-        # 路径相关字样不得出现在接口真源里（传输缝 ≠ 观测缝）
+        # 路径相关字样不得出现在接口配置文件里（传输缝 ≠ 观测缝）
         assert 'path' not in _read(RL_INTERFACE).lower().split('along_path')[0]
     finally:
         sys.path.pop(0)
@@ -177,7 +177,7 @@ def test_consumer_path_is_required_input_when_enabled():
     body = tick.group(1)
     assert 'self.path_enabled' in body
     assert '_path_reference()' in body
-    # 参考为 None → _stop() 且 return
+    # 参考为 None → _stop 且 return
     assert re.search(r'if ref is None:\s*\n\s*self\._stop\(\)\s*\n\s*return', body)
 
 

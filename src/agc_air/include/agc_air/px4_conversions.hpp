@@ -1,9 +1,9 @@
 // agc_air/px4_conversions.hpp —— PX4 uORB 语义 → 契约口径 的映射（R2 / ADR-0005）
 //
 // 集中三件事，供 px4_adapter 与 setpoint 发布者共用：
-//   ①时间：PX4 µs（自 boot）→ ROS 时间（sim 时钟，唯一时钟）
-//   ②坐标：NED↔ENU、FRD↔FLU（位置 / 速度 / 姿态 / 角速度）
-//   ③偏航：ENU 偏航 ↔ PX4(NED) 偏航
+// ①时间：PX4 µs（自 boot）→ ROS 时间（sim 时钟，唯一时钟）
+// ②坐标：NED↔ENU、FRD↔FLU（位置 / 速度 / 姿态 / 角速度）
+// ③偏航：ENU 偏航 ↔ PX4(NED) 偏航
 // 契约 [命名空间与坐标系]：世界系为 agc_world（ENU）；机体系 `drone/base_link`。
 
 #pragma once
@@ -44,9 +44,9 @@ inline Vector3 frdToFlu(const Vector3 & frd)
 /// PX4 姿态四元数（FRD 机体系 → NED 世界系）→ ROS 约定（FLU → ENU）
 /// R_enu←flu = R_enu←ned · R_ned←frd · R_frd←flu
 /// **字段序**：PX4 uORB / px4_msgs 的 `q` 为 Hamilton **[w,x,y,z]**（`VehicleOdometry.q[0]=w`，
-///   ekf2 工具链即按 `q[0]→qw` 解析；见 `msg/VehicleOdometry.msg`「First value NaN if invalid」）。
-///   **不得**按 ROS `geometry_msgs` 的 [x,y,z,w] 解析——否则得到与真值差约 60° 的错误姿态
-///   （W7-b 取证：raw q=[0.877,0.004,0.002,0.480] 正确→ENU yaw 32.7°，按 [x,y,z,w]→89.5°）。
+/// ekf2 工具链即按 `q[0]→qw` 解析；见 `msg/VehicleOdometry.msg`「First value NaN if invalid」）。
+/// **不得**按 ROS `geometry_msgs` 的 [x,y,z,w] 解析——否则得到与真值差约 60° 的错误姿态
+/// （ 取证：raw q=[0.877,0.004,0.002,0.480] 正确→ENU yaw 32.7°，按 [x,y,z,w]→89.5°）。
 inline Quaternion px4AttitudeToEnu(const std::array<float, 4> & q_wxyz)
 {
   const Quaternion q_px4(static_cast<double>(q_wxyz[0]), static_cast<double>(q_wxyz[1]),
@@ -80,7 +80,7 @@ inline double yawFromQuaternion(const Quaternion & q)
   return std::atan2(R(1, 0), R(0, 0));
 }
 
-/// 局部 NED 位置 → 世界 ENU（R-003）：world = origin_enu + R_enu←ned · p_ned。
+/// 局部 NED 位置 → 世界 ENU：world = origin_enu + R_enu←ned · p_ned。
 /// PX4 EKF2 的 `VehicleOdometry.position` 是**相对 EKF 全局原点**的局部位置（源码确认），
 /// 不是 gz 世界坐标；origin_enu 即该原点在世界 ENU 中的位置（SITL 下为 spawn 位）。
 inline Vector3 localNedToWorldEnu(const Vector3 & pos_ned, const Vector3 & origin_enu)
@@ -123,7 +123,7 @@ inline bool parseSpawnPositionXyz(const std::string & s, Vector3 & out)
 /// PX4 时间戳（自 boot 的 µs）→ ROS 时间（sim 时钟）的仿射映射。
 ///
 /// PX4 内部时间与 gz `/clock`（sim 时间）不同源；用指数滑动平均估计二者的常数偏移，
-/// 既保留 PX4 数据流内部的相对时序，又把绝对时间锚定到唯一时钟（契约 #namespace）。
+/// 既保留 PX4 数据流内部的相对时序，又把绝对时间锚定到唯一时钟（docs/ROS2迁移交接文档.md#namespace）。
 class Px4TimeMapper
 {
 public:
@@ -170,7 +170,7 @@ public:
 
   /// PX4 µs → ROS **纳秒**（未观测到时返回 0）。
   /// 构造 `rclcpp::Time` 必须走这里：单整数构造器按**纳秒**解释，误传 µs 会让 Header
-  /// 时间戳缩小 1000 倍（R-002）。两个单位接口成对存在，避免"数值对但单位错"。
+  /// 时间戳缩小 1000 倍。两个单位接口成对存在，避免"数值对但单位错"。
   std::int64_t toRosNanoseconds(std::uint64_t px4_us) const
   {
     return toRosMicros(px4_us) * 1000;

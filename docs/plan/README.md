@@ -68,11 +68,11 @@
 - **失败如实登记**：`TIMEOUT` 就是失败（契约 C4）；不得用"接近成功"等措辞。
 
 <a id="assets"></a>
-## 5. `assets/` 是例外
+## 5. 展示资产不放在本目录
 
-`docs/plan/assets/`（演示与结构图展示资产）**不随任务删除**——它是"资产"而非"计划"，
-被根 README / 规范 / 回归脚本引用，迁走会制造一批断链。
-**新资产不放这里**：放各包 `share/` 或 `docs/conventions/` 的资产位。
+演示图与系统结构图已迁至 `docs/conventions/assets/`（被根 README、工程规范、
+回归脚本引用）。**新资产不放本目录**：放各包 `share/` 或 `docs/conventions/assets/`。
+本目录只放临时 plan 文件，结档即删。
 
 <a id="current"></a>
 ## 6. 当前在办

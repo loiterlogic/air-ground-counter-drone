@@ -17,26 +17,26 @@ H0（2026-11-02）高度语义：`cruise_alt_m` 是**唯一**巡航高度输入�
 跨 run 不可复现（实测 `gt_z − (−ned_z)` 在 −0.50…+0.44 m 漂移）——故**不得**把本参数当世界高度。
 世界放置值见 `config/spawn_layout.yaml` 的 `target.z`（PX4 attach 前的瞬态，不是巡航高度）。
 
-R-016 episode 起点协议（ADR-0014）：
-  * **预热独立于 episode 计时**：节点启动即记 `warmup_t0_`；`tw = now - warmup_t0_`，`tw > 1 s` 才请求
+ episode 起点协议（ADR-0014）：
+ * **预热独立于 episode 计时**：节点启动即记 `warmup_t0_`；`tw = now - warmup_t0_`，`tw > 1 s` 才请求
     ARM，已解锁且非 OFFBOARD(`14`) 则请求 `SET_NAV_STATE=OFFBOARD`（按 `arm_retry_s` 重试）。
-    **预热时间不进入轨迹参数 t**。
-  * **episode epoch**：订阅 `<epoch_topic>`（`std_msgs/Int32`，depth1 + RELIABLE + TRANSIENT_LOCAL）。
-    **epoch 值变化 = 新 episode**：重锚 `origins_`（下条 odom）、清 `t0_`、清干扰态、解终止、置 `episode_armed_`。
+ **预热时间不进入轨迹参数 t**。
+ * **episode epoch**：订阅 `<epoch_topic>`（`std_msgs/Int32`，depth1 + RELIABLE + TRANSIENT_LOCAL）。
+ **epoch 值变化 = 新 episode**：重锚 `origins_`（下条 odom）、清 `t0_`、清干扰态、解终止、置 `episode_armed_`。
   * **起点协议**：预热 → 进入起始位姿（`_target(0)`）→ 确认稳定（`dist(pos, start) <= start_tol_m`
-    且 `speed <= start_vel_eps_mps` 持续 `start_dwell_s`）→ 记 `t0_`（episode t=0）。
-    **未进入 episode（`t0_ is None`）setpoint 恒定 = 起始位姿（悬停保持，不推进）**。
-  * **切入 / 运行区边界**：`maneuver` 的 t=0 setpoint 落在圆周定义点 `(ox+r, oy)`（不从原点起跳）；
-    `epicycle` 的 t=0 setpoint 落在 `(ox+r, oy+A)`（同样是定义点，`sin0=0/cos0=1`）；
-    setpoint 水平离原点超过 `run_region_radius_m`（>0 生效）→ 夹持到边界并置 `terminated_`（越界终止，不外推）。
-    **起点协议与"切线速度非零"不冲突**（ADR-0031）：`t0_ is None` 期间发的是 `_start_pose()`（常量），
-    机体收敛到该点后 `speed → 0`，故 `speed <= start_vel_eps_mps` 仍能满足；
-    轨迹的切线速度只在 `t0_` 记录**之后**才被真正执行。
-  * **CLEAR 重基准**：干扰解除时把暂停时长加回 `t0_`，使参考从干扰发生时刻**连续**续上（不跳变）。
+ 且 `speed <= start_vel_eps_mps` 持续 `start_dwell_s`）→ 记 `t0_`（episode t=0）。
+ **未进入 episode（`t0_ is None`）setpoint 恒定 = 起始位姿（悬停保持，不推进）**。
+ * **切入 / 运行区边界**：`maneuver` 的 t=0 setpoint 落在圆周定义点 `(ox+r, oy)`（不从原点起跳）；
+ `epicycle` 的 t=0 setpoint 落在 `(ox+r, oy+A)`（同样是定义点，`sin0=0/cos0=1`）；
+ setpoint 水平离原点超过 `run_region_radius_m`（>0 生效）→ 夹持到边界并置 `terminated_`（越界终止，不外推）。
+ **起点协议与"切线速度非零"不冲突**（ADR-0031）：`t0_ is None` 期间发的是 `_start_pose`（常量），
+ 机体收敛到该点后 `speed → 0`，故 `speed <= start_vel_eps_mps` 仍能满足；
+ 轨迹的切线速度只在 `t0_` 记录**之后**才被真正执行。
+ * **CLEAR 重基准**：干扰解除时把暂停时长加回 `t0_`，使参考从干扰发生时刻**连续**续上（不跳变）。
 
-R-017（ADR-0015）：干扰授权收敛到**单一裁决者** `jammer`。本节点**只消费**其产出的**已校验授权事件**
+（ADR-0015）：干扰授权收敛到**单一裁决者** `jammer`。本节点**只消费**其产出的**已校验授权事件**
 （`/agc/task/jam_state`，`std_msgs/String`）；**不直订**任何原始干扰命令话题（原直订路径已移除）。
-`jammed_`（→ 停发 Offboard 流）**仅由该已校验事件驱动**。R-019（ADR-0015）：停发 Offboard 流触发
+`jammed_`（→ 停发 Offboard 流）**仅由该已校验事件驱动**。（ADR-0015）：停发 Offboard 流触发
 PX4 的 **offboard-loss** 行为（由运行时锁定的 `COM_OF_LOSS_T` / `COM_OBL_RC_ACT` 决定），**非**
 data-link-loss（`NAV_DLL_ACT`）；二者为不同机制，本节点不主张「数据链被切断」。
 """
@@ -67,24 +67,24 @@ OFFBOARD_NAV_STATE = VehicleStatus.NAVIGATION_STATE_OFFBOARD  # 14
 def _qos():
     """PX4 uXRCE-DDS 的 `/fmu/out/*` writer QoS：**BEST_EFFORT + TRANSIENT_LOCAL**。
 
-    ⚠ 2026-11-03 实测定案（H0 回归）：本函数原先**漏了 durability**，默认 `VOLATILE`。
-    ROS 2 的 QoS 兼容规则要求「订阅者 durability **不得低于**发布者」，故
-    `VOLATILE` 订阅 `TRANSIENT_LOCAL` 发布者是**不兼容**的——**静默收不到任何数据**
-    （不报错、不告警，`create_subscription` 照样成功）。
+ ⚠ 2026-11-03 实测定案（H0 回归）：本函数原先**漏了 durability**，默认 `VOLATILE`。
+ ROS 2 的 QoS 兼容规则要求「订阅者 durability **不得低于**发布者」，故
+ `VOLATILE` 订阅 `TRANSIENT_LOCAL` 发布者是**不兼容**的——**静默收不到任何数据**
+ （不报错、不告警，`create_subscription` 照样成功）。
 
-    症状与代价（s04 抬高度 run `20261103-093912`）：
-      `px4_1` 的 odom 以 87 Hz 正常发布，话题 `/px4_1/fmu/out/vehicle_odometry` 存在，
-      但 `intruder_driver._on_odom` **一次都没触发** → `origins_` 恒 None → `_tick` 每拍
-      静默 return → 永不 ARM → 目标机停在地面 → 任务 3 分钟后才以 AIR_SEARCH 暴露。
-      （2026-11-03 更正：旧注释写"三维距离恒 ≥ 14 m > `range_max_m=12` → 感知恒盲"，
-        该诊断特征**已失效**——量程改为 30.0 后，目标停地面时
-        √(26.17² + 14²) = 29.68 m **仍在量程内**（余量仅 0.32 m），感知照样能看见。
-        故"目标未起飞"**只能**靠本节点自己的 `have_odom` 日志判定，
-        **不得**再指望感知致盲来间接暴露。）
+ 症状与代价（s04 抬高度 run `20261103-093912`）：
+ `px4_1` 的 odom 以 87 Hz 正常发布，话题 `/px4_1/fmu/out/vehicle_odometry` 存在，
+ 但 `intruder_driver._on_odom` **一次都没触发** → `origins_` 恒 None → `_tick` 每拍
+ 静默 return → 永不 ARM → 目标机停在地面 → 任务 3 分钟后才以 AIR_SEARCH 暴露。
+ （2026-11-03 更正：旧注释写"三维距离恒 ≥ 14 m > `range_max_m=12` → 感知恒盲"，
+ 该诊断特征**已失效**——量程改为 30.0 后，目标停地面时
+ √(26.17² + 14²) = 29.68 m **仍在量程内**（余量仅 0.32 m），感知照样能看见。
+ 故"目标未起飞"**只能**靠本节点自己的 `have_odom` 日志判定，
+ **不得**再指望感知致盲来间接暴露。）
 
     对照真源：C++ 侧 `px4_adapter` 用 `rclcpp::SensorDataQoS()`（BEST_EFFORT +
-    TRANSIENT_LOCAL，已正确），其注释也写明「订阅端必须同档，否则 QoS 不兼容、收不到数据」。
-    Python 侧手抄 QoS 时漏了同一项 —— 这就是"两处各写一份"的代价。
+ TRANSIENT_LOCAL，已正确），其注释也写明「订阅端必须同档，否则 QoS 不兼容、收不到数据」。
+ Python 侧手抄 QoS 时漏了同一项 —— 这就是"两处各写一份"的代价。
     """
     q = QoSProfile(depth=5)
     q.reliability = ReliabilityPolicy.BEST_EFFORT
@@ -118,16 +118,16 @@ class IntruderDriver(Node):
         self.radius_ = self.declare_parameter('radius_m', 6.0).value
         # ---- ADR-0031：`epicycle`（漂移轨道）的两个专有参数 ----
         # ⚠ 命名纪律：`drift_amplitude_m` 是**圆心**的漂移幅度，**不是**轨道半径；
-        #   轨道半径仍是 `radius_m`。两者语义不同、量级不同，**不得**混读为一个"半径"。
-        #   取 0.6 m / 30 s ⇒ 圆心漂移速度 2πA/T = 0.126 m/s，仅占轨道速度 1.0 m/s 的 13%。
-        #   两者只在 `motion == 'epicycle'` 时被读取；其余三种运动**不受影响**（A2 回归）。
+        # 轨道半径仍是 `radius_m`。两者语义不同、量级不同，**不得**混读为一个"半径"。
+        # 取 0.6 m / 30 s ⇒ 圆心漂移速度 2πA/T = 0.126 m/s，仅占轨道速度 1.0 m/s 的 13%。
+        # 两者只在 `motion == 'epicycle'` 时被读取；其余三种运动**不受影响**（A2 回归）。
         self.drift_amplitude_m_ = float(self.declare_parameter('drift_amplitude_m', 0.6).value)
         self.drift_period_s_ = float(self.declare_parameter('drift_period_s', 30.0).value)
         self.rate_hz_ = self.declare_parameter('rate_hz', 20.0).value
         self.arm_retry_s_ = self.declare_parameter('arm_retry_s', 2.0).value
         # 目标 sys id：入侵者 PX4 实例 1 → MAV_SYS_ID = px4_instance+1 = 2
         self.target_system_ = int(self.declare_parameter('target_system', 2).value)
-        # R-016：起点协议参数（契约 #params 单一注入，节点不得覆写）
+        # 起点协议参数（docs/ROS2迁移交接文档.md#params 单一注入，节点不得覆写）
         self.start_tol_m_ = float(self.declare_parameter('start_tol_m', 0.4).value)
         self.start_vel_eps_mps_ = float(self.declare_parameter('start_vel_eps_mps', 0.35).value)
         self.start_dwell_s_ = float(self.declare_parameter('start_dwell_s', 0.5).value)
@@ -140,13 +140,13 @@ class IntruderDriver(Node):
         self.pub_cmd_ = self.create_publisher(VehicleCommand, f'{p}/in/vehicle_command', _qos())
         self.sub_odom_ = self.create_subscription(VehicleOdometry, f'{p}/out/vehicle_odometry', self._on_odom, _qos())
         self.sub_st_ = self.create_subscription(VehicleStatus, f'{p}/out/vehicle_status', self._on_status, _qos())
-        # R-017：只消费 jammer 的**已校验授权事件**（非原始命令）→ 停止 Offboard 流
-        # （R-019：停发 Offboard 流 → 触发 PX4 offboard-loss 行为，非 data-link-loss）
+        # 只消费 jammer 的**已校验授权事件**（非原始命令）→ 停止 Offboard 流
+        # （：停发 Offboard 流 → 触发 PX4 offboard-loss 行为，非 data-link-loss）
         self.jam_state_topic_ = self.declare_parameter(
             'jam_state_topic', '/agc/task/jam_state').value
         self.sub_jam_state_ = self.create_subscription(
             String, self.jam_state_topic_, self._on_jam_state, 10)
-        # R-016：episode epoch（新 episode 起点 / 时间 / 干扰态复位）
+        # episode epoch（新 episode 起点 / 时间 / 干扰态复位）
         self.sub_epoch_ = self.create_subscription(Int32, self.epoch_topic_, self._on_epoch, _epoch_qos())
 
         # 预热时钟：**独立于** episode 计时（节点启动即起算）
@@ -171,9 +171,9 @@ class IntruderDriver(Node):
         self.jam_on_us_ = None
         self.dt_ = 1.0 / self.rate_hz_
         # H0-回归（2026-11-03）：**odom 未到达的静默超时**诊断。
-        #   病灶：`_tick` 在 `have_odom_/origins_` 未就绪时**静默 return**，节点看起来"活着"
-        #   却从不 ARM——s04 抬高度实测中目标机因此全程停在地面，而日志里**一条错误都没有**
-        #   （3 分钟 AIR_SEARCH 才被发现）。现改为：超时后周期性 WARN + 一次性 ERROR 说明原因。
+        # 病灶：`_tick` 在 `have_odom_/origins_` 未就绪时**静默 return**，节点看起来"活着"
+        # 却从不 ARM——s04 抬高度实测中目标机因此全程停在地面，而日志里**一条错误都没有**
+        # （3 分钟 AIR_SEARCH 才被发现）。现改为：超时后周期性 WARN + 一次性 ERROR 说明原因。
         self.odom_deadline_s_ = 20.0      # 超过此秒数仍无 odom → ERROR（不自杀，只大声报）
         self.last_odom_warn_ = None
 
@@ -189,14 +189,14 @@ class IntruderDriver(Node):
     def _resolve_cruise_alt(self):
         """H0：把 `cruise_alt_m` / `alt_m` 收敛成**唯一**巡航高度，非法即拒绝启动。
 
-        规则（与 `config/scenarios.yaml` 场景覆盖、`w6_base.yaml` 基参的合并口径一致）：
-          1. `cruise_alt_m` 显式给出（非 NaN）→ 用它；
-          2. 否则 `alt_m` 显式给出（非 NaN）→ 用它（弃用别名，仅兼容）；
-          3. 两者都显式且**不相等**（容差 1e-9）→ 拒绝启动（歧义叠加，必须由场景/config 消解）；
-          4. 都没有 → 拒绝启动（不静默取缺省值：缺省值会让"没配置"看起来像"配置了 2.0"）。
+ 规则（与 `config/scenarios.yaml` 场景覆盖、`w6_base.yaml` 基参的合并口径一致）：
+ 1. `cruise_alt_m` 显式给出（非 NaN）→ 用它；
+ 2. 否则 `alt_m` 显式给出（非 NaN）→ 用它（弃用别名，仅兼容）；
+ 3. 两者都显式且**不相等**（容差 1e-9）→ 拒绝启动（歧义叠加，必须由场景/config 消解）；
+ 4. 都没有 → 拒绝启动（不静默取缺省值：缺省值会让"没配置"看起来像"配置了 2.0"）。
 
-        返回值必须是**有限正数**；NaN / ±Inf / ≤0 一律拒绝——高度 0 意味着目标贴地，
-        在本任务的"空中目标"语义下不是合法巡航高度，且会让感知/火控判据静默失真。
+ 返回值必须是**有限正数**；NaN / ±Inf / ≤0 一律拒绝——高度 0 意味着目标贴地，
+ 在本任务的"空中目标"语义下不是合法巡航高度，且会让感知/火控判据静默失真。
         """
         c, a = self.cruise_alt_m_, self.alt_m_alias_
         c_set, a_set = not math.isnan(c), not math.isnan(a)
@@ -262,7 +262,7 @@ class IntruderDriver(Node):
                 f'jam event {key}: STOP offboard stream '
                 f'(→ PX4 offboard-loss, per COM_OF_LOSS_T/COM_OBL_RC_ACT; NOT data-link-loss NAV_DLL_ACT)')
         elif not jammed and self.jammed_:
-            # R-016 CLEAR 重基准：把暂停时长加回 t0_，恢复后参考从干扰发生时刻连续续上（不跳变）
+            # CLEAR 重基准：把暂停时长加回 t0_，恢复后参考从干扰发生时刻连续续上（不跳变）
             if self.jam_on_us_ is not None and self.t0_ is not None:
                 pause = now - self.jam_on_us_
                 self.t0_ += pause
@@ -289,22 +289,22 @@ class IntruderDriver(Node):
     def _target(self, t):
         """返回基于 `origins_` 的 Offboard 位置目标（NED）：static / linear / maneuver / epicycle。
 
-        `epicycle`（ADR-0031）——**漂移轨道**：绕半径 `radius_m` 的圆轨道转，同时**圆心**以幅度
-        `drift_amplitude_m`、周期 `drift_period_s` 缓慢漂移。解析式：
+ `epicycle`（ADR-0031）——**漂移轨道**：绕半径 `radius_m` 的圆轨道转，同时**圆心**以幅度
+ `drift_amplitude_m`、周期 `drift_period_s` 缓慢漂移。解析式：
 
             c(t) = o + A·(sin(ω_c·t), cos(ω_c·t))，  ω_c = 2π/T_drift
             p(t) = c(t) + r·(cos(ω_o·t), sin(ω_o·t))，ω_o = v / r
 
-        设计要点（逐条对应验收）：
-          * **t=0 恒定起点** `p(0) = (ox + r, oy + A)`——`sin(0)=0, cos(0)=1`，与 `_start_pose()`
+ 设计要点（逐条对应验收）：
+          * **t=0 恒定起点** `p(0) = (ox + r, oy + A)`——`sin(0)=0, cos(0)=1`，与 `_start_pose`
             同一值，故起点协议（`_start_pose = _target(0)`）**不需要任何特例分支**。
-          * **C∞ 连续**：正弦 / 余弦组合处处光滑，无顶点、无速度阶跃（这是它优于多航点折线的根因）。
-          * **峰值速度** `|dp/dt| ≤ A·ω_c + r·ω_o`（三角不等式，严格上界）。取 A=1.5 / T=60 s、
+ * **C∞ 连续**：正弦 / 余弦组合处处光滑，无顶点、无速度阶跃（这是它优于多航点折线的根因）。
+ * **峰值速度** `|dp/dt| ≤ A·ω_c + r·ω_o`（三角不等式，严格上界）。取 A=1.5 / T=60 s、
             r=1.8、v=1.0 ⇒ 1.063 m/s ≤ 1.206 m/s（火控提前量上界），推导见 ADR-0031。
-          * **越界安全** `max|p − o| ≤ A + r`（同一三角不等式）⇒ 恒在 `run_region_radius_m` 内，
-            `_apply_region` 的夹持对本运动**永不触发**（它是构造上有界，不是被夹出来的）。
+ * **越界安全** `max|p − o| ≤ A + r`（同一三角不等式）⇒ 恒在 `run_region_radius_m` 内，
+ `_apply_region` 的夹持对本运动**永不触发**（它是构造上有界，不是被夹出来的）。
 
-        既有三支（static / linear / maneuver）**逐字未改**——历史基线不得回归（A2）。
+ 既有三支（static / linear / maneuver）**逐字未改**——历史基线不得回归（A2）。
         """
         ox, oy, oz = self.origins_
         z = oz - self.alt_m_          # NED 向下 → -alt 表示上升 alt（相对 episode 原点）
@@ -359,12 +359,12 @@ class IntruderDriver(Node):
 
     def _tick(self):
         # H0-回归：odom（或 episode 重锚后尚无 odom）未就绪时**不得静默 return**。
-        #   实测病灶：`px4_1` 的 uXRCE session 比 `intruder_driver` 启动晚约 3 s，
-        #   driver 先收到 latched epoch → `origins_=None`，随后在上百拍内收不到 odom，
-        #   `_tick` 每拍静默返回 → 永不 ARM → 目标机停地面，任务 3 分钟后才以 AIR_SEARCH 超时暴露。
-        #   2026-11-03 更正：旧注释以"垂直差 14 m > 量程 12 m ⇒ 感知恒盲"为**诊断特征**；
-        #     量程改 30.0 后 √(26.17²+14²)=29.68 m 仍在量程内（余量 0.32 m），该特征**已失效**。
-        #     目标未起飞的判定**只能**靠下面的 `have_odom` 错误日志，不得依赖感知致盲。
+        # 实测病灶：`px4_1` 的 uXRCE session 比 `intruder_driver` 启动晚约 3 s，
+        # driver 先收到 latched epoch → `origins_=None`，随后在上百拍内收不到 odom，
+        # `_tick` 每拍静默返回 → 永不 ARM → 目标机停地面，任务 3 分钟后才以 AIR_SEARCH 超时暴露。
+        # 2026-11-03 更正：旧注释以"垂直差 14 m > 量程 12 m ⇒ 感知恒盲"为**诊断特征**；
+        # 量程改 30.0 后 √(26.17²+14²)=29.68 m 仍在量程内（余量 0.32 m），该特征**已失效**。
+        # 目标未起飞的判定**只能**靠下面的 `have_odom` 错误日志，不得依赖感知致盲。
         if not self.have_odom_ or self.origins_ is None:
             ts = self._now_us()
             tw = (ts - self.warmup_t0_) * 1e-6

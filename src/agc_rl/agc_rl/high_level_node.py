@@ -2,7 +2,7 @@
 """high_level_node —— W7-b P2 臂 B：**高层（拦截点）+ 成熟低层**（[ADR-0022](b)(f)）。
 
 角色（P2「RL 职责分层」的**臂 B**）：本节点只出**高层决策**——把目标预测拦截点作为**目标点**
-发布到低层（`ground_baseline` = Navfn 规划 + 自研 LQR，见 [R-012](docs/reviews/.../10-风险.md#r-012)，
+发布到低层（`ground_baseline` = Navfn 规划 + 自研 LQR，见 [](ADR-0002)，
 **准确命名**）；**不**直接写 `cmd_vel`、**不**写唯一执行口——低层与安全层仍是唯一运动通道。
 
 **诚实标注**：本段的高层策略为**规则实现**（目标线性外推 + 提前量），**非**已训练 RL；
@@ -36,7 +36,7 @@ class HighLevelNode(Node):
         self.target_max_age_s = float(self.declare_parameter('target_max_age_s', 0.5).value)
         self.confidence_min = float(self.declare_parameter('confidence_min', 0.5).value)
         # ADR-0023：感知跳变抑制——目标位置/速度一阶低通 + 前向位移限幅。
-        #   不滤波时 twist 的单帧差分尖峰 × lead_s 会把目标点甩出数米，令低层每 0.25 s 重规划。
+        # 不滤波时 twist 的单帧差分尖峰 × lead_s 会把目标点甩出数米，令低层每 0.25 s 重规划。
         self.target_tau_s = float(self.declare_parameter('target_tau_s', 0.5).value)
         self.target_gap_reset_s = float(self.declare_parameter('target_gap_reset_s', 1.0).value)
         self.max_lead_m = float(self.declare_parameter('max_lead_m', 1.0).value)
@@ -53,7 +53,7 @@ class HighLevelNode(Node):
         self._filt_rx = None   # 上一帧观测的单调时刻（滤波 dt）
         self.conf = 0.0
         self.state = 0
-        # W7-b T3：诊断——所选航迹身份 / 航迹数 / 低频日志节流（只读，不改发布逻辑）。
+        # T3：诊断——所选航迹身份 / 航迹数 / 低频日志节流（只读，不改发布逻辑）。
         self.track_id = ''
         self.n_tracks = 0
         self._diag_t = None
@@ -69,7 +69,7 @@ class HighLevelNode(Node):
     def _on_target(self, m):
         if not m.tracks:
             return
-        # 取置信度最高的航迹（避免 front() 在噪声航迹间跳变）。
+        # 取置信度最高的航迹（避免 front 在噪声航迹间跳变）。
         t = max(m.tracks, key=lambda tr: float(tr.confidence))
         self.track_id = t.target_id
         self.n_tracks = len(m.tracks)
@@ -112,7 +112,7 @@ class HighLevelNode(Node):
             lx, ly = lx * k, ly * k
         gx = self.tgt[0] + lx
         gy = self.tgt[1] + ly
-        # W7-b T3：1 Hz 诊断（只读）——所选（最高置信度）航迹 / 滤波后目标 / lead / 发布 goal。
+        # T3：1 Hz 诊断（只读）——所选（最高置信度）航迹 / 滤波后目标 / lead / 发布 goal。
         now_m = time.monotonic()
         if self._diag_t is None or (now_m - self._diag_t) >= 1.0:
             self._diag_t = now_m

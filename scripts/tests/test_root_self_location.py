@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """`test_root_self_location.py` —— 防复发回归：**运行期解析文件的路径必须自定位**（P2-1 裁定 D）。
 
-## 守护的缺陷（2026-10-31 round-6 实测）
+## 守护的缺陷（2026-10-31 实测）
 
 `run_demo.sh` 与 `scripts/demo/common.py` 曾写死 `ROOT = '/home/chen/AGC'`。后果（实测，非推理）：
 
@@ -17,17 +17,17 @@
 ## 判定口径（**按用途分类，不按字面**）
 
 - **运行期解析类**：脚本用它来**定位真实文件**（读 SDF / 起进程 / 找 install / 写产物）
-  → **必须自定位**（`__file__` / `BASH_SOURCE`），**不得**出现字面量根；
+ → **必须自定位**（`__file__` / `BASH_SOURCE`），**不得**出现字面量根；
 - **允许保留**（白名单，每条写理由）：
-  1. **契约默认值**：`agc_root` 的 launch 默认值 —— 受 `scripts/toolchain_root_check.py` 保护，
-     改它等于改契约口径（round-6 审查明令**不得改**）；
-  2. **注释 / 文档串 / 报错提示**：不参与路径解析，只给人看；
-  3. **历史/开发工具**（`scripts/research/**`、`scripts/archive/**`、`docs/**`、`.coordination/**`）：
-     不在交付/验证路径上，忠实登记为"不可移植"，不在本单范围。
+ 1. **契约默认值**：`agc_root` 的 launch 默认值 —— 受 `scripts/toolchain_root_check.py` 保护，
+ 改它等于改契约口径（ 审查明令**不得改**）；
+ 2. **注释 / 文档串 / 报错提示**：不参与路径解析，只给人看；
+ 3. **历史/开发工具**（`scripts/research/**`、`scripts/archive/**`、`docs/**`、`ADR-0026）：
+ 不在交付/验证路径上，忠实登记为"不可移植"，不在本单范围。
 
-## round-9 扩展（裁定 α+ 整类修，2026-10-31）
+## 扩展（裁定 α+ 整类修，2026-10-31）
 
-round-8 克隆实测暴露：**C++ `declare_parameter` 默认值**与 **YAML 字面量**同样在运行期决定
+ 克隆实测暴露：**C++ `declare_parameter` 默认值**与 **YAML 字面量**同样在运行期决定
 写盘位置（`run_logger` 的 `experiments_root` / `git_root`），只修 Python/launch 不够。
 故守护范围扩到三类来源：
 
@@ -48,9 +48,9 @@ round-8 克隆实测暴露：**C++ `declare_parameter` 默认值**与 **YAML 字
 1. 交付入口 `run_demo.sh` 的 `ROOT=` 必须是自定位（`BASH_SOURCE`），不得是字面量；
 2. `scripts/demo/common.py` 的 `ROOT` 必须由 `__file__` 推导；
 3. 冒烟/交付路径上的脚本（`tests/run_smoke.py`、`tests/w6_geometry_check.py`、
-   `scripts/tests/*.py`）不得出现**字面量赋值**形式的根（注释里提到不算）；
+ `scripts/tests/*.py`）不得出现**字面量赋值**形式的根（注释里提到不算）；
 4. `scripts/toolchain_root_check.py` 与 `src/agc_air/launch/air_bringup.launch.py` 的契约默认值
-   **仍在**（防止有人"顺手"改掉契约）；
+ **仍在**（防止有人"顺手"改掉契约）；
 5. **白名单逐条有理由**（本文件 `ALLOWED` 表）。
 
 运行：
@@ -161,8 +161,8 @@ def test_allowed_entries_have_reason():
 def test_yaml_configs_have_no_absolute_root():
     """`src/**/config/*.yaml` 里不得再有绝对路径字面量（round-9 已删 16 处）。
 
-    YAML 字面量会在**运行期**决定写盘位置（round-8 实测：克隆 run 的 summary 写回原仓库），
-    且它比 C++ 默认值更"隐蔽"——launch 不显式传参时它就生效。
+ YAML 字面量会在**运行期**决定写盘位置（ 实测：克隆 run 的 summary 写回原仓库），
+ 且它比 C++ 默认值更"隐蔽"——launch 不显式传参时它就生效。
     """
     config_dir = os.path.join(ROOT, 'src', 'agc_task', 'config')
     offenders = []
@@ -181,8 +181,8 @@ def test_yaml_configs_have_no_absolute_root():
 def test_cpp_defaults_are_preserved():
     """C++ 的 `experiments_root` / `git_root` 默认声明**必须仍在**（契约式缺省）。
 
-    这是**反向**守护：round-9 删了 YAML 键，若有人"顺手"把 C++ 默认值也删了，
-    `m0_skeleton` / 研究 runner 等**不经交付 launch** 的入口会失去缺省 → 行为变成未定义。
+ 这是**反向**守护： 删了 YAML 键，若有人"顺手"把 C++ 默认值也删了，
+ `m0_skeleton` / 研究 runner 等**不经交付 launch** 的入口会失去缺省 → 行为变成未定义。
     """
     src = _read('src/agc_task/src/run_logger.cpp')
     assert 'declare_parameter<std::string>("experiments_root"' in src, (

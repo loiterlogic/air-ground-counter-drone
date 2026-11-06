@@ -3,12 +3,12 @@
 
 子命令：
 
-  * `preflight` —— start 前的**阻断性**检查（轻于 doctor：只查会直接导致失败的环境项）；
-  * `doctor`    —— 完整预检（14 项，≤30 s，不启任何仿真）；
-  * `start`     —— 一次完整演示（见 `start.DemoRun`）；
-  * `stop`      —— 按 PID/PGID 回收（幂等，可跨终端）；
-  * `status`    —— 只读现状；
-  * `compare`   —— GUI ↔ headless 等价核验（口径来自预登记文件）。
+ * `preflight` —— start 前的**阻断性**检查（轻于 doctor：只查会直接导致失败的环境项）；
+ * `doctor` —— 完整预检（14 项，≤30 s，不启任何仿真）；
+ * `start` —— 一次完整演示（见 `start.DemoRun`）；
+ * `stop` —— 按 PID/PGID 回收（幂等，可跨终端）；
+ * `status` —— 只读现状；
+ * `compare` —— GUI ↔ headless 等价核验（口径来自预登记文件）。
 
 为什么 shell + Python 分工：预检要 source ROS 环境、管进程组、调 `colcon`，shell 最直接；
 预检项与状态轮询逻辑复杂，拆 Python 模块由 shell 调用
@@ -71,7 +71,7 @@ def cmd_doctor(args):
         'headless': bool(args.headless), 'summary': summary, 'results': results,
     })
     print('[doctor] 证据：%s' % os.path.relpath(out_dir, common.ROOT))
-    # 预算硬门：doctor 必须 ≤30 s（P1-2 出口判据）
+    # 预算硬门：doctor 必须 ≤30 s（ 出口判据）
     if elapsed > doctor.DOCTOR_BUDGET_S:
         print('[doctor] 超预算：%.1f s > %.0f s' % (elapsed, doctor.DOCTOR_BUDGET_S),
               file=sys.stderr)
@@ -93,7 +93,7 @@ def cmd_start(args):
         return common.fail('未知地图：%s' % wmap, ['可用：yard（默认）| open_field | minimal'])
     scene = (args.scene or '').strip() or common.DEFAULT_SCENE
     # GUI 渲染后端（ADR-0021(d)）：空 → auto。取值校验交给 gui_render_backend 模块的
-    # 单一真源（它 raise ValueError），此处只做早失败，避免把非法值传到 launch 才炸。
+    # 配置文件（它 raise ValueError），此处只做早失败，避免把非法值传到 launch 才炸。
     gui_render_backend = (args.gui_render_backend or '').strip() or 'auto'
     if gui_render_backend not in ('auto', 'd3d12', 'software'):
         return common.fail('未知 gui_render_backend：%s' % gui_render_backend,
@@ -126,7 +126,7 @@ def cmd_start(args):
         elif e == 'escape':
             # 目标逃逸（plan.md 出口判据 1）：显式参数才逃逸，默认 static 语义不变。
             # `target_motion:=epicycle` 走 ADR-0031 的漂移轨道（参数由
-            # w6_composition.apply_target_motion_override 单一真源补齐 radius_m=1.8 等）；
+            # w6_composition.apply_target_motion_override 配置文件补齐 radius_m=1.8 等）；
             # `goal_follow_target:=true` 让任务目标跟随感知目标——否则 s04 的固定 goal
             # 在目标漂移后恒 RANGE_EXCEEDED（d_track=3.0），必然 TIMEOUT。
             # 两者都是既有 launch 参数（数值 / 任务语义），不新增路线分支。

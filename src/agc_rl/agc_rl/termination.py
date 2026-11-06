@@ -1,18 +1,18 @@
 """episode 结束判定**单一来源**（W7-a · spec R1）。
 
-本模块是 W7 的 episode 终止 / 预算语义**唯一真源**：**训练 adapter 与评估 adapter
+本模块是 的 episode 终止 / 预算语义**配置文件**：**训练 adapter 与评估 adapter
 （`scripts/episode_runner.py`）共用本模块**，不得各自另立判定（spec R1 判据：
 "同一 episode 的评估摘要与训练 adapter 的 end / reason 一致"）。
 
 映射（对齐 Gymnasium v0.26+ 语义，见 spec R1）：
-  * **任务终态**（任意 `TERMINALS`）→ MDP **terminated**（含超时失败，契约 C4 超时一律失败）；
-  * **外部截断**（墙钟看门狗耗尽 / 训练 horizon / 无终态）→ **truncated**（非任务终态，须 bootstrap）；
-  * `INFRA_FAILURE` → 单列 `infra`，**不**吞入成功率（[ADR-0018](../../docs/adr/0018-acceptance-and-coverage-matrix.md#top)）。
+ * **任务终态**（任意 `TERMINALS`）→ MDP **terminated**（含超时失败，契约 超时一律失败）；
+ * **外部截断**（墙钟看门狗耗尽 / 训练 horizon / 无终态）→ **truncated**（非任务终态，须 bootstrap）；
+ * `INFRA_FAILURE` → 单列 `infra`，**不**吞入成功率（[ADR-0018](../../docs/adr/0018-acceptance-and-coverage-matrix.md#top)）。
 
 预算口径**复用** [ADR-0017](../../docs/adr/0017-time-budget-and-clock-sources.md#top) 三类
 （`mission_sim_budget` / `episode_wall_watchdog` / `process_wall_duration`），**不产生第三套**。
 
-约束类信息（超时失败 / infra 单列 / 缺失掩码）真源为契约
+约束类信息（超时失败 / infra 单列 / 缺失掩码）配置文件为契约
 [#hard-constraints](../../docs/ROS2迁移交接文档.md#hard-constraints) 与
 [#terminal-semantics](../../docs/ROS2迁移交接文档.md#terminal-semantics)；本模块只**引用**不复述。
 """
@@ -61,11 +61,11 @@ def classify_episode_outcome(terminal_state, reason_code, expected_terminal, exp
                              wall_elapsed_s, wall_watchdog_s):
     """episode 结束判定的**唯一来源**（eval adapter；train adapter 必须复用同一语义）。
 
-    区分三类口径：mission_sim_budget（仿真时钟终态）/ episode_wall_watchdog（墙钟超时，
-    判 infra、**不算成功**）/ 进程时长（logger，仅记录、不参与判定）。
+ 区分三类口径：mission_sim_budget（仿真时钟终态）/ episode_wall_watchdog（墙钟超时，
+ 判 infra、**不算成功**）/ 进程时长（logger，仅记录、不参与判定）。
 
-    返回字段含 `is_task_terminal`（真 = MDP terminated）与 `is_truncation`（真 = 外部截断，
-    非任务终态）——供 Gymnasium 适配层直接映射 `terminated / truncated`。
+ 返回字段含 `is_task_terminal`（真 = MDP terminated）与 `is_truncation`（真 = 外部截断，
+ 非任务终态）——供 Gymnasium 适配层直接映射 `terminated / truncated`。
     """
     match = episode_outcome_match(terminal_state, reason_code, expected_terminal, expected_reason)
     if terminal_state == 'INFRA_FAILURE':
@@ -79,7 +79,7 @@ def classify_episode_outcome(terminal_state, reason_code, expected_terminal, exp
                 'expected_match': bool(match), 'is_task_terminal': True, 'is_truncation': False,
                 'reason': reason_code}
     if terminal_state in ('MISSION_FAILED', 'ABORTED'):
-        # 任务终态（**含超时失败**，契约 C4）→ MDP terminated，不 bootstrap。
+        # 任务终态（**含超时失败**，契约 ）→ MDP terminated，不 bootstrap。
         return {'outcome_class': 'mission_terminal', 'classification': 'mission',
                 'budget_kind': 'mission_sim_budget', 'counted_as_success': False,
                 'expected_match': bool(match), 'is_task_terminal': True, 'is_truncation': False,
@@ -94,9 +94,9 @@ def classify_episode_outcome(terminal_state, reason_code, expected_terminal, exp
 def classify_acceptance_layers(result):
     """三层验收判定——**三层全必过**方可 `pass`；`expected_match` 仅属命题层。
 
-    ① 启动 / 运行完整性：`started` + 子进程退出确认 + `summary` 存在 + 同 run 关联。
-    ② 终态命题：`expected_terminal` / `expected_reason`。
-    ③ 指标有效性：C9 两指标为**有效数值**，**不**以 0 冒充。
+ ① 启动 / 运行完整性：`started` + 子进程退出确认 + `summary` 存在 + 同 run 关联。
+ ② 终态命题：`expected_terminal` / `expected_reason`。
+ ③ 指标有效性： 两指标为**有效数值**，**不**以 0 冒充。
     """
     integrity = bool(
         result.get('started')
@@ -118,7 +118,7 @@ def classify_acceptance_layers(result):
 def summarize_metrics(episodes):
     """C9 指标汇总——**不**剔除缺 summary 的回合；如实报缺失计数 / 比例；空集合 → not_applicable。
 
-    均值**仅基于有效样本**；缺失 / `not_applicable` 回合**不**以 0 冒充有效。
+ 均值**仅基于有效样本**；缺失 / `not_applicable` 回合**不**以 0 冒充有效。
     """
     def _one(key):
         vals, missing = [], 0

@@ -2,31 +2,31 @@
 """world_map —— 几何真源「按地图分文件」的**单一清单**（P1-1）。
 
 `world_geometry.yaml`（minimal）与 `maps/*.yaml`（yard / open_field）都是**静态障碍 +
-作业区几何**的唯一真源，只是按地图拆成多个文件。**哪张地图对应哪个文件**只在本文登记一次；
+作业区几何**的配置文件，只是按地图拆成多个文件。**哪张地图对应哪个文件**只在本文登记一次；
 消费者（`world_bringup.launch.py`、`agc_task/launch/w6_composition.py`、
 `agc_air/launch/air_bringup.launch.py`、`tests/w6_geometry_check.py`）一律经本模块解析。
 
 纪律：
-  * 新增地图 = 本表加一行 + 加一个 yaml 文件；**不得**在消费方各写一份文件名表
-    （三份表漂移会让不同域读到不同真源，正是 ADR-0007 要消灭的病灶）。
-  * 未知地图名一律**拒绝运行**（不静默回退 minimal）。
-  * 本模块只做**路径与形状规范化**，不做几何计算、不读环境、不写文件。
+ * 新增地图 = 本表加一行 + 加一个 yaml 文件；**不得**在消费方各写一份文件名表
+ （三份表漂移会让不同域读到不同配置文件，正是 ADR-0007 要消灭的病灶）。
+ * 未知地图名一律**拒绝运行**（不静默回退 minimal）。
+ * 本模块只做**路径与形状规范化**，不做几何计算、不读环境、不写文件。
 
 形状口径（与 `world_geometry.yaml` 头部 schema 一致）：
-  * `shape`：`box` | `cylinder` | `sphere`，缺省 `box`（老配置不写仍可运行）；
-  * `size`：box `[x, y, z]`；cylinder `[r, r, h]`；sphere `[r, r, r]`；
-  * `parts`（可选）：**复合模型**——一个 `id` 由多个图元拼成（塔身 + 平台 + 台阶 + 门廊 …）。
-    每 part 形如 `{shape, x, y, z, yaw, size, color?}`，坐标是**相对模型锚点**的局部偏移。
-    复合模型在物理世界里是**一个 `<model>` 含多个 `<link>`**（每 part 一 link，静态），
-    碰撞与视觉仍**同源**（同一 `<geometry>` 片段注入 collision 与 visual）。
-  * `safety_radius`：实体水平面**外接圆半径**，缺省 2.0（历史 pole 标定值）；复合模型须覆盖
-    **全部 part** 的水平足迹（可由 `footprint_radius` 推导）。
+ * `shape`：`box` | `cylinder` | `sphere`，缺省 `box`（老配置不写仍可运行）；
+ * `size`：box `[x, y, z]`；cylinder `[r, r, h]`；sphere `[r, r, r]`；
+ * `parts`（可选）：**复合模型**——一个 `id` 由多个图元拼成（塔身 + 平台 + 台阶 + 门廊 …）。
+ 每 part 形如 `{shape, x, y, z, yaw, size, color?}`，坐标是**相对模型锚点**的局部偏移。
+ 复合模型在物理世界里是**一个 `<model>` 含多个 `<link>`**（每 part 一 link，静态），
+ 碰撞与视觉仍**同源**（同一 `<geometry>` 片段注入 collision 与 visual）。
+ * `safety_radius`：实体水平面**外接圆半径**，缺省 2.0（历史 pole 标定值）；复合模型须覆盖
+ **全部 part** 的水平足迹（可由 `footprint_radius` 推导）。
 """
 
 import math
 import os
 
-# 地图名 → 相对 `agc_sim/share/agc_sim/config/` 的真源文件。
+# 地图名 → 相对 `agc_sim/share/agc_sim/config/` 的配置文件文件。
 # `minimal` 沿用历史文件名 `world_geometry.yaml`（路径 / 核查基线不变）。
 MAP_GEOMETRY_FILES = {
     'minimal': 'world_geometry.yaml',
@@ -42,27 +42,27 @@ WORLD_MAPS = tuple(MAP_GEOMETRY_FILES)
 # 外接圆半径缺省值（历史 pole 标定值；ADR-0007）。
 DEFAULT_SAFETY_RADIUS = 2.0
 
-# 支持的单图元形状（P1-1 起含 sphere；ADR-0007 / 本单 schema 扩展）。
+# 支持的单图元形状（ 起含 sphere；ADR-0007 / 本单 schema 扩展）。
 SHAPES = ('box', 'cylinder', 'sphere')
 
-# 材质档（P1-1 视觉保真；2026-10-29）：**可选**字段 `finish`，缺省不写 = 旧行为（无 PBR 块）。
+# 材质档（ 视觉保真；2026-10-29）：**可选**字段 `finish`，缺省不写 = 旧行为（无 PBR 块）。
 # 语义 = 真实材料类别的**标量 PBR 近似**（metalness / roughness）。依据：本机 sdformat 1.11
 # `material.sdf` 的 `<pbr><metal><metalness>|<roughness>` 是**标量**字段（无需贴图）
 # —— 本项目不引入外部资产（world_geometry.yaml 纪律），故只能走标量 PBR。
 # 逐 part 可覆盖实体级 `finish`。
-#   concrete 混凝土 / steel 结构钢 / paint 涂装金属 / glass 玻璃 / rust 锈蚀 /
-#   asphalt 沥青 / rubber 橡胶塑料
+# concrete 混凝土 / steel 结构钢 / paint 涂装金属 / glass 玻璃 / rust 锈蚀 /
+# asphalt 沥青 / rubber 橡胶塑料
 FINISHES = ('concrete', 'steel', 'paint', 'glass', 'rust', 'asphalt', 'rubber', 'roofpanel')
 
 # finish → (metalness, roughness, specular 强度, diffuse 亮度系数)
-#   specular 强度喂经典材质 `<specular>`；diffuse 系数用于压暗玻璃等。**纯视觉，不改几何**。
+# specular 强度喂经典材质 `<specular>`；diffuse 系数用于压暗玻璃等。**纯视觉，不改几何**。
 FINISH_PBR = {
     'concrete': (0.00, 0.90, 0.12, 1.00),
     # R6（2026-10-30）：**metalness 才是渲染亮度的杠杆**。本轮实测：无环境贴图时
-    #   metalness=0.75 的构件几乎没有漫反射分量，`steel` 屋面在 118 m 俯视渲染里只有
-    #   83/255，而旁边 metalness=0 的混凝土檐是 161/255 —— 即"提亮 albedo 对金属件无效"。
-    #   故把 `steel` 从 0.75 降到 0.35（仍偏金属观感），并新增 `roofpanel`（近漫反射的
-    #   金属屋面板）作为屋面专用档。语义不变：仍是"该材料的标量近似"。
+    # metalness=0.75 的构件几乎没有漫反射分量，`steel` 屋面在 118 m 俯视渲染里只有
+    # 83/255，而旁边 metalness=0 的混凝土檐是 161/255 —— 即"提亮 albedo 对金属件无效"。
+    # 故把 `steel` 从 0.75 降到 0.35（仍偏金属观感），并新增 `roofpanel`（近漫反射的
+    # 金属屋面板）作为屋面专用档。语义不变：仍是"该材料的标量近似"。
     'steel':    (0.35, 0.42, 0.60, 1.02),
     'paint':    (0.15, 0.45, 0.42, 1.00),
     'glass':    (0.05, 0.08, 1.00, 0.72),
@@ -125,8 +125,8 @@ def is_composite(ob):
 def obstacle_parts(ob):
     """把实体规范化为 **parts 列表**（单图元 → 单 part；复合 → 原样 parts）。
 
-    单图元的 `x/y/z/yaw/size/color` 即 part 自身；复合模型的顶层 `x/y/z/yaw` 是**锚点**，
-    每 part 的 `x/y/z` 是相对锚点的局部偏移（`yaw` 为 part 自身的局部朝向）。
+ 单图元的 `x/y/z/yaw/size/color` 即 part 自身；复合模型的顶层 `x/y/z/yaw` 是**锚点**，
+ 每 part 的 `x/y/z` 是相对锚点的局部偏移（`yaw` 为 part 自身的局部朝向）。
     """
     if is_composite(ob):
         parts = []
@@ -192,8 +192,8 @@ def obstacle_footprint_radius(ob):
 def obstacle_safety_radius(ob):
     """实体水平面外接圆半径（显式 `safety_radius` 优先；否则由**足迹**推导，缺省 2.0）。
 
-    P1-1：复合 / 自定义形体不再依赖手写常量——未显式给出时按 part 足迹推导，
-    保证安全层圆盘**必然覆盖**实体几何（保守外扩）。
+复合 / 自定义形体不再依赖手写常量——未显式给出时按 part 足迹推导，
+ 保证安全层圆盘**必然覆盖**实体几何（保守外扩）。
     """
     if ob.get('safety_radius') is not None:
         return float(ob['safety_radius'])
@@ -220,9 +220,9 @@ def obstacle_z_top(ob):
 
     消费者 = 空中安全层的**垂直门控**（`safety.obstacle_z_top`，见 ADR-0010「垂直门控」）。
     口径与 `height_survey` 的 `rect_of()[4]` 一致：复合体 part 的 `z` 已是**绝对高度偏移**
-    （锚点 z 恒为 0，见 `obstacle_parts`），故直接 `part.z + size[2]/2` 取 max，**不**叠加锚点 z。
+ （锚点 z 恒为 0，见 `obstacle_parts`），故直接 `part.z + size[2]/2` 取 max，**不**叠加锚点 z。
 
-    这是**派生**量（真源仍是各 part 的 `z` / `size`），不新增 schema 键，故无需改动任何地图文件。
+ 这是**派生**量（配置文件仍是各 part 的 `z` / `size`），不新增 schema 键，故无需改动任何地图文件。
     """
     top = 0.0
     for part in obstacle_parts(ob):
@@ -234,9 +234,9 @@ def obstacle_z_top(ob):
 def obstacle_bbox_size(ob):
     """感知先验 / 地图栅格可表达的尺寸：单图元按 `_part_bbox_size`；复合模型取**包络盒**。
 
-    `map_adapter` 的障碍模型是 OBB（只有 sx/sy/sz + yaw），无法表达圆柱 /
-    球 / 多图元；故一律**降级为水平轴对齐包络矩形**（保守外扩，不缩小实体）。成文约定。
-    （原 `air_perception` 同用此降级，已于 2026-11-06 随 `perception` 轴退役删除。）
+ `map_adapter` 的障碍模型是 OBB（只有 sx/sy/sz + yaw），无法表达圆柱 /
+ 球 / 多图元；故一律**降级为水平轴对齐包络矩形**（保守外扩，不缩小实体）。成文约定。
+ （原 `air_perception` 同用此降级，已于 2026-11-06 随 `perception` 轴退役删除。）
     """
     if not is_composite(ob):
         return _part_bbox_size(ob)

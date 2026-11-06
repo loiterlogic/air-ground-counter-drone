@@ -1,19 +1,19 @@
-# agc_rl 参数（W5-b）—— 由 rl_inference.launch.py 单一注入，节点不得覆写（契约 #params）
+# agc_rl 参数—— 由 rl_inference.launch.py 单一注入，节点不得覆写（docs/ROS2迁移交接文档.md#params）
 #
 # RL 接口契约（obs / action 空间）见 `agc_rl/interface.py`；本文件只给**取值**。
-#   链路：ground_policy_rl → cmd_vel_raw → collision_monitor → 唯一执行口 → 中继 → GZ。
-#   RL 为地面主控（ADR-0004）；安全层为 Nav2 collision_monitor（ADR-0003）。
+# 链路：ground_policy_rl → cmd_vel_raw → collision_monitor → 唯一执行口 → 中继 → GZ。
+# RL 为地面主控（ADR-0004）；安全层为 Nav2 collision_monitor（ADR-0003）。
 #
 # 路径输入（2026-11-01，ADR-0013）——**参数边界**：
-#   * 本文件**已新增** `path.*` 段（节点本地 config，见下）；
-#   * **未新增契约全局入口**：`#params` 清单无新条目。
-#   * 有路径参数**不等于**具备路径跟踪能力（见下方 obs/策略边界）。
-#   规划路径话题固定为 `/agc/ground/path`（`nav_msgs/Path`，`frame_id=world`），由地面侧占位规划器发布。
-#   **传输缝 ≠ 模型观测缝**：该话题存在只表示"路径在 ROS 上可被消费"，不表示本文件的 obs 空间
-#   （`num_sectors` / `pose_norm_m` / `track_norm_m` 等）已含路径，也不表示训练策略会跟踪路径。
-#   本阶段消费路径的是**确定性占位消费者**；把路径并入策略 obs 属后续独立任务，
-#   须同时改 `interface.py` 的 obs 空间与重训策略，二者缺一即不得宣称"RL 会跟路径"（ADR-0013）。
-#   路径缺失 / 空 / 单点 / 帧不一致 / 过期 → 零速到 `cmd_vel_raw`；**禁止**静默退回 goal-only（ADR-0013(e)）。
+# * 本文件**已新增** `path.*` 段（节点本地 config，见下）；
+# * **未新增契约全局入口**：`#params` 清单无新条目。
+# * 有路径参数**不等于**具备路径跟踪能力（见下方 obs/策略边界）。
+# 规划路径话题固定为 `/agc/ground/path`（`nav_msgs/Path`，`frame_id=world`），由地面侧占位规划器发布。
+# **传输缝 ≠ 模型观测缝**：该话题存在只表示"路径在 ROS 上可被消费"，不表示本文件的 obs 空间
+# （`num_sectors` / `pose_norm_m` / `track_norm_m` 等）已含路径，也不表示训练策略会跟踪路径。
+# 本阶段消费路径的是**确定性占位消费者**；把路径并入策略 obs 属后续独立任务，
+# 须同时改 `interface.py` 的 obs 空间与重训策略，二者缺一即不得宣称"RL 会跟路径"（ADR-0013）。
+# 路径缺失 / 空 / 单点 / 帧不一致 / 过期 → 零速到 `cmd_vel_raw`；**禁止**静默退回 goal-only（ADR-0013(e)）。
 
 ground_policy_rl:
   ros__parameters:
@@ -31,19 +31,19 @@ ground_policy_rl:
     track_norm_m: 5.0
     # 策略加载路径：agc_rl/policies/ 下的文件名（改此值即换策略，行为变化可复现）
     policy_file: "go_to_goal.json"
-    # R-010：四类必需输入的**独立寿命**（秒，节点只读、不得覆写；单调钟判龄）
-    #   task_auth / goal：task_manager 以 1 Hz 发布 → 寿命须 > 1 s（取 2.0 s）；
-    #   odom / scan：链路高频（桥 / 10 Hz）→ 0.5 s 足够且与 perception_collision 同口径。
+    # 四类必需输入的**独立寿命**（秒，节点只读、不得覆写；单调钟判龄）
+    # task_auth / goal：task_manager 以 1 Hz 发布 → 寿命须 > 1 s（取 2.0 s）；
+    # odom / scan：链路高频（桥 / 10 Hz）→ 0.5 s 足够且与 perception_collision 同口径。
     input_timeout:
       task_auth_s: 2.0
       odom_s: 0.5
       goal_s: 2.0
       scan_s: 0.5
-    # G2 路径消费（ADR-0013/0109）——**确定性占位消费者**，路径不进入 obs。
-    #   enabled: true  = 路径是**必要输入**；质量门任一不过即持续零速，**禁止** goal-only 兜底。
-    #   enabled: false = 纯 goal 参考（与既有版本行为一致），仅作显式对照模式，产物须标注。
-    #   过期判据 = 源 stamp 与节点 ROS 时钟当前值之差；`max_age_s` 沿用离线基线同类口径，
-    #   但**不改契约参数入口**（`#params` 无新增项，本键经 launch/config 单一注入）。
+    # 路径消费（ADR-0013/0109）——**确定性占位消费者**，路径不进入 obs。
+    # enabled: true = 路径是**必要输入**；质量门任一不过即持续零速，**禁止** goal-only 兜底。
+    # enabled: false = 纯 goal 参考（与既有版本行为一致），仅作显式对照模式，产物须标注。
+    # 过期判据 = 源 stamp 与节点 ROS 时钟当前值之差；`max_age_s` 沿用离线基线同类口径，
+    # 但**不改契约参数入口**（`#params` 无新增项，本键经 launch/config 单一注入）。
     path:
       enabled: true
       topic: "/agc/ground/path"
@@ -51,9 +51,9 @@ ground_policy_rl:
       max_age_s: 5.0
       lookahead_m: 1.0
       # 最近点搜索窗口（弧长，m）：ADR-0013 的**限界**语义，默认有限界。
-      #   依据：发布侧车位位移 > replan_displacement_m(1.0 m) 才重发，故车距路径起点可达 ~1.0 m；
-      #   叠加 lookahead_m(1.0 m) -> 2.0 m 覆盖“起点到前视”的完整相关段。
-      #   <= 0 = 显式不限界，**仅供测试对照**（折返路径会误选后段，不用于生产）。
+      # 依据：发布侧车位位移 > replan_displacement_m(1.0 m) 才重发，故车距路径起点可达 ~1.0 m；
+      # 叠加 lookahead_m(1.0 m) -> 2.0 m 覆盖“起点到前视”的完整相关段。
+      # <= 0 = 显式不限界，**仅供测试对照**（折返路径会误选后段，不用于生产）。
       search_dist_m: 2.0
       goal_tol_m: 0.3           # 参考点距路径末端的到位容差
       goal_consistency_m: 1.0   # 路径末端与当前 goal 的一致性容差；不一致 → 零速
@@ -62,17 +62,17 @@ ground_policy_rl:
       reference_speed: 1.0
       fast_speed: 1.3
       min_offset: 0.3
-      # max_offset：R-011 C6 逃逸能力标定值（**米**）——差速车在反应窗口 T = 2.0 s
-      #   （Nav2 time_before_collision 上界，ADR-0010）内的**实测**横向可达距离；标定口径见
-      #   docs/adr/0004-ground-control-rl-primary-and-nav2-safety.md#top。
-      #   GUI 实跑：满速（左/右+加速，v=1.3 m/s）每轮最大横向可达 1.017 / 1.083 / 1.287 m
-      #   （3 次采样最小值 1.017 ≥ max_offset），故取 1.0；原 1.2 不可达（常速实测 ~0.9 m）。
-      #   非由参数名或理想横移（holonomic 平移）推定。
+      # max_offset： 逃逸能力标定值（**米**）——差速车在反应窗口 T = 2.0 s
+      # （Nav2 time_before_collision 上界，ADR-0010）内的**实测**横向可达距离；标定口径见
+      # docs/adr/0004-ground-control-rl-primary-and-nav2-safety.md#top。
+      # GUI 实跑：满速（左/右+加速，v=1.3 m/s）每轮最大横向可达 1.017 / 1.083 / 1.287 m
+      # （3 次采样最小值 1.017 ≥ max_offset），故取 1.0；原 1.2 不可达（常速实测 ~0.9 m）。
+      # 非由参数名或理想横移（holonomic 平移）推定。
       max_offset: 1.0
       k_heading: 1.5
       k_lateral: 0.8
       max_yaw_rate: 1.0
-      # clearance_ref_m：净空参考值（**米**，与车前净空同量纲，R-011 量纲一致化）。
-      #   净空 ≥ 此值视为充足（取 min_offset）；低于此值线性增大偏移至 max_offset。
-      #   与 lidar_max_range（range 归一用的量程，无量纲）**无关**——改雷达量程不改变动作强度。
+      # clearance_ref_m：净空参考值（**米**，与车前净空同量纲， 量纲一致化）。
+      # 净空 ≥ 此值视为充足（取 min_offset）；低于此值线性增大偏移至 max_offset。
+      # 与 lidar_max_range（range 归一用的量程，无量纲）**无关**——改雷达量程不改变动作强度。
       clearance_ref_m: 1.0

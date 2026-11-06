@@ -170,6 +170,23 @@ accepted（2026-11-02 由 ADR-0021 / 0025 / 0042 / 0048 / 0050 合并；结论�
 - **未决 / 后续**：真实安全不可行的判定阈值（裕度门限）、多接触体聚合；空中冲突恢复后是否需重置参考相位。二维屏障的三维保真已由 (j) **只做垂直门控**的方式部分闭合；**仍不做**通用三维安全。
 - **(j) 的代价 / 限制**：垂直门控消除了"顶面在脚下"的虚假圆盘，但**不消除"圆形"带来的浪费**——`wall_n` 的 17.0 m 半径主要来自外接圆包住长薄墙，门控只让它在该高度失效，不解决形状拟合差；改用逐障碍 OBB 属另立项（ADR-0010 边界外）。门控**不**降低安全层介入次数：实测 `s01`（无障碍场景）仍有 `trigger_events=2`，触发源是**目标间距盘**。
 
+## 实施回填
+
+以下结论曾写在 `src/agc_task/config/px4_failsafe_lock.yaml` 的注释里，现收敛到此：
+
+- **桥时间同步必须关闭**（`UXRCE_DDS_SYNCT=0`）：开启时 uXRCE-DDS 桥把 PX4 时间戳推到
+  墙上时钟尺度，与 gz `/clock` 的仿真时钟映射产生负 / 离奇时间戳（`sec≈−1.7e9`），
+  使下游年龄门失效、`rclcpp::Time` 负值崩溃。仿真以 gz `/clock` 为唯一时间基准。
+- **仿真磁力计必须显式启用**（`SENS_EN_MAGSIM=1`）：PX4 官方 gz `x500` 机型无磁力计传感器，
+  `sensor_mag_sim` 用 GPS 位置 + 世界磁场模型合成，但参数默认 0。关闭时链路无磁力计 →
+  `Compass Sensor 0 missing` / yaw 估计误差 → EKF 不发 `vehicle_odometry` → 目标机永不 ARM。
+  `SYS_HAS_MAG=0` / `EKF2_MAG_TYPE=5` 不是解法（实测 `Ready for takeoff` 降为 0 次）。
+- **"目标没起飞"不得靠感知致盲间接暴露**：量程改为 30.0 m 后，己方机与目标地面高度差
+  14 m 时斜距仍小于量程，地面目标照样产生航迹。只能由 `target_takeoff_guard` 按真值 z 判定。
+- **`px4-rc.params` 由 `scripts/lock_px4_failsafe_params.sh` 生成**，使每次 SITL 启动确定化；
+  取值清单见 `src/agc_task/config/px4_failsafe_lock.yaml`。
+
+
 ## 参考
 
 - 契约：[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints) / [#execution-port](../ROS2迁移交接文档.md#execution-port) / [#messages](../ROS2迁移交接文档.md#messages) / [#params](../ROS2迁移交接文档.md#params)

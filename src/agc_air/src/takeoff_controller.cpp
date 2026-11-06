@@ -113,7 +113,7 @@ private:
     }
     released_ = true;
     state_ = State::kReleased;   // 立即停止发 setpoint：跟踪器在下一拍接管（交接窗口 ≈ 一拍）
-    // R-035（交权顺序，见 ADR-0010）：先**销毁** setpoint / OCM 发布器（真正让出唯一发布者地位），
+    // （交权顺序，见 ADR-0010）：先**销毁** setpoint / OCM 发布器（真正让出唯一发布者地位），
     // **再**在 active_controller 上显式指定 tracker —— tracker 据此推导唯一授权（**不**凭发布者计数）。
     offboard_->releaseSetpointPublishers();   // 真正让出唯一发布者地位（见该函数注释）
     publishActive("trajectory_tracker");

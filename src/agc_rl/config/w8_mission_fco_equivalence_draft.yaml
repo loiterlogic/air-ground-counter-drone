@@ -1,8 +1,8 @@
-# W8 测量 P3：新等价设计草案
+# 测量 P3：新等价设计草案
 #
 # 状态：draft_pending_codex_review；execution_authorized=false。
 # 本文件只供 Codex 审查，不冻结执行计划，不授权任何新 run/pilot/headless 规模统计。
-# 指标语义唯一真源：docs/adr/0021-w8-gui-headless-equivalence.md#metric
+# 指标语义配置文件：docs/adr/0021-w8-gui-headless-equivalence.md#metric
 # 版本/派工边界：docs/adr/0027-uxrce-startup-reproducibility.md#p3
 w8_mission_fco_equivalence_draft:
   status: draft_pending_codex_review

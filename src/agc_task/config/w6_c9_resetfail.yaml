@@ -1,4 +1,4 @@
-# W6 C9 验收配置（reset_failure_rate 非零）：车 (0,-1) 与目标 (0,0) 出生中心距 1.0 m <
+# 验收配置（reset_failure_rate 非零）：车 (0,-1) 与目标 (0,0) 出生中心距 1.0 m <
 # spawn_clearance_min_m=6.0 → scenario_reset 拒绝；task_manager 重试 ≤3 后仍失败 →
 # reset_failed=true、reset_retries=3 → reset_failure_rate = 1.0、start 返回 INFRA_FAILURE。
 task_manager:
@@ -10,7 +10,7 @@ task_manager:
     odom_valid_topic: "/agc/ground/odom_valid"
     cmd_topic: "/agc/ground/cmd_vel"
     state_topic: "/agc/task/state"
-    # 运行模式（R-001）：本验收走 m0_skeleton（无空中链路）→ 显式声明无空中域
+    # 运行模式：本验收走 m0_skeleton（无空中链路）→ 显式声明无空中域
     air_present: false
     ground_controller_name: "agc_rl"
     t_max_s: 20.0

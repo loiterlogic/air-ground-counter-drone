@@ -45,7 +45,7 @@ TEST(Px4Conversions, AttitudeIdentityIsLevelFacingNorth)
 
 TEST(Px4Conversions, AttitudeFieldOrderIsPx4HamiltonWxyz)
 {
-  // W7-b 回归：PX4 q 为 Hamilton **[w,x,y,z]**。取 NED 偏航 58.1° 的纯偏航四元数
+  // 回归：PX4 q 为 Hamilton **[w,x,y,z]**。取 NED 偏航 58.1° 的纯偏航四元数
   // （≈ 实测 raw q=[0.877,0.004,0.002,0.480]）→ ENU 偏航应为 90°−58.1°=31.9°。
   // 若误按 ROS [x,y,z,w] 解析，会得到 ≈90°（正是复现的 ~58° 姿态错误）。
   const double y = 58.1 * M_PI / 180.0;
@@ -86,7 +86,7 @@ TEST(Px4Conversions, TimeMapperConvergesToOffset)
 
 TEST(Px4Conversions, TimeMapperRosStampIsNanoseconds)
 {
-  // R-002 回归：适配层把映射结果交给 rclcpp::Time(单整数)，该构造器按**纳秒**解释。
+  // 回归：适配层把映射结果交给 rclcpp::Time(单整数)，该构造器按**纳秒**解释。
   // 仅断言 toRosMicros（µs）不足以发现"数值对、单位错"——这里断言送进 Time 的数值是 ns：
   // 7 s 必须是 7e9；误用 µs 会得到 7e6（= 0.007 s，Header 缩小 1000 倍）。
   Px4TimeMapper mapper(0.5);
@@ -99,7 +99,7 @@ TEST(Px4Conversions, TimeMapperRosStampIsNanoseconds)
 
 TEST(Px4Conversions, LocalNedToWorldEnuAppliesOrigin)
 {
-  // R-003：非零出生点。局部 NED (2,3,-1) → ENU (3,2,1)，再叠加原点 (10,-5,0.2)
+  // 非零出生点。局部 NED (2,3,-1) → ENU (3,2,1)，再叠加原点 (10,-5,0.2)
   const Vector3 world = agc_air::localNedToWorldEnu(Vector3(2.0, 3.0, -1.0),
     Vector3(10.0, -5.0, 0.2));
   EXPECT_DOUBLE_EQ(world.x(), 13.0);
@@ -116,7 +116,7 @@ TEST(Px4Conversions, VelocityFrameConversionAtNinetyDegreeHeading)
 {
   // 90° 航向：NED 偏航 0（朝北）的单位四元数 → ENU 下机头即 +y（北）。字段序 [w,x,y,z]。
   const auto q = agc_air::px4AttitudeToEnu({1.0f, 0.0f, 0.0f, 0.0f});
-  // 世界 ENU 向北 1 m/s → 机体系前向 x = 1（R-003：twist 在 child frame）
+  // 世界 ENU 向北 1 m/s → 机体系前向 x = 1（：twist 在 child frame）
   const Vector3 north_body = agc_air::enuToBodyFlu(q, Vector3(0.0, 1.0, 0.0));
   EXPECT_NEAR(north_body.x(), 1.0, 1e-9);
   EXPECT_NEAR(north_body.y(), 0.0, 1e-9);

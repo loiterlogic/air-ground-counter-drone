@@ -1,20 +1,20 @@
-// ground_odom_adapter —— 地面 odom 归一（W4-a 加固 spec R2；R-039 源时刻分离 + 复位 epoch 速度历史）
+// ground_odom_adapter —— 地面 odom 归一（ 加固 spec R2； 源时刻分离 + 复位 epoch 速度历史）
 //
-// 位姿来源：**W4 真值旁路**（`/agc/gt/agc_car`，gz 物理引擎产生的世界真值）。
+// 位姿来源：** 真值旁路**（`/agc/gt/agc_car`，gz 物理引擎产生的世界真值）。
 // 归一为 world 系 `/agc/ground/odom`（`world`→`car/base_link`）+ TF + `/agc/ground/odom_valid`
 // + 诊断 `/agc/ground/odom_diag`。
 //
-// R-039（口径见 docs/adr/0017-time-budget-and-clock-sources.md#top）修复三项时间口径缺口：
-//   * **源采样时刻 = 发布时刻**：`Header.stamp` 采用 `gt` 样本自带 `Header.stamp`，且**仅在有新样本时**
-//     发布 odom / TF；**不**用 `now()` 冒充测量时刻（本实现**无静默外推**——TF 连续性由「源率 = odom 率」
-//     承载，无新样本时停发并由 `valid=false` 显式表达，符合 tf2「缺变换即显式错误」惯例）。
-//   * **负年龄 / 时钟回拨 → 显式无效**：`age = now − 源采样时刻`，**不钳 0**；`age < 0` 记 `clock_anomaly`，
-//     `age > odom_max_age_s_` 记 `stale`，二者均 `valid=false`。
-//   * **速度历史按 reset epoch 清空**：订阅 `/agc/scenario/reset_epoch`（Int32，transient_local）；epoch 变化
-//     → 清 `history_`；另有**位置跳变守卫**（teleport 不连续）双保险。重建 ≥2 个新样本前速度输出 0。
+// （口径见 docs/adr/0017-time-budget-and-clock-sources.md#top）修复三项时间口径缺口：
+// * **源采样时刻 = 发布时刻**：`Header.stamp` 采用 `gt` 样本自带 `Header.stamp`，且**仅在有新样本时**
+// 发布 odom / TF；**不**用 `now` 冒充测量时刻（本实现**无静默外推**——TF 连续性由「源率 = odom 率」
+// 承载，无新样本时停发并由 `valid=false` 显式表达，符合 tf2「缺变换即显式错误」惯例）。
+// * **负年龄 / 时钟回拨 → 显式无效**：`age = now − 源采样时刻`，**不钳 0**；`age < 0` 记 `clock_anomaly`，
+// `age > odom_max_age_s_` 记 `stale`，二者均 `valid=false`。
+// * **速度历史按 reset epoch 清空**：订阅 `/agc/scenario/reset_epoch`（Int32，transient_local）；epoch 变化
+// → 清 `history_`；另有**位置跳变守卫**（teleport 不连续）双保险。重建 ≥2 个新样本前速度输出 0。
 //
 // twist 仍按 ROS Odometry 约定表达在 child frame：world 速度短窗差分后旋转到车体系。
-// 帧名遵循契约 #namespace：机体系固定 car/base_link（禁止裸 base_link）。
+// 帧名遵循docs/ROS2迁移交接文档.md#namespace：机体系固定 car/base_link（禁止裸 base_link）。
 
 #include <algorithm>
 #include <cmath>
@@ -83,7 +83,7 @@ public:
       gt_topic_, 10,
       std::bind(&GroundOdomAdapter::onGt, this, std::placeholders::_1));
 
-    // R-039：reset epoch（transient_local，可拿到启动前的最近值）；epoch 变化 → 速度历史作废。
+    // reset epoch（transient_local，可拿到启动前的最近值）；epoch 变化 → 速度历史作废。
     reset_epoch_sub_ = create_subscription<std_msgs::msg::Int32>(
       reset_epoch_topic_, rclcpp::QoS(1).transient_local(),
       std::bind(&GroundOdomAdapter::onResetEpoch, this, std::placeholders::_1));
@@ -205,7 +205,7 @@ private:
       return;
     }
 
-    // 仅有**新样本**时发布；`Header.stamp` = **源采样时刻**（(= src_stamp_)），非 now()。
+    // 仅有**新样本**时发布；`Header.stamp` = **源采样时刻**（(= src_stamp_)），非 now。
     if (src_stamp_ != last_pub_stamp_) {
       std::array<double, 3> v_world;
       double wz = 0.0;

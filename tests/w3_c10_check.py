@@ -3,13 +3,13 @@
 
 订阅归一化 `/agc/air/odom`、`/agc/targets`、`/agc/air/tracking_ref`、`/agc/air/control_conflict`，
 按**相位**录制并联立判据（阈值一律从 `--params`（`config/air.yaml`）读取，不复制参数；
-静态障碍**几何**从单一真源 `agc_sim/config/world_geometry.yaml` 读取，见 S-06 / ADR-0007）：
+静态障碍**几何**从配置文件 `agc_sim/config/world_geometry.yaml` 读取，见 / ADR-0007）：
 
-  | 相位     | 判据                                                              |
-  |----------|-------------------------------------------------------------------|
-  | `circle` | 跟踪常开（`tracking_ref` 连续、无长间断）+ 水平距离 ≥ `safe_min` + 无 `control_conflict` |
-  | `pole`   | 全程不侵入 `pole_1`/`pole_2` 安全半径（`obstacle_safety_radius`）  |
-  | `freeze` | 目标过期（`ref_max_age_s`）后**冻结不追**：末端位移 ≤ 阈值，且 `tracking_ref` 仍在发布 |
+ | 相位 | 判据 |
+ |----------|-------------------------------------------------------------------|
+ | `circle` | 跟踪常开（`tracking_ref` 连续、无长间断）+ 水平距离 ≥ `safe_min` + 无 `control_conflict` |
+ | `pole` | 全程不侵入 `pole_1`/`pole_2` 安全半径（`obstacle_safety_radius`） |
+ | `freeze` | 目标过期（`ref_max_age_s`）后**冻结不追**：末端位移 ≤ 阈值，且 `tracking_ref` 仍在发布 |
 
 用法（落点须遵 ADR-0006）：
   python3 tests/w3_c10_check.py --phase circle --duration 60 \\

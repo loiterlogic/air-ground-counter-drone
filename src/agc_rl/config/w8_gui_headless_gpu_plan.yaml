@@ -1,4 +1,4 @@
-# W8 GUI/headless 模式等价 pilot 与正式等价预声明（ADR-0021）—— 单一来源。
+# GUI/headless 模式等价 pilot 与正式等价预声明（ADR-0021）—— 配置文件。
 # 在任何 pilot run 之前冻结；首个 run 之后不得修改 v1；偏离单独登记。
 w8_gui_headless_plan:
   version: 1.1

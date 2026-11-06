@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """world_bringup —— W2-min 世界启动编排（世界 + 桥 + spawn 车/目标）。
 
-单一入口，供 M0 顶层 launch include。参数单一来源：
-  * 车 / 目标模型与 spawn 位默认值取自 config/car.yaml、config/target.yaml；
-  * 桥配置取自 config/bridge.yaml；
-  * 静态障碍几何取自**单一真源** config/world_geometry.yaml（S-06；ADR-0007）——
-    `agc_world.sdf` 为不含 `pole_*` 的 base world，本 launch 按 `world_obstacles`
-    （`static` 注入 / `none` 不注入）由真源生成运行期世界；
-  * P1-1：真源按**地图**分文件——`world_map` ∈ `minimal`（config/world_geometry.yaml）|
-    `yard` / `open_field`（config/maps/*.yaml）；`world_obstacles` 的 `static|none`
-    语义**不变**（`none` 仍强制无任何障碍，用于轴对照）；
-  * 全部经 launch 单一设置（契约 #params），节点不得覆写。
+单一入口，供 顶层 launch include。参数配置文件：
+ * 车 / 目标模型与 spawn 位默认值取自 config/car.yaml、config/target.yaml；
+ * 桥配置取自 config/bridge.yaml；
+ * 静态障碍几何取自**配置文件** config/world_geometry.yaml（ADR-0007）——
+ `agc_world.sdf` 为不含 `pole_*` 的 base world，本 launch 按 `world_obstacles`
+ （`static` 注入 / `none` 不注入）由配置文件生成运行期世界；
+ * ：配置文件按**地图**分文件——`world_map` ∈ `minimal`（config/world_geometry.yaml）|
+ `yard` / `open_field`（config/maps/*.yaml）；`world_obstacles` 的 `static|none`
+ 语义**不变**（`none` 仍强制无任何障碍，用于轴对照）；
+ * 全部经 launch 单一设置（docs/ROS2迁移交接文档.md#params），节点不得覆写。
 """
 
 import math
@@ -21,7 +21,7 @@ import tempfile
 # 与 launch 同目录安装（CMake 安装整个 launch/），供 world_bringup 与单测复用。
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from gui_render_backend import describe, select_gui_render_env  # noqa: E402
-# P1-1：几何真源「按地图分文件」的**单一清单**（路径解析 / 形状规范化）在此，不在本文件重复。
+# 配置文件「按地图分文件」的**单一清单**（路径解析 / 形状规范化）在此，不在本文件重复。
 from world_map import (  # noqa: E402
     DEFAULT_WORLD_MAP,
     FINISH_PBR,
@@ -67,9 +67,9 @@ def _load_geometry(path):
 def _material_sdf(color, finish=None):
     """经典材质（ambient/diffuse/specular）+ **可选标量 PBR**（P1-1 视觉保真，2026-10-29）。
 
-    `finish` 留空 → 输出与旧版**逐字节一致**（无 `<pbr>` 块），保证 minimal / open_field 与
-    历史证据不漂移。`finish` 合法值见 `world_map.FINISHES` / `FINISH_PBR`（标量 metalness /
-    roughness，依据本机 sdformat 1.11 `material.sdf`，**不需要贴图**）。
+ `finish` 留空 → 输出与旧版**逐字节一致**（无 `<pbr>` 块），保证 minimal / open_field 与
+ 历史证据不漂移。`finish` 合法值见 `world_map.FINISHES` / `FINISH_PBR`（标量 metalness /
+ roughness，依据本机 sdformat 1.11 `material.sdf`，**不需要贴图**）。
     """
     r, g, b = color[0], color[1], color[2]
     if finish is None:
@@ -119,8 +119,8 @@ def _link_sdf(link_name, pose, geom_sdf, color, finish=None):
 def _obstacle_model_sdf(ob):
     """单个实体 → 一个 `<model>`（复合实体 = 一个 model 含多个 static link）。
 
-    **视觉与碰撞同源**：同一 `<geometry>` 片段同时注入 collision 与 visual（禁止装饰性实体）。
-    复合模型（`parts`）的 part pose 是**相对锚点**的局部偏移 + 局部 yaw。
+ **视觉与碰撞同源**：同一 `<geometry>` 片段同时注入 collision 与 visual（禁止装饰性实体）。
+ 复合模型（`parts`）的 part pose 是**相对锚点**的局部偏移 + 局部 yaw。
     """
     color = ob.get('color') or [0.7, 0.7, 0.7]
     if not is_composite(ob):
@@ -153,13 +153,13 @@ def _obstacle_model_sdf(ob):
 
 def _inject_static_obstacles(src_path, dst_path, geometry):
     """S-06：由**单一真源**（地图 yaml 的 obstacles）向 base world 注入静态障碍 `<model>` 块，
-    生成运行期世界写入临时文件。
+ 生成运行期世界写入临时文件。
 
-    **不**手写第二份完整 world：base world（光源/地面/物理/插件/`spherical_coordinates`）
-    原样保留，仅把真源障碍**逐值**注入到 `</world>` 之前——保证几何**只**来自真源、
-    「无障碍」只改障碍因子（`none` 直接用 base，不注入）、**不改世界其它物理**。
-    P1-1：按 `shape` 生成 `<box>` / `<cylinder>` / `<sphere>`，支持**复合模型**（`parts` →
-    多 static link）；**视觉与碰撞同源**。
+ **不**手写第二份完整 world：base world（光源/地面/物理/插件/`spherical_coordinates`）
+ 原样保留，仅把配置文件障碍**逐值**注入到 `</world>` 之前——保证几何**只**来自配置文件、
+ 「无障碍」只改障碍因子（`none` 直接用 base，不注入）、**不改世界其它物理**。
+按 `shape` 生成 `<box>` / `<cylinder>` / `<sphere>`，支持**复合模型**（`parts` →
+ 多 static link）；**视觉与碰撞同源**。
     """
     with open(src_path, 'r') as f:
         text = f.read()
@@ -175,13 +175,13 @@ def _inject_static_obstacles(src_path, dst_path, geometry):
 
 def _make_gz_sim(world_file, ros_gz_sim_launch, sim_share):
     """按 `world_map` × `world_obstacles` 选择世界（S-06 / P1-1）：
-      * `static` —— base world + 由**所选地图真源**注入障碍的生成世界（临时文件，按地图命名）；
-      * `none`   —— base world 本身（**已无**障碍，不注入）。
-    世界路径经 gz_args token（按 basename 匹配替换，兼容相对/绝对）单一指定，不由上层手写。
-    P1-1：运行期世界文件名带地图名（`agc_world_static_obstacles_<map>.sdf`），使并行/
-    连续 run 的不同地图不会互相覆盖；`minimal` 保留历史文件名 `agc_world_static_obstacles.sdf`
-    （既有脚本 `scripts/archive/run_w6_r026.sh` 与 `tests/w6_r026_check.py` 按该名取证）。
-    几何在 `_opaque` 内**按实际 `world_map`** 读取（不在 generate 阶段预读，避免读到默认图）。
+ * `static` —— base world + 由**所选地图配置文件**注入障碍的生成世界（临时文件，按地图命名）；
+ * `none` —— base world 本身（**已无**障碍，不注入）。
+ 世界路径经 gz_args token（按 basename 匹配替换，兼容相对/绝对）单一指定，不由上层手写。
+运行期世界文件名带地图名（`agc_world_static_obstacles_<map>.sdf`），使并行/
+ 连续 run 的不同地图不会互相覆盖；`minimal` 保留历史文件名 `agc_world_static_obstacles.sdf`
+ （既有脚本 `scripts/archive/run_w6_r026.sh` 与 `tests/w6_r026_check.py` 按该名取证）。
+ 几何在 `_opaque` 内**按实际 `world_map`** 读取（不在 generate 阶段预读，避免读到默认图）。
     """
     def _opaque(context, *args, **kwargs):
         gz_args = LaunchConfiguration('gz_args').perform(context)
@@ -235,7 +235,7 @@ def generate_launch_description():
     tgt_m = target['model']
     tgt_s = target['spawn']
 
-    # F1（2026-10-31）：spawn 位可被上层（`w6.launch.py` 由出生布局真源派生）显式覆盖；
+    # F1（2026-10-31）：spawn 位可被上层（`w6.launch.py` 由出生布局配置文件派生）显式覆盖；
     # 缺省 **'auto'** = 用本文件读到的 car.yaml / target.yaml 值 → standalone 行为逐字不变。
     # 为什么需要这个口：世界 spawn 与 `/agc/scenario/reset` 的复位位置必须**同一组坐标**，
     # 否则复位会把实体从出生点"挪走"（实测口径见 w6_composition.apply_spawn_layout）。
@@ -254,8 +254,8 @@ def generate_launch_description():
     def _spawn_value(context, name, default):
         """`auto`/空 → 用 config 缺省；否则解析为**有限**数值（非法 / NaN / ±Inf → 拒绝运行）。
 
-        `auto` 分支同样校验：config 缺省值来自 `car.yaml` / `target.yaml`，若被改成 `.nan`
-        也必须在启动前挡住——否则实体被静默放到 NaN 位姿上（`gz create` 不报错）。
+ `auto` 分支同样校验：config 缺省值来自 `car.yaml` / `target.yaml`，若被改成 `.nan`
+ 也必须在启动前挡住——否则实体被静默放到 NaN 位姿上（`gz create` 不报错）。
         """
         raw = (LaunchConfiguration(name).perform(context) or '').strip()
         src = 'config 缺省'
@@ -330,14 +330,14 @@ def generate_launch_description():
             'target_controlled', default_value='false',
             description='目标模型模式（W6 前置 P）：false=被动失重（M0/W5）；'
                         'true=PX4 可控机型（merge x500，由第二 PX4 实例控制）'),
-        # R-026 / S-06：按场景障碍轴选择世界。
-        #   static —— base world 由真源注入障碍（含 pole_*）；
-        #   none   —— base world 本身（不含任何障碍）。
+        # / ：按场景障碍轴选择世界。
+        # static —— base world 由配置文件注入障碍（含 pole_*）；
+        # none —— base world 本身（不含任何障碍）。
         DeclareLaunchArgument(
             'world_obstacles', default_value='static',
             description='障碍轴世界生成：static（由所选地图真源注入障碍）| none（base world，无任何障碍）'),
-        # P1-1：几何真源按地图分文件——minimal（config/world_geometry.yaml，默认）|
-        #   yard / open_field（config/maps/*.yaml）。未知值拒绝运行。
+        # 配置文件按地图分文件——minimal（config/world_geometry.yaml，默认）|
+        # yard / open_field（config/maps/*.yaml）。未知值拒绝运行。
         DeclareLaunchArgument(
             'world_map', default_value=DEFAULT_WORLD_MAP,
             description='地图（几何真源选择）：minimal（默认，核查基线）| yard（演示主地图）| '
@@ -348,7 +348,7 @@ def generate_launch_description():
                         'headless（gz -s）忽略'),
     ]
 
-    # gz sim（世界）：按 `world_map` × `world_obstacles` 由**单一几何真源**注入 / 不注入生成
+    # gz sim（世界）：按 `world_map` × `world_obstacles` 由**单一配置文件**注入 / 不注入生成
     gz_sim = _make_gz_sim(world_file, ros_gz_sim_launch, share)
 
     # ros_gz 桥（话题，声明式 YAML）
@@ -436,7 +436,7 @@ def generate_launch_description():
     ld.add_action(SetEnvironmentVariable(
         'GZ_SIM_RESOURCE_PATH',
         [sim_models, ':', EnvironmentVariable('GZ_SIM_RESOURCE_PATH')]))
-    # R-009（ADR-0010）：gz 进程加载 GZ 侧末端失效停车插件 agc_cmd_deadman。
+    # （ADR-0010）：gz 进程加载 GZ 侧末端失效停车插件 agc_cmd_deadman。
     # 插件库装于 <pkg prefix>/lib（install/agc_sim/lib），追加到 GZ_SIM_SYSTEM_PLUGIN_PATH
     # （gz_sim.launch.py 会再并入 LD_LIBRARY_PATH，故内置系统插件仍可加载）。**追加**而非覆盖。
     plugin_dir = os.path.join(os.path.dirname(share), 'lib')

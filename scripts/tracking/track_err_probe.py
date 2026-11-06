@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """track_err_probe —— 空中跟踪误差取证（P1-4 baseline closure）。
 
-定位：P1-4 baseline closure 的**取证工具**（工具域，ADR-0020），不是控制链的一部分。
+定位： baseline closure 的**取证工具**（工具域，ADR-0020），不是控制链的一部分。
 它只订阅、只落盘，**不发布任何话题、不写执行口、不读真值**。
 
 ## 为什么需要它
@@ -11,11 +11,11 @@
 
 ## 口径：哪个参考才是"跟踪误差"（本轮修正）
 
-round-5 / round-1 的采集器只订阅 `/agc/air/ref`。那是 `trajectory_tracker.cpp` ⑦ 发布的
+ / 的采集器只订阅 `/agc/air/ref`。那是 `trajectory_tracker.cpp` ⑦ 发布的
 **标称 8 字 base_ref**——机体在 standoff 接管后**本来就不在 8 字上**，故量出来的是
 "standoff 偏离"（实测 mean≈8 m / p95≈18 m），**不是跟踪误差**，判别力很低。
 
-`trajectory_tracker.cpp` ⑨ 的生效参考裁定是（R-032 / C10）：
+`trajectory_tracker.cpp` ⑨ 的生效参考裁定是（ / ）：
 
 | `source` | 生效参考 | 对应话题 |
 |---|---|---|
@@ -33,18 +33,18 @@ err_base = || base_ref  - odom ||   ← 保留，仅作与 round-5/round-1 的�
 
 `err_base` **不得**表述为跟踪误差（它含 standoff 偏置）。两者都落盘，报告里分别标注。
 
-> **口径声明**：两者都是**派生指标**，不是契约 C1 的跟踪误差口径，也不替代任何既有验收。
+> **口径声明**：两者都是**派生指标**，不是契约 的跟踪误差口径，也不替代任何既有验收。
 > 产物里每个文件都带 `not_a_summary_field: true`。
 
-## 三条设计约束（round-5 的失败教训）
+## 三条设计约束（ 的失败教训）
 
-round-5 的采集器失败于"**等循环结束才写唯一结果**"：被 `run_demo` 回收时 SIGTERM
+ 的采集器失败于"**等循环结束才写唯一结果**"：被 `run_demo` 回收时 SIGTERM
 打断在 `spin_once` 里，JSON 从未落盘。本工具因此：
 
 1. **边采边写**：每 `--flush-period`（默认 2 s）把 json / samples / txt **三者都原子落盘**，
-   **任何时刻**都有可用结果（含被 SIGKILL 的情形——最多丢最后一个 flush 周期）；
+ **任何时刻**都有可用结果（含被 SIGKILL 的情形——最多丢最后一个 flush 周期）；
 2. **中断安全**：注册 SIGINT/SIGTERM handler → 置标志 → 主循环优雅收尾并写最终结果；
-   且**先写最终结果、再 destroy_node**（round-5 顺序反了）；
+ 且**先写最终结果、再 destroy_node**（ 顺序反了）；
 3. **测量窗口与 run 存活解耦**：默认 `--start-on-first-odom`，窗口从**首个 odom 消息**起算
    （两臂同口径），并由 `--duration` 给上界；真实运行里由 harness 在 run 结束后 SIGTERM 收尾，
    故窗口实际 = 任务期，不会因"起早了空转 / 起晚了丢样本"而两臂不等长。
@@ -52,9 +52,9 @@ round-5 的采集器失败于"**等循环结束才写唯一结果**"：被 `run_
 ## 产物
 
 ```
-<out-dir>/track_err.json      # 最终统计（中断也会写）
-<out-dir>/track_err.samples   # 逐拍样本（ts_ns err_eff err_base mode），便于复核
-<out-dir>/track_err.txt       # 人读摘要
+<out-dir>/track_err.json # 最终统计（中断也会写）
+<out-dir>/track_err.samples # 逐拍样本（ts_ns err_eff err_base mode），便于复核
+<out-dir>/track_err.txt # 人读摘要
 ```
 
 ## 退出码
@@ -132,10 +132,10 @@ def aggregate(errs):
 def pair_one(ts, odom_xy, refs, trefs, ref_keys, tref_keys, max_dt_ns):
     """对单个 odom 求 (err_eff, err_base, mode)。
 
-    `refs` / `trefs` 是 ts_ns → (x, y) 的**映射**；`ref_keys` / `tref_keys` 是它们的有序键表。
+ `refs` / `trefs` 是 ts_ns → (x, y) 的**映射**；`ref_keys` / `tref_keys` 是它们的有序键表。
     两者分开传（不要用 `sorted(dict)` 现算——每拍排序 O(n log n)，2500 拍会拖垮主循环）。
 
-    mode: 'tracking'（生效参考 = tracking_ref）/ 'base'（生效参考 = 标称 8 字）/ None（无参考）。
+ mode: 'tracking'（生效参考 = tracking_ref）/ 'base'（生效参考 = 标称 8 字）/ None（无参考）。
     """
     bkey, bdt = nearest_key(ref_keys, ts)
     tkey, tdt = nearest_key(tref_keys, ts)
@@ -338,7 +338,7 @@ def main(argv=None):
     node = Probe(args)
 
     # 中断安全：SIGINT/SIGTERM 只置标志，由主循环优雅收尾并写最终结果。
-    # 注：rclpy.init() 已装自己的 handler；此处**覆盖**为只置标志的实现，
+    # 注：rclpy.init 已装自己的 handler；此处**覆盖**为只置标志的实现，
     # 使 spin_once 正常返回而不是抛 ExternalShutdownException。
     def _on_signal(_signum, _frame):
         node.stop_requested = True
@@ -367,7 +367,7 @@ def main(argv=None):
             node.pair()
             _write(args.out_dir, node.snapshot(final=False), node.samples, final=False)
 
-    # 收尾：**先落最终结果，再销毁节点**（顺序很关键——round-5 反了 → 0 输出）
+    # 收尾：**先落最终结果，再销毁节点**（顺序很关键—— 反了 → 0 输出）
     node.pair()
     doc = node.snapshot(final=True)
     _write(args.out_dir, doc, node.samples, final=True)

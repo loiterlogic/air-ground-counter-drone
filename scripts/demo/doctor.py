@@ -4,14 +4,14 @@
 检查单落地自 [整链排障速查 启动前检查](../../docs/conventions/整链排障速查.md#preflight)。
 每条检查返回 `(id, status, title, detail, hint)`：
 
-  * `status` ∈ `OK` / `FAIL` / `WARN` / `SKIP`；
-  * `FAIL` 决定退出码（非 0），并在末尾给出**人话**处置建议；
-  * `WARN` 不影响退出码，但**必须**打印（例如 `/dev/shm` 段偏多——不阻塞，但值得知道）。
+ * `status` ∈ `OK` / `FAIL` / `WARN` / `SKIP`；
+ * `FAIL` 决定退出码（非 0），并在末尾给出**人话**处置建议；
+ * `WARN` 不影响退出码，但**必须**打印（例如 `/dev/shm` 段偏多——不阻塞，但值得知道）。
 
 纪律：
-  * **不启动** GZ / PX4 / GUI / headless / full 链（只读文件、绑一个 socket 再立刻释放）；
-  * **不清理**别人的进程、不改环境、不删产物；
-  * 每项都要给出**判据**（测得什么、阈值是什么），不写"看起来正常"。
+ * **不启动** GZ / PX4 / GUI / headless / full 链（只读文件、绑一个 socket 再立刻释放）；
+ * **不清理**别人的进程、不改环境、不删产物；
+ * 每项都要给出**判据**（测得什么、阈值是什么），不写"看起来正常"。
 """
 
 import os
@@ -24,7 +24,7 @@ import dds_transport
 
 OK, FAIL, WARN, SKIP = 'OK', 'FAIL', 'WARN', 'SKIP'
 
-# ROS 环境与工作区（P1-2 plan 的 8 包口径 = 实际 colcon 包集合）。
+# ROS 环境与工作区（ plan 的 8 包口径 = 实际 colcon 包集合）。
 ROS_SETUP = '/opt/ros/jazzy/setup.bash'
 WORKSPACE_PACKAGES = (
     'agc_sim', 'agc_perception', 'agc_ground', 'agc_air',
@@ -108,8 +108,8 @@ def check_domain_id():
 def check_discovery_range():
     """发现范围 / 传输：按本机 **能力探测** 给结论，不再断言"必须 LOCALHOST"。
 
-    判据见 docs/conventions/整链排障速查.md#dds-transport：`lo` 无 `IFF_MULTICAST` 时
-    `LOCALHOST` 在 1:1 拓扑下稳定零送达（多进程偶通），须改 `SUBNET`+`SHM`。
+ 判据见 docs/conventions/整链排障速查.md#dds-transport：`lo` 无 `IFF_MULTICAST` 时
+ `LOCALHOST` 在 1:1 拓扑下稳定零送达（多进程偶通），须改 `SUBNET`+`SHM`。
     """
     try:
         resolved = dds_transport.resolve()
@@ -145,9 +145,9 @@ def check_world_sdf():
 def _own_instance_pgids():
     """本脚本**自己**实例的进程组（正在跑的那个演示）—— 这不是"残留"。
 
-    P1-2 round-2 实测：起第二个实例时，preflight 把第一个实例的 22 个子进程报成
-    "有残留进程"，同时又报"已有一个演示实例在运行" —— 两条信息自相矛盾、互相打架，
-    使用者会被误导到去 `stop` 一个其实正常运行的演示。
+ 实测：起第二个实例时，preflight 把第一个实例的 22 个子进程报成
+ "有残留进程"，同时又报"已有一个演示实例在运行" —— 两条信息自相矛盾、互相打架，
+ 使用者会被误导到去 `stop` 一个其实正常运行的演示。
     残留 = 本项目特征进程 **减去** current.json 登记的那个实例的 PGID 成员。
     """
     cur = common.current_instance()

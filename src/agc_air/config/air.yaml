@@ -1,19 +1,5 @@
-# W3 空中链路参数 —— **唯一参数来源**
-#
-# 由 `air_bringup.launch.py` 经 launch 单一注入；节点不得覆写（契约 [参数入口] ../../docs/ROS2迁移交接文档.md#params）。
-# 契约参数名 → 本文件节点参数映射：
-#   `/agc/air/takeoff_altitude_m`      → takeoff_controller.takeoff_altitude_m
-#   `/agc/air/follow/*`                → standoff_follower.{safe_min,safe_max,height,hysteresis,max_step_m,
-#                                                              rate_hz,ref_max_age_s,confidence_min}
-#   `/agc/target/source`               → (W4) agc_perception 目标源：gt_adapter（air_fusion 已退役）
-#   R-032（C10 冻结下游封闭）           → trajectory_tracker.{target_max_age_s,confidence_min,
-#                                                              rl_offset_timeout_s,rl_offset_max_m}
-#   R-033（UAV 联合安全屏障）            → trajectory_tracker.safety.{reaction_time_s,max_speed_mps,
-#                                                              reachability_margin}
-# 目标源节点（gt_adapter）由 agc_perception 的 launch 提供，air_bringup include 之；
-# W3 占位目标源节点已在 W4 退役（见 .trae/specs/w4-perception-fusion/spec.md R3）。
-# 轨迹 / 控制参数见 [ADR-0008](../../docs/adr/0008-air-trajectory-and-tracking-calibration.md#top)。
-
+# 空中链路节点参数（ADR-0008 / ADR-0010）。运行期高度等由 w6_composition 按地图派生注入；
+# 节点不得覆写。数值推导与实测结论见 ADR-0008 实施回填。
 px4_adapter:
   ros__parameters:
     odom_in_topic: "/fmu/out/vehicle_odometry"
@@ -23,18 +9,11 @@ px4_adapter:
     world_frame: "world"
     base_frame: "drone/base_link"
     time_offset_alpha: 0.05
-    # W7-b 取证：PX4→ROS 时间映射的**合理性界**（s）。映射结果与 now() 偏差超界（或为负）即判
-    # 不可信 → **拒发该帧并重锚**时间映射（不静默替换）。默认 5.0 s：正常帧龄 ≪ 它，尺度跳变 ≫ 它。
     stamp_max_skew_s: 5.0
-    # 局部原点（R-003）：PX4 odom/setpoint 在**局部系**（相对 EKF 全局原点）；其世界 ENU 位置
-    # = 己方机 spawn 位姿。此处为本地默认；launch 以真实 spawn 位姿覆盖（契约 #params 单一来源）。
     origin_pose: "0,0,0.2,0,0,0"
 
 takeoff_controller:
   ros__parameters:
-    # ADR-0007（2026-11-02）：**运行期由地图几何真源派生注入**（`flight_altitude.own_takeoff_m`，
-    # 见 `w6_composition.apply_flight_altitude_air`）。本值仅作 standalone / 单测兜底。
-    # 用户裁定「高度和地图绑定」——换图即换高度，**不要在这里为某张图改数**。
     takeoff_altitude_m: 2.5
     hover_tolerance_m: 0.25
     setpoint_rate_hz: 50.0
@@ -45,76 +24,27 @@ takeoff_controller:
     status_topic: "/agc/air/status"
     active_controller_topic: "/agc/air/active_controller"
     release_service: "/agc/air/release_control"
-    # 局部原点（R-003）：起飞 setpoint 经 OffboardInterface 由世界 ENU → 局部 NED（减本原点）
     origin_pose: "0,0,0.2,0,0,0"
 
 trajectory_tracker:
   ros__parameters:
-    # 插件（pluginlib，agc_control 共享实现）
-    #
-    # ---- 2026-11-03：缺省由 Figure8Trajectory 改为 HoverTrajectory ----
-    # 依据：反无人机场景**禁用固定轨迹**（docs/conventions/飞行高度分层与按地图定高.md
-    #   #no-fixed-trajectory，用户 2026-11-02 17:12 原话「各种无人机固定轨迹是用来确定之前
-    #   流程的，反无人机场景直接禁止使用」）。该规则**此前从未落地**——缺省一直是 Figure8，
-    #   场景零覆盖，无任何测试守护。
-    #
-    # 为什么缺省位最关键（实测代价）：
-    #   `base` 是 `tracking_ref` 超时 0.5 s 时的**兜底**参考。兜底为 Figure8 时，一旦跟踪参考
-    #   断供，飞机会**按八字飞走**；历史上在空中通道路径下这表现为「八字偶然扫进量程 → 看见
-    #   一帧 → 长期 TIMEOUT」，把任务成败绑在一个已被否决的机制上
-    #   （`20261103-n1-stag70` 三次全败，`gate_ok` 恒 0）。
-    #
-    # 为什么是 Hover 而不是删插件：
-    #   `Figure8` / `Circular` / `Helical` / `Linear` / `Step` **全部保留**——它们是流程验证 /
-    #   回归基线的载体。禁止的是「在反无人机场景里把它们选为参考来源」。
-    #   流程验证场景可显式覆盖（`scenarios.yaml` 的 params 里写 trajectory_plugin），
-    #   但**必须**同时标注 `usage: flow_validation`（测试 `test_scene_config_invariants.py`
-    #   的 `test_flow_validation_scene_may_use_preset_trajectory` 守护这条出口）。
-    #
-    # 行为变化（如实登记）：接管后若 `tracking_ref` 断供，飞机**保持当前位置悬停**（不再飞八字）。
-    #   `traj.*` 段（height / rx / ry / speed / center_*）在该插件下**整段不被读取**；
-    #   己方机实际高度由 `standoff_follower.height`（地图派生 `own_track_m`）决定。
     trajectory_plugin: "agc_control/HoverTrajectory"
     controller_plugin: "agc_control/LqrController"
     trajectory_param_ns: "traj"
     controller_param_ns: "ctrl"
     controller_name: "trajectory_tracker"
-    # 控制回路
     setpoint_rate_hz: 50.0
     max_yaw_rate: 2.0
-    # W7-b P1（甲方案，2026-10-19）：观测偏航模式——**P1 自变量 α 的落地**（单一真源，缺省行为不变）。
-    #   velocity（缺省）= 机头随速度方向 → 机体固连前视相机**不保证**对准目标（= 非协同观测臂）；
-    #   target          = 机头/相机**对准目标**（目标须过 target_max_age_s + confidence_min 门）
-    #                     = 空地协同观测臂（由 launch `observe_yaw_mode:=target` 覆盖）。
     observe_yaw_mode: "velocity"
-    # W7-b（P1 甲）：`observe_yaw_mode=target` 时的**指向信息来源**（真值方位）。本段该臂 = **显式
-    # oracle 指向臂**（ADR-0022：GT 仅评估 / 显式 oracle 臂须标注）；测量仍走真实感知通道。
-    # 仅在该模式下创建订阅——普通运行**不**订阅真值（GT 不进普通控制/观测链）。
     yaw_aim_gt_topic: "/agc/gt/intruder_uav"
     tracking_ref_timeout_s: 0.5
-    # R-032（C10 冻结下游封闭）：目标门 = 源时间窗 + confidence；RL offset 寿命 / 能力限幅。
     target_max_age_s: 0.5            # 目标源时间窗（对齐契约 C10 ref_max_age_s=0.5）
     confidence_min: 0.5              # 目标 confidence 门槛（对齐契约 C10 confidence>=0.5）
     rl_offset_timeout_s: 0.5         # RL offset 寿命 / 生效窗口（源时间超时归零）
     rl_offset_max_m: 2.0             # RL offset 能力限幅（幅值上限，m）
     conflict_persist_s: 1.0
-    # R-035（空中控制唯一权威与控制许可）：**配套许可 / 诊断，非 ABI、非命令者**。
-    #   control_permit_topic —— tracker 的许可 claim/ack 话题（std_msgs/String JSON；transient_local + reliable）；
-    #   conflict_clear_s      —— 竞争者 claim 消失清冲突阈值（s）；
-    #   唯一权威 = active_controller==controller_name 的显式授权（**不**凭发布者计数判定）。
     control_permit_topic: "/agc/air/control_permit"
     conflict_clear_s: 2.0
-    # R-036（C1 高度语义统一与同时间证据；ADR-0008）：**配套诊断 / 口径，非 ABI、非命令者**。
-    #   唯一世界高度语义 = 世界 **ENU z**（`world` frame，向上）；对外 base_ref 发布带 `z_offset_`
-    #   （层高基准 = 接管时刻机体高度 − 轨迹 h），与生效 effective **同一高度基准**（发布前加同一 offset，
-    #   见 trajectory_tracker.cpp ⑦）；`publishTrackStatus` 追加 `z_offset` / `height_datum` 使差异**可辨**。
-    #   下列 `c1.*` 为 C1 验收容限，由脚本 `tests/w6_r036_check.py` **读取**（不复制参数）：
-    #     ref_speed_target        —— 参考恒速目标 |v|（m/s，弧长参数化）；
-    #     ref_speed_tol           —— 参考 |v| 相对目标的 max 数值容限（m/s）；
-    #     height_datum_tol_m      —— 对外 base_ref 与 effective 高度基准一致容限（z 差，m）；
-    #     body_speed_p95_tol_mps  —— 机体（world GT）**稳态**速度误差 P95 容限（m/s；**占位待回填**）；
-    #     height_err_p95_tol_m    —— 机体高度跟踪误差 P95 容限（m；**占位待回填**）；
-    #     sustained_limit_eps_mps —— 「持续越限」判定阈值（m/s，占位对齐 P95 容限）。
     c1:
       ref_speed_target: 2.0
       ref_speed_tol: 1.0e-3
@@ -131,9 +61,7 @@ trajectory_tracker:
     conflict_topic: "/agc/air/control_conflict"
     rl_offset_topic: "/agc/air/rl_offset"
     tracking_status_topic: "/agc/air/tracking_status"   # R-032：配套诊断（非 ABI / 非命令者）
-    # 局部原点（R-003）：轨迹 setpoint 经 OffboardInterface 由世界 ENU → 局部 NED（减本原点）
     origin_pose: "0,0,0.2,0,0,0"
-    # 真八字 Gerono：rx=15 / ry=9 / h=2.5，弧长参数化恒速 v=2.0（契约 #hard-constraints C1）
     traj:
       speed: 2.0
       height: 2.5
@@ -141,26 +69,13 @@ trajectory_tracker:
       ry: 9.0
       center_x: 0.0
       center_y: 0.0
-    # LQR（位置环双积分器；dt 与控制频率一致）
     ctrl:
       q_pos: 4.0
       q_vel: 4.0
       r: 1.0
       dt: 0.02
       acc_max: 4.0
-    # 安全层（R7 + R-033 联合安全屏障）：静态障碍**几何**（名称 / 坐标）由单一真源
-    # `agc_sim/config/world_geometry.yaml` 经 composition（`w6_composition.apply_air_geometry`）
-    # **派生注入**（见 S-06 / ADR-0007）——本文件**不**硬编码障碍坐标（避免第二份几何）。
-    # 此处仅保留**安全余量**参数（半径 / margin / 反应时间 / 可达性，属安全参数非几何）。
-    # 余量分层（R-033，逐项由配置项承载）：
-    #   obstacle_margin / target_margin —— **跟踪误差**（LQR 滞后）余量（实测 pole_2 穿越段 lag≈1.5 m、
-    #     距离带段 lag≈0.7 m）；
-    #   reaction_time_s × max_speed_mps —— **反应时间**余量（`react_margin`）；
-    #   reachability_margin —— **可达性**（LQR 制动 / 加速度受限）余量。
-    #   修正后参考边界 = 安全半径/target_min_dist + 上述余量之和，使**机体实际**不侵入真实安全半径
-    #   （契约 C6「安全滤波器参数须用真实逃逸能力」+ C10 自保）。障碍是硬安全判据，余量取足。
-    # ⚠ 限定模型：本层是**二维静态圆盘屏障**（限实验用途），不含车 / 动态障碍状态（= unsupported），
-    #   不建模三维机体外形 / 载荷外伸（见 docs/adr/0048）。
+    # 二维静态圆盘屏障：不含车 / 动态障碍状态，不建模三维外形（ADR-0010）。
     safety:
       enabled: true
       obstacle_margin: 2.5
@@ -169,62 +84,12 @@ trajectory_tracker:
       reaction_time_s: 0.2              # R-033：反应时间余量（s）
       max_speed_mps: 2.0                # R-033：反应时间内可达到的水平速度（m/s）
       reachability_margin: 0.3          # R-033：可达性（制动 / 加速度受限）余量（m）
-      # obstacle_names / obstacle_x / obstacle_y / obstacle_safety_radius / obstacle_z_top
-      #   —— 五者**全部**由几何真源逐障碍派生注入（`w6_composition.apply_air_geometry` /
-      #   `air_bringup` 的 `safety_geometry`）；本文件**不**再保留任何与障碍数相关的几何或半径列表
-      #   （旧的 `[2.0, 2.0]` 定长列表已消除——P1-1 / ADR-0007 未决项②）。
-      #   缺省值仅作**脱机单测**兜底（`safety_shield.hpp` 的 StaticObstacle.safety_radius=2.0）；
-      #   误配成不同长度时 `SafetyShield::configure_parameters` 在启动期**拒绝**（R-038）。
-      #
-      # ADR-0010「垂直门控」（2026-11-04 用户裁定）：
-      #   obstacle_z_top[i] = 障碍 i 的**顶面高度**（复合体取 part 最大值，由 `world_map.obstacle_z_top`
-      #   派生）。本机高度（含下降前视）高于 `z_top + vertical_clearance_m` 时，该障碍的水平圆盘
-      #   **不生效**。**省略该数组 = 全部顶高未知 → 门控不生效**（保守退化为无限高圆柱，旧行为逐值不变）；
-      #   逐项坏值（NaN/±Inf/≤0）一律**拒绝启动**。
-      #   vertical_clearance_m = c_clear，与地图 `flight_altitude.own_clearance_min_m` **同源注入**；
-      #   此处 0.5 仅是脱机兜底，**不要**在此为某张图改数。
-      #   ⚠ 门控**只作用于静态障碍盘**；目标间距盘始终生效（否则抬高即可无限接近目标）。
 
+# 安全间距带由安全层几何定，与量程无关；量程 R=30.0 推导见 ADR-0008 实施回填。
 standoff_follower:
   ros__parameters:
     safe_min: 8.0                   # 安全间距带下沿（水平距离，m）
-    # ---- 安全间距带上沿：本值只由**安全层几何**决定（2026-11-03 重写）----
-    #
-    # **历史（保留以免重踩，但结论已变）**
-    #   曾两次因"感知量程"调本值：
-    #     F1 round-3（2026-10-31）：15.0 → 11.0，理由是当时量程 12.0 与站距带不兼容；
-    #     H0 round-4（2026-11-02）：11.0 → 11.2，使停止点恰好等于安全层下界。
-    #   当时还写了一条纪律：「**不得**用扩大传感器能力掩盖冲突」。
-    #
-    # **2026-11-03 量程改为 30.0 之后，那条纪律与本次改动的区别必须讲清（否则后来人看到自相矛盾）**
-    #   * 旧值 12.0 **不是物理极限**，而是 W4 提交 `40f4b91` **手填、无推导记录**的魔数。
-    #     按相机实际能力反算，12 m 对应机体 9.8 px，恰是 Johnson 判据的「**辨认**」距离——
-    #     即"把辨认距离当成检测距离用"，属**量纲错位**，不是保守取值。
-    #     物理上限实为 **112.9 m**（相机 640×480 / hfov 1.74 rad → 367.8 px/rad；
-    #     高亮球 1.2 m；检测器 `min_area_px=12`）。原 32 行推导写在
-    #     `agc_perception/config/perception_sensors.yaml` 文件头；该文件随 `perception`
-    #     场景轴于 2026-11-06 退役，推导结论保留在本注释与
-    #     docs/conventions/飞行高度分层与按地图定高.md K1。
-    #   * 取 30.0 = 任务下限 26.25 m（`spawn_layout` 开局几何）+ 3.75 m 余量，**远低于** 112.9 m。
-    #   ⇒ 改量程**不是**"扩大传感器能力掩盖冲突"，而是**修掉一个无依据的错数**。
-    #     两者区别：前者是放宽约束让测试通过；后者是纠正一个从未有过推导的参数。
-    #     **判据**：改完之后**必须**能写出可复核的推导链（当前登记处 = 本注释 + K1）。
-    #     写不出来的，就还是"掩盖冲突"。
-    #
-    # **本值（safe_max）与量程无关，理由如下**
-    #   下界由**安全层**约束（`safety_shield.cpp` 的目标圆盘）：
-    #     target_min_dist(8.0) + target_margin(1.5) + dynamicMargin(reaction 0.2×2.0 + reach 0.3 = 0.7)
-    #     = **10.200 m**。低于它，安全层会把参考推回圆盘外。
-    #   停止趋近点 = safe_max − hysteresis = 11.2 − 1.0 = **10.2**，恰在安全圆盘下界（相切不侵入）。
-    #   量程上界现在是 √(30² − dz²) ≈ 29.93 m（dz = 己方 14 − 目标 12 = 2.0），**远大于**本值
-    #   ⇒ 站距带不再被量程挤压，可行窗口从 (10.2, 11.99) 宽 1.79 m 放宽到 (10.2, 29.93) 宽 19.73 m。
-    #   **本值不动**：它由安全层几何定，与量程无关；拉大站距会削弱 C10「保持安全间距」的原意。
-    #
-    # 纪律（现行）：只改**本值**时，必须同时说明它对**安全层下界**的影响；
-    #   safe_min / 全部安全余量 / C1 八字 / C10 过期冻结语义 / ABI 均不变。
-    # 回滚：改回 15.0 即可（但会与安全层下界 10.2 脱钩，不推荐）。
     safe_max: 11.2                  # 安全间距带上沿（m）；停止点 10.2 = 安全圆盘下界（与量程无关）
-    # ADR-0007：**运行期由地图派生**（`flight_altitude.own_track_m`）——本值仅 standalone 兜底。
     height: 2.5                     # 跟踪高度（m）
     hysteresis: 1.0                 # 距离带滞回（m）
     max_step_m: 0.1                 # 单拍限幅（0.1 m@20 Hz → 最大水平速度 2.0 m/s）

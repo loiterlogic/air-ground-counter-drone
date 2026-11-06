@@ -2,7 +2,7 @@
 """w3_target_driver —— W3 临时目标驱动脚本（spec Task 9.2）
 
 按速度指令驱动 `intruder_uav`（模型挂 GZ VelocityControl，经 ros_gz 桥接
-`/agc/sim/target_cmd_vel` → `/model/intruder_uav/cmd_vel`）。正式 driver / 干扰注入属 W6。
+`/agc/sim/target_cmd_vel` → `/model/intruder_uav/cmd_vel`）。正式 driver / 干扰注入属 。
 
 用法：
   python3 scripts/w3_target_driver.py --mode circle --speed 1.0 --radius 6.0

@@ -2,16 +2,16 @@
 """`run_demo.sh compare <gui-run-dir> <headless-run-dir>` —— GUI ↔ headless 等价核验。
 
 **口径不是本脚本定的**：全部读
-[`experiments/p1-2/round-2/preregistration/gui-headless-equivalence.json`](../../experiments/p1-2/round-2/preregistration/gui-headless-equivalence.json)
-（在**任何真实运行之前**落盘的预登记，见 [C3](../../docs/ROS2迁移交接文档.md#hard-constraints)）。
+[`experiments/p1-2//preregistration/gui-headless-equivalence.json`](../../experiments/p1-2//preregistration/gui-headless-equivalence.json)
+（在**任何真实运行之前**落盘的预登记，见 [](../../docs/ROS2迁移交接文档.md#hard-constraints)）。
 脚本只做三件事：取值 → 按预登记规则判定 → 输出可引用的判定与逐项明细。
 
 四类结论（与预登记 `verdict_rule` 一一对应）：
 
-  * `EQUIVALENT`      —— primary 全过 + secondary 全在容差内；
-  * `NOT_EQUIVALENT`  —— 任一 primary 不符（**硬失败**）；
-  * `NOT_COMPARABLE`  —— primary 全过但 secondary 超差；
-  * `INCOMPLETE`      —— 任一臂缺 summary / 缺必需字段（**不得推断**）。
+ * `EQUIVALENT` —— primary 全过 + secondary 全在容差内；
+ * `NOT_EQUIVALENT` —— 任一 primary 不符（**硬失败**）；
+ * `NOT_COMPARABLE` —— primary 全过但 secondary 超差；
+ * `INCOMPLETE` —— 任一臂缺 summary / 缺必需字段（**不得推断**）。
 
 纪律：缺值一律判失败/不可比，**绝不**把 `None` / `not_applicable` 当作 0 或"相等"。
 """
@@ -35,9 +35,9 @@ def _is_num(v):
 def _dig(run_doc, path):
     """按预登记的**点号路径**取值。
 
-    预登记里的路径是相对 `result.json` 的（`summary.terminal_state`、
-    `summary.episode_window_metrics.ticks_total`、`derived.sim_end_minus_sim_start_s`）。
-    `summary.*` 落在 `result['summary']`（run_logger summary 的切片），`derived.*` 由本模块派生。
+ 预登记里的路径是相对 `result.json` 的（`summary.terminal_state`、
+ `summary.episode_window_metrics.ticks_total`、`derived.sim_end_minus_sim_start_s`）。
+ `summary.*` 落在 `result['summary']`（run_logger summary 的切片），`derived.*` 由本模块派生。
     """
     if path.startswith('derived.'):
         return _derived((run_doc or {}).get('summary') or {}, path[len('derived.'):])
@@ -229,7 +229,7 @@ def main(argv):
         'gui_evidence': gui_evidence_check(gui, 'gui'),
         'headless_evidence': gui_evidence_check(head, 'headless'),
     })
-    # GUI 证据不齐时**升级**结论（GUI 臂没拿到四类证据 → 不能宣称 C3 GUI 通过）
+    # GUI 证据不齐时**升级**结论（GUI 臂没拿到四类证据 → 不能宣称 GUI 通过）
     if (doc['gui_evidence'].get('verdict') != 'ok'
             and doc['verdict'] in ('EQUIVALENT', 'NOT_COMPARABLE')):
         doc['verdict'] = 'NOT_EQUIVALENT'

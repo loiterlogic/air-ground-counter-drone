@@ -1,4 +1,4 @@
-// test_lqr_validation.cpp —— R-038 LQR 配置合法性 / DARE 收敛**失败型**验证
+// test_lqr_validation.cpp —— LQR 配置合法性 / DARE 收敛**失败型**验证
 //
 // 只验证**失败型行为**（非法配置被拒绝、未收敛被报告）与只读诊断暴露；
 // **不**复制 DARE / 增益求解逻辑自证（无镜像实现）。

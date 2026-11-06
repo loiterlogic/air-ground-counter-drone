@@ -4,15 +4,15 @@
 ## 为什么要一个专门的驱动
 
 `./run_demo.sh` 跑完就回收进程组，Screenshot 服务随之消失——**运行结束后再取帧必然失败**
-（P2-1 round-1 的 T2-b 就是这样失败的：探针在 `run_demo.sh` 退出后才执行，服务清单 0 条）。
+（ 的 T2-b 就是这样失败的：探针在 `run_demo.sh` 退出后才执行，服务清单 0 条）。
 所以取帧必须**在运行期间**由外部驱动轮询完成。本脚本做这件事：
 
 1. **自然运行**（`./run_demo.sh`，不带 `--gui-config`）——α 之后世界 SDF 的 `<gui>` 块
-   自带 `Screenshot` 插件，自然运行即可取帧（见 `gui_capture.py` 文件头）；
+ 自带 `Screenshot` 插件，自然运行即可取帧（见 `gui_capture.py` 文件头）；
 2. 以子进程启动 `run_demo.sh`，**不接管**它的进程组回收（它自己会收干净）；
 3. 轮询 `/gui/screenshot` 上线后开始**连续取帧**（默认 1 Hz，覆盖启动 → 跟踪 → 终态）；
 4. 运行结束后：从帧序列里按**状态时间线**挑出三张代表帧（启动 / 跟踪中 / 终态），
-   并把一段连续帧交给 `make_gif.py` 合成 GIF。
+ 并把一段连续帧交给 `make_gif.py` 合成 GIF。
 
 ## 三张代表帧怎么挑（不靠猜时间）
 
@@ -60,9 +60,9 @@ TERMINALS = ('TRACKING_SUCCESS', 'INTERCEPT_CONFIRMED', 'MISSION_FAILED', 'ABORT
 def _frame_has_content(path, min_std=6.0, min_unique=64):
     """帧是否**真有画面**：灰度标准差 + 不同颜色数双判据。
 
-    Gazebo 取到黑帧/纯色帧（渲染未就绪、相机被遮挡）时，PNG 照样生成、服务照样返回 true——
-    只看"文件存在且非空"会把黑帧当证据。实测阈值：正常俯视场景图 std≈30–60、颜色数 >1000；
-    全黑帧 std≈0、颜色数 1。
+ Gazebo 取到黑帧/纯色帧（渲染未就绪、相机被遮挡）时，PNG 照样生成、服务照样返回 true——
+ 只看"文件存在且非空"会把黑帧当证据。实测阈值：正常俯视场景图 std≈30–60、颜色数 >1000；
+ 全黑帧 std≈0、颜色数 1。
     """
     try:
         from PIL import Image
@@ -87,7 +87,7 @@ def _frame_has_content(path, min_std=6.0, min_unique=64):
 def parse_timeline(path):
     """解析 `timeline.txt` → [(相对秒, 文本)]；文件不存在返回 []。
 
-    行格式：`[mm:ss.d] 文本`。
+ 行格式：`[mm:ss.d] 文本`。
     """
     if not os.path.isfile(path):
         return []
@@ -119,9 +119,9 @@ def _distance_of(text):
 def pick_frames(frames, timeline, prefer_size=None, stable_median=None, tol=0.02,
                 frame_skybands=None):
     """按状态时间线挑三张代表帧。返回 {'start': path|None, 'tracking': …, 'terminal': …,
-    'notes': [...]}。
+ 'notes': [...]}。
 
-    `frames` 是 [(取帧时刻相对秒, 路径)]。
+ `frames` 是 [(取帧时刻相对秒, 路径)]。
     """
     notes = []
     if not timeline:
@@ -169,7 +169,7 @@ def pick_frames(frames, timeline, prefer_size=None, stable_median=None, tol=0.02
     if first_search is not None:
         # "启动"= 任务开始**之前**的画面（世界已起来、任务还没动）。
         # 用**严格早于** first_search 的帧，避免与"跟踪中"选到同一帧
-        # （round-5 实测：<= 会把任务启动那一刻的帧同时当成启动图与跟踪图）。
+        # （ 实测：<= 会把任务启动那一刻的帧同时当成启动图与跟踪图）。
         before = [f for f in frames if f[0] < first_search - 0.5]
         if before:
             start_frame = before[-1][1]
@@ -187,7 +187,7 @@ def pick_frames(frames, timeline, prefer_size=None, stable_median=None, tol=0.02
     if approach:
         t_best = min(approach, key=lambda kv: kv[1])[0]
         track_frame = nearest(t_best)
-    # 若"跟踪中"离启动太近（<2 s），画面与启动图几乎相同（round-5 实测：仅差 7 个像素），
+    # 若"跟踪中"离启动太近（<2 s），画面与启动图几乎相同（ 实测：仅差 7 个像素），
     # 观众看不出"在动"。改取任务进行中**偏后**的帧（更接近终态、车已明显接近）。
     if track_frame is not None and first_search is not None:
         t_track = next((t for t, p in frames if p == track_frame), None)
@@ -275,8 +275,8 @@ def gui_services():
 def probe_topdown(out_dir):
     """**只读探针**：查 `/gui/*`，若 `/gui/move_to/pose` 在则强制正俯视位姿并取 2 帧。
 
-    时机要求：**终态之后、进程回收之前**（回收后服务消失，探针必失败）。
-    返回 dict（写进 manifest），不抛异常（探针失败不得掩盖主结论）。
+ 时机要求：**终态之后、进程回收之前**（回收后服务消失，探针必失败）。
+ 返回 dict（写进 manifest），不抛异常（探针失败不得掩盖主结论）。
     """
     import json as _json
     result = {'at': time.time(), 'attempted': True}
@@ -336,15 +336,15 @@ def probe_topdown(out_dir):
 def stable_skyband(frame_skybands):
     """从逐帧 skyband 求**稳定帧中位数**——排除"用户拖动/缩放窗口"造成的跳变帧。
 
-    为什么需要（round-4b 实测）：`Screenshot` 插件取的是 **GUI 实时视图相机**，
-    用户拖一下鼠标或滚一下滚轮，画面就变（第 3 帧作业区 84.7%→99.9%，平均差 41.4）；
-    第 21–22 帧窗口被改成 1539×999。若只看首帧，会把**人为操作**误判成**系统视角**。
+ 为什么需要（round-4b 实测）：`Screenshot` 插件取的是 **GUI 实时视图相机**，
+ 用户拖一下鼠标或滚一下滚轮，画面就变（第 3 帧作业区 84.7%→99.9%，平均差 41.4）；
+ 第 21–22 帧窗口被改成 1539×999。若只看首帧，会把**人为操作**误判成**系统视角**。
 
-    规则（可机械复核，不靠眼）：
-      1. 只取**出现次数最多**的图像尺寸（主尺寸）——排除窗口缩放帧；
-      2. 尺寸内按与前一帧的平均灰度差判"视角跳变"，**跳变帧及其前一帧都丢弃**；
-      3. 余下帧取 skyband **中位数**（抗残余抖动）。
-    返回 (median, detail_dict)；样本不足 3 帧时 median=None（如实报不可判）。
+ 规则（可机械复核，不靠眼）：
+ 1. 只取**出现次数最多**的图像尺寸（主尺寸）——排除窗口缩放帧；
+ 2. 尺寸内按与前一帧的平均灰度差判"视角跳变"，**跳变帧及其前一帧都丢弃**；
+ 3. 余下帧取 skyband **中位数**（抗残余抖动）。
+ 返回 (median, detail_dict)；样本不足 3 帧时 median=None（如实报不可判）。
     """
     if not frame_skybands:
         return None, {'error': '无帧'}
@@ -398,7 +398,7 @@ def stable_skyband(frame_skybands):
 def _run_start_unix(demo_dir):
     """从 demo 目录的 `result.json` 取运行起点的 Unix 秒（用于对齐 timeline 的相对时刻）。
 
-    取不到返回 None（调用方据此退回原时刻，并应在报告里说明"时刻未对齐"）。
+ 取不到返回 None（调用方据此退回原时刻，并应在报告里说明"时刻未对齐"）。
     """
     import json as _json
     from datetime import datetime
@@ -476,8 +476,8 @@ def main(argv=None):
         return 2
 
     # 1. **固定自然运行**：不带任何 --gui-config。
-    #    α 之后世界 SDF 的 <gui> 块自带 Screenshot 插件，自然运行即可取帧；
-    #    带 --gui-config 反而会让 gz-gui 再加载 ~/.gz/sim/<ver>/gui.config 覆盖视角 → 图不代表用户所见。
+    # α 之后世界 SDF 的 <gui> 块自带 Screenshot 插件，自然运行即可取帧；
+    # 带 --gui-config 反而会让 gz-gui 再加载 ~/.gz/sim/<ver>/gui.config 覆盖视角 → 图不代表用户所见。
     print('[capture] **自然运行**（不带 --gui-config）；取帧能力来自世界 SDF 的 <gui> 块', flush=True)
 
     # 2. 起运行（子进程；进程组回收仍归 run_demo.sh）
@@ -533,7 +533,7 @@ def main(argv=None):
             tick_start = time.monotonic()
             path = os.path.join(frames_dir, 'f-%04d.png' % i)
             # 首帧查一次服务（确认在线）；之后跳过——每次 `gz service -l` 要 1–2 s，
-            # 会把 1 Hz 拖成 4–6 s（round-4 实测 8 帧 / 34 s，GIF 需 ≥20 帧）
+            # 会把 1 Hz 拖成 4–6 s（ 实测 8 帧 / 34 s，GIF 需 ≥20 帧）
             ok, _d = gui_capture.snap(path, timeout_ms=8000, check_service=(i == 0))
             if ok:
                 if not _frame_has_content(path):
@@ -617,7 +617,7 @@ def main(argv=None):
     if demo_dir:
         timeline = parse_timeline(os.path.join(demo_dir, 'timeline.txt'))
     # ⚠ 时刻基准对齐（round-4b 踩到的坑）：
-    # `timeline.txt` 的 `[mm:ss.d]` 是**相对运行起点**，而取帧记录用的是 `time.monotonic()`
+    # `timeline.txt` 的 `[mm:ss.d]` 是**相对运行起点**，而取帧记录用的是 `time.monotonic`
     # 相对**本脚本开始轮询**——两者原点不同，直接比较会把三张图全选到相邻帧。
     # 修法：从 result.json 的 `started_at` 取运行起点，把帧时刻换算成同一零点。
     run_t0_unix = _run_start_unix(demo_dir)

@@ -2,11 +2,11 @@
 """w6_fsm_check —— W6-a R1（完整任务状态机）命令化验收。
 
 在顶层 launch（`agc_task m0_skeleton.launch.py`，无头 / GUI）运行中执行，校验：
-  * `/agc/task/start` 命令化驱动 FSM；
-  * 采集 `/agc/task/state` 全字段，记录态迁移轨迹；
-  * 走到终态：`TRACKING_SUCCESS`（抵近并持续跟踪）或 `MISSION_FAILED`(C4 超时)；
-  * 全字段如实填（`state_name / reason_code / air_controller / ground_controller /
-    target_id / target_xy_distance_m / target_obs_age_s / tracking_milestone_met`）。
+ * `/agc/task/start` 命令化驱动 FSM；
+ * 采集 `/agc/task/state` 全字段，记录态迁移轨迹；
+ * 走到终态：`TRACKING_SUCCESS`（抵近并持续跟踪）或 `MISSION_FAILED`( 超时)；
+ * 全字段如实填（`state_name / reason_code / air_controller / ground_controller /
+ target_id / target_xy_distance_m / target_obs_age_s / tracking_milestone_met`）。
 结果落 `experiments/w6-task-eval/<run_id>/metrics/fsm.json`（ADR-0006）。
 
 用法（launch 已在运行）：

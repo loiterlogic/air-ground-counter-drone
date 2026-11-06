@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """toolchain_root_check —— S-11（工具链根显式注入 + 启动前验证）一致性核查（**只读**）。
 
-真源：`AGENTS.md`「项目根 /home/chen/AGC」+ 契约（工具链在其下 `toolchain/`）。本脚本核查
-两处 W6 入口的**根注入方式**与工具链二进制的**存在性**，逐项记 PASS / FAIL：
+配置文件：`AGENTS.md`「项目根 /home/chen/AGC」+ 契约（工具链在其下 `toolchain/`）。本脚本核查
+两处 入口的**根注入方式**与工具链二进制的**存在性**，逐项记 PASS / FAIL：
 
-  静态检查（源码正则，只读）：
-    (1) `src/agc_task/launch/w6.launch.py` 与 `src/agc_air/launch/air_bringup.launch.py`
-        **不得**出现基于 `parents[...]` 的项目根深度上溯；命中 -> FAIL。
-    (2) 两文件**均须**声明 launch 参数 `agc_root`，默认值 `/home/chen/AGC`；缺失 -> FAIL。
+ 静态检查（源码正则，只读）：
+ (1) `src/agc_task/launch/w6.launch.py` 与 `src/agc_air/launch/air_bringup.launch.py`
+ **不得**出现基于 `parents[...]` 的项目根深度上溯；命中 -> FAIL。
+ (2) 两文件**均须**声明 launch 参数 `agc_root`，默认值 `/home/chen/AGC`；缺失 -> FAIL。
 
-  功能检查（文件系统）：
-    (3) `<agc_root>/toolchain/bin/MicroXRCEAgent` 与
-        `<agc_root>/toolchain/PX4-Autopilot/build/px4_sitl_default/bin/px4` 存在；缺失 -> FAIL。
+ 功能检查（文件系统）：
+ (3) `<agc_root>/toolchain/bin/MicroXRCEAgent` 与
+ `<agc_root>/toolchain/PX4-Autopilot/build/px4_sitl_default/bin/px4` 存在；缺失 -> FAIL。
 
 环境无关：**不** source ROS，只读源码与文件。用法：`python3 scripts/toolchain_root_check.py`；
 `--agc-root` 可覆盖默认根 `/home/chen/AGC`。任一 FAIL -> 退出码 1；全 PASS -> 0。
@@ -25,7 +25,7 @@ import sys
 ROOT = '/home/chen/AGC'
 DEFAULT_AGC_ROOT = '/home/chen/AGC'
 
-# 待核查的两处 W6 顶层入口（相对项目根）。
+# 待核查的两处 顶层入口（相对项目根）。
 LAUNCH_FILES = [
     os.path.join('src', 'agc_task', 'launch', 'w6.launch.py'),
     os.path.join('src', 'agc_air', 'launch', 'air_bringup.launch.py'),

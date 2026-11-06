@@ -1,11 +1,11 @@
-// gt_adapter —— 真值目标适配器（W4-a，spec R3；2026-11-03 加不确定性模型）
+// gt_adapter —— 真值目标适配器（，spec R3；2026-11-03 加不确定性模型）
 //
-// 消费 W4 真值旁路 `/agc/gt/<target_model>`（world 系 PoseStamped），产出契约
+// 消费 真值旁路 `/agc/gt/<target_model>`（world 系 PoseStamped），产出契约
 // `/agc/targets`（`agc_msgs/TargetTrackArray`）：
-//   * `source=gt_adapter`；pose/twist 均在 world 系；不做机体系旋转
-//     （与 Odometry 的 child-frame twist 约定不同）；
-//   * 数组 header.stamp = 发布时刻；track.header.stamp = 该样本的**源采样时刻**，
-//     本拍无释放样本则 tracks 为空（绝不刷新旧观测时间）。
+// * `source=gt_adapter`；pose/twist 均在 world 系；不做机体系旋转
+// （与 Odometry 的 child-frame twist 约定不同）；
+// * 数组 header.stamp = 发布时刻；track.header.stamp = 该样本的**源采样时刻**，
+// 本拍无释放样本则 tracks 为空（绝不刷新旧观测时间）。
 //
 // ## 2026-11-03 裁定：真值链路**不再**是"理想直通"
 //
@@ -16,14 +16,14 @@
 // 因此本节点引入**六类不确定性参数**（原与已退役的 `air_perception` 同名同口径；
 // 该节点于 2026-11-06 删除后，本节点是唯一消费者，参数名沿用不改名）：
 //
-//   | 类别 | 参数 | 实现位置 |
-//   |---|---|---|
-//   | 位置噪声 | `sigma_xy_m` / `sigma_z_m` | onGt（源采样时刻加噪） |
-//   | 时间延迟 | `latency_s` | 延迟队列（改交付时刻，不改源采样时刻） |
-//   | 丢包 | `drop_prob` | onGt（独立同分布） |
-//   | 成簇丢失 | `drop_burst_prob` / `_mean_s` / `_mean_gap_s` | onGt（两态马尔可夫） |
-//   | 置信度 | **配置显式声明**（`confidence`，缺省 1.0） | `agc::declaredConfidence`；**不**由 σ 派生 |
-//   | 速度 | α-β 滤波器 | 由**噪声位置**估计，**不**直接对真值差分 |
+// | 类别 | 参数 | 实现位置 |
+// |---|---|---|
+// | 位置噪声 | `sigma_xy_m` / `sigma_z_m` | onGt（源采样时刻加噪） |
+// | 时间延迟 | `latency_s` | 延迟队列（改交付时刻，不改源采样时刻） |
+// | 丢包 | `drop_prob` | onGt（独立同分布） |
+// | 成簇丢失 | `drop_burst_prob` / `_mean_s` / `_mean_gap_s` | onGt（两态马尔可夫） |
+// | 置信度 | **配置显式声明**（`confidence`，缺省 1.0） | `agc::declaredConfidence`；**不**由 σ 派生 |
+// | 速度 | α-β 滤波器 | 由**噪声位置**估计，**不**直接对真值差分 |
 //
 // ## 置信度与精度是两件事（2026-11-03 语义解耦）
 //
@@ -32,8 +32,8 @@
 // 于是"给真值链路加 0.5 m 噪声"这个完全合理的需求会直接打断链路。
 //
 // 现口径：
-//   * `confidence` = **这条航迹是不是真的** → 由配置声明（真值通道恒为真，缺省 1.0）
-//   * `pose.covariance` = **这条航迹有多准** → 由 σ_xy / σ_z 给出
+// * `confidence` = **这条航迹是不是真的** → 由配置声明（真值通道恒为真，缺省 1.0）
+// * `pose.covariance` = **这条航迹有多准** → 由 σ_xy / σ_z 给出
 // 两者不再互相派生。加噪声只影响协方差与融合权重，**不再**导致航迹被拒。
 // 详见 `include/agc_perception/confidence.hpp` 文件头。
 //
@@ -42,7 +42,7 @@
 // 旧实现用 `diff_window_s=0.15` 窗对**真值**做差分，零噪声下得到精确速度。
 // 一旦位置带噪声 σ_p，同一差分窗的速度噪声是：
 //
-//     σ_v = σ_p·√2 / Δt = σ_p·√2/0.15 ≈ 9.43·σ_p
+// σ_v = σ_p·√2 / Δt = σ_p·√2/0.15 ≈ 9.43·σ_p
 //
 // 即 σ_p=0.5 m 时 σ_v≈4.7 m/s，比目标自身速度（0.5 m/s）大一个量级 —— 下游
 // `standoff_follower` 的参考速度前馈会被这个噪声直接驱动，跟踪剧烈抖动。
@@ -51,8 +51,8 @@
 // 增益由**跟踪指数** Λ = σ_w·Δt²/σ_p 解析给出（见 `AlphaBeta::gains`），不是手调魔数。
 //
 // 发布口径（用户 2026-11-03 裁定「位置加噪 + 滤波器估计速度」）：
-//   * **位置** = 加噪后的原始观测（噪声可见、可被下游与真值比对测误差）
-//   * **速度** = α-β 滤波器输出（不被噪声放大）
+// * **位置** = 加噪后的原始观测（噪声可见、可被下游与真值比对测误差）
+// * **速度** = α-β 滤波器输出（不被噪声放大）
 //
 // ## 几何门控：本节点不做
 //
@@ -132,7 +132,7 @@ public:
     drop_burst_mean_gap_s_ = declare_parameter<double>("drop_burst_mean_gap_s", 5.0);
     seed_ = declare_parameter<std::string>("seed", "0");
     // 航迹**可信度**：由配置显式声明（2026-11-03 语义解耦，见 confidence.hpp 文件头）。
-    //   缺省 1.0 = "真值通道的航迹按定义为真"。**不**由 σ 派生——σ 只表示精度。
+    // 缺省 1.0 = "真值通道的航迹按定义为真"。**不**由 σ 派生——σ 只表示精度。
     confidence_ = agc::declaredConfidence(declare_parameter<double>("confidence", 1.0));
     // 精度容差（**仅诊断**）：给定 σ，误差落在 tol 内的概率。不参与 confidence 计算。
     tol_m_ = declare_parameter<double>("confidence_tolerance_m", 0.25);
@@ -406,13 +406,13 @@ private:
       ++published_;
     } else if (has_pose_) {
       // **显式**发空数组：本拍无新样本（丢包 / 延迟未到）→ 下游按"无目标"处理，
-      //   绝不重发上次位置冒充新观测（契约 C10 / N4 出口判据 2）。
+      // 绝不重发上次位置冒充新观测（契约 / N4 出口判据 2）。
       ++empty_pubs_;
     }
     if (has_pub_) {pub_->publish(arr);}
 
     // 诊断（N4 出口判据 2：不确定性必须**可观测**，不得静默计数）：
-    //   每 5 s 汇总一次：入站数 / 丢包 / 队列溢出 / 已发布 / 空发布 / 延迟队列深度。
+    // 每 5 s 汇总一次：入站数 / 丢包 / 队列溢出 / 已发布 / 空发布 / 延迟队列深度。
     if (diag_period_s_ > 0.0 && (now_s - last_diag_s_) >= diag_period_s_) {
       last_diag_s_ = now_s;
       RCLCPP_INFO(get_logger(),

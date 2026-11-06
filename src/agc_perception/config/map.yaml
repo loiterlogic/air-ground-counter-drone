@@ -1,12 +1,12 @@
-# W4 地图几何（供 map_adapter 构建 OccupancyGrid；契约参数见 perception.yaml）
+# 地图几何（供 map_adapter 构建 OccupancyGrid；契约参数见 perception.yaml）
 #
-# ---- 几何真源（S-06；ADR-0007）----
-# 作业区几何的唯一真源为所选地图文件的 `work_area`（`minimal` = `agc_sim/config/world_geometry.yaml`；
+# ---- 配置文件（ADR-0007）----
+# 作业区几何的配置文件为所选地图文件的 `work_area`（`minimal` = `agc_sim/config/world_geometry.yaml`；
 # 其余地图见 `agc_sim/config/maps/`，清单 `agc_sim/launch/world_map.py`）。本文件是
-# **standalone 回退副本**，**只与 `minimal` 真源一致**（由 `tests/w6_geometry_check.py` 断言 (c) 校验）。
-# w6 运行路径的地图几何由所选真源**派生生成**（`w6_composition.write_derived_map`），不读本副本。
+# **standalone 回退副本**，**只与 `minimal` 配置文件一致**（由 `tests/w6_geometry_check.py` 断言 (c) 校验）。
+# w6 运行路径的地图几何由所选配置文件**派生生成**（`w6_composition.write_derived_map`），不读本副本。
 #
-# 对齐旧树行为：旧 map_adapter 由场景文件的 map 段取几何。W4 收敛到本文件。
+# 对齐旧树行为：旧 map_adapter 由场景文件的 map 段取几何。 收敛到本文件。
 # 作业区为 **100×100 m**（用户 2026-10-29 裁定由 80×80 放大），故栅格覆盖 [-50,50]²
 # （200×200 单元 @0.5 m，容纳真八字足迹与全部障碍）。本副本**只**同步 `minimal`。
 resolution: 0.5      # m/cell

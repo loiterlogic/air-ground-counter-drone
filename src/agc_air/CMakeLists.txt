@@ -41,8 +41,8 @@ ament_target_dependencies(agc_air_lib ${DEPS})
 target_link_libraries(agc_air_lib Eigen3::Eigen)
 
 # 空中链路节点（R1/R2/R4/R5/R6/R7/R8）
-# 注：W3 占位目标源节点已在 W4 退役（真值源改由 agc_perception 的 gt_adapter /
-# air_fusion 提供，见 .trae/specs/w4-perception-fusion/spec.md R3）。
+# 注： 占位目标源节点已在 退役（真值源改由 agc_perception 的 gt_adapter /
+# air_fusion 提供，见 .trae/ADR-0025 R3）。
 set(NODES
   px4_adapter
   takeoff_controller
@@ -66,10 +66,10 @@ if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
   ament_add_gtest(test_px4_conversions test/test_px4_conversions.cpp)
   target_link_libraries(test_px4_conversions agc_air_lib)
-  # R-038：安全层障碍配置**失败型**验证（平行数组长度一致 / 几何合法性；不写镜像实现测试）
+  # 安全层障碍配置**失败型**验证（平行数组长度一致 / 几何合法性；不写镜像实现测试）
   ament_add_gtest(test_safety_shield_validation test/test_safety_shield_validation.cpp)
   target_link_libraries(test_safety_shield_validation agc_air_lib rclcpp::rclcpp)
-  # ADR-0010「垂直门控」：圆盘集经生产函数 deriveRings() 取得，只断言生效 / 移除 / 归因。
+  # ADR-0010「垂直门控」：圆盘集经生产函数 deriveRings 取得，只断言生效 / 移除 / 归因。
   ament_add_gtest(test_safety_shield_vertical_gate test/test_safety_shield_vertical_gate.cpp)
   target_link_libraries(test_safety_shield_vertical_gate agc_air_lib rclcpp::rclcpp)
 endif()

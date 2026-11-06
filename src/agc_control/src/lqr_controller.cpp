@@ -1,8 +1,8 @@
 // agc_control/lqr_controller.cpp —— LQR 控制器插件实现
 //
-// R-038（数值模型暴露与配置合法性启动校验；见 ADR-0009）：
-//   ① 精确离散化（Bd 补上位置 0.5·dt² 项）；② DARE 收敛 / 残差 / 有限性检查，失败即抛错；
-//   ③ 关键正数 / 有限性 / 权重可行域**集中校验**，非法配置**拒绝**（不静默兜底）。
+// （数值模型暴露与配置合法性启动校验；见 ADR-0009）：
+// ① 精确离散化（Bd 补上位置 0.5·dt² 项）；② DARE 收敛 / 残差 / 有限性检查，失败即抛错；
+// ③ 关键正数 / 有限性 / 权重可行域**集中校验**，非法配置**拒绝**（不静默兜底）。
 
 #include "agc_control/lqr_controller.hpp"
 
@@ -34,7 +34,7 @@ void noteBad(std::ostringstream & oss, const char * name, double value)
 
 void LqrController::validateParameters()
 {
-  // R-038：关键正数 / 有限性 / 权重可行域集中校验 —— 非法一律**拒绝**（**不**静默兜底）。
+  // 关键正数 / 有限性 / 权重可行域集中校验 —— 非法一律**拒绝**（**不**静默兜底）。
   // 可行域说明：Q = diag(q_pos·I₃, q_vel·I₃)、R = r·I₃，故 q_pos/q_vel>0、r>0 即 Q 半正定、R 正定。
   std::ostringstream bad;
   if (!std::isfinite(q_pos_) || q_pos_ <= 0.0) {noteBad(bad, "q_pos", q_pos_);}
@@ -75,7 +75,7 @@ void LqrController::solveDiscreteLqr()
   B.bottomLeftCorner<3, 3>() = Eigen::Matrix3d::Identity();
 
   // 精确离散化：Ad = I + A·dt + 0.5·A²·dt²（本 A 幂零 → A²=0 → 高阶项为零 → **恰为精确**）。
-  //   Bd = B·dt + 0.5·A·B·dt²（A·B = [[I],[0]]）→ Bd = [[0.5·dt²·I],[dt·I]]（含位置 0.5·dt² 项，**精确**）。
+  // Bd = B·dt + 0.5·A·B·dt²（A·B = [[I],[0]]）→ Bd = [[0.5·dt²·I],[dt·I]]（含位置 0.5·dt² 项，**精确**）。
   const Eigen::Matrix<double, 6, 6> A2 = A * A;                       // = 0（幂零）
   const Eigen::Matrix<double, 6, 6> Ad =
     Eigen::Matrix<double, 6, 6>::Identity() + A * dt_ + 0.5 * A2 * dt_ * dt_;
@@ -105,7 +105,7 @@ void LqrController::solveDiscreteLqr()
   residual_ = residual;
   converged_ = converged;
 
-  // R-038：数值健全诊断日志（ad/bd 是否精确式、dt、适用频率、DARE 收敛与残差）。
+  // 数值健全诊断日志（ad/bd 是否精确式、dt、适用频率、DARE 收敛与残差）。
   RCLCPP_INFO(rclcpp::get_logger("agc_control.lqr"),
     "LQR 离散化：Ad=I+A·dt+0.5·A²·dt²（A 幂零 → 恰为**精确**）；"
     "Bd=[[0.5·dt²·I],[dt·I]]（**精确**，含位置 0.5·dt² 项）；dt=%.6f s（适用频率 %.1f Hz）；"

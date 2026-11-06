@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """`make_gif.py` —— 把 `capture_run.py` 的连续帧序列合成 README 用的 GIF。
 
-## 规格（P2-1 出口判据 + P2-1 计划第 2 节）
+## 规格（ 出口判据 + 计划规范）
 
 | 项 | 要求 | 本脚本怎么保证 |
 |---|---|---|
@@ -17,7 +17,7 @@
 
 ```bash
 python3 scripts/demo/make_gif.py --frames experiments/p2-1/round-2/frames \
-    --out docs/plan/assets/demo.gif --fps 8 --max-bytes 5242880
+    --out docs/conventions/assets/demo.gif --fps 8 --max-bytes 5242880
 ```
 
 退出码：`0` 产出且满足全部规格；`1` 产出但**某项规格未满足**（报告写明）；`2` 用法错误。
@@ -33,7 +33,7 @@ from PIL import Image
 TARGET_WIDTH = 800
 MIN_WIDTH = 640
 # 口径写死：**十进制 5,000,000 字节**（不是 5 MiB）。
-# round-4 交付 5,095,380 B：按 MiB(5,242,880) 达标、按十进制 MB(5,000,000) **超出** ——
+# 交付 5,095,380 B：按 MiB(5,242,880) 达标、按十进制 MB(5,000,000) **超出** ——
 # 模糊口径等于没口径，故统一到更严的十进制值，并在 manifest 明写单位。
 MAX_BYTES = 5 * 1000 * 1000
 
@@ -54,9 +54,9 @@ def _resize(path, width):
 def make(frames, out_path, fps, width, colors, max_bytes, source_fps, stride=None):
     """抽帧 → 缩放 → 存 GIF；返回 dict（含是否达标与降级记录）。
 
-    `stride` 可直接给抽帧倍数（体积超限时按 1→2→3→4 降级）：
-    **抽帧后每帧时长同比拉长，总时长保持不变**——这样"800 px + 10–15 s"两个硬指标
-    不会被"降帧率"顺手破坏（round-4 实测踩过：降 fps 到 1.5 仍 3.86 MB 且宽度被迫降到 640）。
+ `stride` 可直接给抽帧倍数（体积超限时按 1→2→3→4 降级）：
+ **抽帧后每帧时长同比拉长，总时长保持不变**——这样"800 px + 10–15 s"两个硬指标
+ 不会被"降帧率"顺手破坏（ 实测踩过：降 fps 到 1.5 仍 3.86 MB 且宽度被迫降到 640）。
     """
     if stride is None:
         stride = max(1, int(round(source_fps / float(fps))))
@@ -95,7 +95,7 @@ def main(argv=None):
         print('[gif] 帧数不足（%d）：%s' % (len(frames), args.frames), file=sys.stderr)
         return 2
 
-    # 时长硬门：源帧跨度可能超过上限（round-5 实测 22 帧 × 0.8 s = 17.6 s），
+    # 时长硬门：源帧跨度可能超过上限（ 实测 22 帧 × 0.8 s = 17.6 s），
     # 此时**截取前一段**而不是靠抽帧（抽帧会同比拉长每帧时长，总时长不变）。
     # 每帧时长 = 1/source_fps；要落进 [min,max]，帧数取 max_duration 向下取整，
     # 但**不得低于** min_duration（否则把"截取"做成了"截断到不合格"）。
@@ -116,7 +116,7 @@ def main(argv=None):
     # 降级阶梯（**保宽度、保时长，只抽帧**）：
     # 宽度 800 px 与时长 10–15 s 是出口判据硬指标，帧率不是。
     # 抽帧时每帧时长同比拉长 → **总时长不变**，所以"抽帧"不会破坏时长指标。
-    # round-4 实测：20 帧 @800 px = 3.86 MB / 14.3 s（超 5 MB 上限一点点）；
+    # 实测：20 帧 @800 px = 3.86 MB / 14.3 s（超 5 MB 上限一点点）；
     # 抽到 stride=2（10 帧）→ 800×916 / 14.3 s / 2.72 MB，三项全过。
     ladder = [
         (args.fps, TARGET_WIDTH, 1),

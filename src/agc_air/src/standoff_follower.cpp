@@ -1,6 +1,6 @@
-// standoff_follower —— 对目标**常开** standoff 跟踪（spec R6，C10）
+// standoff_follower —— 对目标**常开** standoff 跟踪（spec R6，）
 //
-// 契约 [硬约束] C10：无人机对目标的跟踪**常开**（非可选），保持安全间距（不紧贴），
+// 契约 [硬约束] ：无人机对目标的跟踪**常开**（非可选），保持安全间距（不紧贴），
 // 目的是不丢失目标；目标须新鲜（ref_max_age_s=0.5、confidence≥0.5），**过期即冻结**。
 // 行为对齐旧 `air_follow` 的**距离带策略**（WHAT）；实现为全新重写（HOW 不继承）。
 // 输出 `/agc/air/tracking_ref`，**覆盖**基础轨迹参考（由 trajectory_tracker 执行覆盖）。
@@ -61,12 +61,12 @@ protected:
       target_topic_, rclcpp::QoS(rclcpp::KeepLast(1)).reliable(),
       [this](agc_msgs::msg::TargetTrackArray::SharedPtr m) {
         // 空数组 = **本拍无新观测**（感知侧门控 / 丢包），**不是**目标消失（ADR-0009）。
-        //   2026-11-03（N4）修正：旧实现 `have_target_ = false` 把"没新数据"当成"目标丢了"——
-        //   `drop_prob=0.1` 在 10 Hz 下每 ~10 拍就有一次空数组，每次都会立刻把航迹判死 →
-        //   `targetFresh()` 返回 false → 冻结（hold）。**丢包被放大成航迹中断**（实测 nominal 档
-        //   3 次 hold，全部对应空数组拍；ideal 档 0 次）。
-        //   正确语义：保持上一有效航迹不动，由**年龄**判定失效（`ref_max_age_s=0.5`）——
-        //   那才是契约 C10 的"过期即冻结"。空数组只是"这一拍没送来新东西"。
+        // 2026-11-03（N4）修正：旧实现 `have_target_ = false` 把"没新数据"当成"目标丢了"——
+        // `drop_prob=0.1` 在 10 Hz 下每 ~10 拍就有一次空数组，每次都会立刻把航迹判死 →
+        // `targetFresh` 返回 false → 冻结（hold）。**丢包被放大成航迹中断**（实测 nominal 档
+        // 3 次 hold，全部对应空数组拍；ideal 档 0 次）。
+        // 正确语义：保持上一有效航迹不动，由**年龄**判定失效（`ref_max_age_s=0.5`）——
+        // 那才是契约 的"过期即冻结"。空数组只是"这一拍没送来新东西"。
         if (m->tracks.empty()) {
           ++diag_empty_;
           return;
@@ -75,7 +75,7 @@ protected:
         const auto & p = tr.pose.pose.position;
         target_pos_ = agc_air::Vector3(p.x, p.y, p.z);
         target_conf_ = tr.confidence;
-        // 新鲜度以消息自身时刻衡量（契约 C10）
+        // 新鲜度以消息自身时刻衡量（契约 ）
         target_stamp_ = rclcpp::Time(tr.header.stamp, RCL_ROS_TIME);
         have_target_ = true;
       });
@@ -118,7 +118,7 @@ protected:
   }
 
 private:
-  /// 目标是否满足新鲜度要求（契约 C10：ref_max_age_s 与 confidence 门槛）
+  /// 目标是否满足新鲜度要求（契约 ：ref_max_age_s 与 confidence 门槛）
   bool targetFresh() const
   {
     if (!have_target_) {return false;}
@@ -131,7 +131,7 @@ private:
     if (!have_odom_ || !ref_pub_ || !ref_pub_->is_activated()) {return;}
 
     if (!targetFresh()) {
-      // 契约 C10 的"过期即冻结"针对**已捕获目标后**失联的情形；
+      // 契约 的"过期即冻结"针对**已捕获目标后**失联的情形；
       // 若从未捕获过目标，则不应占用跟踪参考（否则会覆盖基础轨迹参考，飞机只会原地悬停）。
       if (!acquired_) {return;}
       // 过期即冻结：保持上一有效跟踪参考，不再更新（既不掉高也不追）

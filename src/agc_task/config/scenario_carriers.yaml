@@ -1,19 +1,19 @@
-# 场景轴 → 承载者登记表（评审 R-026；ADR-0018）
+# 场景轴 → 承载者登记表（评审 ；ADR-0018）
 #
 # 目的：把 `scenarios.yaml` 里**声明的轴值**映射到**承载它的节点 / 参数 / 文件**，
 # 由顶层统一入口 w6.launch.py（经共享模块 w6_composition.py）**启动时校验**：
-#   * 声明轴值**必须**在本表有 `supported: true` 的承载者；
-#   * 无承载者（`supported: false`，如 `obstacle=dynamic`）→ launch **显式拒绝运行**；
-#   * 承载者需**空中链路**（`requires_air_link: true`）而当前后端为轻量栈 → 允许运行但
-#     覆盖账本标 `not_carried`（**不**以命名冒充已执行）。
+# * 声明轴值**必须**在本表有 `supported: true` 的承载者；
+# * 无承载者（`supported: false`，如 `obstacle=dynamic`）→ launch **显式拒绝运行**；
+# * 承载者需**空中链路**（`requires_air_link: true`）而当前后端为轻量栈 → 允许运行但
+# 覆盖账本标 `not_carried`（**不**以命名冒充已执行）。
 #
 # 约定：
-#   * `obstacles_file` 为 **agc_perception/config 下的文件名**，由上层 launch 解析为绝对路径
-#     经 perception_bringup 单一注入（契约 #params）。
-#   * `world_obstacles` 传给 world_bringup：`static` 用含 pole_* 的世界，`none` 用去除 pole_* 的世界。
-#   * `perception` 轴已于 2026-11-06 退役（用户裁定「彻底删」）：`sensors_file` 通道变体在
-#     `air_fusion` 退役后无消费者，四档运行期行为完全相同。场景定义不得再声明该轴；
-#     防复活闸门见 scripts/tests/test_retirement_ledger.py。
+# * `obstacles_file` 为 **agc_perception/config 下的文件名**，由上层 launch 解析为绝对路径
+# 经 perception_bringup 单一注入（docs/ROS2迁移交接文档.md#params）。
+# * `world_obstacles` 传给 world_bringup：`static` 用含 pole_* 的世界，`none` 用去除 pole_* 的世界。
+# * `perception` 轴已于 2026-11-06 退役（用户裁定「彻底删」）：`sensors_file` 通道变体在
+# `air_fusion` 退役后无消费者，四档运行期行为完全相同。场景定义不得再声明该轴；
+# 防复活闸门见 scripts/tests/test_retirement_ledger.py。
 axes:
   target_motion:
     static:

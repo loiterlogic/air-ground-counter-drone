@@ -1,14 +1,14 @@
 """P1-3 可观测与演示呈现的离线回归（**不启任何仿真、不读 ROS 图**）。
 
-守护 P1-3 的七条出口判据里**可在离线判定**的部分（[P1-3 出口判据]）：
+守护 的七条出口判据里**可在离线判定**的部分（[ 出口判据]）：
 
-  1. 状态枚举 → 人话映射**单一实现**，9 个枚举 + reason_code 全覆盖；
-  2. C8 表述红线：`TRACKING_SUCCESS` 的任何展示文案都不含"拦截完成"；
-  3. 面板：2 Hz 节拍、含状态 / 说明 / 目标距离 / 已用时，headless 不受影响；
-  4. 时间线：状态跳变才记一行，关键节点够 5 个或**如实记账**；
-  5. 终态解释：指标只来自 `summary.json`，阈值只来自 `params_applied.yaml`，缺就说不缺就编；
-  6. 展示层**未新增话题 / 未改 ABI / 未新增命令者**；
-  7. `TRACKING_SUCCESS` 不被显示成拦截（与 2 同源，但单独有"文案表被打回"的对照）。
+ 1. 状态枚举 → 人话映射**单一实现**，9 个枚举 + reason_code 全覆盖；
+ 2. 表述红线：`TRACKING_SUCCESS` 的任何展示文案都不含"拦截完成"；
+ 3. 面板：2 Hz 节拍、含状态 / 说明 / 目标距离 / 已用时，headless 不受影响；
+ 4. 时间线：状态跳变才记一行，关键节点够 5 个或**如实记账**；
+ 5. 终态解释：指标只来自 `summary.json`，阈值只来自 `params_applied.yaml`，缺就说不缺就编；
+ 6. 展示层**未新增话题 / 未改 ABI / 未新增命令者**；
+ 7. `TRACKING_SUCCESS` 不被显示成拦截（与 2 同源，但单独有"文案表被打回"的对照）。
 
 运行：
   python3 -m pytest scripts/tests/test_demo_observability.py -q     # 纯离线，无需 source ROS
@@ -115,7 +115,7 @@ def test_reason_codes_are_translated():
     code = '\n'.join(code_lines)
     found = set(re.findall(r'(?:setState|enterTerminal)\([^,()]+,\s*"([a-zA-Z0-9_]+)"\)', code))
     found |= set(re.findall(r'fail\(res,\s*"([a-zA-Z0-9_]+)"', code))
-    # 走变量传进来的 reason（`fail(res, reason, evid)`）来自 R-013 门禁，见下方显式清单
+    # 走变量传进来的 reason（`fail(res, reason, evid)`）来自 门禁，见下方显式清单
     found |= set(re.findall(r'reason = "([a-zA-Z0-9_]+)";', code))
     found |= {'TIMEOUT', 'abort', 'tracking_milestone', 'target_acquired', 'ground_approach'}
     for code_name in ('CAPTURE_NET', 'JAM_RTL', 'JAM_LAND', 'JAM_HOLD', 'JAM_LOST'):
@@ -141,7 +141,7 @@ def test_unknown_state_is_reported_not_invented():
 
 
 # --------------------------------------------------------------------------------------
-# 2. C8 表述红线（静态禁词）
+# 2. 表述红线（静态禁词）
 # --------------------------------------------------------------------------------------
 
 def test_c8_tracking_success_has_no_intercept_wording():
@@ -180,9 +180,9 @@ def test_c8_guard_actually_fires():
 def test_c8_wording_table_matches_plan_document():
     """文案表与 [演示可观测性与产物语义] 文档逐行一致（防止代码与文档各说各话）。
 
-    真源：`docs/conventions/演示可观测性与产物语义.md` 的「状态文案表」。
-    该计划文件原先在 `docs/plan/`，2026-10-31 归档、2026-11-03 随归档清理删除；
-    语义已迁到上述 convention（结论未变），本测试随之改指现役真源。
+ 配置文件：`docs/conventions/演示可观测性与产物语义.md` 的「状态文案表」。
+ 该计划文件原先在 `ADR-0032，2026-10-31 归档、2026-11-03 随归档清理删除；
+ 语义已迁到上述 convention（结论未变），本测试随之改指现役配置文件。
     """
     path = os.path.join(ROOT, 'docs', 'conventions', '演示可观测性与产物语义.md')
     assert os.path.exists(path), '找不到语义真源文档：%s' % path
@@ -464,7 +464,7 @@ def test_no_new_topics_in_presentation_layer():
         for topic in topics:
             assert topic in allowed or name == 'start.py', (
                 '%s 出现了话题 %r —— 展示层不得新增话题' % (name, topic))
-    # start.py 允许的订阅集合必须与 P1-2 一致（只多不少地列清，防止偷加）
+    # start.py 允许的订阅集合必须与 一致（只多不少地列清，防止偷加）
     start_text = _read('start.py')
     subs = set(re.findall(r'create_subscription\([^,]+,\s*\'([^\']+)\'', start_text))
     assert subs == {'/agc/task/state', '/clock', '/agc/gt/agc_car', '/agc/gt/intruder_uav',
@@ -502,7 +502,7 @@ def test_display_layer_reads_only_documented_state_fields():
 
 
 # --------------------------------------------------------------------------------------
-# 7. 接线与默认口径（不回归 P1-2 的既有约束）
+# 7. 接线与默认口径（不回归 的既有约束）
 # --------------------------------------------------------------------------------------
 
 def test_start_wires_all_three_presentation_artifacts():
@@ -535,7 +535,7 @@ def test_default_arm_unchanged_and_annotated():
 
 
 # --------------------------------------------------------------------------------------
-# 8. 呈现层不得成为单点故障（round-1 实测教训的回归）
+# 8. 呈现层不得成为单点故障（ 实测教训的回归）
 # --------------------------------------------------------------------------------------
 
 def test_presentation_failure_degrades_instead_of_killing_the_run():

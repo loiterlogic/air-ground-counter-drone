@@ -6,9 +6,9 @@
 （`/sys/class/net/lo/flags == 0x9`），于是：
 
 * `LOCALHOST` 让 Fast DDS 把发现绑到 `lo` 且往 `224.0.0.1` 发包；`lo` 无组播能力 →
-  **无论用哪种传输都零送达**（实测 `SHM` / `UDPv4` / 默认三组全 0）；
+ **无论用哪种传输都零送达**（实测 `SHM` / `UDPv4` / 默认三组全 0）；
 * `SUBNET` + 默认传输 → 发现成功（`get_subscription_count` 会到 1）、但 **UDP 数据面
-  零送达**（`0x9` 无组播时 `IP_MULTICAST_LOOP` 的组播包不被回环反射）；
+ 零送达**（`0x9` 无组播时 `IP_MULTICAST_LOOP` 的组播包不被回环反射）；
 * `SUBNET` + `FASTDDS_BUILTIN_TRANSPORTS=SHM` → **238/238 条送达**，唯一可用组合。
 
 补充（2026-11-04 二次实测，纠正"LOCALHOST 彻底不能用"的说法）：`LOCALHOST` 在本机是
@@ -19,15 +19,15 @@
 
 所以"必须 LOCALHOST"在本机是**不可依赖**的。本模块把选择依据从"信仰"改成"探测"：
 
-  * 显式覆盖（`AGC_DDS_TRANSPORT_POLICY`）优先——给 A/B 与排障留一个确定口子；
-  * 否则按**探测到的能力**选：`lo` 有组播 → `LOCALHOST` + 默认传输（原生 Linux 的既有
-    行为**完全不变**）；`lo` 无组播 → `SUBNET` + `SHM`（本机唯一可用）。
+ * 显式覆盖（`AGC_DDS_TRANSPORT_POLICY`）优先——给 A/B 与排障留一个确定口子；
+ * 否则按**探测到的能力**选：`lo` 有组播 → `LOCALHOST` + 默认传输（原生 Linux 的既有
+ 行为**完全不变**）；`lo` 无组播 → `SUBNET` + `SHM`（本机唯一可用）。
 
 刻意**不**用 `FASTDDS_BUILTIN_TRANSPORTS=UDPv4` 当本机修复：实测零送达，且项目已有
 "UDPv4 不是修复"的记录。
 
 `SHM` 的边界：只在**同主机**多进程间有效，跨机器仍须 UDP。故本模块只在探测到 `lo` 无
-组播时才选 `SHM`；反过来，W7-c worker 那种"必须关 SHM 防跨 worker 互发现"的场景，请用
+组播时才选 `SHM`；反过来， worker 那种"必须关 SHM 防跨 worker 互发现"的场景，请用
 显式覆盖把它钉死（见 `episode_runner.py`）。
 
 调用方：`run_demo.sh`（导出主流程环境）、`scripts/episode_runner.py`（launch 环境）、
@@ -86,7 +86,7 @@ _POLICY_ENV = {
 def select(flags=None):
     """按探测结果返回策略名（`auto` 已解析成具体策略）。
 
-    ``flags`` 仅供测试注入；生产走 `/sys/class/net/lo/flags`。
+ ``flags`` 仅供测试注入；生产走 `/sys/class/net/lo/flags`。
     """
     return 'localhost-udp' if lo_has_multicast(flags) else 'subnet-shm'
 
@@ -105,8 +105,8 @@ def resolve(policy=None, flags=None):
 def env_for(policy=None, flags=None):
     """返回要注入的环境 dict（值 None = 需从环境中删除）。
 
-    供 shell（`run_demo.sh`）与 Python（`episode_runner` / 测试）共用，
-    保证"谁选都一样"。
+ 供 shell（`run_demo.sh`）与 Python（`episode_runner` / 测试）共用，
+ 保证"谁选都一样"。
     """
     return dict(_POLICY_ENV[resolve(policy, flags)])
 

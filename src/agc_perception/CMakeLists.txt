@@ -21,7 +21,7 @@ find_package(gz-msgs10 REQUIRED)
 
 set(DEPS rclcpp nav_msgs geometry_msgs std_msgs tf2 tf2_ros agc_msgs)
 
-# ---- W4-a · 适配层 ----
+# ---- · 适配层 ----
 add_executable(gt_bypass src/gt_bypass.cpp)
 ament_target_dependencies(gt_bypass rclcpp geometry_msgs)
 target_include_directories(gt_bypass PRIVATE
@@ -36,12 +36,12 @@ add_executable(gt_adapter src/gt_adapter.cpp)
 ament_target_dependencies(gt_adapter ${DEPS})
 target_include_directories(gt_adapter PRIVATE include)
 
-# ---- W4-b · 感知与融合已于 2026-11-06 退役（用户裁定）----
+# ---- · 感知与融合已于 2026-11-06 退役（用户裁定）----
 # `air_perception` 节点（发布 /agc/air/obs）自 air_fusion 退役后无消费者，已整体删除：
 # 源文件 / 可执行 / sensors_file 通道配置 / perception 场景轴 / 承载者解析链一并移除。
 # 防复活闸门见 scripts/tests/test_retirement_ledger.py。
 
-# ---- W4-c · 地图 ----
+# ---- · 地图 ----
 add_executable(map_adapter src/map_adapter.cpp)
 ament_target_dependencies(map_adapter ${DEPS})
 target_include_directories(map_adapter PRIVATE include)

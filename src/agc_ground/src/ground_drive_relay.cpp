@@ -1,10 +1,10 @@
-// ground_drive_relay —— 地面执行中继（M0）
+// ground_drive_relay —— 地面执行中继
 //
 // 契约唯一命令口 /agc/ground/cmd_vel（TwistStamped，车体系）→ GZ /model/agc_car/cmd_vel
 // （geometry_msgs/Twist，无戳、模型系），经 ros_gz 桥下行。本节点是**唯一**命令车体运动者。
 // 看门狗：上游超时（默认 0.3 s）发零速。
 //
-// R-009（评审风险）：接收年龄改为**单调钟**（与 ROS 时钟完全解耦，时钟冻结/回拨不影响超时发零）；
+// （评审风险）：接收年龄改为**单调钟**（与 ROS 时钟完全解耦，时钟冻结/回拨不影响超时发零）；
 // 并对 Header（frame_id / 采样年龄 / stamp 倒退）与值（有限性 / 模型上限）做前置校验，
 // 非法 / 陈旧命令一律**拒收**（不更新已接受值），避免用旧/非法值覆盖。末端（GZ DiffDrive）失效停车
 // 机制**不在本节点**，由后续子任务负责。
@@ -28,7 +28,7 @@ public:
     in_topic_ = declare_parameter<std::string>("in_topic", "/agc/ground/cmd_vel");
     out_topic_ = declare_parameter<std::string>("out_topic", "/model/agc_car/cmd_vel");
     watchdog_s_ = declare_parameter<double>("watchdog_s", 0.3);
-    // —— R-009 新增（默认保守值；由 launch/config 单一注入，契约 #params）——
+    // —— 新增（默认保守值；由 launch/config 单一注入，docs/ROS2迁移交接文档.md#params）——
     expected_frame_id_ = declare_parameter<std::string>("expected_frame_id", "car/base_link");
     max_sample_age_s_ = declare_parameter<double>("max_sample_age_s", 0.5);
     frame_id_tolerance_ = declare_parameter<double>("frame_id_tolerance", 0.05);
@@ -46,7 +46,7 @@ public:
 private:
   void on_command(const geometry_msgs::msg::TwistStamped & m)
   {
-    // (b-1) frame_id 必须为期望车体系（默认 car/base_link，契约 #namespace）；错帧判为链路异常。
+    // (b-1) frame_id 必须为期望车体系（默认 car/base_link，docs/ROS2迁移交接文档.md#namespace）；错帧判为链路异常。
     if (m.header.frame_id != expected_frame_id_) {
       RCLCPP_WARN_THROTTLE(
         get_logger(), throttle_clock_, 1000, "reject: unexpected frame_id='%s'",
@@ -126,7 +126,7 @@ private:
   }
 
   std::string in_topic_, out_topic_, expected_frame_id_;
-  // 节流日志用**稳定钟**：不随 ROS 时钟冻结/回拨而失效（R-009 场景下仍能给出告警）。
+  // 节流日志用**稳定钟**：不随 ROS 时钟冻结/回拨而失效（ 场景下仍能给出告警）。
   rclcpp::Clock throttle_clock_{RCL_STEADY_TIME};
   double watchdog_s_{0.3};
   double max_sample_age_s_{0.5};

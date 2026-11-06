@@ -1,22 +1,22 @@
-# W6 场景族登记表（R5）——场景轴矩阵 + 期望终态。
+# 场景族登记表（R5）——场景轴矩阵 + 期望终态。
 #
 # 轴：目标运动 {static|linear|maneuver|epicycle} × 障碍 {none|static|dynamic}
-#     × 结局 {tracking|capture|jam|unreachable|timeout}
-# 由 w6.launch.py 读取，与 config/w6_base.yaml 合并（场景覆盖基参）后单一注入（契约 #params）。
+# × 结局 {tracking|capture|jam|unreachable|timeout}
+# 由 w6.launch.py 读取，与 config/w6_base.yaml 合并（场景覆盖基参）后单一注入（docs/ROS2迁移交接文档.md#params）。
 # 说明：
-#   * `intruder_driver` 段描述目标运动（W6 PX4 驱动；整数 load 由双 PX4 整链 launch 集成承载）。
-#   * capture / jam 类场景的**期望终态**依赖 W6-c 裁决器（Task 9–11）；spawn/goal 已就绪，裁决落地即达终态。
-#   * 障碍（none / static）的**承载者**见 config/scenario_carriers.yaml；launch 启动时校验
-#     声明轴值必有承载者，无承载者（obstacle=dynamic）显式拒绝运行。
-#   * `perception` 轴已于 2026-11-06 退役（用户裁定「彻底删」）：`sensors_file` 通道变体无
-#     消费者、四档运行期行为完全相同。场景定义不得再声明该轴；部分场景 ID 名中的
-#     `dropout` / `fov` 字样为**历史遗留标签**，不表示存在对应的活跃轴或行为差异。
-#   * `support_status`：supported = 全部声明轴有承载者；unsupported:<axis> = 该轴无承载者（拒绝运行）。
-#   * `world_map`（P1-1，**场景级**、位于 `axes` 之外）：该场景默认使用的**地图 / 几何真源**。
-#       minimal（缺省）| yard | open_field —— 见 agc_sim/launch/world_map.py（单一清单）。
-#       launch `world_map:=<name>` 可强制覆盖（优先级：launch > 场景 > 缺省 minimal）。
-#       地图是**几何真源的选择**，不是场景轴：它不改变声明轴 / 期望终态 / 判据；
-#       s04 指向 yard，正是「主场景在演示主地图上跑」的落地（P1-1 派工范围决定 1）。
+# * `intruder_driver` 段描述目标运动（ PX4 驱动；整数 load 由双 PX4 整链 launch 集成承载）。
+# * capture / jam 类场景的**期望终态**依赖 裁决器（Task 9–11）；spawn/goal 已就绪，裁决落地即达终态。
+# * 障碍（none / static）的**承载者**见 config/scenario_carriers.yaml；launch 启动时校验
+# 声明轴值必有承载者，无承载者（obstacle=dynamic）显式拒绝运行。
+# * `perception` 轴已于 2026-11-06 退役（用户裁定「彻底删」）：`sensors_file` 通道变体无
+# 消费者、四档运行期行为完全相同。场景定义不得再声明该轴；部分场景 ID 名中的
+# `dropout` / `fov` 字样为**历史遗留标签**，不表示存在对应的活跃轴或行为差异。
+# * `support_status`：supported = 全部声明轴有承载者；unsupported:<axis> = 该轴无承载者（拒绝运行）。
+# * `world_map`（，**场景级**、位于 `axes` 之外）：该场景默认使用的**地图 / 配置文件**。
+# minimal（缺省）| yard | open_field —— 见 agc_sim/launch/world_map.py（单一清单）。
+# launch `world_map:=<name>` 可强制覆盖（优先级：launch > 场景 > 缺省 minimal）。
+# 地图是**配置文件的选择**，不是场景轴：它不改变声明轴 / 期望终态 / 判据；
+# s04 指向 yard，正是「主场景在演示主地图上跑」的落地（ 派工范围决定 1）。
 scenes:
   s01_static_none_nominal_track:
     axes: {target_motion: static, obstacle: none, outcome: tracking}
@@ -52,25 +52,25 @@ scenes:
     axes: {target_motion: static, obstacle: static, outcome: tracking}
     support_status: supported
     expected_terminal: TRACKING_SUCCESS
-    # P1-1：主场景跑在演示主地图 `yard` 上（出生位 / 期望终态不动，仅几何真源换图）。
+    # 主场景跑在演示主地图 `yard` 上（出生位 / 期望终态不动，仅配置文件换图）。
     world_map: yard
     params:
       # F1（2026-10-31）：**不再覆盖出生位**——本场景是默认演示场景，出生位取自
-      # `config/spawn_layout.yaml`（世界 spawn / 复位 / 己方机起飞参考的单一真源）。
+      # `config/spawn_layout.yaml`（世界 spawn / 复位 / 己方机起飞参考的配置文件）。
       # 保留旧坐标的覆盖会把主场景钉死在旧布局，且让"改了布局、演示还是旧位"静默通过。
       run_logger: {scenario: "s04_static_static_obs_track"}
       # 高度随**地图**派生（ADR-0007）；此处**不得**硬编码 `cruise_alt_m`。
       intruder_driver: {motion: static}
-      # ---- H0 round-5（2026-11-02，用户授权）：本场景的**观测偏航场景级默认** = track ----
-      # 为什么是本场景而不是全局：round-4 实测证明 s04 的 TIMEOUT 主因是相机 `behind` 门
+      # ---- H0 （2026-11-02，用户授权）：本场景的**观测偏航场景级默认** = track ----
+      # 为什么是本场景而不是全局： 实测证明 s04 的 TIMEOUT 主因是相机 `behind` 门
       # （目标落在 boresight 之后），而默认 `velocity`（机头随速度）掠过目标后不再指向目标。
       # 把默认设为 `track` 后 `gate_ok≈280 / behind=0`，s04 达 TRACKING_SUCCESS。
       #
       # 口径边界（不得误读）：
-      #   * 这是**场景级观测配置**，不是传感器能力提升，也不是自主逃逸/自主控制成果；
-      #   * 感知量程 / FOV / 噪声、`air.yaml` 的全局默认（仍为 `velocity`）**均未改动**；
-      #   * **显式 CLI `observe_yaw_mode:=<mode>` 仍优先**（w6.launch.py 先合并场景、再用非空 CLI 覆盖），
-      #     故历史对照臂/消融实验可用 CLI 强制回 `velocity` 复现旧行为。
+      # * 这是**场景级观测配置**，不是传感器能力提升，也不是自主逃逸/自主控制成果；
+      # * 感知量程 / FOV / 噪声、`air.yaml` 的全局默认（仍为 `velocity`）**均未改动**；
+      # * **显式 CLI `observe_yaw_mode:=<mode>` 仍优先**（w6.launch.py 先合并场景、再用非空 CLI 覆盖），
+      # 故历史对照臂/消融实验可用 CLI 强制回 `velocity` 复现旧行为。
       # 仅本场景设置；s02 及其余场景的 yaw 不受影响。
       trajectory_tracker: {observe_yaw_mode: track}
 
@@ -114,7 +114,7 @@ scenes:
                      tracking_milestone_is_terminal: false}
       run_logger: {scenario: "s08_static_none_nominal_capture"}
       intruder_driver: {motion: static}
-      # W7-b（T2/E2）：结局轴=capture → **授权射击**（任务决策）；跟踪类场景不授权。
+      # （T2/E2）：结局轴=capture → **授权射击**（任务决策）；跟踪类场景不授权。
       capture_adjudicator: {interception_authorized: true}
 
   s09_linear_none_nominal_jam:
@@ -139,18 +139,18 @@ scenes:
       run_logger: {scenario: "s10_maneuver_none_fov_timeout"}
       intruder_driver: {motion: maneuver, speed_mps: 0.5, radius_m: 4.0}
 
-  # N3 无目标负例 `s17_static_none_no_target_timeout` 已于 2026-11-06 删除：
+  # 无目标负例 `s17_static_none_no_target_timeout` 已于 2026-11-06 删除：
   # 它的全部前提（`perception=no_target` 轴 + `air_perception` FOV 门控）随本次清退消失，
   # 且自 2026-11-04 起就已标 `unsupported:perception`、启动期拒绝运行，从不产出有效证据。
-  # 若将来需要真正的"看不见"负例，属**新决策**，须按治理规范 2.2 节重新立项。
+  # 若将来需要真正的"看不见"负例，属**新决策**，须按治理规范 节重新立项。
 
   s11_static_static_none_unreachable:
     axes: {target_motion: static, obstacle: static, outcome: unreachable}
     support_status: supported
     expected_terminal: MISSION_FAILED
     expected_reason: TIMEOUT
-    # P1-1：保持 minimal——该场景的"被立柱阻隔"语义依赖 pole_1 与 (0,-1)/(0,-9) 的相对几何，
-    #   换图会改变构造成立条件（属回归语义，不在本单范围）。
+    # 保持 minimal——该场景的"被立柱阻隔"语义依赖 pole_1 与 (0,-1)/(0,-9) 的相对几何，
+    # 换图会改变构造成立条件（属回归语义，不在本单范围）。
     world_map: minimal
     params:
       # goal 置于立柱另一侧（车被静态障碍阻隔）；当前以超时结算（规划不可达属后续）
@@ -170,8 +170,8 @@ scenes:
       run_logger: {scenario: "s12_linear_dynamic_nominal_capture"}
       intruder_driver: {motion: linear, speed_mps: 0.3}
 
-  # —— W7-b P1 机制激活候选（ADR-0023）：s08 的"固定目标 + 静态 + 标称"使 α（观测指向 + 跟踪参考）
-  #    的因果链被旁路（ADR-0022）。以下两个场景为该命题的**固定条件候选**，先经 pilot 选一。
+  # —— P1 机制激活候选（ADR-0023）：s08 的"固定目标 + 静态 + 标称"使 α（观测指向 + 跟踪参考）
+  # 的因果链被旁路（ADR-0022）。以下两个场景为该命题的**固定条件候选**，先经 pilot 选一。
   s13_linear_none_nominal_capture:
     axes: {target_motion: linear, obstacle: none, outcome: capture}
     support_status: supported
@@ -199,8 +199,8 @@ scenes:
       intruder_driver: {motion: linear, speed_mps: 0.5}
       capture_adjudicator: {interception_authorized: true}
 
-  # —— 第 2 轮 pilot 候选（ADR-0023）：静态目标 ⇒ 无"追不上 + C10 hold 自锁"混淆，
-  #    难度只落在观测通道（窄视场 / 丢包），用于分离"指向 / 跟踪"本身的机制效应。
+  # —— 第 2 轮 pilot 候选（ADR-0023）：静态目标 ⇒ 无"追不上 + hold 自锁"混淆，
+  # 难度只落在观测通道（窄视场 / 丢包），用于分离"指向 / 跟踪"本身的机制效应。
   s15_static_none_fov_capture:
     axes: {target_motion: static, obstacle: none, outcome: capture}
     support_status: supported
@@ -229,20 +229,20 @@ scenes:
 
   # ---- ADR-0031（2026-11-04）：目标机**漂移轨道**（`epicycle`）的活跃消费者 ----
   # 为什么需要这个场景（不是可选项）：`scenario_carriers.yaml` 的 `target_motion.epicycle`
-  #   必须"**当前有消费者**"才不是空登记（路线分支治理 §2.2②）。本场景就是那个消费者。
+  # 必须"**当前有消费者**"才不是空登记（路线分支治理 规范②）。本场景就是那个消费者。
   #
   # 为什么是 tracking（不是 capture）：本运动要证明的是"目标**真的在动**且下游四条链仍成立"，
-  #   不是再验一次网弹道。捕获仍由 s08（static）/ s13（linear）覆盖（A4 用它们，不改动）。
+  # 不是再验一次网弹道。捕获仍由 s08（static）/ s13（linear）覆盖（A4 用它们，不改动）。
   #
   # 为什么 `goal_follow_target: true`：目标质心会漂移，固定任务目标会让车停在原地等——
-  #   那证明不了"跟随能力"。这与 s02（linear）/ s03（maneuver）同口径。
+  # 那证明不了"跟随能力"。这与 s02（linear）/ s03（maneuver）同口径。
   #
   # 为什么 `world_map: yard`：与 s04 同图，使 `target_cruise_m=12.0`、网弹道派生值、
-  #   己方机高度三者与主演示一致——否则量出来的节奏不能与 s04 基线对照（A6 要求对照表）。
+  # 己方机高度三者与主演示一致——否则量出来的节奏不能与 s04 基线对照（A6 要求对照表）。
   #
   # 参数取值见 `w6_base.yaml` 的 `intruder_driver` 段（那里有完整的推导链与命名纪律）：
-  #   speed_mps 1.0 / radius_m 1.8 / drift_amplitude_m 0.6 / drift_period_s 30.0
-  #   峰值速度上界 1.126 ≤ 1.206（火控提前量上界）；位移上界 2.40 + goal_tol 0.3 = 2.70 < d_track 3.0。
+  # speed_mps 1.0 / radius_m 1.8 / drift_amplitude_m 0.6 / drift_period_s 30.0
+  # 峰值速度上界 1.126 ≤ 1.206（火控提前量上界）；位移上界 2.40 + goal_tol 0.3 = 2.70 < d_track 3.0。
   s18_epicycle_none_nominal_track:
     axes: {target_motion: epicycle, obstacle: none, outcome: tracking}
     support_status: supported

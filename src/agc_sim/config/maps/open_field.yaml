@@ -1,4 +1,4 @@
-# AGC 场景几何真源 · 地图 `open_field`（P1-1 能力对照地图）
+# AGC 场景配置文件 · 地图 `open_field`（ 能力对照地图）
 #
 # 本文件受 `world_geometry.yaml` 头部 schema 与纪律约束；此处只记**本图专属**意图与边界。
 #
@@ -7,20 +7,20 @@
 # （障碍少 → 物理与遮挡开销低）。它不是演示主地图——演示主地图是 `yard`。
 #
 # ---- 布局（世界 ENU，m）----
-#   shed  (24, 20) 8×6×3                                  —— 唯一建筑
-#   cyl_1 (-16, 12) | cyl_2 (18,-14) | cyl_3 (-18,-16) | cyl_4 (26, 4)，均 r=1.2 h=2.5
+# shed (24, 20) 8×6×3 —— 唯一建筑
+# cyl_1 (-16, 12) | cyl_2 (18,-14) | cyl_3 (-18,-16) | cyl_4 (26, 4)，均 r=1.2 h=2.5
 # 车 (-4,-3) ↔ 目标 (6.5,2.5) 直线距离 11.85 m（s04 出生位不变）；
 # 车→任务目标 (4,3) 直线到最近实体足迹净空 **17.90 m**（本图无障碍穿越需求）。
 #
 # ---- 设计约束 ----
-#   * 障碍实体 **5** 个；覆盖面积 **1.03%**（稀疏，对照用，不追 5%–12% 演示目标）。
-#   * 空中安全层可行性：新增障碍在目标周围 [8,15] m 待机环带内**零阻塞单元**，
-#     环带可行率 **100%**（minimal 84.1% 的阻塞全部来自既有 pole_2，本图无 pole）。
-#   * 障碍族边界：5 个实体在 z=0.48 处均有水平截面 → 对地面激光可见。
-#   * **无 pole_\***：本图不参与「(b) 断言依赖 pole_* 命名」——该断言跑在 `minimal` 上，
-#     三图核查按「派生 == 各自真源」逐图判定，不要求每张图都含 pole。
-#   * 作业区随用户 2026-10-29 裁定统一为 **100×100 m（origin −50,−50）**；本图障碍布局未动
-#     （对照图的价值在于"与 yard 同一作业区、障碍极少"，故障碍分布**故意**保持稀疏）。
+# * 障碍实体 **5** 个；覆盖面积 **1.03%**（稀疏，对照用，不追 5%–12% 演示目标）。
+# * 空中安全层可行性：新增障碍在目标周围 [8,15] m 待机环带内**零阻塞单元**，
+# 环带可行率 **100%**（minimal 84.1% 的阻塞全部来自既有 pole_2，本图无 pole）。
+# * 障碍族边界：5 个实体在 z=0.48 处均有水平截面 → 对地面激光可见。
+# * **无 pole_\***：本图不参与「(b) 断言依赖 pole_* 命名」——该断言跑在 `minimal` 上，
+# 三图核查按「派生 == 各自配置文件」逐图判定，不要求每张图都含 pole。
+# * 作业区随用户 2026-10-29 裁定统一为 **100×100 m（origin −50,−50）**；本图障碍布局未动
+# （对照图的价值在于"与 yard 同一作业区、障碍极少"，故障碍分布**故意**保持稀疏）。
 map: open_field
 
 work_area:
@@ -31,7 +31,7 @@ work_area:
   origin_y: -50.0
 
 # ---- 飞行高度（ADR-0007；用户 2026-11-02 裁定「高度和地图绑定」）----
-# 本节是**本图固定飞行高度的唯一真源**。运行期由 `w6_composition.apply_flight_altitude()`
+# 本节是**本图固定飞行高度的配置文件**。运行期由 `w6_composition.apply_flight_altitude`
 # 派生注入 `air.yaml` / `w6_base.yaml` 的同名参数；`air.yaml` 里的同名键只作 standalone /
 # 单测兜底，**运行期一律被本节覆盖**（与 `safety.obstacle_*` 的派生处理同款）。
 #
@@ -39,11 +39,11 @@ work_area:
 # 小障碍高密度和大障碍低密度等图」。换图即换高度，**代码一行不动**。
 #
 # 五键语义（与 `docs/conventions/飞行高度分层与按地图定高.md` 的 L2a/L2b/L2c 对应）：
-#   own_track_m        —— 己方机跟踪高度（L2b → standoff_follower.height）
-#   own_takeoff_m      —— 己方机起飞高度（L2c → takeoff_controller.takeoff_altitude_m）
-#   target_cruise_m    —— 目标机巡航高度（L2a → intruder_driver.cruise_alt_m 的**默认值**）
-#   own_clearance_min_m—— 垂直净空下限 c_clear（K3）
-#   derived            —— 本图几何的派生量（只读；由 `height_survey` 同口径算出，供断言比对）
+# own_track_m —— 己方机跟踪高度（L2b → standoff_follower.height）
+# own_takeoff_m —— 己方机起飞高度（L2c → takeoff_controller.takeoff_altitude_m）
+# target_cruise_m —— 目标机巡航高度（L2a → intruder_driver.cruise_alt_m 的**默认值**）
+# own_clearance_min_m—— 垂直净空下限 c_clear（K3）
+# derived —— 本图几何的派生量（只读；由 `height_survey` 同口径算出，供断言比对）
 flight_altitude:
   own_track_m: 2.5
   own_takeoff_m: 2.5

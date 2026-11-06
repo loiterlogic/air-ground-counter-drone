@@ -1,6 +1,6 @@
 """RL 接口契约冻结（W5-b · spec R6）。
 
-本模块是 `agc_rl` 的**接口真源**：观测（obs）空间与动作（action）空间的唯一冻结定义。
+本模块是 `agc_rl` 的**接口配置文件**：观测（obs）空间与动作（action）空间的唯一冻结定义。
 节点（`inference_node`）与策略（`policy`）**只**经本模块构造 obs / 解释 action，
 不得各自另立维度或语义（契约 [参数入口](../../docs/ROS2迁移交接文档.md#params)：由 config 单一注入）。
 
@@ -12,15 +12,15 @@
 action 改为在节点内直接映射为 `cmd_vel`（RL 直接出 `cmd_vel`，见 ADR-0004）。
 
 obs 维度（总 `obs_dim = num_sectors + 3 + n_actions`）：
-  [0, num_sectors)          扇区最小量程归一（range / lidar_max_range，clamp [0,1]，1.0 = 无遮挡；
-                            R-010：NaN / 未知 → 0.0 保守按遮挡，+inf 合法无回波 → 无遮挡）
-  [num_sectors + 0]         车体 world x / pose_norm_m，clamp [-2, 2]
-  [num_sectors + 1]         车体 world y / pose_norm_m，clamp [-2, 2]
+ [0, num_sectors) 扇区最小量程归一（range / lidar_max_range，clamp [0,1]，1.0 = 无遮挡；
+NaN / 未知 → 0.0 保守按遮挡，+inf 合法无回波 → 无遮挡）
+ [num_sectors + 0] 车体 world x / pose_norm_m，clamp [-2, 2]
+ [num_sectors + 1] 车体 world y / pose_norm_m，clamp [-2, 2]
   [num_sectors + 2]         到目标距离归一（min(dist / track_norm_m, 1)）
-  [num_sectors + 3, ...)    上一动作 one-hot（n_actions 维）
+ [num_sectors + 3, ...) 上一动作 one-hot（n_actions 维）
 
 action 空间：`n_actions = 5` 离散
-  0 沿原路径 · 1 左移 · 2 右移 · 3 左移并加速 · 4 右移并加速
+ 0 沿原路径 · 1 左移 · 2 右移 · 3 左移并加速 · 4 右移并加速
 """
 
 import math
@@ -43,13 +43,13 @@ def obs_dim(num_sectors):
 def sectors_from_angles(angles, ranges, num_sectors, max_range):
     """按逐束角度（rad，车体系，0=正前、逆时针为正）归并扇区最小量程归一值。
 
-    扇区覆盖整圈（每扇区 `2π / num_sectors`），索引 0 为车头正前方。
+ 扇区覆盖整圈（每扇区 `2π / num_sectors`），索引 0 为车头正前方。
 
-    读数分类（R-010 失效语义；方向一律取**保守**）：
-      * **合法回波**（有限且 `> 0`）→ 归一量程（`1.0` = 无遮挡）。
-      * **合法无回波**（`+inf`；契约内自滤把自返回置 inf，见 `scan_self_filter`）→ 该束**确证无遮挡**，
-        不改变扇区下限。
-      * **未知 / 无效**（`NaN`、`-inf`、`<= 0`、`None`）→ **不得**当作无遮挡，按「可能有遮挡」计（归一 `0.0`）。
+ 读数分类（ 失效语义；方向一律取**保守**）：
+ * **合法回波**（有限且 `> 0`）→ 归一量程（`1.0` = 无遮挡）。
+ * **合法无回波**（`+inf`；契约内自滤把自返回置 inf，见 `scan_self_filter`）→ 该束**确证无遮挡**，
+ 不改变扇区下限。
+ * **未知 / 无效**（`NaN`、`-inf`、`<= 0`、`None`）→ **不得**当作无遮挡，按「可能有遮挡」计（归一 `0.0`）。
     """
     out = [1.0] * num_sectors
     width = 2.0 * math.pi / num_sectors
@@ -75,8 +75,8 @@ def sectors_from_angles(angles, ranges, num_sectors, max_range):
 def scan_has_valid_reading(ranges):
     """扫描是否含至少一个**可用**读数（合法回波或合法无回波 `+inf`）。
 
-    全为 `NaN` / `<= 0` / 非法值时返回 `False`——此扫描**不得**据以推断「无遮挡」，
-    推理节点据此判定 scan 输入**无效**并失效停车（R-010）。
+ 全为 `NaN` / `<= 0` / 非法值时返回 `False`——此扫描**不得**据以推断「无遮挡」，
+ 推理节点据此判定 scan 输入**无效**并失效停车。
     """
     for rng in ranges:
         if rng is None or math.isnan(rng):
@@ -131,24 +131,24 @@ def side_clearance(sectors, num_sectors, side):
 def action_to_twist(action, heading_err, forward_clearance_m, params):
     """把离散 action 映射为车体系 `(v, w)`。
 
-    **量纲（一致为米）**：`forward_clearance_m` 为车前方向**净空距离（米）**，
-      `params['clearance_ref_m']`（米）为「净空充足」参考值——**两者同为米**，
-      故动作强度与 `lidar_max_range`（归一用量程，无量纲）**解耦**：
-      同一真实净空下改 `lidar_max_range` 不改变 `(v, w)`。
+ **量纲（一致为米）**：`forward_clearance_m` 为车前方向**净空距离（米）**，
+ `params['clearance_ref_m']`（米）为「净空充足」参考值——**两者同为米**，
+ 故动作强度与 `lidar_max_range`（归一用量程，无量纲）**解耦**：
+ 同一真实净空下改 `lidar_max_range` 不改变 `(v, w)`。
 
-    **符号（ROS 2 `geometry_msgs/Twist` 约定，REP-103）**：车体系 +左（逆时针，z 向上右手定则）
-      对应 **正 `angular.z`**（左转为正）。故：
-      * `left` / `left_fast` → **正 `angular.z`**（左转）；
-      * `right` / `right_fast` → **负 `angular.z`**（右转）。
-      航向项（`k_heading·heading_err`）与横向项（`k_lateral·lateral`）**同号**，统一左 / 右约定：
-      正 lateral = 左 = 正 `angular.z`。
+ **符号（ROS 2 `geometry_msgs/Twist` 约定，REP-103）**：车体系 +左（逆时针，z 向上右手定则）
+ 对应 **正 `angular.z`**（左转为正）。故：
+ * `left` / `left_fast` → **正 `angular.z`**（左转）；
+ * `right` / `right_fast` → **负 `angular.z`**（右转）。
+ 航向项（`k_heading·heading_err`）与横向项（`k_lateral·lateral`）**同号**，统一左 / 右约定：
+ 正 lateral = 左 = 正 `angular.z`。
 
-    action 语义（见模块 docstring）：0 沿原路径 · 1 左移 · 2 右移 · 3 左移并加速 · 4 右移并加速。
+ action 语义（见模块 docstring）：0 沿原路径 · 1 左移 · 2 右移 · 3 左移并加速 · 4 右移并加速。
 
-    `params` 键（由 config 单一注入，见 `rl.yaml`）：
-      reference_speed / fast_speed / min_offset / max_offset / clearance_ref_m（米）
-      k_heading / k_lateral / max_yaw_rate
-    行为对齐旧树 `ground_env.py` 行为事实（WHAT）：动作偏置为横向偏移量 → diff-drive 速度。
+ `params` 键（由 config 单一注入，见 `rl.yaml`）：
+ reference_speed / fast_speed / min_offset / max_offset / clearance_ref_m（米）
+ k_heading / k_lateral / max_yaw_rate
+ 行为对齐旧树 `ground_env.py` 行为事实（WHAT）：动作偏置为横向偏移量 → diff-drive 速度。
     """
     # 净空越小于参考值 → 偏移越大（夹在 [min_offset, max_offset]）；净空与参考同为米。
     ref = max(params['clearance_ref_m'], 1e-6)

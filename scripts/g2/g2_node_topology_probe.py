@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """G2 round-9：在**实际运行**中采集 `/trajectory_tracker` 的订阅清单。
 
-为什么必须实跑采集：round-8 的"无 GT 指向订阅"只有**源码守卫**与**日志免责声明**两类证据，
+为什么必须实跑采集： 的"无 GT 指向订阅"只有**源码守卫**与**日志免责声明**两类证据，
 Leader 要求补**运行拓扑证据**（`ros2 node info` 或等价运行图）。源码守卫可能被条件分支绕过，
 日志文本更不是拓扑事实——只有运行时节点自报的订阅清单才是。
 
 判据（可被直接证伪）：
-  * `sub_has_gt`   —— 订阅列表里**不得**出现 `/agc/gt/...`；
-  * `sub_has_targets` —— 应当出现 `/agc/targets`（证明航迹输入缝真的接上了）；
-  * `mode_is_track`  —— 参数 `observe_yaw_mode` 的实际生效值应为 `track`。
+ * `sub_has_gt` —— 订阅列表里**不得**出现 `/agc/gt/...`；
+ * `sub_has_targets` —— 应当出现 `/agc/targets`（证明航迹输入缝真的接上了）；
+ * `mode_is_track` —— 参数 `observe_yaw_mode` 的实际生效值应为 `track`。
 
 用法：
-    # 需先有 GUI track 场景在跑
+ # 需先有 GUI track 场景在跑
     python3 scripts/g2/g2_node_topology_probe.py \
         --node /trajectory_tracker --out-dir <证据目录> --run-id <run_id>
 
@@ -38,10 +38,10 @@ def sh(cmd, timeout=25):
 def wait_node(node, deadline_s):
     """等节点出现**并且** lifecycle 进入 `active`。
 
-    为什么必须等 active：`trajectory_tracker` 是 lifecycle 节点，**业务订阅全部在
+ 为什么必须等 active：`trajectory_tracker` 是 lifecycle 节点，**业务订阅全部在
     `on_configure_impl()` 里创建**。round-9 首次采集踩过这个坑——在 unconfigured 状态下
     `ros2 node info` 只显示 `/clock` 与 `/parameter_events`，会得出"没有 /agc/targets"的
-    错误结论（实际是还没建）。
+ 错误结论（实际是还没建）。
     """
     end = time.monotonic() + deadline_s
     while time.monotonic() < end:
@@ -57,12 +57,12 @@ def wait_node(node, deadline_s):
 def parse_subscriptions(node_info_text):
     """从 `ros2 node info` 文本里抽订阅名。
 
-    实测格式（rclpy 的 `node info`）：节点名一行，随后是**两空格缩进**的段标题
-    `  Subscribers:`，其下的条目再缩进四空格，形如
-    `    /agc/targets: agc_msgs/msg/TargetTrackArray`。
+ 实测格式（rclpy 的 `node info`）：节点名一行，随后是**两空格缩进**的段标题
+ ` Subscribers:`，其下的条目再缩进四空格，形如
+ ` /agc/targets: agc_msgs/msg/TargetTrackArray`。
 
-    round-9 首版按"无缩进=段标题"判定，但段标题其实是**缩进两格**，于是把整个
-    Subscribers 段都漏掉、得到空列表——这是解析缺陷，不是拓扑事实。
+ 首版按"无缩进=段标题"判定，但段标题其实是**缩进两格**，于是把整个
+ Subscribers 段都漏掉、得到空列表——这是解析缺陷，不是拓扑事实。
     """
     subs, in_subs = [], False
     for raw in node_info_text.splitlines():

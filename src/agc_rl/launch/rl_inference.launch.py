@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """rl_inference —— W5-b RL 推理节点启动（供上层 launch include）。
 
-参数单一来源 `config/rl.yaml`（契约 #params）。由 `agc_ground` 的 ground_bringup 在
+参数配置文件 `config/rl.yaml`（docs/ROS2迁移交接文档.md#params）。由 `agc_ground` 的 ground_bringup 在
 `command_source: rl` 时 include。
 """
 
@@ -19,7 +19,7 @@ def _nodes(context, *args, **kwargs):
     share = get_package_share_directory('agc_rl')
     params_file = os.path.join(share, 'config', 'rl.yaml')
     use_sim_time = LaunchConfiguration('use_sim_time')
-    # W7-b（P2 臂 B）：`mode=high_level` 起**高层决策节点**（只出目标点，低层另起）；
+    # （P2 臂 B）：`mode=high_level` 起**高层决策节点**（只出目标点，低层另起）；
     # 缺省 / `mode=low_level` 起既有 RL 主控（写 cmd_vel_raw）。
     mode = LaunchConfiguration('mode').perform(context)
     if mode == 'high_level':

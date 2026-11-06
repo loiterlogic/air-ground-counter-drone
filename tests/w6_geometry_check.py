@@ -5,28 +5,28 @@
 yard / open_field）；**(i)-(m)** 是跨图 / 一次性断言。
 
 单图断言（per map）：
-  (a) 真源 schema 合法（work_area 五键；障碍 id/x/y/z/yaw/size；`shape ∈ {box, cylinder}`；
-      cylinder `size[0] == size[1]`；`safety_radius` 有限且 > 0）；
-  (b) `world_bringup`「static 世界」中每个障碍的 pose / 几何 == 真源（box 比 `<box><size>`、
-      cylinder 比 `<cylinder><radius><length>`），且**视觉 == 碰撞**（同片段）；
-      `minimal` 另外要求 `pole_1`/`pole_2` 逐值不变（历史基线）与 `none` 世界无障碍；
-  (c) `agc_perception/config/{obstacles,map}.yaml`（standalone 回退副本）与 **minimal** 真源一致
-      （不漂移）——非 minimal 无回退副本，standalone 路径必须显式拒绝（见 (j)）；
-  (d) `agc_air/config/air.yaml` 已**无**任何硬编码障碍几何 **与半径列表**（P1-1：定长列表已消除）；
-  (e) `agc_task/config/w6_base.yaml` 已去硬编码几何（派生入口），且 `w6_composition` 派生注入 == 真源；
-  (f) `geometry_sha256` 稳定且**按图区分**；manifest `geometry` 块（含 `map` / `shape` /
-      `safety_radius`）== 真源；
-  (g) C7 出生净空：车/目标/己方机 ↔ 每个障碍**足迹**净空 ≥ 物体外伸之和（与
-      `scenario_reset.validateCandidate` 同一判据），且作业区边界内缩成立；
-  (h) 障碍族可见性：每个实体在 z=0.48（地面激光扫描面）处有水平截面（ADR-0009 口径）；
-  (i) 空中安全层**存在可行解**：目标周围 [8,15] m 待机环带上的可行率 / 最大连续阻塞弧，
-      且新地图**不新增**阻塞单元（相对 minimal 逐单元比对）；
-  (j) 回退副本边界：`perception_bringup` 的 `map_file` / `obstacles_file` 缺省仍指向包内副本，
-      且 `w6` 路径按地图派生注入（非 minimal 不读副本）；
-  (k) 权限：`obstacles.yaml` 静态先验成文假设仍在（不静默引入真值优势）；
-  (l) 地图登记一致：`scenarios.yaml` 的 `world_map` 值 ∈ 清单；s04 主场景指向 yard；
-  (m) 几何真源清单**单一实现**：`world_bringup` / `air_bringup` / `w6_composition` 都经
-      `agc_sim/launch/world_map.py` 解析，且三处无自持文件名表。
+ (a) 配置文件 schema 合法（work_area 五键；障碍 id/x/y/z/yaw/size；`shape ∈ {box, cylinder}`；
+ cylinder `size[0] == size[1]`；`safety_radius` 有限且 > 0）；
+ (b) `world_bringup`「static 世界」中每个障碍的 pose / 几何 == 配置文件（box 比 `<box><size>`、
+ cylinder 比 `<cylinder><radius><length>`），且**视觉 == 碰撞**（同片段）；
+ `minimal` 另外要求 `pole_1`/`pole_2` 逐值不变（历史基线）与 `none` 世界无障碍；
+ (c) `agc_perception/config/{obstacles,map}.yaml`（standalone 回退副本）与 **minimal** 配置文件一致
+ （不漂移）——非 minimal 无回退副本，standalone 路径必须显式拒绝（见 (j)）；
+ (d) `agc_air/config/air.yaml` 已**无**任何硬编码障碍几何 **与半径列表**（：定长列表已消除）；
+ (e) `agc_task/config/w6_base.yaml` 已去硬编码几何（派生入口），且 `w6_composition` 派生注入 == 配置文件；
+ (f) `geometry_sha256` 稳定且**按图区分**；manifest `geometry` 块（含 `map` / `shape` /
+ `safety_radius`）== 配置文件；
+ (g) 出生净空：车/目标/己方机 ↔ 每个障碍**足迹**净空 ≥ 物体外伸之和（与
+ `scenario_reset.validateCandidate` 同一判据），且作业区边界内缩成立；
+ (h) 障碍族可见性：每个实体在 z=0.48（地面激光扫描面）处有水平截面（ADR-0009 口径）；
+ (i) 空中安全层**存在可行解**：目标周围 [8,15] m 待机环带上的可行率 / 最大连续阻塞弧，
+ 且新地图**不新增**阻塞单元（相对 minimal 逐单元比对）；
+ (j) 回退副本边界：`perception_bringup` 的 `map_file` / `obstacles_file` 缺省仍指向包内副本，
+ 且 `w6` 路径按地图派生注入（非 minimal 不读副本）；
+ (k) 权限：`obstacles.yaml` 静态先验成文假设仍在（不静默引入真值优势）；
+ (l) 地图登记一致：`scenarios.yaml` 的 `world_map` 值 ∈ 清单；s04 主场景指向 yard；
+ (m) 配置文件清单**单一实现**：`world_bringup` / `air_bringup` / `w6_composition` 都经
+ `agc_sim/launch/world_map.py` 解析，且三处无自持文件名表。
 
 输出 JSON 摘要（stdout）；`--out <path>` 落盘。用法：
   `python3 tests/w6_geometry_check.py`              # 三张地图全查
@@ -47,7 +47,7 @@ import xml.etree.ElementTree as ET
 
 import yaml
 
-# 项目根**自定位**（2026-10-31 P2-1 round-7，裁定 A）：本文件在 `<ROOT>/tests/`，上溯两级即根。
+# 项目根**自定位**（2026-10-31 ，裁定 A）：本文件在 `<ROOT>/tests/`，上溯两级即根。
 # 原来写死 `/home/chen/AGC`，使冒烟 `geometry` 组在别处 clone 时检的是**原仓库**。
 ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
@@ -84,8 +84,8 @@ def _load_module(path, name):
 def _generate_static_world(wb_path, src, dst, geometry):
     """调用 `world_bringup.launch.py` 的 `_inject_static_obstacles` 生成 static 世界（**单一实现**）。
 
-    经子进程加载 launch 模块：独立把 ROS lib 目录并入 LD_LIBRARY_PATH，使未 `source` ROS 环境
-    （缺少 `librcl_action.so`）时 `launch_ros` 亦可导入；主进程本身**不**导入 launch（无 ROS 依赖）。
+ 经子进程加载 launch 模块：独立把 ROS lib 目录并入 LD_LIBRARY_PATH，使未 `source` ROS 环境
+ （缺少 `librcl_action.so`）时 `launch_ros` 亦可导入；主进程本身**不**导入 launch（无 ROS 依赖）。
     """
     lib = '/opt/ros/%s/lib' % os.environ.get('ROS_DISTRO', 'jazzy')
     env = dict(os.environ)
@@ -224,8 +224,8 @@ def _footprint_extent(ob, world_map_mod):
 def _part_h_poly(part, ob, world_map_mod):
     """part 在**世界系**下的水平多边形（box=4 角；cylinder/sphere 用 16 边形近似）。
 
-    口径与 `_inject_static_obstacles` 注入的 `<geometry>` 一致：part 的 x/y 在复合模型里是
-    相对锚点的局部偏移，旋转 = 锚点 yaw + part yaw。
+ 口径与 `_inject_static_obstacles` 注入的 `<geometry>` 一致：part 的 x/y 在复合模型里是
+ 相对锚点的局部偏移，旋转 = 锚点 yaw + part yaw。
     """
     comp = world_map_mod.is_composite(ob)
     ox = float(ob['x']) + (float(part.get('x', 0.0)) if comp else 0.0)
@@ -260,8 +260,8 @@ def _point_in_poly(px, py, poly):
 def _union_coverage_pct(obstacles, wa, world_map_mod, res=0.2):
     """障碍水平投影的**并集**面积占作业区比例（%）。
 
-    口径成文（P1-1 2026-10-29）：**同一实体多图元相互堆叠只计一次**，故用并集而非图元和。
-    旧记录 `yard 覆盖 7.36%` 既非并集（4.64%）亦非图元和（6.85%）→ 不可复现，已作废。
+ 口径成文（ 2026-10-29）：**同一实体多图元相互堆叠只计一次**，故用并集而非图元和。
+ 旧记录 `yard 覆盖 7.36%` 既非并集（4.64%）亦非图元和（6.85%）→ 不可复现，已作废。
     """
     cells = set()
     for ob in obstacles:
@@ -283,8 +283,8 @@ def _union_coverage_pct(obstacles, wa, world_map_mod, res=0.2):
 def _safety_disk_contains(ob, px, py, world_map_mod, ring):
     """安全层圆盘判定：实体**锚点**为圆心、半径为 safety_radius+margin+extra。
 
-    与 `safety_shield.cpp` 的二维静态圆盘模型同口径（锚点为圆心；复合体由 `safety_radius`
-    覆盖全部 part 足迹）。复合体不再用「中心距离」，而用锚点（模型 pose）。
+ 与 `safety_shield.cpp` 的二维静态圆盘模型同口径（锚点为圆心；复合体由 `safety_radius`
+ 覆盖全部 part 足迹）。复合体不再用「中心距离」，而用锚点（模型 pose）。
     """
     return math.hypot(px - float(ob['x']), py - float(ob['y'])) < _disk_radius(
         ob, world_map_mod, ring)
@@ -306,8 +306,8 @@ def _blocked_cells(geometry_obs, ring, world_map_mod):
     return blocked
 
 
-# s04 主场景的出生位与目标（F1，2026-10-31：**改从出生布局真源读取**，不再硬编码）。
-# 真源 = `src/agc_task/config/spawn_layout.yaml`（世界 spawn / 复位 / 己方机起飞参考的单一来源）。
+# s04 主场景的出生位与目标（F1，2026-10-31：**改从出生布局配置文件读取**，不再硬编码）。
+# 配置文件 = `src/agc_task/config/spawn_layout.yaml`（世界 spawn / 复位 / 己方机起飞参考的配置文件）。
 # 硬编码副本会让"配置改了、核查还在验旧位"这种漂移静默通过——正是 F1 要消灭的病灶。
 SPAWN_LAYOUT_PATH = os.path.join(ROOT, 'src', 'agc_task', 'config', 'spawn_layout.yaml')
 
@@ -349,7 +349,7 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
             for pt in parts:
                 world_map_mod.obstacle_shape(pt)
                 world_map_mod.obstacle_size(pt, pt)
-                # 材质档（P1-1 视觉保真）：非法 finish → RuntimeError → schema 不合法
+                # 材质档（ 视觉保真）：非法 finish → RuntimeError → schema 不合法
                 world_map_mod.part_finish(pt)
             world_map_mod.obstacle_finish(o)
         except RuntimeError:
@@ -410,8 +410,8 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
                     comp_ok = False
                     comp_detail['%s/%s' % (mid, pid)] = 'visual != collision'
 
-    # ---- 材质档 → `<material><pbr>` 逐 link 核对（P1-1 视觉保真；2026-10-29）----
-    # 只核对**障碍模型**：地面 / 道路（`ground_plane` / `road_*` / `apron_*`）不在几何真源内，
+    # ---- 材质档 → `<material><pbr>` 逐 link 核对（ 视觉保真；2026-10-29）----
+    # 只核对**障碍模型**：地面 / 道路（`ground_plane` / `road_*` / `apron_*`）不在配置文件内，
     # 它们的 PBR 在 base world 里，属世界视觉层，不参与本条判定。
     src_by_id = {o['id']: o for o in obstacles}
     mat_ok = True
@@ -457,7 +457,7 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
 
     b = {
         'static_has_all_ids': all(i in static_models for i in src_ids),
-        # P1-1（用户返工 ①）：yard **不含** pole_*；minimal 必须**仍含**两柱（核查基线）
+        # （用户返工 ①）：yard **不含** pole_*；minimal 必须**仍含**两柱（核查基线）
         'pole_policy_matches_map': (('pole_1' in src_ids and 'pole_2' in src_ids)
                                     if map_name == 'minimal'
                                     else ('pole_1' not in src_ids and 'pole_2' not in src_ids)),
@@ -466,18 +466,18 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
         'static_geometry_match': all(
             static_models[i]['geometry'] == src_geom[i]
             for i in src_geom if i in static_models),
-        # P1-1：视觉与碰撞**同源**（同一 `obstacle_geometry_sdf` 片段注入两次）
+        # 视觉与碰撞**同源**（同一 `obstacle_geometry_sdf` 片段注入两次）
         'visual_equals_collision': all(
             static_models[i]['visual_geometry'] == static_models[i]['geometry']
             for i in src_geom if i in static_models),
         'none_world_has_no_obstacles': not any(n in none_models for n in src_ids) and not any(
             str(n).startswith('pole') for n in none_models),
         'static_world_wellformed': True,
-        # P1-1 精致化：复合模型逐 part 的几何 / 视觉==碰撞
+        # 精致化：复合模型逐 part 的几何 / 视觉==碰撞
         'composite_parts_match': comp_ok,
         'composite_detail': comp_detail or 'n/a',
         'composite_model_count': len(src_parts),
-        # P1-1 视觉保真（2026-10-29）：声明 `finish` 的 part → 世界 `<pbr><metal>` 的
+        # 视觉保真（2026-10-29）：声明 `finish` 的 part → 世界 `<pbr><metal>` 的
         # metalness/roughness **逐值等于** `world_map.FINISH_PBR`；未声明 → **不得**出现 `<pbr>`。
         'material_finish_match': mat_ok,
         'material_detail': mat_detail or 'n/a',
@@ -541,7 +541,7 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
         'no_obstacle_names': 'obstacle_names' not in safety,
         'no_obstacle_x': 'obstacle_x' not in safety,
         'no_obstacle_y': 'obstacle_y' not in safety,
-        # P1-1：**定长半径列表已消除**（旧 `obstacle_safety_radius: [2.0, 2.0]`）
+        # **定长半径列表已消除**（旧 `obstacle_safety_radius: [2.0, 2.0]`）
         'no_obstacle_safety_radius': 'obstacle_safety_radius' not in safety,
         # ADR-0010 (j)：顶高与净空同样**不得**在 air.yaml 硬编码（逐障碍 / 逐地图派生）。
         'no_obstacle_z_top': 'obstacle_z_top' not in safety,
@@ -550,7 +550,7 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
     d['pass'] = all(d.values())
     out['d_air_no_hardcoded_geometry'] = d
 
-    # ---- (e) w6_base 去硬编码 + compose 派生 == 真源 ----
+    # ---- (e) w6_base 去硬编码 + compose 派生 == 配置文件 ----
     sys.path.insert(0, os.path.join(task_share, 'launch'))
     comp = _load_module(os.path.join(task_share, 'launch', 'w6_composition.py'),
                         'w6_composition')
@@ -569,7 +569,7 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
             and [float(v) for v in sr['obstacle_y']] == src_ys),
         'compose_bounds_match': all(float(sr[k]) == v for k, v in bounds.items()),
     }
-    # ADR-0010 (j)：安全层几何注入必须含顶高 + 净空（且与真源逐值一致、与 ids 等长）
+    # ADR-0010 (j)：安全层几何注入必须含顶高 + 净空（且与配置文件逐值一致、与 ids 等长）
     air_inj = {'trajectory_tracker': {}}
     comp.apply_air_geometry(air_inj, geometry, sim_share=sim_share)
     inj = air_inj['trajectory_tracker']['safety']
@@ -583,7 +583,7 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
     e['pass'] = all(e.values())
     out['e_w6_base_derived'] = e
 
-    # ---- (f) sha256 稳定 + manifest geometry 块 == 真源 ----
+    # ---- (f) sha256 稳定 + manifest geometry 块 == 配置文件 ----
     info = comp.load_scene(task_share, sim_share,
                            's04_static_static_obs_track', 0, world_map=map_name)
     # ADR-0007：高度随地图派生——核查脚本必须复现 launch 的同一条派生链，
@@ -605,11 +605,11 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
              else world_map_mod.obstacle_shape(o)) for o in obstacles],
         'manifest_radii_match': [o.get('safety_radius') for o in (gb.get('obstacles') or [])] == [
             world_map_mod.obstacle_safety_radius(o) for o in obstacles],
-        # ADR-0010 (j)：manifest 的 z_top == 真源派生（垂直门控输入，登账可复核）
+        # ADR-0010 (j)：manifest 的 z_top == 配置文件派生（垂直门控输入，登账可复核）
         'manifest_z_tops_match': [o.get('z_top') for o in (gb.get('obstacles') or [])] == [
             world_map_mod.obstacle_z_top(o) for o in obstacles],
         'assertions_all_pass': all(asserts.values()),
-        # P1-1：感知先验尺寸 == 真源按**感知可表达**尺寸（cylinder 降级为外接矩形 2r×2r×h）
+        # 感知先验尺寸 == 配置文件按**感知可表达**尺寸（cylinder 降级为外接矩形 2r×2r×h）
         'derived_obstacles_size_matches_perception_schema': all(
             _close([float(v) for v in d['size']],
                    world_map_mod.obstacle_bbox_size(
@@ -619,8 +619,8 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
     f['pass'] = all(f.values())
     out['f_derivation_and_hash'] = f
 
-    # ---- (g) C7 出生净空（与 scenario_reset.validateCandidate 同判据）----
-    # F1（2026-10-31）：坐标来自出生布局真源（`spawn_layout.yaml`），并追加
+    # ---- (g) 出生净空（与 scenario_reset.validateCandidate 同判据）----
+    # F1（2026-10-31）：坐标来自出生布局配置文件（`spawn_layout.yaml`），并追加
     # 「车-目标 / 己方机-目标 / 车-己方机」三组设计距离判据——这是派工单的验收口径，
     # 不再只有"车↔目标 ≥6 m"这一条。
     g = {'map': map_name, 'spawn_layout_source': SPAWN_LAYOUT_PATH}
@@ -633,7 +633,7 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
         worst[name] = round(clear, 6)
     g['min_footprint_clearance_m'] = worst
     g['all_spawns_clear'] = all(v > 0.0 for v in worst.values())
-    # 车↔目标 C7 标定值 6.0 m（ADR-0012）
+    # 车↔目标 标定值 6.0 m（ADR-0012）
     car_target = math.hypot(CAR_XY[0] - TARGET_X, CAR_XY[1] - TARGET_Y)
     own_target = math.hypot(OWN_XY[0] - TARGET_X, OWN_XY[1] - TARGET_Y)
     car_own = math.hypot(CAR_XY[0] - OWN_XY[0], CAR_XY[1] - OWN_XY[1])
@@ -768,8 +768,8 @@ def main():
                 'new_blocked_cells_vs_minimal': len(cells - baseline),
                 'blocked_cells': len(cells),
             }
-        # P1-1 出口判据：**空中安全层在每张地图上均存在可行解**——
-        #   ① 环带可行率 > 0（不是全被膨胀圆盘吃掉）；② 最长连续可行弧 ≥ 90°（够 standoff 驻留）。
+        # 出口判据：**空中安全层在每张地图上均存在可行解**——
+        # ① 环带可行率 > 0（不是全被膨胀圆盘吃掉）；② 最长连续可行弧 ≥ 90°（够 standoff 驻留）。
         # 新增阻塞量只作登记：yard 按用户要求增加中央内容后必然更挡环带，须如实报告而不据此判 FAIL。
         i_res['feasible_solution_exists'] = all(
             v['feasible_pct'] > 0.0 for v in i_res['maps'].values())
@@ -878,11 +878,11 @@ def main():
             # 2026-10-29 用户裁定：作业区 80×80 → 100×100 并**重做 yard 数量与分布**（上限 20→32）；
             # 同日 21:00 再次要求「略增小型件」→ 上限 32→**40**（现 36 实体，仍留余量，不放任膨胀）。
             # R6（2026-10-30）用户裁定「加尺度参照物」→ 上限 40 → **46**（现 42，留余量）。
-            # 变更理由：参照物必须**可碰撞**（禁止装饰性无碰撞件），故只能进真源 / 计入实体数。
+            # 变更理由：参照物必须**可碰撞**（禁止装饰性无碰撞件），故只能进配置文件 / 计入实体数。
             'n_obstacles_le_46': len(yard_obs) <= 46,
             'n_obstacles': len(yard_obs),
             'n_parts': len(all_parts),
-            # 覆盖口径成文为**并集**（同一实体多图元堆叠只计一次）；5%–12% 是 P1-1 规格目标，
+            # 覆盖口径成文为**并集**（同一实体多图元堆叠只计一次）；5%–12% 是 规格目标，
             # 旧记录 7.36% 不可复现（见 _union_coverage_pct 注释），本断言使其第一次可自动判定。
             'coverage_union_pct': round(_union_coverage_pct(yard_obs, wa, world_map_mod), 2),
             'coverage_union_in_5_12': 5.0 <= _union_coverage_pct(yard_obs, wa, world_map_mod) <= 12.0,
@@ -933,7 +933,7 @@ def main():
         res['tests']['p_work_area_uniform'] = p_res
 
         # ---- (q) 明度带（R6，2026-10-30）：**屋面 L − 基层地面 L ≥ 0.30** ----
-        # 用户裁定「建筑与地面区分度低」的量化判据。取真源里 `finish: roofpanel` 的屋面
+        # 用户裁定「建筑与地面区分度低」的量化判据。取配置文件里 `finish: roofpanel` 的屋面
         # albedo 亮度最小值 vs base world `ground_plane` 的 albedo 亮度。
         def _lum(c):
             return 0.2126 * float(c[0]) + 0.7152 * float(c[1]) + 0.0722 * float(c[2])

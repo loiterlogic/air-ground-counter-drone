@@ -1,7 +1,7 @@
-# 空障碍真值（R-026 承载 `obstacle=none`；S-06 半径路径由真源 `obstacle=none` 派生）
+# 空障碍真值（ 承载 `obstacle=none`； 半径路径由配置文件 `obstacle=none` 派生）
 #
-# 几何真源（S-06；ADR-0007）= 所选地图文件（清单 `agc_sim/launch/world_map.py`）。本文件是
-# **standalone 回退副本**（`obstacle=none` 时的空静态先验），与真源在 none 轴下一致（空集）。
+# 配置文件（ADR-0007）= 所选地图文件（清单 `agc_sim/launch/world_map.py`）。本文件是
+# **standalone 回退副本**（`obstacle=none` 时的空静态先验），与配置文件在 none 轴下一致（空集）。
 #
 # 与 config/obstacles.yaml（静态先验 pole_1/pole_2）对照：当场景声明 `obstacle=none` 时，
 # world_bringup 生成**不含 pole_** 的世界，map_adapter 从本文件加载**空**静态先验

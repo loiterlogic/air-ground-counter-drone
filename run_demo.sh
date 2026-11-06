@@ -1,39 +1,24 @@
 #!/usr/bin/env bash
-# run_demo.sh —— AGC 一键演示入口（P1-2）
+# run_demo.sh —— AGC 一键演示入口
 #
-#   ./run_demo.sh                 # 默认：full 后端 + yard 地图 + 主场景 s04 + GUI
-#   ./run_demo.sh --headless      # 无头（快跑 / 服务器）
-#   ./run_demo.sh --map open_field
-#   ./run_demo.sh --escape       # 显式启用目标逃逸
-#   ./run_demo.sh --backend lightweight
-#   ./run_demo.sh --gui-render-backend software   # GUI 渲染后端：auto（默认）| d3d12 | software
-#   ./run_demo.sh stop            # 停掉本脚本起的全部进程（可在另一个终端执行）
-#   ./run_demo.sh status          # 看当前实例与残留（只读）
-#   ./run_demo.sh doctor          # 只做环境预检，不启动任何仿真
-#   ./run_demo.sh test            # 冒烟门槛（离线、只读、5 分钟内全绿）
-#   ./run_demo.sh compare <gui> <headless>   # GUI ↔ headless 等价核验
+# ./run_demo.sh # 默认：full 后端 + yard 地图 + 主场景 s04 + GUI
+# ./run_demo.sh --headless # 无头（快跑 / 服务器）
+# ./run_demo.sh --map open_field
+# ./run_demo.sh --escape # 显式启用目标逃逸
+# ./run_demo.sh --backend lightweight
+# ./run_demo.sh --gui-render-backend software # auto（默认）| d3d12 | software
+# ./run_demo.sh stop|status|doctor|test|compare # 见各子命令
 #
-# 真源：docs/plan/p1-2-一键演示入口.md#p1-2-goal
-# 口径：默认 full + yard + s04 + observe_yaw_mode=target
-#       observe_yaw_mode=target 是**显式 oracle 指向臂**（机头对准真值方位），
-#       不是默认 velocity，也不代表真实视觉识别；目标测量仍走 air_fusion。
-#       依据：.coordination/archive/20261029-006-p1-1-scene-assets/round-7/review.md#p1-1-r7-acceptance
-#
-# 纪律：
-#   * 薄封装：不复制 launch 编排，参数一律透传 w6.launch.py（ADR-0020）；
-#   * 不新增命令者：不写 /agc/ground/cmd_vel、不写模型位姿（#execution-port）；
-#   * 进程组回收只按记录的 PID/PGID，**禁止 pkill -f**（整链排障速查#0-三条环境铁律）；
-#   * stop 不删除任何证据目录。
+# 薄封装：不复制 launch 编排，参数透传 w6.launch.py（ADR-0020）。
+# 不新增命令者：不写 /agc/ground/cmd_vel、不写模型位姿（ADR-0020）。
+# 进程回收只按记录的 PID/PGID，禁止 pkill -f；stop 不删证据目录。
 
 set -o pipefail
 
 # 原始命令行（写进证据，便于复现；在任何 shift 之前捕获）
 ORIG_ARGV="$0 $*"
 
-# 项目根**自定位**（2026-10-31 P2-1 round-7，裁定 A）：
-# 原来写死 `/home/chen/AGC`，导致在别处 clone 后跑脚本会**操作原仓库**
-# （实测：克隆目录 `doctor` 误报 PASS、产物落原仓库）。改为取本脚本所在目录，
-# 这样"克隆到任意路径即可用"成立，也与 README 的"陌生人 10 分钟能跑起来"一致。
+# 项目根按脚本位置自定位，保证 clone 到任意路径都操作当前仓库。
 ROOT="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 DEMO_PY="${ROOT}/scripts/demo"
 ROS_SETUP="/opt/ros/jazzy/setup.bash"
@@ -52,7 +37,7 @@ fail() { # fail <标题> <第1行> [第2行…]
 }
 
 usage() {
-  sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 # ---------------------------- 解析参数 ----------------------------
@@ -113,11 +98,8 @@ source_ws() {
 source_ros
 source_ws
 
-# 两处会**直接抛异常**的前置：脚本负责补齐，不让使用者背 export（MAP_DESIGN_PLAYBOOK 14.2）
-# DDS 发现范围 / 传输**不再写死 LOCALHOST**：本机 `lo` 无 IFF_MULTICAST，LOCALHOST 在
-# 1:1 拓扑下稳定零送达（多进程偶通 → 历史"忽好忽坏"的来源）。选择依据改为探测，单一真源：
-#   scripts/demo/dds_transport.py（判据 / 实测矩阵见 docs/conventions/整链排障速查.md#dds-transport）
-# 需要钉死时：AGC_DDS_TRANSPORT_POLICY=localhost-udp|subnet-shm|subnet-udp
+# DDS 发现范围 / 传输由 scripts/demo/dds_transport.py 按 lo 能力探测（ADR-0028）；
+# 不写死 LOCALHOST。需要钉死时：AGC_DDS_TRANSPORT_POLICY=localhost-udp|subnet-shm|subnet-udp
 _dds_env="$(python3 -c '
 import os, sys
 sys.path.insert(0, os.path.join("'"${ROOT}"'", "scripts", "demo"))
@@ -163,7 +145,7 @@ case "$MODE" in
     exec python3 "${DEMO_PY}/main.py" compare "${ARGS_REST[@]}"
     ;;
   test)
-    # 冒烟门槛（P2-1）：离线、只读、不启仿真；语义见 tests/run_smoke.py 文件头
+    # 冒烟门槛：离线、只读、不启仿真；语义见 tests/run_smoke.py
     exec python3 "${ROOT}/tests/run_smoke.py" ${ARGS_REST[@]+"${ARGS_REST[@]}"}
     ;;
 esac

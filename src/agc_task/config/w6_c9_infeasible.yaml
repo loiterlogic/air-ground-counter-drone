@@ -1,4 +1,4 @@
-# W6 C9 验收配置（shield_infeasible_rate 非零）：车**出生即处于立柱 pole_1（world (0,-6)）
+# 验收配置（shield_infeasible_rate 非零）：车**出生即处于立柱 pole_1（world (0,-6)）
 # 前方 1.7 m**（朝 -y），使安全层在已进入几何接触距离（前向扫描 ≤ contact_dist_m=2.0 m）时触发
 # STOP/SLOWDOWN —— 即"触发时不可行"事件，shield_infeasible_rate 应 > 0。
 # 说明：这是**故意的不可行故障注入**（正常场景安全层会提前停车 → rate 为 0，属预期）。
@@ -11,7 +11,7 @@ task_manager:
     odom_valid_topic: "/agc/ground/odom_valid"
     cmd_topic: "/agc/ground/cmd_vel"
     state_topic: "/agc/task/state"
-    # 运行模式（R-001）：本验收走 m0_skeleton（无空中链路）→ 显式声明无空中域
+    # 运行模式：本验收走 m0_skeleton（无空中链路）→ 显式声明无空中域
     air_present: false
     ground_controller_name: "agc_rl"
     t_max_s: 25.0

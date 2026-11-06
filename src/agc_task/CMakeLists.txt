@@ -43,7 +43,7 @@ target_include_directories(capture_adjudicator PRIVATE include)
 install(TARGETS task_manager scenario_reset run_logger capture_adjudicator target_takeoff_guard
   DESTINATION lib/${PROJECT_NAME})
 
-# W6 前置 P / 拦截裁决：Python 节点（入侵者驱动 + 干扰注入）
+# 前置 P / 拦截裁决：Python 节点（入侵者驱动 + 干扰注入）
 install(PROGRAMS scripts/intruder_driver.py DESTINATION lib/${PROJECT_NAME} RENAME intruder_driver)
 install(PROGRAMS scripts/jammer.py DESTINATION lib/${PROJECT_NAME} RENAME jammer)
 # R6：演示叠加层（RViz marker 层）。GUI 保持纯场景，语义层单独一个节点。
@@ -64,13 +64,13 @@ if(BUILD_TESTING)
   # ADR-0011：火控在飞生命周期（在飞推进 / 落地 / 超时 / 中止）确定性单测
   ament_add_gtest(test_dynamic_fire_control test/test_dynamic_fire_control.cpp)
   target_include_directories(test_dynamic_fire_control PRIVATE include)
-  # W8 P0 / T2：summary.json epoch 秒精度回归（17 位有效数字，防退化为科学计数法）
+  # P0 / T2：summary.json epoch 秒精度回归（17 位有效数字，防退化为科学计数法）
   ament_add_gtest(test_epoch_seconds test/test_epoch_seconds.cpp)
   target_include_directories(test_epoch_seconds PRIVATE include)
-  # W8 P3 / ADR-0021：固定预算任务 FCO 积分器（手算确定性案例）
+  # P3 / ADR-0021：固定预算任务 FCO 积分器（手算确定性案例）
   ament_add_gtest(test_mission_fco_fixed_budget test/test_mission_fco_fixed_budget.cpp)
   target_include_directories(test_mission_fco_fixed_budget PRIVATE include)
-  # W8 P3 / ADR-0021：真实 run_logger 节点级合成 /clock + 消息链
+  # P3 / ADR-0021：真实 run_logger 节点级合成 /clock + 消息链
   ament_add_pytest_test(test_run_logger_mission_fco "test/test_run_logger_mission_fco.py")
 endif()
 

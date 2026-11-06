@@ -3,14 +3,14 @@
 引入 `obs_version`、归一化统计与 checkpoint 元数据；**旧版本可回放**。
 
 原则（spec R2）：
-  * **不**静默改冻结接口（契约 [#messages](../../docs/ROS2迁移交接文档.md#messages)）；观测语义变更须
-    **新版本号**（旧版本 `v1` 的定义**永久保留**，不原地改）；
-  * obs **维度扩展**（目标方位 / 相对速度 / 观测年龄）依 W7-b 的策略职责裁定 —— 本模块只落**机制**、
-    **留位**（`register` 可追加新版本），**不**在本段定扩展维度；
-  * 动作语义**沿用** [ADR-0004](../../docs/adr/0004-ground-control-rl-primary-and-nav2-safety.md#top)
-    已修约定（符号 / 量纲），**不**回退。
+ * **不**静默改冻结接口（契约 [#messages](../../docs/ROS2迁移交接文档.md#messages)）；观测语义变更须
+ **新版本号**（旧版本 `v1` 的定义**永久保留**，不原地改）；
+ * obs **维度扩展**（目标方位 / 相对速度 / 观测年龄）依 的策略职责裁定 —— 本模块只落**机制**、
+ **留位**（`register` 可追加新版本），**不**在本段定扩展维度；
+ * 动作语义**沿用** [ADR-0004](../../docs/adr/0004-ground-control-rl-primary-and-nav2-safety.md#top)
+ 已修约定（符号 / 量纲），**不**回退。
 
-`v1` = W5-b 冻结的观测（`agc_rl.interface.build_observation`）——本模块**引用**该真源构造，**不**复制其定义。
+`v1` = 冻结的观测（`agc_rl.interface.build_observation`）——本模块**引用**该配置文件构造，**不**复制其定义。
 """
 
 import datetime
@@ -22,7 +22,7 @@ import os
 from agc_rl import interface
 
 # 当前默认观测版本（checkpoint 元数据据此区分）。
-# W7-b（T4/E4，F-04 / ADR-0022）：升级到 v2（新增目标 bearing / 相对速度 / 观测年龄）；
+# （T4/E4，F-04 / ADR-0022）：升级到 v2（新增目标 bearing / 相对速度 / 观测年龄）；
 # v1 定义**永久保留**、可回放（旧权重不静默失效）。
 OBS_VERSION = 2
 ACTION_KIND = 'discrete'
@@ -76,7 +76,7 @@ def _build_v1(num_sectors, **kw):
               'lidar_max_range': kw.get('lidar_max_range', 10.0)})
 
 
-# v2 追加字段（W7-b T4/E4，F-04）：目标方位（sin/cos 避免 ±π 跳变）+ 相对速度 + 观测年龄。
+# v2 追加字段（ T4/E4，F-04）：目标方位（sin/cos 避免 ±π 跳变）+ 相对速度 + 观测年龄。
 EXTRA_FIELDS_V2 = ['target_bearing_sin', 'target_bearing_cos',
                    'target_rel_speed_over_norm', 'target_obs_age_over_norm']
 
@@ -116,13 +116,13 @@ def build_obs_vector(obs_version, sectors, pose_x, pose_y, dist_to_goal, last_ac
                      num_sectors, pose_norm_m, track_norm_m, **kw):
     """按 `obs_version` 构造观测向量。
 
-    v1 直接**引用** `agc_rl.interface.build_observation`（冻结真源）；v2 在 v1 基础上追加
-    **目标 bearing（sin/cos）/ 相对速度 / 观测年龄**（W7-b T4/E4，F-04）。旧版本分支始终保留，
-    故"换版本不使旧权重静默失效"。
+ v1 直接**引用** `agc_rl.interface.build_observation`（冻结配置文件）；v2 在 v1 基础上追加
+ **目标 bearing（sin/cos）/ 相对速度 / 观测年龄**（ T4/E4，F-04）。旧版本分支始终保留，
+ 故"换版本不使旧权重静默失效"。
 
-    v2 额外输入（`kw`，缺省 0 = 未知，保守）：
-      `target_bearing_rad`（rad，车体系，0=正前、左为正）、`rel_speed_mps`、`obs_age_s`、
-      `rel_speed_norm_mps`（默认 2.0）、`obs_age_norm_s`（默认 0.5）。
+ v2 额外输入（`kw`，缺省 0 = 未知，保守）：
+ `target_bearing_rad`（rad，车体系，0=正前、左为正）、`rel_speed_mps`、`obs_age_s`、
+ `rel_speed_norm_mps`（默认 2.0）、`obs_age_norm_s`（默认 0.5）。
     """
     base = interface.build_observation(
         sectors, pose_x, pose_y, dist_to_goal, last_action,
@@ -148,8 +148,8 @@ def build_obs_vector(obs_version, sectors, pose_x, pose_y, dist_to_goal, last_ac
 class NormStats:
     """在线归一化统计（Welford 递推；可序列化进 checkpoint 元数据）。
 
-    `v1` 的 obs 已在 `interface` 内做**固定尺度**归一（`pose_norm_m` 等）；本类提供**可选**的
-    运行时统计（如对新增维度做 z-score），训练侧可据此复现同一归一化。
+ `v1` 的 obs 已在 `interface` 内做**固定尺度**归一（`pose_norm_m` 等）；本类提供**可选**的
+ 运行时统计（如对新增维度做 z-score），训练侧可据此复现同一归一化。
     """
 
     def __init__(self, dim, count=0, mean=None, m2=None):
@@ -182,8 +182,8 @@ class NormStats:
 class CheckpointMeta:
     """checkpoint 元数据：观测版本 / 动作空间 / 归一化统计 / 参数来源（含哈希）/ 代码指纹。
 
-    训练侧保存权重时随附本元数据；加载时经 `check_compatible` 判定语义是否一致——
-    版本不同 → **不**静默失效，而是给出**可区分**的加载决定（spec R2 判据）。
+ 训练侧保存权重时随附本元数据；加载时经 `check_compatible` 判定语义是否一致——
+ 版本不同 → **不**静默失效，而是给出**可区分**的加载决定（spec R2 判据）。
     """
 
     def __init__(self, obs_version, action_space, norm_stats=None, num_sectors=12,
@@ -244,7 +244,7 @@ def build_checkpoint_meta(num_sectors=12, params=None, git_commit='', obs_versio
 def check_compatible(meta, current_version=OBS_VERSION, num_sectors=None):
     """加载期语义判定：`meta` 是否与当前环境**语义一致**（返回 `(ok, reasons)`）。
 
-    **不**静默失效：版本不同即为**可区分**的 `False` + 明确原因；调用方据此拒绝或走旧版本回放。
+ **不**静默失效：版本不同即为**可区分**的 `False` + 明确原因；调用方据此拒绝或走旧版本回放。
     """
     reasons = []
     if int(meta.obs_version) != int(current_version):

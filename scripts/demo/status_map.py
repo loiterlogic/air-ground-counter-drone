@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """状态语义映射——**全项目唯一**的"开发词汇 → 观众人话"实现（P1-3）。
 
-真源：[演示可观测性与产物语义](../../docs/conventions/演示可观测性与产物语义.md#top)。
+配置文件：[演示可观测性与产物语义](../../docs/conventions/演示可观测性与产物语义.md#top)。
 输入是 [`AgcTaskState.msg`](../../src/agc_msgs/msg/AgcTaskState.msg) 的 `state` 枚举与
 `reason_code` 字符串；本模块**只翻译、不判定**——不改状态机、不改终态判据、不新增字段。
 
-## 契约 C8（表述红线，写进代码防止手滑改坏）
+## 契约 （表述红线，写进代码防止手滑改坏）
 
 `TRACKING_SUCCESS` 的语义是**"抵近并持续跟踪"**，**不得**表述为"拦截完成"（[#hard-constraints]）。
 阶段 B 的"拦截"另有终态 `INTERCEPT_CONFIRMED`（网捕获 / 行为级干扰），两者不可混用。
@@ -25,7 +25,7 @@ import re
 # --------------------------------------------------------------------------------------
 
 # (state, 内部名, 演示文案, 观众该理解什么)
-# 文案表与 P1-3 计划第 1 节的表**逐行对应**，任何改动都要同步那一节。
+# 文案表与 计划规范的表**逐行对应**，任何改动都要同步那一节。
 STATE_ROWS = (
     (0, 'IDLE', '系统待命', '还没开始'),
     (1, 'AIR_SEARCH', '无人机搜索中', '在找目标'),
@@ -46,16 +46,16 @@ _BY_NAME = {name: {'state': n, 'name': name, 'text': text, 'audience': audience}
             for n, name, text, audience in STATE_ROWS}
 _BY_CODE = {n: _BY_NAME[name] for n, name, _t, _a in STATE_ROWS}
 
-# 阶段 A 的"成功"= 跟踪成功；不得被读成拦截成功（C8）
+# 阶段 A 的"成功"= 跟踪成功；不得被读成拦截成功
 PHASE_A_SUCCESS = 'TRACKING_SUCCESS'
 PHASE_B_INTERCEPT = 'INTERCEPT_CONFIRMED'
 
-# C8 表述红线：TRACKING_SUCCESS 的展示文案**一个"拦截/捕获"都不许出现**。
+# 表述红线：TRACKING_SUCCESS 的展示文案**一个"拦截/捕获"都不许出现**。
 FORBIDDEN_IN_TRACKING = ('拦截', '捕获', '击落', '网捕')
 
 # 任何展示文案都不得出现的措辞（会把"跟踪成功"读成"打下来了"）。
 # ⚠ 这几个字面量**只允许出现在这里**：其它模块一律引用本表 / `PHASE_A_CAVEAT`，
-#   不得再写一遍（否则静态禁词检查会失效——"到处都是例外"等于没有红线）。
+# 不得再写一遍（否则静态禁词检查会失效——"到处都是例外"等于没有红线）。
 FORBIDDEN_ANYWHERE = ('拦截完成', '拦截成功', '已经击落', '成功击落')
 
 # 判定说明里给观众看的口径句：**不复制禁词**，只说清"跟踪 ≠ 阶段 B 拦截"。
@@ -64,7 +64,7 @@ PHASE_A_CAVEAT = ('口径      阶段 A「抵近并持续跟踪」成功；跟�
 PHASE_B_CAVEAT = ('口径      阶段 B 拦截达成；具体方式由 reason_code 区分'
                   '（CAPTURE_NET 物理捕获 / JAM_* 行为级干扰）。')
 
-# C8 提示语：**不是展示文案**（不代表观众看到的字），只供代码注释 / 文档 / 回归引用。
+# 提示语：**不是展示文案**（不代表观众看到的字），只供代码注释 / 文档 / 回归引用。
 C8_NOTICE = ('C8：TRACKING_SUCCESS 的语义是「抵近并持续跟踪」，'
              '阶段 B 的拦截另有终态 INTERCEPT_CONFIRMED。')
 
@@ -73,7 +73,7 @@ C8_NOTICE = ('C8：TRACKING_SUCCESS 的语义是「抵近并持续跟踪」，'
 # 2. reason_code → 人话（"为什么成功 / 失败"）
 # --------------------------------------------------------------------------------------
 
-# 取值真源：`src/agc_task/src/task_manager.cpp` 的 setState / enterTerminal / fail 调用点，
+# 配置文件：`src/agc_task/src/task_manager.cpp` 的 setState / enterTerminal / fail 调用点，
 # 以及 capture_adjudicator / jammer 的配套事件首 token。
 REASON_ROWS = (
     # —— 常态推进 ——
@@ -92,7 +92,7 @@ REASON_ROWS = (
     ('TIMEOUT', '任务时限（t_max_s，C4：超时一律算失败）内未达成判定条件'),
     ('abort', '收到外部中止请求'),
     # —— 非任务窗口的原因码：`/agc/ground/goal_info` 与 `/agc/task/dwell_event` 携带 ——
-    #    （面板只显示 `/agc/task/state` 的 reason_code；这一段保证"看到也能翻译"，不冒充任务原因）
+    # （面板只显示 `/agc/task/state` 的 reason_code；这一段保证"看到也能翻译"，不冒充任务原因）
     ('FIXED_GOAL', '地面目标采用任务固定点（`goal_follow_target=false`）'),
     ('TARGET_FRESH', '地面目标取自新鲜的目标观测（含源时刻与 target_id）'),
     ('HOLD_LAST_VALID', '目标短时失效：在 `goal_hold_valid_s` 窗口内保持最后有效目标'),

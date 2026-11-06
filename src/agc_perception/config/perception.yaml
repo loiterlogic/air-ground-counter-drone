@@ -1,9 +1,9 @@
-# W4 感知与融合参数 —— **唯一参数来源**
+# 感知与融合参数 —— **唯一参数来源**
 #
 # 由 `perception_bringup.launch.py` 经 launch 单一注入；节点不得覆写（契约 [参数入口]）。
 # 契约参数名 → 本文件节点参数映射：
-#   `/agc/target/source`            → gt_adapter.target_source（air_fusion 已退役）
-#   `/agc/obstacles/source`         → map_adapter（air_fusion 已退役，恒 config）
+# `/agc/target/source` → gt_adapter.target_source（air_fusion 已退役）
+# `/agc/obstacles/source` → map_adapter（air_fusion 已退役，恒 config）
 #
 # 2026-11-06：`/agc/perception/sensors_file` 契约项随 `air_perception` 与 `perception`
 # 场景轴一并退役（无消费者），本文件不再有对应节点段。
@@ -24,14 +24,14 @@ ground_odom_adapter:
     gt_topic: "/agc/gt/agc_car"
     odom_topic: "/agc/ground/odom"
     valid_topic: "/agc/ground/odom_valid"
-    # R-039（ADR-0017）：诊断话题（latched std_msgs/String，state / age / epoch；非 ABI）
+    # （ADR-0017）：诊断话题（latched std_msgs/String，state / age / epoch；非 ABI）
     diag_topic: "/agc/ground/odom_diag"
-    # R-039：reset epoch 源（与 scenario_reset 一致，Int32 transient_local）→ 速度历史清空
+    # reset epoch 源（与 scenario_reset 一致，Int32 transient_local）→ 速度历史清空
     reset_epoch_topic: "/agc/scenario/reset_epoch"
     rate_hz: 30.0
     diff_window_s: 0.15
     odom_max_age_s: 0.5
-    # R-039：相邻真值样本位移跳变阈值（m）；超过即视为 teleport → 速度历史清空
+    # 相邻真值样本位移跳变阈值（m）；超过即视为 teleport → 速度历史清空
     reset_jump_clear_m: 0.5
 
 gt_adapter:
@@ -61,24 +61,24 @@ gt_adapter:
     confidence_tolerance_m: 0.25
     seed: "0"                        # 字符串（避免 yaml 求值成 int）
     # α-β 滤波器（位置加噪 → 速度估计）：σ_w 为目标机动强度（m/s²）。
-    #   σ_p ≤ 1e-6 时**自动旁路**（零噪声下 α=1,β=2 会退化为二阶振荡，见 gt_adapter.cpp）。
+    # σ_p ≤ 1e-6 时**自动旁路**（零噪声下 α=1,β=2 会退化为二阶振荡，见 gt_adapter.cpp）。
     filter_enabled: true
     filter_sigma_w_mps2: 0.5
     # ---- 兼容旧参数名（**仅当 sigma_xy_m ≤ 0 时**作为回退读取）----
     # 旧 `pose_std_m` / `twist_std_m` 只填协方差、不产生噪声，属"装饰参数"；
-    # 保留键以免既有实验配置静默失效，但**不再**是噪声真源。
+    # 保留键以免既有实验配置静默失效，但**不再**是噪声配置文件。
     pose_std_m: 0.0
     twist_std_m: 0.0
 # ---- 已退役路线（用户裁定）----
-#   * 2026-11-04：视觉定位路径（`camera_tf` / `vision_target` / `perception_path`）整体删除；
-#     `air_fusion` 节点与参数段删除。项目不做目标识别，目标位置始终由真值给出（ADR-0009 (a2)）。
-#   * 2026-11-06：`air_perception` 节点与本节参数段删除。它在 `air_fusion` 退役后发布的
-#     `/agc/air/obs` 恒无订阅者，`sensors_file` 通道配置亦不再影响任何运行期行为。
-#     `/agc/targets` 的发布者**恒为** `gt_adapter`；`/agc/obstacles` 无发布者 →
-#     `obstacles_source` 恒为 `config`（静态先验）。
-# 防复活闸门见 scripts/tests/test_retirement_ledger.py；台账见治理规范 5.2。
+# * 2026-11-04：视觉定位路径（`camera_tf` / `vision_target` / `perception_path`）整体删除；
+# `air_fusion` 节点与参数段删除。项目不做目标识别，目标位置始终由真值给出（ADR-0009 (a2)）。
+# * 2026-11-06：`air_perception` 节点与本节参数段删除。它在 `air_fusion` 退役后发布的
+# `/agc/air/obs` 恒无订阅者，`sensors_file` 通道配置亦不再影响任何运行期行为。
+# `/agc/targets` 的发布者**恒为** `gt_adapter`；`/agc/obstacles` 无发布者 →
+# `obstacles_source` 恒为 `config`（静态先验）。
+# 防复活闸门见 scripts/tests/test_retirement_ledger.py；台账见治理规范。
 
-# ---- W4-c · 地图 ----
+# ---- · 地图 ----
 map_adapter:
   ros__parameters:
     world_frame: "world"
@@ -86,7 +86,7 @@ map_adapter:
     map_topic: "/agc/map"
     dynamic_max_age_s: 1.5       # R-006：动态障碍轨最后观测年龄超过此值即过期（→ 未知，非永久自由）；static 先验不过期
     source_max_age_s: 1.0        # R-006：/agc/obstacles 源静默超过此值 → /agc/map/valid=false（知识时效）
-    # R-040（ADR-0007）：场景/源版本（折入内容身份 hash / 由 launch 按场景派生注入）；单调更新序号诊断话题
+    # （ADR-0007）：场景/源版本（折入内容身份 hash / 由 launch 按场景派生注入）；单调更新序号诊断话题
     scenario_version: ""
     update_seq_topic: "/agc/map/update_seq"
     # map_file / obstacles_file / obstacles_source 由 launch 注入

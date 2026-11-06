@@ -28,7 +28,7 @@ from nav_msgs.msg import Odometry, OccupancyGrid
 from std_msgs.msg import String
 from agc_msgs.msg import TargetTrackArray
 
-# (topic, type, expected_hz, lenient)  lenient=True 表示非 W4 交付物（仅观测）
+# (topic, type, expected_hz, lenient) lenient=True 表示非 交付物（仅观测）
 TOPICS = [
     ('/agc/targets', TargetTrackArray, 10.0, False),
     ('/agc/ground/odom', Odometry, 30.0, False),

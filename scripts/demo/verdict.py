@@ -3,13 +3,13 @@
 
 两条硬纪律：
 
-  1. **指标全部来自 `metrics/summary.json`**（`run_logger` 是唯一真源）；展示层
-     **不自己算**成功率、可见率、介入率——只读、只翻译、只标注字段名。
-  2. **判定阈值不硬编码**：`d_track_m` / `t_dwell_s` / `t_max_s` 等一律从本 run 的
-     `config/params_applied.yaml`（run_logger 落的**实际生效参数**快照）读取；
-     读不到就**如实说"阈值来源缺失"**，绝不写死一个数假装知道。
+ 1. **指标全部来自 `metrics/summary.json`**（`run_logger` 是配置文件）；展示层
+ **不自己算**成功率、可见率、介入率——只读、只翻译、只标注字段名。
+ 2. **判定阈值不硬编码**：`d_track_m` / `t_dwell_s` / `t_max_s` 等一律从本 run 的
+ `config/params_applied.yaml`（run_logger 落的**实际生效参数**快照）读取；
+ 读不到就**如实说"阈值来源缺失"**，绝不写死一个数假装知道。
 
-C8（[#terminal-semantics]）：`TRACKING_SUCCESS` 的判定说明写"抵近并持续跟踪"，
+（[#terminal-semantics]）：`TRACKING_SUCCESS` 的判定说明写"抵近并持续跟踪"，
 并用 `status_map.PHASE_A_CAVEAT` 讲清它与阶段 B 拦截的区别（阶段 B 由 `INTERCEPT_CONFIRMED` +
 `reason_code` 的 `CAPTURE_NET` / `JAM_*` 表达）。**禁词字面量只存在于 `status_map`**，
 本模块不复制，避免静态禁词检查被"到处都是例外"绕空。
@@ -43,9 +43,9 @@ def _fmt(value, unit=''):
 def load_thresholds(config_path):
     """从 `params_applied.yaml` 的 `task_manager` 段取判定阈值（**唯一**阈值来源）。
 
-    返回 `{'source': path|None, 'values': {...}, 'missing': [...]}`。
-    解析用 PyYAML（ROS 环境自带）；不可用时退化为**逐行扫描**同一文件，
-    两者都失败 → `source=None` 且 `missing` 列全，调用方必须如实标注。
+ 返回 `{'source': path|None, 'values': {...}, 'missing': [...]}`。
+ 解析用 PyYAML（ROS 环境自带）；不可用时退化为**逐行扫描**同一文件，
+ 两者都失败 → `source=None` 且 `missing` 列全，调用方必须如实标注。
     """
     out = {'source': None, 'values': {}, 'missing': list(THRESHOLD_KEYS)}
     if not config_path or not os.path.isfile(config_path):
@@ -117,8 +117,8 @@ def explain(summary, thresholds=None, terminal_state=None, terminal_reason=None,
             summary_path=None, expected_terminal=None):
     """返回 `{'lines': [...], 'fields': {...}}`——`lines` 直接打印 / 写进 result.json。
 
-    `summary` 为 `None` 时不猜：明确写"summary 缺失，判定说明不可用"，并给出已观测到的
-    终态（来自 `/agc/task/state`）与缺口，供审查者区分"没跑成"与"没记录"。
+ `summary` 为 `None` 时不猜：明确写"summary 缺失，判定说明不可用"，并给出已观测到的
+ 终态（来自 `/agc/task/state`）与缺口，供审查者区分"没跑成"与"没记录"。
     """
     th = thresholds or {'source': None, 'values': {}, 'missing': list(THRESHOLD_KEYS)}
     doc = summary or {}
@@ -172,7 +172,7 @@ def explain(summary, thresholds=None, terminal_state=None, terminal_reason=None,
             lines.append('拍数      ticks_total=%s / ticks_triggered=%s'
                          % (doc.get('ticks_total'), doc.get('ticks_triggered')))
 
-    # 4) 安全 / 复位（C9 两指标）
+    # 4) 安全 / 复位（ 两指标）
     ca = doc.get('command_attribution') or {}
     if doc:
         lines.append('安全      shield_infeasible_rate=%s；介入 %s 段 / %s 拍（shield 层%s）'

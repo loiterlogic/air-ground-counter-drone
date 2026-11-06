@@ -14,7 +14,7 @@ find_package(nav_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(agc_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
-# W5-c 离线基线：复用 Nav2 planner 插件 + agc_control LQR 控制器插件（ADR-0003/ADR-0004）
+# 离线基线：复用 Nav2 planner 插件 + agc_control LQR 控制器插件（ADR-0003/ADR-0004）
 find_package(agc_control REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(tf2_ros REQUIRED)
@@ -24,26 +24,26 @@ find_package(nav2_core REQUIRED)
 find_package(nav2_costmap_2d REQUIRED)
 find_package(nav2_util REQUIRED)
 
-# W5-b：命令源为 agc_rl 的推理节点（Python）；原 ground_policy_placeholder 已退役（spec R7）。
+# 命令源为 agc_rl 的推理节点（Python）；原 ground_policy_placeholder 已退役（spec R7）。
 add_executable(ground_drive_relay src/ground_drive_relay.cpp)
 ament_target_dependencies(ground_drive_relay rclcpp geometry_msgs)
 
-# W5 · R-007：自体过滤（自返回置 inf，供包围式旋转/后向 zone 使用）
+# · ：自体过滤（自返回置 inf，供包围式旋转/后向 zone 使用）
 add_executable(scan_self_filter src/scan_self_filter.cpp)
 ament_target_dependencies(scan_self_filter rclcpp sensor_msgs)
 
-# W5-c：离线对照基线（Nav2 planner 插件 + agc_control LQR 插件 + 内建 costmap）
+# 离线对照基线（Nav2 planner 插件 + agc_control LQR 插件 + 内建 costmap）
 add_executable(ground_baseline src/ground_baseline.cpp)
 target_link_libraries(ground_baseline Eigen3::Eigen)
 ament_target_dependencies(ground_baseline
   rclcpp rclcpp_lifecycle geometry_msgs nav_msgs agc_msgs
   agc_control pluginlib tf2_ros nav2_core nav2_costmap_2d nav2_util)
 
-# W7-b（T1/E1）：无 shield 对照臂的恒等透传（纯仿真；ADR-0022）
+# （T1/E1）：无 shield 对照臂的恒等透传（纯仿真；ADR-0022）
 add_executable(cmd_vel_passthrough src/cmd_vel_passthrough.cpp)
 ament_target_dependencies(cmd_vel_passthrough rclcpp geometry_msgs)
 
-# G2：几何/直连占位全局规划器（ADR-0013 当前占位阶段）——只发路径，不发速度。
+# 几何/直连占位全局规划器（ADR-0013 当前占位阶段）——只发路径，不发速度。
 # 不链接 nav2_*、不含 costmap；Navfn 属离线基线（ground_baseline），与本节点无关。
 add_executable(placeholder_path_planner src/placeholder_path_planner.cpp)
 ament_target_dependencies(placeholder_path_planner

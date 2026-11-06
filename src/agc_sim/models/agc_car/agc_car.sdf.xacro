@@ -132,7 +132,7 @@
         <geometry><mesh><uri>model://agc_car/meshes/user_rail.stl</uri></mesh></geometry>
         <material><ambient>0.2 0.2 0.2 1</ambient><diffuse>0.25 0.25 0.25 1</diffuse></material>
       </visual>
-      <!-- R-027（ADR-0042）：GZ contact 传感器——「真实碰撞」的**真值来源**。
+      <!-- R-027（ADR-0010）：GZ contact 传感器——「真实碰撞」的**真值来源**。
            挂 car/base_link，监测**同 link 内** base_collision 与其它碰撞体的接触；
            检测到接触时由世界已加载的 gz-sim-contact-system（agc_world.sdf 的
            <plugin filename="gz-sim-contact-system">）发布 gz.msgs.Contacts，经 bridge.yaml
@@ -153,7 +153,7 @@
     <xacro:wheel_link name="front_right_wheel" pose="0.256 -0.285475 0.035 0 0 0"/>
 
     <!-- 3D 激光（W2-full 传感器链路；供 W4 costmap / W5 collision_monitor）
-         —— R-037 传感器高度与障碍族限制**如实登记**（ADR-0052(a)）——
+         —— R-037 传感器高度与障碍族限制**如实登记**（ADR-0010）——
          安装高度：`car/lidar_link` **z = 0.48 m**（车顶水平面）。模型为 `gpu_lidar` 3D
          （H 360 束/360°、V 16 束 ±0.261799 rad ≈ ±15°、range [0.2,20]、10 Hz），但**安全层 / costmap
          消费的 `/agc/ground/scan_filtered` 等价于 z≈0.48 的 2D 水平面**扫描
@@ -185,7 +185,7 @@
     </link>
 
     <!-- 拦截载荷（W2-interception，R10）：轻量附件、**无碰撞**、不改动 DiffDrive 标定 -->
-    <!-- —— R-037 载荷外伸 / 碰撞口径一致化（ADR-0052(b)）——
+    <!-- —— R-037 载荷外伸 / 碰撞口径一致化（ADR-0010）——
          **显式声明各自适用域**，消除「一侧计入另侧不计」的隐含不一致：
          * 净空（布局约束，ADR-0023）：载荷外伸 1.0 m 仅作**出生净空推导**的外伸登记，约束场景随机化；
          * 安全层（2D 视野）：载荷位于 z=1.60（网面）/ z=0.30（发射器），**不**在 z=0.48 扫描面 → 不进视野；

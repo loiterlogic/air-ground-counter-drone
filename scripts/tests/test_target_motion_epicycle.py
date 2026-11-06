@@ -3,17 +3,17 @@
 **为什么存在**：`epicycle` 是目标机新增的运动种类（`intruder_driver.motion` 的新取值）。
 它要同时满足四条互相拉扯的约束，任何一条写错都会**静默**破坏下游：
 
-  ① **越界安全**：水平位移恒 ≤ `drift_amplitude_m + radius_m`，且远小于 `run_region_radius_m`。
-     写错成 `A·r` 或漏掉漂移项，会让 `_apply_region` 的夹持把轨迹"剪平"——目标机看起来在动，
-     实际被钉在边界上，而**没有任何错误日志**（`terminated_` 只在第一次夹持时记一条）。
+ ① **越界安全**：水平位移恒 ≤ `drift_amplitude_m + radius_m`，且远小于 `run_region_radius_m`。
+ 写错成 `A·r` 或漏掉漂移项，会让 `_apply_region` 的夹持把轨迹"剪平"——目标机看起来在动，
+ 实际被钉在边界上，而**没有任何错误日志**（`terminated_` 只在第一次夹持时记一条）。
   ② **起点连续**：`_target(0)` 必须与 `_start_pose()` **逐位相等**。不等 ⇒ `_maybe_start` 的
      `dist(pos, start) <= start_tol_m` 永不成立 ⇒ `t0_` 恒 None ⇒ **目标机停在起始点不动**
-     （这正是 H0 回归里"目标未起飞"那类故障的形状）。
+ （这正是 H0 回归里"目标未起飞"那类故障的形状）。
   ③ **起点保持是常量**：`_start_pose()` 对 t 必须是常量。它当前实现是 `_target(0.0)`，
      但**若将来有人改成 `_target(now)`**，episode 开始前 setpoint 会随时间漂走 ⇒ 机体永远追不上 ⇒
-     同样的静默停摆。本测试把这个不变量**锁死**。
-  ④ **峰值速度上界**：`≤ A·ω_c + r·ω_o`（三角不等式）。该上界必须 ≤ 火控提前量给出的
-     `1.206 m/s`（ADR-0031 推导），否则网瞄准点被 `target_max_lead_m` 截断、开始吃网半径余量。
+ 同样的静默停摆。本测试把这个不变量**锁死**。
+ ④ **峰值速度上界**：`≤ A·ω_c + r·ω_o`（三角不等式）。该上界必须 ≤ 火控提前量给出的
+ `1.206 m/s`（ADR-0031 推导），否则网瞄准点被 `target_max_lead_m` 截断、开始吃网半径余量。
 
 **为什么放在 `scripts/tests/`（不是 `src/agc_task/test/`）**：本单白名单不含 `CMakeLists.txt`，
 无法 `ament_add_pytest_test` 注册；而 `scripts/tests/` 被 `run_smoke` 的 `offline` 组
@@ -57,8 +57,8 @@ class _Stub:
     """任意属性都返回另一个 `_Stub`，且可被调用 / 下标访问。
 
     足够让 `class IntruderDriver(Node)` 的定义、`QoSProfile(...)` 的调用、
-    `VehicleCommand.VEHICLE_CMD_*` 的常量访问都通过——本测试只调用 `_target`，
-    不构造节点实例（那需要 ROS 运行时）。
+ `VehicleCommand.VEHICLE_CMD_*` 的常量访问都通过——本测试只调用 `_target`，
+ 不构造节点实例（那需要 ROS 运行时）。
     """
 
     def __getattr__(self, name):
@@ -115,8 +115,8 @@ _DRIVER_MOD = None
 def _driver(motion, **over):
     """构造一个**未调用 `__init__`** 的 driver 实例，只填 `_target` 需要的属性。
 
-    不走 `IntruderDriver.__init__`（那会 `declare_parameter` / 建 publisher，需要 ROS 运行时）。
-    这样测到的是**真实源码里的 `_target` 实现**，只是绕开了 I/O 外壳。
+ 不走 `IntruderDriver.__init__`（那会 `declare_parameter` / 建 publisher，需要 ROS 运行时）。
+ 这样测到的是**真实源码里的 `_target` 实现**，只是绕开了 I/O 外壳。
     """
     global _DRIVER_MOD
     if _DRIVER_MOD is None:
@@ -141,8 +141,8 @@ def _driver(motion, **over):
 def test_epicycle_displacement_within_drift_plus_radius():
     """水平位移恒 ≤ A + r（三角不等式），且远小于运行区半径。
 
-    这条同时是 `run_region_radius_m` 夹持**永不触发**的证明：若上界 > R_run，
-    轨迹会被 `_apply_region` 剪平，而日志只有一条 error——静默退化。
+ 这条同时是 `run_region_radius_m` 夹持**永不触发**的证明：若上界 > R_run，
+ 轨迹会被 `_apply_region` 剪平，而日志只有一条 error——静默退化。
     """
     d = _driver('epicycle')
     ox, oy, _ = ORIGIN
@@ -169,7 +169,7 @@ def test_epicycle_start_pose_equals_target_at_zero_bitwise():
     """`_target(0)` 与 `_start_pose()` **逐位相等**（起点协议的前提）。
 
     `_start_pose()` 的实现是 `_apply_region(_target(0.0))`；对 epicycle 而言上界 < R_run，
-    故夹持是恒等映射 ⇒ 两者必须逐位相同。若不等，`_maybe_start` 的
+ 故夹持是恒等映射 ⇒ 两者必须逐位相同。若不等，`_maybe_start` 的
     `dist(pos, start) <= start_tol_m` 会永不满足，目标机停在起始点不动且无报错。
     """
     d = _driver('epicycle')
@@ -187,7 +187,7 @@ def test_start_pose_is_constant_in_time():
 
     当前实现 `_target(0.0)` 天然满足。本测试防的是将来有人把它改成依赖时间
     （例如 `_target(self._episode_elapsed())`）：那样 episode 开始前 setpoint 会漂走，
-    机体永远追不上，表现为"目标机不动"，而**日志里没有任何异常**。
+ 机体永远追不上，表现为"目标机不动"，而**日志里没有任何异常**。
     """
     for motion in ('static', 'linear', 'maneuver', 'epicycle'):
         d = _driver(motion)
@@ -202,8 +202,8 @@ def test_epicycle_velocity_is_finite_and_nonzero_at_t0():
     """`dp/dt(0)` 有限且非零——"切线速度非零"是**已知且无害**的。
 
     起点协议不靠"轨迹在 t=0 静止"，而靠 `t0_ is None` 期间发**常量** `_start_pose()`：
-    机体收敛到该点后 `speed → 0`，`start_vel_eps_mps` 得以满足。本测试确认切线速度
-    确实非零（否则说明公式退化成静止），从而把"为什么仍然能起步"的推理链钉在证据上。
+ 机体收敛到该点后 `speed → 0`，`start_vel_eps_mps` 得以满足。本测试确认切线速度
+ 确实非零（否则说明公式退化成静止），从而把"为什么仍然能起步"的推理链钉在证据上。
     """
     d = _driver('epicycle')
     h = 1e-7
@@ -227,7 +227,7 @@ def test_epicycle_peak_speed_within_lead_bound():
     """数值峰值速度 ≤ `A·ω_c + r·ω_o`，且该上界 ≤ 火控给出的 1.206 m/s。
 
     上界超过 1.206 ⇒ `TargetMotionFilter.predicted()` 的 `target_max_lead_m=1.5` 截断提前量，
-    瞄准点开始落后目标，网半径余量被逐步吃掉（ADR-0031 的推导链）。
+ 瞄准点开始落后目标，网半径余量被逐步吃掉（ADR-0031 的推导链）。
     """
     d = _driver('epicycle')
     wc = 2.0 * math.pi / DRIFT_T_S
@@ -251,8 +251,8 @@ def test_epicycle_peak_speed_within_lead_bound():
 def test_epicycle_fits_inside_car_dwell_circle():
     """`A + r + goal_tol < d_track` ⇒ 目标机恒在车的 `d_track` 圆内。
 
-    否则 `task_manager` 的 dwell 会以 `RANGE_EXCEEDED` 反复中断，
-    `t_dwell_s=3.0` 永远攒不满 ⇒ 跟踪终态不可达（这不是"变难了"，是"结局不可达"）。
+ 否则 `task_manager` 的 dwell 会以 `RANGE_EXCEEDED` 反复中断，
+ `t_dwell_s=3.0` 永远攒不满 ⇒ 跟踪终态不可达（这不是"变难了"，是"结局不可达"）。
     """
     reach = DRIFT_A_M + RADIUS_M + GOAL_TOL_M
     assert reach < D_TRACK_M, (
@@ -261,7 +261,7 @@ def test_epicycle_fits_inside_car_dwell_circle():
 
 
 # ------------------------------------------------------------------------------
-# 确定性 / 可复现（C4 / C5：同 seed 同配置必须逐位相同）
+# 确定性 / 可复现（ / ：同 seed 同配置必须逐位相同）
 # ------------------------------------------------------------------------------
 def test_epicycle_is_deterministic():
     """同一 `t` 两次求值**逐位相同**；且与求值顺序无关（无隐藏状态）。"""
@@ -291,8 +291,8 @@ def test_epicycle_is_deterministic():
 def test_legacy_motions_unchanged(motion, expected):
     """`static` / `linear` / `maneuver` 必须与历史公式**逐值相同**（A2 不回归）。
 
-    注意 `maneuver` 的 t=0 是 `(ox+r, oy)` 而 epicycle 是 `(ox+r, oy+A)`——
-    差异只来自新增的圆心漂移项，既有三支一个字符都没改。
+ 注意 `maneuver` 的 t=0 是 `(ox+r, oy)` 而 epicycle 是 `(ox+r, oy+A)`——
+ 差异只来自新增的圆心漂移项，既有三支一个字符都没改。
     """
     d = _driver(motion)
     for i in range(0, 400):

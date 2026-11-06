@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """toolchain_pin_check —— S-09（工具链可重建 pin 清单）一致性核查（**只读**）。
 
-真源：`toolchain/README.md` 内的 ```yaml fenced 块（含 `agc_toolchain_pins:`），
+配置文件：`toolchain/README.md` 内的 ```yaml fenced 块（含 `agc_toolchain_pins:`），
 由 `yaml.safe_load` 解析。本脚本比对 README 记录值 vs 实测，逐项记 PASS / FAIL / SKIP：
 
-  (a) artifacts：逐条算文件 sha256 与记录比对；文件缺失 -> FAIL（原因 `missing`）。
+ (a) artifacts：逐条算文件 sha256 与记录比对；文件缺失 -> FAIL（原因 `missing`）。
   (b) git_repos：`git -C <path> rev-parse HEAD` 与 `head`；`describe --tags --exact-match`
       或 `tag --points-at HEAD` 与 `tag`；仓库缺失 -> FAIL `missing`。
-  (c) submodules：`git -C <px4> submodule status <path>` 首字符（空格=已初始化 / `-`=未初始化）
-      与 SHA 比对；未初始化 -> FAIL `not_initialized`。
-  (d) dds_versions：`ros_fastrtps`/`ros_fastcdr` 用 `dpkg-query -W -f='${Version}'`（包
-      `ros-jazzy-fastrtps`/`ros-jazzy-fastcdr`）——记录值须为实测版本号的**前缀匹配**；
-      `host_spdlog`/`host_fmt` 同理（`libspdlog-dev`/`libfmt-dev`）；`sysroot_spdlog` 从
-      `<sysroot>/usr/include/spdlog/version.h` 三段宏拼出；`sysroot_fmt` 从 `fmt/core.h` 的
-      `FMT_VERSION` 宏换算（90100 -> 9.1.0）。`dpkg-query` 不可用 -> SKIP（非 FAIL）。
-  (e) localdeps_debs：对 `toolchain/localdeps/debs/` 下每个 `.deb` 算 sha256 得实测集合；
-      与 README 记录的哈希集合做**集合比对**（双向差集须为空），报告缺失/多余文件。
+ (c) submodules：`git -C <px4> submodule status <path>` 首字符（空格=已初始化 / `-`=未初始化）
+ 与 SHA 比对；未初始化 -> FAIL `not_initialized`。
+ (d) dds_versions：`ros_fastrtps`/`ros_fastcdr` 用 `dpkg-query -W -f='${Version}'`（包
+ `ros-jazzy-fastrtps`/`ros-jazzy-fastcdr`）——记录值须为实测版本号的**前缀匹配**；
+ `host_spdlog`/`host_fmt` 同理（`libspdlog-dev`/`libfmt-dev`）；`sysroot_spdlog` 从
+ `<sysroot>/usr/include/spdlog/version.h` 三段宏拼出；`sysroot_fmt` 从 `fmt/core.h` 的
+ `FMT_VERSION` 宏换算（90100 -> 9.1.0）。`dpkg-query` 不可用 -> SKIP（非 FAIL）。
+ (e) localdeps_debs：对 `toolchain/localdeps/debs/` 下每个 `.deb` 算 sha256 得实测集合；
+ 与 README 记录的哈希集合做**集合比对**（双向差集须为空），报告缺失/多余文件。
 
 环境无关：**不** `source /opt/ros/jazzy`，只用 `dpkg-query` 与文件读取。
 
@@ -182,7 +182,7 @@ def _porcelain_path(line):
 def check_local_patches(pins, checks, root):
     """校验本地补丁：补丁哈希、基准可应用、当前源码=基准+补丁、无额外 dirty。
 
-    活动外部树只读；负例由调用方在临时夹具中构造。
+ 活动外部树只读；负例由调用方在临时夹具中构造。
     """
     patches = pins.get('local_patches') or []
     if not patches:

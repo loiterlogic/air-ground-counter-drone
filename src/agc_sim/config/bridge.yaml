@@ -1,7 +1,7 @@
-# ros_gz_bridge 声明式桥配置（W2-min 最小集）
+# ros_gz_bridge 声明式桥配置（-min 最小集）
 #
 # 由 world_bringup.launch.py 经 ros_gz_bridge 的 parameter_bridge 以 config_file 加载。
-# QoS 与类型映射的标定说明见 src/agc_sim/README.md（W2 吸收点：sensor QoS / 类型映射，对齐 Nav2）。
+# QoS 与类型映射的标定说明见 src/agc_sim/README.md（ 吸收点：sensor QoS / 类型映射，对齐 Nav2）。
 
 # 仿真时钟（GZ→ROS）
 - ros_topic_name: "/clock"
@@ -10,22 +10,22 @@
   gz_type_name: "gz.msgs.Clock"
   direction: GZ_TO_ROS
 
-# 地面车里程计（GZ DiffDrive 插件输出 → ROS 原始 odom；由 M0 的 ground_odom_adapter 归一）
+# 地面车里程计（GZ DiffDrive 插件输出 → ROS 原始 odom；由 的 ground_odom_adapter 归一）
 - ros_topic_name: "/agc/sim/ground_odom_raw"
   gz_topic_name: "/model/agc_car/odometry"
   ros_type_name: "nav_msgs/msg/Odometry"
   gz_type_name: "gz.msgs.Odometry"
   direction: GZ_TO_ROS
 
-# 注：世界真值位姿旁路（gt）**不在 W2-min**，且**不经本桥**。
+# 注：世界真值位姿旁路（gt）**不在 -min**，且**不经本桥**。
 # gz `/world/agc_world/dynamic_pose/info`（gz.msgs.Pose_V）可在 gz 侧读到实体名与位姿，
 # 但本机 ros_gz_bridge(1.0.24) 的 Pose_V→tf2_msgs/TFMessage 转换不写入 frame 名
 # （frame_id / child_frame_id 均为空），无法作为带名真值使用。
-# 真值旁路由 **W4 的专用节点 `gt_bypass`** 经 gz-transport 直读该话题实现
+# 真值旁路由 ** 的专用节点 `gt_bypass`** 经 gz-transport 直读该话题实现
 # （发布 `/agc/gt/<entity>`）。故本桥不再桥接逐实体 PosePublisher 话题
-# （原 `/agc/sim/{car,target}_pose` 已在 W4 退役）。
+# （原 `/agc/sim/{car,target}_pose` 已在 退役）。
 
-# 车体 3D 激光点云（W2-full）
+# 车体 3D 激光点云（-full）
 # sensor 的 <topic>/agc/car_lidar</topic> → gz 点云发布在 /agc/car_lidar/points
 # （另有一条 /agc/car_lidar 的 LaserScan，本 workstream 不桥）
 - ros_topic_name: "/agc/sim/car_points"
@@ -35,7 +35,7 @@
   direction: GZ_TO_ROS
   qos_profile: SENSOR_DATA
 
-# 车体 3D 激光的水平扫描（2D LaserScan；W5 安全层 collision_monitor 的 `scan` 源，对齐 Nav2 官方示例）
+# 车体 3D 激光的水平扫描（2D LaserScan； 安全层 collision_monitor 的 `scan` 源，对齐 Nav2 官方示例）
 - ros_topic_name: "/agc/ground/scan"
   gz_topic_name: "/agc/car_lidar"
   ros_type_name: "sensor_msgs/msg/LaserScan"
@@ -43,32 +43,32 @@
   direction: GZ_TO_ROS
   qos_profile: SENSOR_DATA
 
-# R-027（ADR-0010）：地面车接触真值（GZ contact sensor → ROS）。
+# （ADR-0010）：地面车接触真值（GZ contact sensor → ROS）。
 # 车模 agc_car.sdf.xacro 的 car/base_link 挂 contact sensor（监测 base_collision 与其它碰撞体）。
 # **实测**（gz topic -l）：gz-sim-contact-system 的话题由其作用域名决定，**不**取 SDF <topic> 值——
 # 实际为 /world/agc_world/model/agc_car/link/car/base_link/sensor/contact/contact（本条目据实采用）。
 # 检测到接触时发布 gz.msgs.Contacts，桥为 ros_gz_interfaces/Contacts；仅供 run_logger 记
-# **真实碰撞事件**（R-027），非命令者、不改冻结 9 消息 ABI。
+# **真实碰撞事件**，非命令者、不改冻结 9 消息 ABI。
 - ros_topic_name: "/agc/ground/contact"
   gz_topic_name: "/world/agc_world/model/agc_car/link/car/base_link/sensor/contact/contact"
   ros_type_name: "ros_gz_interfaces/msg/Contacts"
   gz_type_name: "gz.msgs.Contacts"
   direction: GZ_TO_ROS
 
-# 机载相机图像（GZ → ROS；P1-4 / ADR-0009）。**仅当**己方机型为 `gz_x500_mono_cam` 时存在——
+# 机载相机图像（GZ → ROS； / ADR-0009）。**仅当**己方机型为 `gz_x500_mono_cam` 时存在——
 # launch 参数 `px4_sim_model`；用默认 `gz_x500` 时 gz 侧无这两条话题，桥条目会等话题而不影响其它条目。
 #
 # **实测**（2026-10-30，`gz topic -l`，机型 gz_x500_mono_cam、实例 0、实体 x500_mono_cam_0）：
-#   /camera        ← 相机图像（gz.msgs.Image），-f 实测 ~33 Hz
-#   /camera_info   ← 相机内参（gz.msgs.CameraInfo），与上同源
+# /camera ← 相机图像（gz.msgs.Image），-f 实测 ~33 Hz
+# /camera_info ← 相机内参（gz.msgs.CameraInfo），与上同源
 # 即 gz-sim8 的 CameraSensor **取 SDF `<topic>` 值**（mono_cam 的 `<topic>camera</topic>`），
 # 与 contact sensor（取作用域名）**不同**——两者都把实测值写在这里，避免下次再猜。
 # 也**不是** `/world/agc_world/model/.../sensor/imager/image` 形式的作用域名（实测无该话题）。
 #
-# ⚠ **只出现话题名 ≠ 有相机**（P1-4 round-2 实测）：`gz topic -l` 会列出**只有订阅者**的话题，
-#   而本文件正是以订阅方式桥接 /camera —— 用缺省 `gz_x500`（无相机）时话题名照样出现，但没有帧。
-#   判「相机是否真的在发布」必须用 `gz topic -f -t /camera`，或 ROS 侧真实的帧频率 / 像素证据；
-#   不得只看 `gz topic -l` 或 `ros2 topic list`。
+# ⚠ **只出现话题名 ≠ 有相机**（ 实测）：`gz topic -l` 会列出**只有订阅者**的话题，
+# 而本文件正是以订阅方式桥接 /camera —— 用缺省 `gz_x500`（无相机）时话题名照样出现，但没有帧。
+# 判「相机是否真的在发布」必须用 `gz topic -f -t /camera`，或 ROS 侧真实的帧频率 / 像素证据；
+# 不得只看 `gz topic -l` 或 `ros2 topic list`。
 
 #
 # QoS 必须 SENSOR_DATA（best-effort）：图像是高带宽流，reliable 队列积压会引入秒级延迟。
@@ -90,19 +90,19 @@
 # launch 参数 `px4_sim_model`；默认 `gz_x500` 下 gz 侧无这两条话题，桥条目等话题而不影响其它条目。
 #
 # ⚠ **本相机无消费者，仅取证/测绘**：`/agc/targets` 的发布者仍是 `gt_adapter`（真值），
-#   图像**不**接入任务链、不供任何识别/定位节点订阅。视觉定位路径已于 2026-11-04 退役。
+# 图像**不**接入任务链、不供任何识别/定位节点订阅。视觉定位路径已于 2026-11-04 退役。
 #
 # **gz 侧话题名**（由模型 SDF 决定，见 src/agc_sim/models/agc_x500_nadir/model.sdf）：
-#   图像取 `<topic>agc/air/nadir</topic>` → gz `/agc/air/nadir`；
-#   内参**显式**取 `<camera>` 内的 `<camera_info_topic>agc/air/nadir/camera_info</camera_info_topic>`。
-#   若不显式写该元素，gz-sensors 会按 `<topic>_info` 派生 → `/agc/air/nadir_info`（**与本桥不符**）。
-#   两者都必须与 SDF 逐字一致；`scripts/tests/test_nadir_camera_contract.py` 静态守护这一点。
+# 图像取 `<topic>agc/air/nadir</topic>` → gz `/agc/air/nadir`；
+# 内参**显式**取 `<camera>` 内的 `<camera_info_topic>agc/air/nadir/camera_info</camera_info_topic>`。
+# 若不显式写该元素，gz-sensors 会按 `<topic>_info` 派生 → `/agc/air/nadir_info`（**与本桥不符**）。
+# 两者都必须与 SDF 逐字一致；`scripts/tests/test_nadir_camera_contract.py` 静态守护这一点。
 #
-# ⚠ **话题存在 ≠ 有帧**（P1-4 round-2 实测，见 experiments/p1-4/round-2/evidence/camera-ownership-finding.md）：
-#   `gz topic -l` 会列出**只有订阅者**的话题，而本文件正是以订阅方式桥接 —— 默认臂（无相机）里
-#   `/agc/air/nadir*` 照样会出现在 `gz topic -l` / `ros2 topic list`，但**一帧都没有**。
-#   判「相机是否真的在发布」必须用 `ros2 topic hz`（≥10 Hz）、累计帧数（≥30）、
-#   或 `gz topic -f -t /agc/air/nadir` 看到真实帧；**不得**只看话题列表。
+# ⚠ **话题存在 ≠ 有帧**（ 实测，见 experiments/p1-4//evidence/camera-ownership-finding.md）：
+# `gz topic -l` 会列出**只有订阅者**的话题，而本文件正是以订阅方式桥接 —— 默认臂（无相机）里
+# `/agc/air/nadir*` 照样会出现在 `gz topic -l` / `ros2 topic list`，但**一帧都没有**。
+# 判「相机是否真的在发布」必须用 `ros2 topic hz`（≥10 Hz）、累计帧数（≥30）、
+# 或 `gz topic -f -t /agc/air/nadir` 看到真实帧；**不得**只看话题列表。
 - ros_topic_name: "/agc/air/nadir/image_raw"
   gz_topic_name: "/agc/air/nadir"
   ros_type_name: "sensor_msgs/msg/Image"
@@ -117,8 +117,8 @@
   direction: GZ_TO_ROS
   qos_profile: SENSOR_DATA
 
-# 地面车速度命令（ROS→GZ；由 M0 的执行中继发布）
-# R-009（ADR-0010）：ROS 侧话题名**不变**（/model/agc_car/cmd_vel，中继与验收脚本照旧），
+# 地面车速度命令（ROS→GZ；由 的执行中继发布）
+# （ADR-0010）：ROS 侧话题名**不变**（/model/agc_car/cmd_vel，中继与验收脚本照旧），
 # 但 gz 侧改桥到「意图」话题 /agc/sim/cmd_intent；GZ 侧的 agc_cmd_deadman 插件订阅该意图，
 # fresh→转发、stale→归零，再写 DiffDrive 默认订阅的 gz 话题 /model/agc_car/cmd_vel。
 # 即：DiffDrive 命令口（gz /model/agc_car/cmd_vel）的唯一写入者是插件（本桥不再直写）。
@@ -128,7 +128,7 @@
   gz_type_name: "gz.msgs.Twist"
   direction: ROS_TO_GZ
 
-# 目标无人机速度命令桥**已退役**（W6 前置 P，见 .trae/specs/w6-task-eval/spec.md 前置 P）：
+# 目标无人机速度命令桥**已退役**（ 前置 P，见 .trae/ADR-0025 前置 P）：
 # `intruder_uav` 改由**第二 PX4 SITL 实例**经 uXRCE / `px4_msgs` 驱动
 # （`agc_task/intruder_driver`），不复用 gz VelocityControl 通道。
 
@@ -136,5 +136,5 @@
 # 本机 ros_gz_bridge(1.0.24) 的 YAML 服务条目（service_name/gz_req_type_name/
 # gz_rep_type_name）在 factory 侧会因空 topic 名崩溃；该服务改由 world_bringup.launch.py
 # 以 CLI 形式桥接（等价配置）：
-#   parameter_bridge /world/agc_world/set_pose@ros_gz_interfaces/srv/SetEntityPose
+# parameter_bridge /world/agc_world/set_pose@ros_gz_interfaces/srv/SetEntityPose
 # 待桥版本支持 YAML 服务后迁回本文件。

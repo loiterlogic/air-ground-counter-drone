@@ -1,4 +1,4 @@
-// scan_self_filter —— R-007 自体过滤（2026-10-15，评审风险 R-007）
+// scan_self_filter —— 自体过滤（2026-10-15，评审风险 ）
 //
 // 激光（`/agc/ground/scan`，`sensor_msgs/LaserScan`，360 束/360°、range [0.2, 20]，车顶 z=0.48）
 // 在水平扫描平面上会返回**车体自身**（如车头/外伸），使包围式旋转 / 后向 zone 误触发。
@@ -6,16 +6,16 @@
 // 返回置为 `+inf`（自滤），其余（含真实障碍、非有限值）原样保留。
 //
 // 坐标系：激光无 yaw 偏移（`car/lidar_link` @ z=0.48，无旋转），传感器 xy 面与 `car/base_link`
-//   xy 面重合、轴对齐 → 逐束 `point = (r·cosθ, r·sinθ)` 判断，**无需 TF**。
+// xy 面重合、轴对齐 → 逐束 `point = (r·cosθ, r·sinθ)` 判断，**无需 TF**。
 //
 // 输入 `/agc/ground/scan`（桥出）→ 输出 `/agc/ground/scan_filtered`（同类型、同 header 时序/frame），
-// 安全层（collision_monitor）与 costmap obstacle_layer 消费自滤后的扫描（契约 #params 单一注入）。
+// 安全层（collision_monitor）与 costmap obstacle_layer 消费自滤后的扫描（docs/ROS2迁移交接文档.md#params 单一注入）。
 //
 // 语言：C++（与 agc_ground 其余节点一致，ADR-0020）。节点**不写文件**（spec R13）。
 //
 // 参数（由 config/ground.yaml 单一注入，节点不得覆写）：
-//   in_topic / out_topic、footprint_half_length_m(0.5037)、footprint_half_width_m(0.28545)、
-//   self_filter_margin_m(0.10)。
+// in_topic / out_topic、footprint_half_length_m(0.5037)、footprint_half_width_m(0.28545)、
+// self_filter_margin_m(0.10)。
 
 #include <cmath>
 #include <limits>

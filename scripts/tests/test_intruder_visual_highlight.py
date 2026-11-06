@@ -4,7 +4,7 @@
 
 1. **高亮确实存在且够醒目**——否则判据 5 还是没达成（"改了但看不出来"等于没改）；
 2. **物理一个字没动**——collision / inertial / mass / plugin / pose / 关节 / PX4 接口
-   全部与改动前的展开式**逐字节一致**（派工单 round-2「严格禁止」）。
+ 全部与改动前的展开式**逐字节一致**（派工单 「严格禁止」）。
 
 第 2 点是本文件的主要价值：单看 xacro 源码很难发现"顺手给 base_link 加了个 collision"，
 所以判定不看源码，而是把模型**真的展开成 SDF** 再逐项比对基线。
@@ -12,12 +12,12 @@
 基线怎么来（**不存第二份 SDF 副本**，避免基线本身漂移）：从 git 取改动前的
 `intruder_uav.sdf.xacro` 到临时目录展开，与工作区版本对比。
 
-**基线提交是钉死的常量，不是 `HEAD`**（2026-10-31 P2-1 round-1 修正）：
-本文件写作时高亮尚未提交，`HEAD` 恰好等于"改动前"；但 P2-1 步骤 0 的基线卫生提交把高亮
+**基线提交是钉死的常量，不是 `HEAD`**（2026-10-31 修正）：
+本文件写作时高亮尚未提交，`HEAD` 恰好等于"改动前"；但 步骤 0 的基线卫生提交把高亮
 一起入库后，`HEAD` 就变成了"改动后"——拿 `HEAD` 当基线会退化成**自己跟自己比**，
 `test_only_highlight_differs_from_baseline` 恒真、`test_x500_core_links_keep_inertial_and_collision`
 反而恒假（joint 差从 +1 变 0）。这正是"守卫看似在跑、其实没在守"的典型形状，故改为常量
-`BASELINE_REV`（P1-3 round-2 之前的最后一次提交，即 P2-1 派工单登记的基线 `b627043`）。
+`BASELINE_REV`（ 之前的最后一次提交，即 派工单登记的基线 `b627043`）。
 该 rev 取不到时**跳过并说明**，不静默通过。
 
 不启任何仿真进程；`xacro` + `gz sdf -p` 都是纯解析（秒级）。若无 ROS 环境则**跳过**并说明原因
@@ -39,7 +39,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__
 XACRO_PATH = os.path.join(ROOT, 'src', 'agc_sim', 'models', 'intruder_uav',
                           'intruder_uav.sdf.xacro')
 REL_PATH = 'src/agc_sim/models/intruder_uav/intruder_uav.sdf.xacro'
-# 改动前基线（P1-3 round-2 高亮入库前的最后一次提交；P2-1 round-1 基线卫生提交把高亮入库后
+# 改动前基线（ 高亮入库前的最后一次提交； 基线卫生提交把高亮入库后
 # 若仍用 `HEAD`，比对会退化为"自己跟自己比"——见文件头「基线怎么来」）
 BASELINE_REV = 'b627043'
 PX4_MODELS = os.path.join(ROOT, 'toolchain', 'PX4-Autopilot', 'Tools', 'simulation', 'gz',
@@ -175,8 +175,8 @@ def test_highlight_mass_is_negligible_not_zero(expanded):
 def test_only_highlight_differs_from_baseline(expanded):
     """剥掉高亮元素后，展开式必须与改动前**逐字节一致**。
 
-    这是本单最强的守卫：任何"顺手"改了 collision / inertial / pose / plugin / 关节，
-    都会在这里暴露（包括缩进与字段顺序）。
+ 这是本单最强的守卫：任何"顺手"改了 collision / inertial / pose / plugin / 关节，
+ 都会在这里暴露（包括缩进与字段顺序）。
     """
     new, base = _strip_highlight(expanded['new']), _strip_highlight(expanded['base'])
     if new != base:
@@ -248,7 +248,7 @@ def _code_lines_of(text):
 def test_xacro_source_only_touches_visual_structure():
     """源码里新增的是 link/visual/joint；**不得**出现 collision 或改 plugin。
 
-    只看**代码**不看注释：注释要解释"这里刻意没有 collision"，那是对的，不该被当成违规。
+ 只看**代码**不看注释：注释要解释"这里刻意没有 collision"，那是对的，不该被当成违规。
     """
     with open(XACRO_PATH, encoding='utf-8') as f:
         text = f.read()

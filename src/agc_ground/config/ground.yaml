@@ -1,75 +1,75 @@
-# agc_ground 参数（W5）—— 由 ground_bringup.launch.py 单一注入，节点不得覆写（契约 #params）
+# agc_ground 参数—— 由 ground_bringup.launch.py 单一注入，节点不得覆写（docs/ROS2迁移交接文档.md#params）
 #
 # 安全层：Nav2 collision_monitor（直接复用 Nav2 组件，ADR-0004 / ADR-0003）。
 # 链路：RL/占位策略 → /agc/ground/cmd_vel_raw → collision_monitor → /agc/ground/cmd_vel
-#       → ground_drive_relay（唯一执行口中继）→ GZ。
+# → ground_drive_relay（唯一执行口中继）→ GZ。
 #
 # 路径输入（2026-11-01，ADR-0013）——**参数边界**：
-#   * 本文件**已新增** `placeholder_path_planner` 段（节点本地 config）；
-#   * **未新增契约全局入口**：`#params` 清单无新条目，这些键由既有 launch 透传。
-#   * “没改契约文件”不等于“没有新增入口”——两者须分开表述。
-#   `/agc/ground/path`（`nav_msgs/Path`，`frame_id=world`）是局部策略的**输入数据**，不是命令；
-#   它**不进** `command_source` 互斥域，也不改变唯一执行口。质量门（从未收到/空/单点/帧不一致/过期）
-#   与失效零速由消费侧执行（ADR-0013）。
+# * 本文件**已新增** `placeholder_path_planner` 段（节点本地 config）；
+# * **未新增契约全局入口**：`#params` 清单无新条目，这些键由既有 launch 透传。
+# * “没改契约文件”不等于“没有新增入口”——两者须分开表述。
+# `/agc/ground/path`（`nav_msgs/Path`，`frame_id=world`）是局部策略的**输入数据**，不是命令；
+# 它**不进** `command_source` 互斥域，也不改变唯一执行口。质量门（从未收到/空/单点/帧不一致/过期）
+# 与失效零速由消费侧执行（ADR-0013）。
 #
-# **启动边界（ADR-0013，源码推导，G2 须以行为证据闭合）**：
-#   本安全层的 `process()` 只由 `cmd_vel_in`（`/agc/ground/cmd_vel_raw`）回调触发；
-#   感知源失源导致的清零发生在 `process()` **内部**。因此**命令源完全缺失**（启动后从未发过
-#   cmd_vel_raw）时，本节点**不会主动发布零速，一个速度消息都不发**。
-#   下方 `stop_pub_timeout: 1.0e9` 只保证"**收到过**命令后持久发零速"，**不覆盖"从没收到"**。
-#   ⇒ 启动阶段的安全**不得**依赖"安全层会兜底"；G2 必须分别验证 ①启动无路径 ②运行中失源 ③路径失效。
+# **启动边界（ADR-0013，源码推导， 须以行为证据闭合）**：
+# 本安全层的 `process` 只由 `cmd_vel_in`（`/agc/ground/cmd_vel_raw`）回调触发；
+# 感知源失源导致的清零发生在 `process` **内部**。因此**命令源完全缺失**（启动后从未发过
+# cmd_vel_raw）时，本节点**不会主动发布零速，一个速度消息都不发**。
+# 下方 `stop_pub_timeout: 1.0e9` 只保证"**收到过**命令后持久发零速"，**不覆盖"从没收到"**。
+# ⇒ 启动阶段的安全**不得**依赖"安全层会兜底"； 必须分别验证 ①启动无路径 ②运行中失源 ③路径失效。
 #
-# C2 三档阈值（ADR-0010）：顺序不变量 紧急 < 碰撞 < 安全；
-#   绝对值为可标定值，标定口径 = Nav2 时间窗法（v_max 与 a 由 W2 补丁实测）。
-#   标定值（ADR-0010 实测回填，2026-10-13）：紧急 1.0 m < 碰撞 2.0 m < 安全 4.0 m。
-#   * 安全档 = slowdown（4.0 m 区，降速至 30%）
-#   * 碰撞档 = stop（2.0 m 区停车）
-#   * 紧急档 = stop（1.0 m 区立即停车，最后防线）
-#   * approach 档 = Nav2 时间窗（time_before_collision），体现"按速度留时间"口径
+# 三档阈值（ADR-0010）：顺序不变量 紧急 < 碰撞 < 安全；
+# 绝对值为可标定值，标定口径 = Nav2 时间窗法（v_max 与 a 由 补丁实测）。
+# 标定值（ADR-0010 实测回填，2026-10-13）：紧急 1.0 m < 碰撞 2.0 m < 安全 4.0 m。
+# * 安全档 = slowdown（4.0 m 区，降速至 30%）
+# * 碰撞档 = stop（2.0 m 区停车）
+# * 紧急档 = stop（1.0 m 区立即停车，最后防线）
+# * approach 档 = Nav2 时间窗（time_before_collision），体现"按速度留时间"口径
 #
-# —— R-007 扫掠几何推导（2026-10-15，评审风险 R-007）——
+# —— 扫掠几何推导（2026-10-15，评审风险 ）——
 # 车体（Husky A200 保形换装，agc_car.sdf.xacro）：碰撞盒 1.0074 × 0.5709 × 0.2675，
-#   半长 a = 0.5037 m、半宽 b = 0.28545 m、半对角 r_fp = sqrt(a² + b²) = 0.5789 m；
-#   车最大线速 v_max = 1.5 m/s、制动 a ≈ 0.9 m/s²、ω_max = 2.0 rad/s（ADR-0010 W2 实测）。
+# 半长 a = 0.5037 m、半宽 b = 0.28545 m、半对角 r_fp = sqrt(a² + b²) = 0.5789 m；
+# 车最大线速 v_max = 1.5 m/s、制动 a ≈ 0.9 m/s²、ω_max = 2.0 rad/s（ADR-0010 实测）。
 # 三档扫掠区改用 **Nav2 `velocity_polygon`** 承载（覆盖原地旋转 + 侧/后向运动，非仅前向矩形），
-#   每档 4 个子区 rotation / translation_forward / translation_backward / stopped：
-#   * 前向矩形自 x=x0=0.55 m 到 +tier；后向矩形镜像自 -tier 到 -x0（tier = 4.0 / 2.0 / 1.0）。
-#     x0=0.55（越过车头）与旧值一致；自体过滤（scan_self_filter）已滤除车体返回，故后向 / 旋转
-#     方向亦无自身误触发。
-#   * 旋转子区取 **方框**、半边长 = R_tier（方框内切圆半径 R_tier 覆盖半径 R_tier 的盘）：
-#     R_tier 与 tier 一致（1.0 / 2.0 / 4.0），保持契约 C2 顺序 1.0 < 2.0 < 4.0 不变。
-#     车角扫掠半径 r_fp=0.5789 ≤ R_emergency 1.0，故旋转一档必覆盖整车角扫掠。
-#   * stopped 兜底子区（**最后检查**，须覆盖全速度域）：小车体方框、半边长 = r_fp + 0.15 ≈ 0.73，
-#     速度域 linear -1.5..1.5 / theta -2.0..2.0（ω_max=2.0）。
-#   子区按 cmd_vel 的 linear.x / angular.z 命中区间选择；holonomic: false（差速车 = 非完整）。
-#   tier 与 ADR-0010 时间窗口径一致（v_max 与 a 推导出的停车距离）。
+# 每档 4 个子区 rotation / translation_forward / translation_backward / stopped：
+# * 前向矩形自 x=x0=0.55 m 到 +tier；后向矩形镜像自 -tier 到 -x0（tier = 4.0 / 2.0 / 1.0）。
+# x0=0.55（越过车头）与旧值一致；自体过滤（scan_self_filter）已滤除车体返回，故后向 / 旋转
+# 方向亦无自身误触发。
+# * 旋转子区取 **方框**、半边长 = R_tier（方框内切圆半径 R_tier 覆盖半径 R_tier 的盘）：
+# R_tier 与 tier 一致（1.0 / 2.0 / 4.0），保持契约 顺序 1.0 < 2.0 < 4.0 不变。
+# 车角扫掠半径 r_fp=0.5789 ≤ R_emergency 1.0，故旋转一档必覆盖整车角扫掠。
+# * stopped 兜底子区（**最后检查**，须覆盖全速度域）：小车体方框、半边长 = r_fp + 0.15 ≈ 0.73，
+# 速度域 linear -1.5..1.5 / theta -2.0..2.0（ω_max=2.0）。
+# 子区按 cmd_vel 的 linear.x / angular.z 命中区间选择；holonomic: false（差速车 = 非完整）。
+# tier 与 ADR-0010 时间窗口径一致（v_max 与 a 推导出的停车距离）。
 # 自体过滤（scan_self_filter）：激光（360 束/360°，1 束/度；range [0.2, 20]，z=0.48 车顶水平面）
-#   会返回车体自身（如车头/外伸）；逐束把落在车体矩形（|x| ≤ a+margin，|y| ≤ b+margin）内的返回置
-#   +inf。参数 footprint_half_length_m 0.5037 / footprint_half_width_m 0.28545 /
-#   self_filter_margin_m 0.10（实测自返回极值后微调，见 w5 tasks R-007 修订）。
-#   —— 安全层与 costmap 消费自滤后的 **/agc/ground/scan_filtered**。
+# 会返回车体自身（如车头/外伸）；逐束把落在车体矩形（|x| ≤ a+margin，|y| ≤ b+margin）内的返回置
+# +inf。参数 footprint_half_length_m 0.5037 / footprint_half_width_m 0.28545 /
+# self_filter_margin_m 0.10（实测自返回极值后微调，见 w5 tasks 修订）。
+# —— 安全层与 costmap 消费自滤后的 **/agc/ground/scan_filtered**。
 # min_points 标定（360 束/360°：半径 D 处相邻束间距 ≈ 0.01745·D）：
-#   障碍张角对应束数 ≈ 宽 /(0.01745·D)。薄障碍（细柱/薄板）在停车区边缘命中束数很少
-#   （见 w5 tasks R-007 修订实测），故三档 min_points 下调为 **2**（能把薄障碍检出的最小值）。
+# 障碍张角对应束数 ≈ 宽 /(0.01745·D)。薄障碍（细柱/薄板）在停车区边缘命中束数很少
+# （见 w5 tasks 修订实测），故三档 min_points 下调为 **2**（能把薄障碍检出的最小值）。
 #
-# —— R-037 传感器高度与障碍族限制**如实登记** + 安全声明**收窄**（2026-10-17，评审风险 R-037）——
+# —— 传感器高度与障碍族限制**如实登记** + 安全声明**收窄**（2026-10-17，评审风险 ）——
 # 安装高度：`car/lidar_link` **z = 0.48 m**（车顶水平面，agc_car.sdf.xacro）。
-#   本安全层 / costmap 消费的 `/agc/ground/scan_filtered` 为 **z≈0.48 的 2D 水平面扫描**
-#   （`scan` 源无高度带；对齐 Nav2 collision_monitor：`scan` 源只覆盖扫描平面那一层，
-#     `pointcloud` 源才有 min_height/max_height 高度带）→ **可见性 = 单一 z=0.48 平面**。
+# 本安全层 / costmap 消费的 `/agc/ground/scan_filtered` 为 **z≈0.48 的 2D 水平面扫描**
+# （`scan` 源无高度带；对齐 Nav2 collision_monitor：`scan` 源只覆盖扫描平面那一层，
+# `pointcloud` 源才有 min_height/max_height 高度带）→ **可见性 = 单一 z=0.48 平面**。
 # 障碍族可见性边界（**如实**，**不得外推**）：
-#   ① 低障碍（顶面低于扫描面 / 不入水平光束）→ **不可见**；
-#   ② 悬空结构（z=0.48 之上、非扫掠高度）→ **不可见**；
-#   ③ 薄障碍（细柱/薄板）→ 受**束间距**限制（距离 D 处相邻束间距 ≈ 0.01745·D m；三档 min_points=2）；
-#   ④ 自体遮挡 / 自滤（scan_self_filter）后仅未被车体遮挡方向可见。
+# ① 低障碍（顶面低于扫描面 / 不入水平光束）→ **不可见**；
+# ② 悬空结构（z=0.48 之上、非扫掠高度）→ **不可见**；
+# ③ 薄障碍（细柱/薄板）→ 受**束间距**限制（距离 D 处相邻束间距 ≈ 0.01745·D m；三档 min_points=2）；
+# ④ 自体遮挡 / 自滤（scan_self_filter）后仅未被车体遮挡方向可见。
 # **收窄声明**：把「立柱 world 达标」**限定**为「在 z≈0.48 处有足够水平截面且进入光束」的障碍族；
-#   **明确不得外推**为任意障碍（含低/悬空/薄障碍）的通用安全保证。口径详见 docs/adr/0009-perception-truth-derived-and-vision-path.md。
+# **明确不得外推**为任意障碍（含低/悬空/薄障碍）的通用安全保证。口径详见 docs/adr/0009-perception-truth-derived-and-vision-path.md。
 #
-# 载荷外伸 / 碰撞口径一致化（R-037）：捕获网面 @ z=1.60、干扰载荷 @ z=0.30、**均无 collision**
-#   → **不**进本安全层视野、**不**参与真实物理接触（物理接触验证 unsupported）；外伸 1.0 m 仅作
-#   **出生净空推导**登记（ADR-0012）；载荷**物理启用后必须重标** C2/C6 与本口径。详见 ADR-0009。
+# 载荷外伸 / 碰撞口径一致化：捕获网面 @ z=1.60、干扰载荷 @ z=0.30、**均无 collision**
+# → **不**进本安全层视野、**不**参与真实物理接触（物理接触验证 unsupported）；外伸 1.0 m 仅作
+# **出生净空推导**登记（ADR-0012）；载荷**物理启用后必须重标** / 与本口径。详见 ADR-0009。
 #
-# —— R-008 失源停车窗口标定（2026-10-15，评审风险 R-008）——
+# —— 失源停车窗口标定（2026-10-15，评审风险 ）——
 # source_timeout **不再沿用** Nav2 官方示例（5.0 s，未经本车标定）——原值失源盲行可达 1.5×5.0=7.5 m，
 # 与 4 m 安全档严重不匹配。改由**本车实测**动力学与链路推导（详见 collision_monitor 段内注释）；
 # 失源后总停距 < 碰撞档 2.0 m，窗口 T 与 `agc_perception/config/perception.yaml` 的
@@ -83,24 +83,24 @@ collision_monitor:
     cmd_vel_out_topic: "/agc/ground/cmd_vel"
     state_topic: "collision_monitor_state"
     transform_tolerance: 0.3
-    # —— R-008 失源失效停车窗口（2026-10-15，评审风险 R-008）——
+    # —— 失源失效停车窗口（2026-10-15，评审风险 ）——
     # semantic：观察源 scan（/agc/ground/scan_filtered）超过 source_timeout 未更新 → 源失效；
-    #   本机 Jazzy `nav2_collision_monitor` 的 `Source::getData` 对失效源「return false → 封锁机器人」
-    #   （非静默透传原命令）——见 source.hpp 注释与 R-008 故障注入实测（r008.json）。
+    # 本机 Jazzy `nav2_collision_monitor` 的 `Source::getData` 对失效源「return false → 封锁机器人」
+    # （非静默透传原命令）——见 source.hpp 注释与 故障注入实测（r008.json）。
     # 判据：失源后**总停距 = 失源盲行 d_blind + 制动距离 s_brake** 必须 ≤ 碰撞档 2.0 m（安全层自身包络）；
-    #   且窗口 T 必须 ≫ 扫描周期（≥ 3 × 0.1 s = 0.3 s），避免单帧抖动误判。
+    # 且窗口 T 必须 ≫ 扫描周期（≥ 3 × 0.1 s = 0.3 s），避免单帧抖动误判。
     # 本车实测动力学（ADR-0010，2026-10-13）：v_max = 1.5 m/s、锁轮制动 a ≈ 0.9 m/s²。
-    #   → s_brake = v_max²/(2a) = 1.5²/(2×0.9) = 1.25 m。
-    #   → 取 T = 0.3 s：d_blind = v_max·T = 0.45 m；总停距 = 0.45 + 1.25 = 1.70 m < 2.0 m（余量 0.30 m）。
-    #   → T = 0.3 s 亦满足 T ≥ 3×扫描周期（0.3 s），并与 perception.yaml `source_timeout_s: 0.3` 同口径。
-    #   （激光 range_min = 0.2 m 的近距盲区落在碰撞档 2.0 m 包络内，不另计。）
+    # → s_brake = v_max²/(2a) = 1.5²/(2×0.9) = 1.25 m。
+    # → 取 T = 0.3 s：d_blind = v_max·T = 0.45 m；总停距 = 0.45 + 1.25 = 1.70 m < 2.0 m（余量 0.30 m）。
+    # → T = 0.3 s 亦满足 T ≥ 3×扫描周期（0.3 s），并与 perception.yaml `source_timeout_s: 0.3` 同口径。
+    # （激光 range_min = 0.2 m 的近距盲区落在碰撞档 2.0 m 包络内，不另计。）
     # 取值依据**仅**为本车实测；**删除**「对齐 Nav2 官方示例 source_timeout: 5.0」作为默认依据的表述。
     source_timeout: 0.3
     base_shift_correction: True
     stop_pub_timeout: 1.0e9
     # 注：stop_pub_timeout 置极大 → 安全层**持续发布**（含零速），使唯一执行口始终有实时命令；
-    # 同时满足 M0 门禁的 cmd_vel 回环确认（否则 idle 时 collision_monitor 停发零速导致门禁死锁）。
-    # 契约要求 /agc/ground/cmd_vel 为 TwistStamped（契约 #namespace）
+    # 同时满足 门禁的 cmd_vel 回环确认（否则 idle 时 collision_monitor 停发零速导致门禁死锁）。
+    # 契约要求 /agc/ground/cmd_vel 为 TwistStamped（docs/ROS2迁移交接文档.md#namespace）
     enable_stamped_cmd_vel: True
     polygons: ["SlowSafety", "StopCollision", "StopEmergency"]
     # —— 安全档（扫掠 4.0 m，slowdown）——
@@ -206,17 +206,17 @@ collision_monitor:
     observation_sources: ["scan"]
     # 2D 激光水平扫描（对齐 Nav2 官方 collision_monitor 示例的 scan 源）：
     # 该扫描在传感器高度（车顶）水平一圈，天然不返回地面，规避点云的高度带/地面滤除问题。
-    # R-007：消费 scan_self_filter 自滤后的扫描（自返回置 inf）。
+    # 消费 scan_self_filter 自滤后的扫描（自返回置 inf）。
     scan:
       type: "scan"
       topic: "/agc/ground/scan_filtered"
       enabled: True
 
-# W5 · R-007：自体过滤节点参数（节点名 = scan_self_filter，由 ground_bringup 单一注入）
-# G2 几何/直连占位全局规划器（ADR-0013 当前占位阶段）。
-#   **只发路径，不发速度**：因此不是第二命令者，也不进 `command_source` 互斥域。
-#   **不是** Navfn / planner_server / costmap：路径是"当前车位 → goal"的直线，只在
-#   无遮挡直达场景成立，不保证避障。失效语义见源码头注释（无 odom/goal/授权即不发）。
+# · ：自体过滤节点参数（节点名 = scan_self_filter，由 ground_bringup 单一注入）
+# 几何/直连占位全局规划器（ADR-0013 当前占位阶段）。
+# **只发路径，不发速度**：因此不是第二命令者，也不进 `command_source` 互斥域。
+# **不是** Navfn / planner_server / costmap：路径是"当前车位 → goal"的直线，只在
+# 无遮挡直达场景成立，不保证避障。失效语义见源码头注释（无 odom/goal/授权即不发）。
 placeholder_path_planner:
   ros__parameters:
     odom_topic: "/agc/ground/odom"
@@ -241,19 +241,19 @@ scan_self_filter:
     footprint_half_width_m: 0.28545
     self_filter_margin_m: 0.10
 
-# —— R-009 执行中继硬化（2026-10-15，评审风险 R-009）——
+# —— 执行中继硬化（2026-10-15，评审风险 ）——
 # 背景：GZ DiffDrive 插件**没有**命令超时（本机 libgz-sim8-diff-drive-system.so 参数清单仅
-#   max_linear_velocity / max_angular_velocity / odom_topic 等，无 timeout/deadman），
-#   故中继自身死亡或时钟异常时末端可能持续执行最后命令。本段只做**中继自身**的鲁棒化：
-#   * 单调钟判接收年龄（watchdog_s）——与 ROS 时钟解耦，冻结 / 回拨也发零；
-#   * Header 校验：expected_frame_id（错帧拒收）+ 采样年龄 max_sample_age_s（防陈旧采样）
-#     + stamp 倒退容差 frame_id_tolerance（防时钟冻结 / 回拨时的旧命令重放）；
-#   * 有限性校验（linear/angular 任一分量 NaN/±inf → 拒收）；
-#   * 按模型上限限幅：max_linear_velocity / max_angular_velocity 与
-#     src/agc_sim/config/car.yaml 的 model 参数一致（**共享事实**，非复述约束）。
+# max_linear_velocity / max_angular_velocity / odom_topic 等，无 timeout/deadman），
+# 故中继自身死亡或时钟异常时末端可能持续执行最后命令。本段只做**中继自身**的鲁棒化：
+# * 单调钟判接收年龄（watchdog_s）——与 ROS 时钟解耦，冻结 / 回拨也发零；
+# * Header 校验：expected_frame_id（错帧拒收）+ 采样年龄 max_sample_age_s（防陈旧采样）
+# + stamp 倒退容差 frame_id_tolerance（防时钟冻结 / 回拨时的旧命令重放）；
+# * 有限性校验（linear/angular 任一分量 NaN/±inf → 拒收）；
+# * 按模型上限限幅：max_linear_velocity / max_angular_velocity 与
+# src/agc_sim/config/car.yaml 的 model 参数一致（**共享事实**，非复述约束）。
 # 末端（GZ DiffDrive）失效停车机制**不在本节点**，由后续子任务实现。
-# 取值：watchdog_s 0.3（与 R-008 source_timeout 同量级）；max_sample_age_s 0.5（> watchdog，
-#   留链路时延余量）；frame_id_tolerance 0.05（容忍抖动 / 重排序，不宽容明显倒退）。
+# 取值：watchdog_s 0.3（与 source_timeout 同量级）；max_sample_age_s 0.5（> watchdog，
+# 留链路时延余量）；frame_id_tolerance 0.05（容忍抖动 / 重排序，不宽容明显倒退）。
 ground_drive_relay:
   ros__parameters:
     in_topic: "/agc/ground/cmd_vel"
@@ -265,6 +265,6 @@ ground_drive_relay:
     max_linear_velocity: 1.5
     max_angular_velocity: 2.0
 
-# 注：命令源（W5-b）自 `agc_rl` 的 ground_policy_rl 提供，其参数在 `agc_rl/config/rl.yaml`；
-# 离线对照基线（W5-c）自 `ground_baseline` 提供，其参数在 `config/baseline.yaml`。
+# 注：命令源自 `agc_rl` 的 ground_policy_rl 提供，其参数在 `agc_rl/config/rl.yaml`；
+# 离线对照基线自 `ground_baseline` 提供，其参数在 `config/baseline.yaml`。
 # 二者**互斥**由 ground_bringup 的 `command_source` 单一选择（同一时刻仅一路下发）。

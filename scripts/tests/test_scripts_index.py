@@ -1,18 +1,18 @@
 """scripts/ 索引自动核对 —— 索引漂移即测试失败（P0-4）。
 
-**为什么存在**：P0-4 的根因不是"脚本太多"，而是**索引与实际不一致**——
+**为什么存在**： 的根因不是"脚本太多"，而是**索引与实际不一致**——
 `scripts/` 顶层曾有 32 个脚本，而 `scripts/README.md` 只登记 8 个，多出的 24 个
-既无索引也无归属。靠纪律不可持续，故用测试拦（P0-4 脚本系统瘦身，其结论已并入本测试）。
+既无索引也无归属。靠纪律不可持续，故用测试拦（ 脚本系统瘦身，其结论已并入本测试）。
 
 **核对的是三方，不是镜像**：
 
-  1. **文件系统** —— `scripts/*.py|sh`、`scripts/research/*.py|sh`、`scripts/archive/*.py|sh`；
-  2. **README 索引** —— 从 markdown 的表格里解析出被登记的脚本名（不是硬编码清单）；
-  3. **白名单** —— 顶层脚本的**精确集合**（`TOP_LEVEL`），新增必须显式登记。
+ 1. **文件系统** —— `scripts/*.py|sh`、`scripts/research/*.py|sh`、`scripts/archive/*.py|sh`；
+ 2. **README 索引** —— 从 markdown 的表格里解析出被登记的脚本名（不是硬编码清单）；
+ 3. **白名单** —— 顶层脚本的**精确集合**（`TOP_LEVEL`），新增必须显式登记。
 
 第 3 点是"防漏记"的关键：只比对"README 表 == 目录内容"会漏掉一种漂移——
 **新脚本被加进目录、同时也加了 README 行，但没人问过它该不该在顶层**。
-`TOP_LEVEL` 是人工判定过的第二真源，顶层多一个即失败，逼迫新增者先分类。
+`TOP_LEVEL` 是人工判定过的第二配置文件，顶层多一个即失败，逼迫新增者先分类。
 
 **失败时的输出**：打印缺失 / 多余 / 未登记的完整差异清单，说明该改哪里，
 而不是只报一句 assert 失败。
@@ -38,7 +38,7 @@ ARCHIVE = SCRIPTS / 'archive'
 ARCHIVE_README = ARCHIVE / 'README.md'
 
 # --------------------------------------------------------------------------------------
-# 第二真源：顶层允许的长期工具（P0-4 出口判据：≤ 12）
+# 第二配置文件：顶层允许的长期工具（ 出口判据：≤ 12）
 # --------------------------------------------------------------------------------------
 # 判定依据：当前阶段（项目收尾 / P1 一键演示入口）会用到的**常驻**工程工具。
 # 研究期 / 一次性脚本一律进 research/ 或 archive/，不进此表。
@@ -57,7 +57,7 @@ TOP_LEVEL = frozenset({
 
 TOP_LEVEL_LIMIT = 12
 
-# 由 P0-4 判定迁入 archive/ 的一次性脚本（迁移表须逐条登记）。
+# 由 判定迁入 archive/ 的一次性脚本（迁移表须逐条登记）。
 ARCHIVE_MIGRATED = frozenset({
     'w7b_full_perception_probe.py',
     'w7c_ab_series.py',
@@ -108,7 +108,7 @@ def _table_rows(text: str) -> list[list[str]]:
 def _documented_names(readme: Path) -> set[str]:
     """README 表格里登记为**执行脚本**的名字（`*.py` / `*.sh`）。
 
-    只取表格里的代码样式单元格与链接目标，避免把正文叙述里的文件名当登记。
+ 只取表格里的代码样式单元格与链接目标，避免把正文叙述里的文件名当登记。
     """
     if not readme.is_file():
         return set()
@@ -216,7 +216,7 @@ def test_research_readme_lists_every_script_with_purpose():
 
 
 # --------------------------------------------------------------------------------------
-# 3. archive/：P0-4 迁入项登记 + 既有内容未被改名
+# 3. archive/： 迁入项登记 + 既有内容未被改名
 # --------------------------------------------------------------------------------------
 
 def test_archive_dir_has_readme():
@@ -249,7 +249,7 @@ def test_no_script_was_deleted_by_curation():
     """P0-4 铁律：**一个脚本都不删**。顶层 + research + archive 的总数不得低于迁移前的 32。
 
     迁移前顶层 = 32 `.py` + 1 `.sh` = 33 个执行脚本（P0-4 基线实测）。
-    archive 既有 65 个历史脚本另计，故下界取 33。
+ archive 既有 65 个历史脚本另计，故下界取 33。
     """
     baseline = 33
     total = (len(_top_level_scripts()) + len(_scripts_in(RESEARCH))
@@ -280,8 +280,8 @@ def test_no_script_registered_in_two_layers():
 def test_index_checker_detects_injected_drift(tmp_path):
     """反向验证：核对逻辑对"多一个文件 / 少一个登记"确实会失败。
 
-    这条测试守护的是**检测能力**，不是索引内容 —— 若解析器退化成空集合，
-    上面所有 `assert not undocumented` 都会静默通过，本条会先失败。
+ 这条测试守护的是**检测能力**，不是索引内容 —— 若解析器退化成空集合，
+ 上面所有 `assert not undocumented` 都会静默通过，本条会先失败。
     """
     fake = tmp_path / 'scripts'
     (fake / 'research').mkdir(parents=True)

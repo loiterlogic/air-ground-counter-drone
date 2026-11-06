@@ -4,12 +4,12 @@
 > 空中持续跟踪目标并保持安全间距，地面车自主规划接近，抵达跟踪距离后持续驻留判定成功。
 
 <p align="center">
-  <img src="docs/plan/assets/demo.gif" width="640"
+  <img src="docs/conventions/assets/demo.gif" width="640"
        alt="演示动图：Gazebo 正俯视场景，地面车（绿框）接近橙色高亮目标">
 </p>
 
 <p align="center">
-  <img src="docs/plan/assets/demo-terminal.png" width="640"
+  <img src="docs/conventions/assets/demo-terminal.png" width="640"
        alt="终态：TRACKING_SUCCESS（正俯视，橙色为目标、绿框为地面车）">
 </p>
 
@@ -90,11 +90,11 @@
 真实运行画面（`full + yard + s04`，**自然运行**、正俯视；观测指向臂 = `track`）：
 
 <p align="center">
-  <img src="docs/plan/assets/demo-start.png" width="560" alt="启动：任务开始，无人机搜索">
-  <img src="docs/plan/assets/demo-tracking.png" width="560" alt="跟踪中：地面车接近目标">
+  <img src="docs/conventions/assets/demo-start.png" width="560" alt="启动：任务开始，无人机搜索">
+  <img src="docs/conventions/assets/demo-tracking.png" width="560" alt="跟踪中：地面车接近目标">
 </p>
 <p align="center">
-  <img src="docs/plan/assets/demo-terminal.png" width="560" alt="终态：TRACKING_SUCCESS，车已抵达目标附近">
+  <img src="docs/conventions/assets/demo-terminal.png" width="560" alt="终态：TRACKING_SUCCESS，车已抵达目标附近">
 </p>
 
 > 三张取自同一次运行的不同时刻（t≈43 s / 55 s / 60 s），**同一尺寸**（831×952），
@@ -106,12 +106,12 @@
 ## 系统结构
 
 <p align="center">
-  <img src="docs/plan/assets/system-structure.svg" width="820" alt="8 包职责与四类依赖（概览）">
+  <img src="docs/conventions/assets/system-structure.svg" width="820" alt="8 包职责与四类依赖（概览）">
 </p>
 
 8 个包按**职责域**切分（不是按进程），依赖按四类分别约束（消息 / 库链接 / 运行组合 / 外部设备）。
 上图是**概览**（谁在哪一层、靠什么相连）；**每一类到底有哪几条边**见
-[明细图](docs/plan/assets/system-structure-detail.svg) 与
+[明细图](docs/conventions/assets/system-structure-detail.svg) 与
 [系统结构图#detail](docs/conventions/系统结构图.md#detail)。两张图由同一张声明式表生成，
 边集合由回归断言相等。完整职责表与依赖规则见 [包边界](docs/conventions/包边界.md)。
 

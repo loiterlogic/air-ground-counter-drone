@@ -1,22 +1,22 @@
-// G2 几何/直连占位全局规划器（ADR-0013 当前占位阶段）。
+// 几何/直连占位全局规划器（ADR-0013 当前占位阶段）。
 //
 // 职责**只有一件**：把"当前车位 → 任务目标"连成一条 `/agc/ground/path`
 // （`nav_msgs/Path`，`header.frame_id=world`）。它**不发布任何速度**，因此不是第二命令者。
 //
 // 边界（本单明令，不得放宽）：
-//   * **不是** Navfn / `nav2_navfn_planner`，**不接** Nav2 planner_server，**不起** costmap；
-//     路径是"几何直连"——只在无遮挡直达场景成立，**不保证避障**、不追求质量与最优性。
-//   * **不是** `ground_baseline`（后者 = Navfn + LQR + 自持 costmap 的离线对照整链）；
-//     本节点与其无依赖，也不复用其 costmap 参数。
-//   * **不消费**路径（消费端在 `agc_rl` 侧）；除 odom/goal/state 外不引入其它必要输入。
+// * **不是** Navfn / `nav2_navfn_planner`，**不接** Nav2 planner_server，**不起** costmap；
+// 路径是"几何直连"——只在无遮挡直达场景成立，**不保证避障**、不追求质量与最优性。
+// * **不是** `ground_baseline`（后者 = Navfn + LQR + 自持 costmap 的离线对照整链）；
+// 本节点与其无依赖，也不复用其 costmap 参数。
+// * **不消费**路径（消费端在 `agc_rl` 侧）；除 odom/goal/state 外不引入其它必要输入。
 //
 // 失效语义（ADR-0013）——发布侧只负责"不发坏的"，判活在消费侧：
-//   * 无 odom / 无 goal / goal 过期 / 任务未授权 → **不发**（不重发旧路径刷新 stamp；
-//     那等于用 now() 掩盖过期，明令禁止）；
-//   * 目标位移 > `replan_displacement_m`、或车位位移 > `replan_displacement_m`、
-//     或到达 `replan_period_s` → 重新生成；
-//   * 车距 goal ≤ `goal_reached_tol_m` → 发布一条**退化但合法**（2 点、同一点）的路径，
-//     让消费侧能判"已到位"而不是"路径消失"。
+// * 无 odom / 无 goal / goal 过期 / 任务未授权 → **不发**（不重发旧路径刷新 stamp；
+// 那等于用 now 掩盖过期，明令禁止）；
+// * 目标位移 > `replan_displacement_m`、或车位位移 > `replan_displacement_m`、
+// 或到达 `replan_period_s` → 重新生成；
+// * 车距 goal ≤ `goal_reached_tol_m` → 发布一条**退化但合法**（2 点、同一点）的路径，
+// 让消费侧能判"已到位"而不是"路径消失"。
 //
 // 时间语义：`header.stamp` 取本节点当前 ROS 时钟（`use_sim_time` 下即 `/clock`），
 // 消费侧用同一时钟算年龄；仿真 reset 造成的时跳会在消费侧被判为不可信（STALE），
@@ -97,7 +97,7 @@ public:
 private:
   // 输入是否新鲜。**负年龄一律拒绝**：仿真 reset / 时钟回跳后，reset **之前**收到的
   // odom/goal 会得到 `now - t < 0`；若只判 `<= limit`，这些旧输入会在新时刻被"重新包装"
-  // 成新鲜数据，进而用旧车位/旧目标发布新路径（round-1 review B3）。
+  // 成新鲜数据，进而用旧车位/旧目标发布新路径（ review B3）。
   bool fresh(const rclcpp::Time & t, double limit_s) const
   {
     if (limit_s <= 0.0) {

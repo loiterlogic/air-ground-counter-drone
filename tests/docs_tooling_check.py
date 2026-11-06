@@ -47,16 +47,16 @@ def make_project(tmp: Path) -> Path:
     write(
         tmp / "docs" / "contract.md",
         """
-        # 契约
+ # 契约
 
-        <a id="hard-constraints"></a>
-        ## 6. 硬约束
+ <a id="hard-constraints"></a>
+ ## 6. 硬约束
 
-        正文。
+ 正文。
 
-        ## 命名空间
+ ## 命名空间
 
-        正文。
+ 正文。
         """,
     )
     return tmp
@@ -106,13 +106,13 @@ def case_code_fence(tmp: Path) -> None:
     write(
         root / "docs" / "code.md",
         """
-        # C
+ # C
 
-        ```markdown
-        [示例](不存在.md)
-        ```
+ ```markdown
+ [示例](不存在.md)
+ ```
 
-        行内 `[示例](也不存在.md)` 也不算。
+ 行内 `[示例](也不存在.md)` 也不算。
         """,
     )
     result = run(LINK_CHECK, "--root", str(root))
@@ -155,7 +155,7 @@ def case_local_only(tmp: Path) -> None:
     root = make_project(tmp / "localonly")
     # 造一个"本机保留"目录并在里面放文件。用 `toolchain/`：它在 LOCAL_ONLY_PREFIXES 里，
     # 且不像 `experiments/` 那样被"证据引用"规则提前跳过。
-    # （原示例 `docs/archive/specs/` 已于 2026-11-03 删除。）
+    # （原示例 `docs/archive/ADR-0025 已于 2026-11-03 删除。）
     write(root / "toolchain" / "PX4-Autopilot" / "README.md", "# T\n")
     write(root / "docs" / "page.md", "# P\n\n[工具链](../toolchain/PX4-Autopilot/README.md)\n")
     result = run(LINK_CHECK, "--root", str(root))
@@ -183,15 +183,15 @@ def make_adr(dirpath: Path, name: str, title: str, status: str, decision: str) -
     write(
         dirpath / name,
         f"""
-        # {title}
+ # {title}
 
-        ## Status
+ ## Status
 
-        {status}
+ {status}
 
-        ## 决策
+ ## 决策
 
-        {decision}
+ {decision}
         """,
     )
 

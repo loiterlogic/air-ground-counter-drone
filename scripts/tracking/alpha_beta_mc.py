@@ -35,7 +35,7 @@ import statistics
 import sys
 
 # 与 perception.yaml / air.yaml 同值（**不复制**参数的唯一来源原则在此破例：
-# 这是纯离线数值实验，不读 ROS 参数；改真源时须同步本文件的 DEFAULTS 并重跑）。
+# 这是纯离线数值实验，不读 ROS 参数；改配置文件时须同步本文件的 DEFAULTS 并重跑）。
 DEFAULTS = {
     'sigma_w_mps2': 0.5,     # filter_sigma_w_mps2
     'dt_s': 0.1,             # 发布周期（gt_adapter rate_hz=10）

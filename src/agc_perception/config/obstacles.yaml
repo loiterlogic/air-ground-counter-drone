@@ -1,16 +1,16 @@
-# W4 感知用「障碍真值」几何（现为 map_adapter 的 standalone 回退；原 air_perception
+# 感知用「障碍真值」几何（现为 map_adapter 的 standalone 回退；原 air_perception
 # 生成 ObstacleObservation / 遮挡判定的用途已随 `perception` 轴于 2026-11-06 退役）
 #
-# ---- 几何真源（S-06；ADR-0007）----
-# 静态障碍**实体几何**的唯一真源为 `agc_sim/config/world_geometry.yaml`（地图 `minimal`；
+# ---- 配置文件（ADR-0007）----
+# 静态障碍**实体几何**的配置文件为 `agc_sim/config/world_geometry.yaml`（地图 `minimal`；
 # 其余地图见 `agc_sim/config/maps/`，清单 `agc_sim/launch/world_map.py`）。本文件是
 # **standalone 回退副本**（供不经 w6_composition 的 standalone perception_bringup / air_bringup
-# 使用），**只与 `minimal` 真源一致**（由 `tests/w6_geometry_check.py` 断言 (c) 校验）。
-# w6 运行路径的障碍文件由**所选地图真源**派生生成（`w6_composition.write_derived_obstacles`），
-# 不读本副本；standalone 若声明非 minimal 地图，`perception_bringup` **显式拒绝**（P1-1；拒绝点见该 launch 的 `_reject_non_minimal_fallback`）。
+# 使用），**只与 `minimal` 配置文件一致**（由 `tests/w6_geometry_check.py` 断言 (c) 校验）。
+# w6 运行路径的障碍文件由**所选地图配置文件**派生生成（`w6_composition.write_derived_obstacles`），
+# 不读本副本；standalone 若声明非 minimal 地图，`perception_bringup` **显式拒绝**（拒绝点见该 launch 的 `_reject_non_minimal_fallback`）。
 #
-# ---- R-006 静态先验（static 层）成文假设（2026-10-15）----
-# 本文件所列障碍为**场景作者给定的静止障碍**（静态先验 / static 层），与几何真源
+# ---- 静态先验（static 层）成文假设（2026-10-15）----
+# 本文件所列障碍为**场景作者给定的静止障碍**（静态先验 / static 层），与配置文件
 # src/agc_sim/config/world_geometry.yaml 一致、属**真值派生**（ADR-0009）。map_adapter **无论**
 # 无论 obstacles_source 取何值（2026-11-04 起恒为 config，air_fusion 已退役），
 # 都从本文件加载它们为**已知静态事实**，
@@ -21,7 +21,7 @@
 # 对齐旧树行为：旧感知前端从 scenario_file 读取静态障碍真值（非从 gazebo 取；该前端
 # 已于 2026-11-06 随 `perception` 轴退役）。本文件现为 `map_adapter` 的 standalone 回退，
 # 其位姿/尺寸**须与 src/agc_sim/worlds/agc_world.sdf** 中的静态障碍一致
-# （pole_1 / pole_2，W3 打补丁后重排）。W6 若将障碍改为运行期 spawn/toggle，则应把本文件
+# （pole_1 / pole_2， 打补丁后重排）。 若将障碍改为运行期 spawn/toggle，则应把本文件
 # 指向对应场景描述。
 obstacles:
   - id: pole_1

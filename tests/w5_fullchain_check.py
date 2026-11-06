@@ -2,11 +2,11 @@
 """w5_fullchain_check —— W5-c 全链回归（spec R10）。
 
 在顶层 launch（`agc_task m0_skeleton.launch.py`，GUI 或 `-s` 无头）运行中执行，校验：
-  * 门控：`/agc/task/start` 成功 → `GROUND_APPROACH`（M0 门控不退化）；
-  * 频率：`/agc/ground/odom` 30、`/agc/map` 2、`/agc/targets` 10、`/agc/obstacles` 10、
-          `/agc/ground/cmd_vel` 20、`/agc/ground/cmd_vel_raw` 20（±容差）；
-  * 帧名：含 Header 的协同话题 `frame_id=world`（`cmd_vel`/`cmd_vel_raw` 为车体系）；
-  * 终态：**不得**为 `TRACKING_SUCCESS`（契约 #terminal-semantics；W5 不裁定成功）。
+ * 门控：`/agc/task/start` 成功 → `GROUND_APPROACH`（ 门控不退化）；
+ * 频率：`/agc/ground/odom` 30、`/agc/map` 2、`/agc/targets` 10、`/agc/obstacles` 10、
+ `/agc/ground/cmd_vel` 20、`/agc/ground/cmd_vel_raw` 20（±容差）；
+ * 帧名：含 Header 的协同话题 `frame_id=world`（`cmd_vel`/`cmd_vel_raw` 为车体系）；
+ * 终态：**不得**为 `TRACKING_SUCCESS`（docs/ROS2迁移交接文档.md#terminal-semantics； 不裁定成功）。
 结果落 `experiments/w5-ground-nav-safety/<run_id>/metrics/fullchain.json`（ADR-0006）。
 
 用法：

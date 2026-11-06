@@ -1,4 +1,4 @@
-# W6 C9 验收配置（供 R7/R12）：车正对立柱 pole_1（world (0,-6)）前方 5 m、朝 -y 直行，
+# 验收配置（供 R7/R12）：车正对立柱 pole_1（world (0,-6)）前方 5 m、朝 -y 直行，
 # 由 RL 主控驱动 → 安全层（collision_monitor）应在靠近立柱时触发 STOP/SLOWDOWN，
 # run_logger 据此算出 shield_infeasible_rate（>0 表示"触发时不可行"事件存在）。
 # 目标机远离作业点（出生净空充足）。
@@ -11,7 +11,7 @@ task_manager:
     odom_valid_topic: "/agc/ground/odom_valid"
     cmd_topic: "/agc/ground/cmd_vel"
     state_topic: "/agc/task/state"
-    # 运行模式（R-001）：本验收走 m0_skeleton（无空中链路）→ 显式声明无空中域
+    # 运行模式：本验收走 m0_skeleton（无空中链路）→ 显式声明无空中域
     air_present: false
     ground_controller_name: "agc_rl"
     t_max_s: 35.0

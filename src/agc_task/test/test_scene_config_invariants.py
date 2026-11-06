@@ -6,7 +6,7 @@
 交火窗口（GROUND_APPROACH）被关闭 → `INTERCEPT_CONFIRMED/CAPTURE_NET` **永不发生**
 （实测 s08 协同臂 20/20 落 `TRACKING_SUCCESS`、`pass=false`）。
 
-测试对象是真源文件（`config/scenarios.yaml` + `config/w6_base.yaml`），
+测试对象是配置文件文件（`config/scenarios.yaml` + `config/w6_base.yaml`），
 与 `w6.launch.py` 的 `assertions()` 共用同一判据（此处做**全场景**静态扫描，
 启动时只校验当前场景）。
 """
@@ -49,7 +49,7 @@ def test_capture_authorized_scenes_disable_milestone_terminal():
             '场景 %s 已授权射击（interception_authorized=true）但 tracking_milestone_is_terminal=true '
             '→ 捕获结局不可达（ADR-0014）' % scene)
         checked.append(scene)
-    # 真源里应至少有一个已授权场景（s08）；退化保护：若该轴被误删，测试应失败而非静默通过。
+    # 配置文件里应至少有一个已授权场景（s08）；退化保护：若该轴被误删，测试应失败而非静默通过。
     assert checked, '未找到任何 interception_authorized=true 的场景——场景真源可能被误改（ADR-0014）'
 
 
@@ -76,16 +76,16 @@ def test_non_capture_scenes_unaffected():
 def test_spawn_layout_reaches_tracking_range():
     """F1（2026-10-31）：固定任务目标必须落在目标的 `d_track` 可达范围内。
 
-    守护的 bug 类别：**出生布局改了、任务目标没跟上** → C8 的"车↔目标 ≤ d_track"永远不成立
-    → GROUND_APPROACH 的有效拍永不出现 → 终态只能 TIMEOUT（主场景"跟踪成功"变成不可达）。
-    判据对**每个 `goal_follow_target=false` 且期望终态为 `TRACKING_SUCCESS`** 的场景逐条检查：
+ 守护的 bug 类别：**出生布局改了、任务目标没跟上** → 的"车↔目标 ≤ d_track"永远不成立
+ → GROUND_APPROACH 的有效拍永不出现 → 终态只能 TIMEOUT（主场景"跟踪成功"变成不可达）。
+ 判据对**每个 `goal_follow_target=false` 且期望终态为 `TRACKING_SUCCESS`** 的场景逐条检查：
       `dist(固定任务目标, 目标出生位) ≤ d_track`
 
-    排除两类（它们的不达成功是**设计意图**，不是缺陷）：
-      * `expected_terminal: MISSION_FAILED`（s10 目标置远 → 必然超时；s11 被立柱阻隔 → 不可达）；
-      * `goal_follow_target: true`（任务目标由感知目标位实时决定，不存在固定点）；
-      * `capture` 场景（自带配套 goal 与 `target_x/y`，关系由各自用例覆盖）。
-    旧布局实测基线 2.55 m / d_track 3.0 m，故本判据在当时即成立，不是新放宽。
+ 排除两类（它们的不达成功是**设计意图**，不是缺陷）：
+ * `expected_terminal: MISSION_FAILED`（s10 目标置远 → 必然超时；s11 被立柱阻隔 → 不可达）；
+ * `goal_follow_target: true`（任务目标由感知目标位实时决定，不存在固定点）；
+ * `capture` 场景（自带配套 goal 与 `target_x/y`，关系由各自用例覆盖）。
+ 旧布局实测基线 2.55 m / d_track 3.0 m，故本判据在当时即成立，不是新放宽。
     """
     import math
 
@@ -113,7 +113,7 @@ def test_spawn_layout_reaches_tracking_range():
         follow = bool(tm.get('goal_follow_target', base_tm.get('goal_follow_target', False)))
         if follow:
             continue
-        # 出生位：场景覆盖优先，否则布局真源（与 apply_spawn_layout 同口径）。
+        # 出生位：场景覆盖优先，否则布局配置文件（与 apply_spawn_layout 同口径）。
         tx = float(sr.get('target_x', layout['target']['x']))
         ty = float(sr.get('target_y', layout['target']['y']))
         gx = float(tm.get('goal_x', base_gx))
@@ -147,7 +147,7 @@ if __name__ == '__main__':
 
 
 # ------------------------------------------------------------------------------
-# F1 round-2：出生布局真源的非有限值 / 非法值守卫
+# F1 ：出生布局配置文件的非有限值 / 非法值守卫
 # ------------------------------------------------------------------------------
 def _layout_with(monkeypatch_tmp, mutate):
     """把真源复制到临时目录并按 `mutate` 改写，返回该临时文件的路径。"""
@@ -194,8 +194,8 @@ def test_spawn_layout_rejects_non_finite(bad, tmp_path):
 def test_spawn_layout_rejects_non_numeric_text(bad, tmp_path):
     """YAML 风格 / 大小写变体同样拒绝（`float()` 直接抛 ValueError 的那一类）。
 
-    两条路径的错误信息不同（"非数值" vs "非有限值"），但**都必须拒绝**——
-    判据是"启动前挡住"，不是"用哪条分支挡住"。
+ 两条路径的错误信息不同（"非数值" vs "非有限值"），但**都必须拒绝**——
+ 判据是"启动前挡住"，不是"用哪条分支挡住"。
     """
     def mutate(layout):
         layout['car']['x'] = bad
@@ -232,8 +232,8 @@ def test_spawn_layout_goal_offset_rejects_non_finite(tmp_path):
 def test_goal_derived_from_target_and_offset():
     """默认场景的任务目标 = 目标出生位 + goal_offset_m；改 target 时 goal 自动跟随。
 
-    守护的 bug 类别：goal 是**第二处**关联坐标，改了 target 忘改 goal → C8 的
-    「车↔目标 ≤ d_track」永不成立 → 跟踪终态不可达。
+ 守护的 bug 类别：goal 是**第二处**关联坐标，改了 target 忘改 goal → 的
+ 「车↔目标 ≤ d_track」永不成立 → 跟踪终态不可达。
     """
     import importlib.util
 
@@ -324,9 +324,9 @@ def _scene_info(scene):
 def test_cruise_altitude_has_single_source_in_base():
     """H0：巡航高度必须有**唯一权威名** `cruise_alt_m`；`alt_m` 只能是**同值**弃用别名。
 
-    守护的 bug 类别：两个参数名各自承担"爬升量 / 巡航高度"语义，数值又恰好相同
-    → 读配置的人（和 round-1 的分析）会误判成"两个 2.0 叠加成 4 m"。
-    权威名缺失或别名与之不等，都说明单一来源被破坏。
+ 守护的 bug 类别：两个参数名各自承担"爬升量 / 巡航高度"语义，数值又恰好相同
+ → 读配置的人（和 的分析）会误判成"两个 2.0 叠加成 4 m"。
+ 权威名缺失或别名与之不等，都说明配置文件被破坏。
     """
     _, base = _load()
     idr = base['intruder_driver']['ros__parameters']
@@ -343,8 +343,8 @@ def test_cruise_altitude_has_single_source_in_base():
 def test_cruise_altitude_manifest_block_reports_source_and_datum():
     """H0：manifest 必须能还原**实际生效巡航高度 + 来源 + 参考基准**。
 
-    判据（对应 H0 出口判据 2/3）：`effective_m` / `source` / `datum` 三项齐备，且显式声明
-    它**不是**世界 ENU 绝对高度、**不与**世界 spawn 值叠加——避免下游把相对量当绝对量。
+ 判据（对应 H0 出口判据 2/3）：`effective_m` / `source` / `datum` 三项齐备，且显式声明
+ 它**不是**世界 ENU 绝对高度、**不与**世界 spawn 值叠加——避免下游把相对量当绝对量。
     """
     mod = _composition_module('h0_manifest')
     for scene in ('s04_static_static_obs_track', 's02_linear_none_nominal_track'):
@@ -384,7 +384,7 @@ def test_cruise_altitude_scene_override_wins_over_base():
 def test_cruise_altitude_missing_is_invalid_not_defaulted():
     """H0：两个参数都缺失 → 必须判 `missing`（**不得**静默回落缺省 2.0）。
 
-    缺省回落会让"没配置"看起来像"配置了 2.0"，正是 H0 要消除的静默语义。
+ 缺省回落会让"没配置"看起来像"配置了 2.0"，正是 H0 要消除的静默语义。
     """
     mod = _composition_module('h0_missing')
     merged = {'intruder_driver': {}}
@@ -394,18 +394,18 @@ def test_cruise_altitude_missing_is_invalid_not_defaulted():
 
 
 # ------------------------------------------------------------------------------
-# H0 round-4（2026-11-02）：s02/s04 显式巡航高度 + standoff 安全窗口
+# H0 （2026-11-02）：s02/s04 显式巡航高度 + standoff 安全窗口
 # ------------------------------------------------------------------------------
 def test_cruise_altitude_comes_from_map_not_scene():
     """ADR-0007（2026-11-02）：巡航高度**随地图**派生，场景层不再硬编码。
 
-    修订历史（不得静默改写）：
-      * H0 round-4 原要求「s02/s04 在**场景层**显式声明 `cruise_alt_m`，source=scene」；
-      * ADR-0007 依用户裁定「高度和地图绑定，因为后面会做小障碍高密度和大障碍低密度等图」
-        把权威来源改为**地图**（`flight_altitude.target_cruise_m`），source=map。
-    守护的 bug 类别（两条，方向相反）：
-      ① 场景层又冒出硬编码高度 → 换图不换高度，地图绑定被架空；
-      ② 地图缺 `flight_altitude` 块 → 会静默回落到 base，抬高度形同虚设。
+ 修订历史（不得静默改写）：
+ * H0 原要求「s02/s04 在**场景层**显式声明 `cruise_alt_m`，source=scene」；
+ * ADR-0007 依用户裁定「高度和地图绑定，因为后面会做小障碍高密度和大障碍低密度等图」
+ 把权威来源改为**地图**（`flight_altitude.target_cruise_m`），source=map。
+ 守护的 bug 类别（两条，方向相反）：
+ ① 场景层又冒出硬编码高度 → 换图不换高度，地图绑定被架空；
+ ② 地图缺 `flight_altitude` 块 → 会静默回落到 base，抬高度形同虚设。
     """
     scenarios, base = _load()
     for scene in ('s02_linear_none_nominal_track', 's04_static_static_obs_track'):
@@ -441,8 +441,8 @@ def test_cruise_altitude_source_is_map_for_s02_s04():
 def test_yard_is_raised_above_tallest_building():
     """ADR-0007：yard 的目标/己方机高度必须**高于全图最高建筑 + c_clear**。
 
-    这是用户 U2 的验收口径：「现实中没无人机会飞这么低」。yard 最高建筑 `admin_block`
-    10.55 m，旧配置 2.5 m 比它低 8.05 m；抬到 12/14 后净空 3.45 m。
+ 这是用户 U2 的验收口径：「现实中没无人机会飞这么低」。yard 最高建筑 `admin_block`
+ 10.55 m，旧配置 2.5 m 比它低 8.05 m；抬到 12/14 后净空 3.45 m。
     """
     fa = _map_flight_altitude('yard')
     h_max_map = float(fa['derived']['h_max_map_m'])
@@ -468,14 +468,14 @@ def test_flight_altitude_keys_are_sane():
 def test_standoff_safe_max_respects_safety_floor_and_sensor_range():
     """H0 round-4：`safe_max` 必须同时满足**安全层下界**与**三维感知量程上界**。
 
-    判据（两条件缺一不可）：
-      ① 停止趋近点 `safe_max − hysteresis` ≥ 安全层目标圆盘下界
-         `target_min_dist + target_margin + reaction_time×max_speed + reachability`
-         ——否则 standoff 会把参考推进安全圆盘内，与安全层互相拉扯（round-4 实测缺陷）。
+ 判据（两条件缺一不可）：
+ ① 停止趋近点 `safe_max − hysteresis` ≥ 安全层目标圆盘下界
+ `target_min_dist + target_margin + reaction_time×max_speed + reachability`
+ ——否则 standoff 会把参考推进安全圆盘内，与安全层互相拉扯（ 实测缺陷）。
       ② 量程上界 `sqrt(range_max² − dz²)` ≥ `safe_max`，dz = 己方跟踪高度 − 目标巡航高度
-         ——否则收敛点落在三维量程外，感知无输出。
+ ——否则收敛点落在三维量程外，感知无输出。
 
-    这两条都是**几何硬约束**，不是可调口径；本测试不弱化任何既有断言。
+ 这两条都是**几何硬约束**，不是可调口径；本测试不弱化任何既有断言。
     """
     import math
 
@@ -489,7 +489,7 @@ def test_standoff_safe_max_respects_safety_floor_and_sensor_range():
     # 2026-11-06：`perception_sensors*.yaml` 随 `perception` 轴退役，量程 R 的登记处
     # 改为 `air.yaml` 的 standoff_follower 注释与飞行高度规范 K1（30.0 m）。本测试用
     # 该常量做**配置自洽性验算**（`gt_adapter` 不做几何门控，R 不是运行期限制），
-    # 不读已退役文件、不新建第二份数值真源。
+    # 不读已退役文件、不新建第二份数值配置文件。
     range_max = 30.0
 
     safe_max = float(sf['safe_max'])
@@ -522,8 +522,8 @@ def test_standoff_safe_max_respects_safety_floor_and_sensor_range():
 def test_standoff_stop_point_matches_safety_floor_minimally():
     """H0 round-4：本项取**最小几何修复**——停止点应恰在安全层下界（不多留、不少留）。
 
-    这不是"必须等于"的硬约束（多留余量也合法），而是防止有人把 safe_max 一路调大、
-    用扩大距离换来"看起来不冲突"而牺牲量程裕度。允许区间 [floor, ceil]。
+ 这不是"必须等于"的硬约束（多留余量也合法），而是防止有人把 safe_max 一路调大、
+ 用扩大距离换来"看起来不冲突"而牺牲量程裕度。允许区间 [floor, ceil]。
     """
     import math
 
@@ -553,7 +553,7 @@ def test_standoff_stop_point_matches_safety_floor_minimally():
 
 
 # ------------------------------------------------------------------------------
-# H0 round-5（2026-11-02）：s04 场景级 observe_yaw_mode=track + CLI 覆盖优先
+# H0 （2026-11-02）：s04 场景级 observe_yaw_mode=track + CLI 覆盖优先
 # ------------------------------------------------------------------------------
 def _air_merged_for(scene):
     """按 `w6.launch.py` 的真实合并路径（air.yaml 基参 → 场景覆盖）构造 air_merged。"""
@@ -572,9 +572,9 @@ def _air_merged_for(scene):
 def test_s04_scene_default_observe_yaw_is_track():
     """H0 round-5：s04 场景级默认 `observe_yaw_mode` 必须是 `track`（用户授权项）。
 
-    走**真实合并路径**（air.yaml → 场景覆盖），不是只看 YAML 字面：
-    合并后 `trajectory_tracker.observe_yaw_mode` 必须真的变成 `track`，
-    且 manifest 块来源记为 `scene`（而非 `air_yaml`）。
+ 走**真实合并路径**（air.yaml → 场景覆盖），不是只看 YAML 字面：
+ 合并后 `trajectory_tracker.observe_yaw_mode` 必须真的变成 `track`，
+ 且 manifest 块来源记为 `scene`（而非 `air_yaml`）。
     """
     mod = _composition_module('h0_r5_s04')
     air_merged, sc = _air_merged_for('s04_static_static_obs_track')
@@ -591,7 +591,7 @@ def test_s04_scene_default_observe_yaw_is_track():
 def test_other_scenes_do_not_inherit_track():
     """H0 round-5：s02 及其余场景**不得**被隐式改成 track（只授权了 s04）。
 
-    判据：除 s04 外，任何场景合并后的 `observe_yaw_mode` 必须仍是 air.yaml 缺省 `velocity`。
+ 判据：除 s04 外，任何场景合并后的 `observe_yaw_mode` 必须仍是 air.yaml 缺省 `velocity`。
     """
     mod = _composition_module('h0_r5_others')
     scenarios, _ = _load()
@@ -612,9 +612,9 @@ def test_other_scenes_do_not_inherit_track():
 def test_cli_observe_yaw_overrides_scene_default():
     """H0 round-5：显式 CLI `observe_yaw_mode:=<mode>` **优先于**场景默认。
 
-    守护的 bug 类别：把场景默认写成"无条件生效"，使历史对照臂/消融实验无法用 CLI 强制回
-    `velocity` 复现旧行为。`w6.launch.py` 的顺序是「先合并场景 → 再用非空 CLI 覆盖」，
-    本测试按同一顺序验证，并检查 manifest 来源记为 `cli`。
+ 守护的 bug 类别：把场景默认写成"无条件生效"，使历史对照臂/消融实验无法用 CLI 强制回
+ `velocity` 复现旧行为。`w6.launch.py` 的顺序是「先合并场景 → 再用非空 CLI 覆盖」，
+ 本测试按同一顺序验证，并检查 manifest 来源记为 `cli`。
     """
     mod = _composition_module('h0_r5_cli')
     air_merged, sc = _air_merged_for('s04_static_static_obs_track')
@@ -663,8 +663,8 @@ def test_apply_flight_altitude_injects_map_values():
 def test_air_hover_climb_tracks_takeoff_altitude():
     """`air_hover_climb_m`（起飞完成判据）必须跟着抬——否则整链卡在 air_hover_timeout。
 
-    守护的 bug 类别：只抬 `takeoff_altitude_m` 而忘了起飞完成判据，任务管理器永远等不到
-    「爬升量 ≥ 阈值」，如实拒绝 start（INFRA_FAILURE）——表现为"仿真起不来"而非配置报错。
+ 守护的 bug 类别：只抬 `takeoff_altitude_m` 而忘了起飞完成判据，任务管理器永远等不到
+ 「爬升量 ≥ 阈值」，如实拒绝 start（INFRA_FAILURE）——表现为"仿真起不来"而非配置报错。
     """
     mod = _composition_module('adr0112_hover')
     for scene in ('s04_static_static_obs_track', 's02_linear_none_nominal_track'):
@@ -733,40 +733,40 @@ def test_flight_altitude_assertions_pass_for_all_scenes():
 # 2026-11-03（N4）：反无人机场景禁用固定轨迹 —— **从文档变成测试**
 #
 # 背景：`docs/conventions/飞行高度分层与按地图定高.md#no-fixed-trajectory` 在 2026-11-02
-#   17:12 就写死了硬规则（用户原话「各种无人机固定轨迹是用来确定之前流程的，反无人机场景
-#   直接禁止使用」），但**从未落地**：`air.yaml` 仍是 `Figure8Trajectory`，
-#   `scenarios.yaml` 零覆盖，且没有任何测试守护。
-#   实测后果：N1 的 `air_fusion` 路径长期靠「八字偶然扫进量程」看见目标（占空比 42%），
-#   把一条**已被否决**的机制当成了主线依赖。
+# 17:12 就写死了硬规则（用户原话「各种无人机固定轨迹是用来确定之前流程的，反无人机场景
+# 直接禁止使用」），但**从未落地**：`air.yaml` 仍是 `Figure8Trajectory`，
+# `scenarios.yaml` 零覆盖，且没有任何测试守护。
+# 实测后果：N1 的 `air_fusion` 路径长期靠「八字偶然扫进量程」看见目标（占空比 42%），
+# 把一条**已被否决**的机制当成了主线依赖。
 #
 # 本测试把该规则变成可执行判据。**注意它的适用边界**（写在这里以免误读）：
-#   * 规则针对**反无人机（counter-UAV）场景**的己方机参考来源；
-#   * `Figure8Trajectory` 等预设轨迹**插件本身保留**（流程验证 / 回归基线仍可用），
-#     禁止的是「在反无人机场景里把它选为参考来源」；
-#   * 2026-11-03 用户已裁定搜索能力（L0/L1）取消、主线转真值目标指示（N4）——
-#     因此本测试的**要求方向**是「显式声明」，不是「必须用 Hover」。
-#     `HoverTrajectory` 与其它"不产生运动"的实现同等合法。
+# * 规则针对**反无人机（counter-UAV）场景**的己方机参考来源；
+# * `Figure8Trajectory` 等预设轨迹**插件本身保留**（流程验证 / 回归基线仍可用），
+# 禁止的是「在反无人机场景里把它选为参考来源」；
+# * 2026-11-03 用户已裁定搜索能力（L0/L1）取消、主线转真值目标指示（N4）——
+# 因此本测试的**要求方向**是「显式声明」，不是「必须用 Hover」。
+# `HoverTrajectory` 与其它"不产生运动"的实现同等合法。
 # ------------------------------------------------------------------------------
 
 # 「不产生运动」的实现白名单：接管后保持位置、无速度前馈。
-#   HoverTrajectory  = 保持接管位置（`hold_ = initial.pos`）
-#   若日后新增同类实现（如保持当前姿态的插件），在此登记即可。
+# HoverTrajectory = 保持接管位置（`hold_ = initial.pos`）
+# 若日后新增同类实现（如保持当前姿态的插件），在此登记即可。
 _NO_MOTION_PLUGINS = frozenset({
     'agc_control/HoverTrajectory',
 })
 
 # 反无人机场景的**判定口径**：场景名或 axes 表明它是 counter-UAV 任务。
-#   本仓的 `sNN_*` 场景族全部属反无人机任务（目标机 + 己方机 + 地面车协同）。
-#   排除的是「流程验证」用途的显式标注场景（见规范 §2.4 第二条）。
+# 本仓的 `sNN_*` 场景族全部属反无人机任务（目标机 + 己方机 + 地面车协同）。
+# 排除的是「流程验证」用途的显式标注场景（见规范 规范 第二条）。
 _COUNTER_UAV_SCENE_PREFIX = 's'
 
 
 def _is_counter_uav_scene(scene_id, scene_cfg):
     """反无人机场景判定：`sNN_*` 命名族 + 未被显式标注为流程验证。
 
-    规范 §2.4：「新增流程验证场景（需要八字/圆周等预设轨迹做基线）：可以选预设插件，
-    但**场景名与产物必须标注**其用途是流程验证」。
-    ⇒ 显式标注位 = `params.run_logger.usage` 或场景级 `usage` 字段，值为 `flow_validation`。
+ 规范 规范：「新增流程验证场景（需要八字/圆周等预设轨迹做基线）：可以选预设插件，
+ 但**场景名与产物必须标注**其用途是流程验证」。
+ ⇒ 显式标注位 = `params.run_logger.usage` 或场景级 `usage` 字段，值为 `flow_validation`。
     """
     usage = ((scene_cfg.get('params') or {}).get('run_logger') or {}).get('usage') \
         or scene_cfg.get('usage')
@@ -788,10 +788,10 @@ def _effective_trajectory_plugin(scene_cfg):
 def test_counter_uav_scenes_declare_non_motion_trajectory():
     """反无人机场景必须**显式声明**一个"不产生运动"的兜底轨迹插件。
 
-    为什么这条重要（实测证据，不是理论洁癖）：
-      `Figure8Trajectory` 作为兜底时，一旦 `tracking_ref` 超时 0.5 s，飞机会按八字飞走。
-      在 `air_fusion` 路径下这曾表现为「八字偶然扫进量程 → 看见一帧 → 长期 TIMEOUT」，
-      把任务成败绑在一个**已被用户否决**的机制上（`20261103-n1-stag70` 三次全败）。
+ 为什么这条重要（实测证据，不是理论洁癖）：
+ `Figure8Trajectory` 作为兜底时，一旦 `tracking_ref` 超时 0.5 s，飞机会按八字飞走。
+ 在 `air_fusion` 路径下这曾表现为「八字偶然扫进量程 → 看见一帧 → 长期 TIMEOUT」，
+ 把任务成败绑在一个**已被用户否决**的机制上（`20261103-n1-stag70` 三次全败）。
     """
     scenarios, _base = _load()
     violations = []
@@ -812,9 +812,9 @@ def test_counter_uav_scenes_declare_non_motion_trajectory():
 def test_air_yaml_default_plugin_is_not_a_preset_motion_trajectory():
     """`air.yaml` 的**全局缺省**不得是预设运动轨迹（否则每个场景都静默继承它）。
 
-    与上一条的区别：上一条查「场景实际生效值」，本条查「缺省值本身」。
-    缺省是预设轨迹时，任何**忘记覆盖**的新场景都会自动违反规则——
-    这类"沉默继承"正是原规则落地失败的直接原因。
+ 与上一条的区别：上一条查「场景实际生效值」，本条查「缺省值本身」。
+ 缺省是预设轨迹时，任何**忘记覆盖**的新场景都会自动违反规则——
+ 这类"沉默继承"正是原规则落地失败的直接原因。
     """
     air_doc = yaml.safe_load(open(os.path.join(
         os.path.dirname(os.path.dirname(CONFIG_DIR)), 'agc_air', 'config', 'air.yaml')))
@@ -830,9 +830,9 @@ def test_air_yaml_default_plugin_is_not_a_preset_motion_trajectory():
 def test_flow_validation_scene_may_use_preset_trajectory():
     """反向守护：显式标注 `usage=flow_validation` 的场景**允许**用预设轨迹。
 
-    若把规则写成"所有场景一律禁止"，流程验证 / 回归基线就没了载体——
-    规则本身会被绕过（写死为 Hover 后再无对照臂）。
-    本测试确保「显式标注即放行」这条出口**真的存在且可用**。
+ 若把规则写成"所有场景一律禁止"，流程验证 / 回归基线就没了载体——
+ 规则本身会被绕过（写死为 Hover 后再无对照臂）。
+ 本测试确保「显式标注即放行」这条出口**真的存在且可用**。
     """
     scenarios, _base = _load()
     # 构造一个显式标注为流程验证的合成场景，验证判定函数确实放行

@@ -11,10 +11,10 @@
 6. `command_source` 速度生产者互斥 —— 只用节点/话题证据，不凭 launch 文本。
 
 设计取舍（为什么不启 GZ）：
-  本台架只验证"路径 → 消费者输出"这一段，不需要物理世界；odom/goal/state/scan 用
-  **合成发布**喂真实节点，`collision_monitor` 是真实 Nav2 组件（配置取 ground.yaml 的
-  同名段但改小 `source_timeout` 以缩短等待）。这样单次 < 900 s，且不占用整链资源。
-  GUI 整链在 `g2_gui_chain.py`（另跑，见报告 C 段）。
+ 本台架只验证"路径 → 消费者输出"这一段，不需要物理世界；odom/goal/state/scan 用
+ **合成发布**喂真实节点，`collision_monitor` 是真实 Nav2 组件（配置取 ground.yaml 的
+ 同名段但改小 `source_timeout` 以缩短等待）。这样单次 < 900 s，且不占用整链资源。
+ GUI 整链在 `g2_gui_chain.py`（另跑，见报告 C 段）。
 
 用法：
     ros2 run agc_rl ... # 不走 ros2 run；本脚本用 subprocess 直接起节点
@@ -164,11 +164,11 @@ class Bench(Node):
 def case_never_received(bench, cfg, results):
     """① 启动后从未收到路径：持续零速，且**必须证明安全链真的在运行**。
 
-    round-1 缺陷：旧版只记 `cmd_vel_port_msgs=0`，那与"collision_monitor 压根没起"
-    无法区分（review D1）。本版要求同时满足：
+ 缺陷：旧版只记 `cmd_vel_port_msgs=0`，那与"collision_monitor 压根没起"
+ 无法区分（review D1）。本版要求同时满足：
       * 安全层节点存在（由调用方经 `ros2 node list` 探测，写入 `cfg['collision_monitor_nodes']`）；
-      * `cmd_vel_raw` 有消息且全零（消费者自己在发）；
-      * 唯一执行口有消息（安全层把零速转发出来了）——这才是"安全链在跑"的证据。
+ * `cmd_vel_raw` 有消息且全零（消费者自己在发）；
+ * 唯一执行口有消息（安全层把零速转发出来了）——这才是"安全链在跑"的证据。
     """
     window = float(cfg.get('startup_window_s', 3.0))
     since = NOW()
@@ -267,8 +267,8 @@ def case_rejections(bench, cfg, results):
 def case_normal_path_changes_output(bench, cfg, results):
     """④ 正常 A/B 路径：输出随路径参考改变（证明不是"只订阅不使用"）。
 
-    A: 直线沿 +x（车朝 +x，航向误差≈0）→ |angular.z| 小
-    B: 路径先拐向 +y 再回 x（前视点在左前方）→ 航向误差显著 → 角速度不同
+ A: 直线沿 +x（车朝 +x，航向误差≈0）→ |angular.z| 小
+ B: 路径先拐向 +y 再回 x（前视点在左前方）→ 航向误差显著 → 角速度不同
     """
     bench.push_goal(5.0, 0.0)
     bench.push_odom(0.0, 0.0, 0.0)
@@ -298,7 +298,7 @@ def case_normal_path_changes_output(bench, cfg, results):
 def case_degenerate_arrived(bench, cfg, results):
     """②b 退化到位路径：两点重合 + 车在末端容差内 → 必须零速（round-1 review B2）。
 
-    修复前：累计弧长全 0 → `_advance_index` 停在 index 0 → `finished` 永假 → 到点后继续出速度。
+ 修复前：累计弧长全 0 → `_advance_index` 停在 index 0 → `finished` 永假 → 到点后继续出速度。
     """
     bench.push_goal(0.0, 0.0)              # goal == 车当前位置
     bench.push_odom(0.0, 0.0, 0.0)

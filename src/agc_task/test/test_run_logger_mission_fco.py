@@ -1,7 +1,7 @@
 """R2 node-level test for the production run_logger FCO recorder.
 
 Drives the real `run_logger` executable over synthetic /clock + state + target +
-envelope + odom messages (no GZ/PX4).  The run directory is hermetic unless
+envelope + odom messages (no GZ/PX4). The run directory is hermetic unless
 AGC_TEST_EXPERIMENTS_ROOT is set by the evidence run.
 """
 import json
@@ -21,10 +21,10 @@ LOGGER = ROOT / 'install/agc_task/lib/agc_task/run_logger'
 def _dds_env():
     """DDS 发现范围 / 传输的**单一真源**（与 run_demo.sh / episode_runner 同源）。
 
-    本测试原先写死 `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`。在 `lo` 无 IFF_MULTICAST
-    的机器上（本机 WSL2 即如此）该值让发现 1:1 拓扑稳定零送达——**13 个话题全 0 匹配**，测试必挂，
-    却看起来像"记录器逻辑错"。改为按能力探测：能 LOCALHOST 就用 LOCALHOST（原生 Linux
-    行为不变），不能则退 `SUBNET`+`SHM`。判据见 docs/conventions/整链排障速查.md#dds-transport。
+ 本测试原先写死 `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`。在 `lo` 无 IFF_MULTICAST
+ 的机器上（本机 WSL2 即如此）该值让发现 1:1 拓扑稳定零送达——**13 个话题全 0 匹配**，测试必挂，
+ 却看起来像"记录器逻辑错"。改为按能力探测：能 LOCALHOST 就用 LOCALHOST（原生 Linux
+ 行为不变），不能则退 `SUBNET`+`SHM`。判据见 docs/conventions/整链排障速查.md#dds-transport。
     """
     sys.path.insert(0, str(ROOT / 'scripts' / 'demo'))
     import dds_transport as sel
@@ -110,7 +110,7 @@ def _publish_case():
     from geometry_msgs.msg import TwistStamped
     from agc_msgs.msg import AgcTaskState, TargetTrackArray, TargetTrack
 
-    # 必须在 rclpy.init() **之前**设好：发现范围在 init 时读取，之后再改无效。
+    # 必须在 rclpy.init **之前**设好：发现范围在 init 时读取，之后再改无效。
     os.environ.update(_dds_env())
     if not rclpy.ok():
         rclpy.init()
@@ -192,7 +192,7 @@ def _publish_case():
     # 最后一次值（2026-11-04 实测），故它们不是丢失源；但同样等齐，保证本 60 s 预算账从
     # 完整匹配开始，避免把发现时延记进 mission 区间。
     # 只等**会真正发布**的关键话题；`contact` 本测试从不发布（run_logger 侧有
-    # `if (!contact_topic_.empty())` 才订阅），等它必然超时。
+    # `if (!contact_topic_.empty)` 才订阅），等它必然超时。
     key_topics = ('clock', 'episode', 'state')
     deadline = time.monotonic() + 5.0
     matched = False

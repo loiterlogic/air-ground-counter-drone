@@ -7,20 +7,20 @@
 （**与评估 adapter `scripts/episode_runner.py` 共用**，spec R1 判据：评估摘要与训练 adapter
 的 end / reason 一致）：
 
-  * **任务终态**（`/agc/task/state` ∈ `TERMINALS`）→ `terminated=True`（**含超时失败**，契约 C4）；
-  * **外部截断**（墙钟看门狗 / 训练 horizon / 无终态）→ `truncated=True`（须 bootstrap）；
-  * `INFRA_FAILURE` → `terminated=True` 且 `info.classification='infra'`（**不吞**入成功率，ADR-0018）。
+ * **任务终态**（`/agc/task/state` ∈ `TERMINALS`）→ `terminated=True`（**含超时失败**，契约 ）；
+ * **外部截断**（墙钟看门狗 / 训练 horizon / 无终态）→ `truncated=True`（须 bootstrap）；
+ * `INFRA_FAILURE` → `terminated=True` 且 `info.classification='infra'`（**不吞**入成功率，ADR-0018）。
 
 架构（与 [ADR-0021](../../docs/adr/0021-w8-gui-headless-equivalence.md#top) 决定一致）：
-  * 环境 = **外部命令源**：本适配层独占发布 `/agc/ground/cmd_vel_raw`；由 `w6.launch.py`
-    `command_source:=train` 保证图内**不**另起 rl / baseline 发布者（安全层仍是唯一 shield）。
-  * 链路与 `rl` 同构：`适配层 → cmd_vel_raw → collision_monitor → cmd_vel → 中继 → GZ`。
-  * 步进模型 = **异步实时**（复用现栈，RTF≈1）：`step` 边界 = 仿真时钟推进 `control_dt_s`；
-    **不承诺** bitwise 物理一致（R3 边界，成文）。
-  * 仿真栈须**由 runner 预先拉起**（spawn 由 `scenario_reset` 按注入的 spawn seed 生成）；
-    `reset` 只做任务起始事务（`/agc/task/start` → 相位 t=0 → 新鲜门禁），**不**重建世界。
+ * 环境 = **外部命令源**：本适配层独占发布 `/agc/ground/cmd_vel_raw`；由 `w6.launch.py`
+ `command_source:=train` 保证图内**不**另起 rl / baseline 发布者（安全层仍是唯一 shield）。
+ * 链路与 `rl` 同构：`适配层 → cmd_vel_raw → collision_monitor → cmd_vel → 中继 → GZ`。
+ * 步进模型 = **异步实时**（复用现栈，RTF≈1）：`step` 边界 = 仿真时钟推进 `control_dt_s`；
+ **不承诺** bitwise 物理一致（R3 边界，成文）。
+ * 仿真栈须**由 runner 预先拉起**（spawn 由 `scenario_reset` 按注入的 spawn seed 生成）；
+ `reset` 只做任务起始事务（`/agc/task/start` → 相位 t=0 → 新鲜门禁），**不**重建世界。
 
-**奖励**：属 W7-b（spec 明确本段不产出奖励）；本层返回占位 `0.0` 并在 `info.reward_defined=False`
+**奖励**：属 （spec 明确本段不产出奖励）；本层返回占位 `0.0` 并在 `info.reward_defined=False`
 如实标注 —— **不**以占位值冒充奖励设计。
 """
 
@@ -54,8 +54,8 @@ DEFAULT_CONTROL = {
 }
 
 # 内置回落默认（`config/*.yaml` 不可读时用）——正常运行以 share 的 `rl.yaml` + `w7.yaml`
-# 为**单一来源**（spec R6；契约 #params）。obs / 控制 / 寿命参数取自 `rl.yaml`（与 agent 共用），
-# W7 平台参数取自 `w7.yaml`。
+# 为**配置文件**（spec R6；docs/ROS2迁移交接文档.md#params）。obs / 控制 / 寿命参数取自 `rl.yaml`（与 agent 共用），
+# 平台参数取自 `w7.yaml`。
 _ENV_DEFAULTS = {
     'base_frame': 'car/base_link', 'rate_hz': 20.0,
     'odom_topic': '/agc/ground/odom', 'scan_topic': '/agc/ground/scan',
@@ -63,7 +63,7 @@ _ENV_DEFAULTS = {
     'clock_topic': '/clock', 'gt_car_topic': '/agc/gt/agc_car',
     'cmd_raw_topic': '/agc/ground/cmd_vel_raw', 'start_service': '/agc/task/start',
     'num_sectors': 12, 'lidar_max_range': 10.0, 'pose_norm_m': 10.0, 'track_norm_m': 5.0,
-    # W7-b（T4/E4）：v2 obs 的追加归一（目标相对速度 / 观测年龄）
+    # （T4/E4）：v2 obs 的追加归一（目标相对速度 / 观测年龄）
     'targets_topic': '/agc/targets', 'rel_speed_norm_mps': 2.0, 'obs_age_norm_s': 0.5,
     'input_timeout': {'odom_s': 0.5, 'scan_s': 0.5, 'goal_s': 2.0, 'task_auth_s': 2.0},
 }
@@ -74,7 +74,7 @@ _W7_DEFAULTS = {'obs_version': 2, 'control_dt_s': 0.1, 'max_steps': 0,
 def _load_share_yaml():
     """读 `agc_rl` share 的 `config/rl.yaml` + `config/w7.yaml`（**单一来源**，spec R6）。
 
-    返回 `(rl_ros_parameters | None, w7 | None)`；未安装 / 缺失 → `(None, None)`（回落内置默认）。
+ 返回 `(rl_ros_parameters | None, w7 | None)`；未安装 / 缺失 → `(None, None)`（回落内置默认）。
     """
     try:
         from ament_index_python.packages import get_package_share_directory
@@ -110,7 +110,7 @@ class _EnvNode(Node):
         self.create_subscription(PoseStamped, cfg['goal_topic'], self._on_goal, 20)
         self.create_subscription(AgcTaskState, cfg['state_topic'], self._on_state, 20)
         self.create_subscription(Clock, cfg['clock_topic'], self._on_clock, 10)
-        # W7-b（T4/E4，F-04）：目标轨（bearing / 相对速度 / 观测年龄）——v2 obs 用
+        # （T4/E4，F-04）：目标轨（bearing / 相对速度 / 观测年龄）——v2 obs 用
         self.create_subscription(TargetTrackArray, cfg['targets_topic'], self._on_target, 20)
         self.gt_sub = None
         if cfg.get('gt_car_topic'):
@@ -200,7 +200,7 @@ class GroundAgcEnv:
     metadata = {'render_modes': [], 'spec_version': 1}
 
     def __init__(self, scene, seed_plan=None, obs_version=None, **overrides):
-        # 单一来源：`rl.yaml`（obs/控制/寿命，与 agent 共用）+ `w7.yaml`（W7 平台参数）。
+        # 配置文件：`rl.yaml`（obs/控制/寿命，与 agent 共用）+ `w7.yaml`（ 平台参数）。
         rl_p, w7_p = _load_share_yaml()
         cfg = dict(_ENV_DEFAULTS)
         w7cfg = dict(_W7_DEFAULTS)
@@ -271,7 +271,7 @@ class GroundAgcEnv:
         dist = math.hypot(dx, dy)
         extra = {}
         if int(self.obs_version) >= 2:
-            # W7-b（T4/E4，F-04）：目标 bearing（车体系）/ 相对速度 / 观测年龄
+            # （T4/E4，F-04）：目标 bearing（车体系）/ 相对速度 / 观测年龄
             if n.tgt is not None:
                 dx_t = n.tgt[0] - n.x
                 dy_t = n.tgt[1] - n.y
@@ -348,8 +348,8 @@ class GroundAgcEnv:
     def step(self, action):
         """发布动作 → 推进 `control_dt_s`（仿真时钟）→ 取下一观测与终止判定。
 
-        `terminated` = 任务终态（含超时失败，C4）；`truncated` = **外部截断**（墙钟看门狗 / 训练
-        horizon / 输入失效）；回合**进行中**时两者皆 False，`info.outcome=None`（不误判为结束）。
+ `terminated` = 任务终态（含超时失败，）；`truncated` = **外部截断**（墙钟看门狗 / 训练
+ horizon / 输入失效）；回合**进行中**时两者皆 False，`info.outcome=None`（不误判为结束）。
         """
         n = self._node
         self._steps += 1
@@ -357,7 +357,7 @@ class GroundAgcEnv:
         wd = float(self.cfg['wall_watchdog_s'])
 
         if not self._fresh_inputs(n):
-            # 输入失效 → 零速（R-010 语义），并如实标注（外部截断，非任务终态）
+            # 输入失效 → 零速（ 语义），并如实标注（外部截断，非任务终态）
             n.set_cmd(0.0, 0.0)
             obs, dist = self._build_obs(n)
             cls = {'outcome_class': 'input_invalid', 'classification': 'infra',

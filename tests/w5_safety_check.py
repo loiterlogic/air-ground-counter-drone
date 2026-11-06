@@ -2,13 +2,13 @@
 """w5_safety_check —— W5-a/c 验收：C2 三档触发 + C6 真实逃逸（spec R4/R5/R9）。
 
 在 `agc_task w5_safety_scenario.launch.py` 运行中执行：
-  1. 调 `/agc/task/start`（复用 M0 门控）→ 期望 GROUND_APPROACH；
-  2. 记录 `/agc/ground/cmd_vel`（安全层输出）、`/agc/ground/cmd_vel_raw`（命令源输出）、
-     `/agc/ground/odom`（车真实位姿）、`/agc/task/state`；
-  3. 判据：
-     * **C2 顺序 + 承载**：车自巡航速降速（slowdown@安全档）→ 停车（stop@碰撞档）；
-     * **C6 真实逃逸**：车**实测停住**（odom 位移极小）、且**未撞柱**（最近距离 ≥ 阈值）。
-  结果落 `experiments/w5-ground-nav-safety/<run_id>/metrics/safety.json`（ADR-0006）。
+ 1. 调 `/agc/task/start`（复用 门控）→ 期望 GROUND_APPROACH；
+ 2. 记录 `/agc/ground/cmd_vel`（安全层输出）、`/agc/ground/cmd_vel_raw`（命令源输出）、
+ `/agc/ground/odom`（车真实位姿）、`/agc/task/state`；
+ 3. 判据：
+ * ** 顺序 + 承载**：车自巡航速降速（slowdown@安全档）→ 停车（stop@碰撞档）；
+ * ** 真实逃逸**：车**实测停住**（odom 位移极小）、且**未撞柱**（最近距离 ≥ 阈值）。
+ 结果落 `experiments/w5-ground-nav-safety/<run_id>/metrics/safety.json`（ADR-0006）。
 
 用法：
   python3 tests/w5_safety_check.py --duration 30 --run-id <YYYYMMDD>-pole-approach-0
@@ -145,7 +145,7 @@ def main():
                 stop_run = 0.0
             prev_t = t
         min_dist = min(dist)
-        # 车在**末段静止窗口**内的实测位移（C6：真实停住）——自末尾向前取连续 v≈0 的区间
+        # 车在**末段静止窗口**内的实测位移（：真实停住）——自末尾向前取连续 v≈0 的区间
         i0 = len(samples)
         while i0 > 0 and samples[i0 - 1][1] < 0.02:
             i0 -= 1

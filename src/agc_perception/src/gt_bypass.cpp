@@ -1,15 +1,15 @@
-// gt_bypass —— 世界真值旁路（W4-a，spec R1）
+// gt_bypass —— 世界真值旁路（，spec R1）
 //
 // 直读 gz `/world/<world>/dynamic_pose/info`（`gz.msgs.Pose_V`），归一为 world 系真值，
 // 按实体发布 `/agc/gt/<entity>`（`geometry_msgs/PoseStamped`）。
 //
 // 设计要点：
-//   * **不经 ros_gz_bridge**：本机桥(1.0.24) 的 `Pose_V→TFMessage` 不写 frame 名，
-//     无法作为带名真值使用；故以专用节点经 gz-transport 直读（原逐实体 PosePublisher
-//     桥已在 W4 退役）。
-//   * **不发 TF**：真值为私有数据，不进协同层帧树（契约 #namespace 禁裸 base_link）。
-//   * **限频发布**：动态真值话题按仿真步进（~250 Hz）产生，须限频（默认 30 Hz）以避免
-//     灌满链路（旧树实测：真值链路 250 Hz 会拖垮同机 PX4 EKF）。
+// * **不经 ros_gz_bridge**：本机桥(1.0.24) 的 `Pose_V→TFMessage` 不写 frame 名，
+// 无法作为带名真值使用；故以专用节点经 gz-transport 直读（原逐实体 PosePublisher
+// 桥已在 退役）。
+// * **不发 TF**：真值为私有数据，不进协同层帧树（docs/ROS2迁移交接文档.md#namespace 禁裸 base_link）。
+// * **限频发布**：动态真值话题按仿真步进（~250 Hz）产生，须限频（默认 30 Hz）以避免
+// 灌满链路（旧树实测：真值链路 250 Hz 会拖垮同机 PX4 EKF）。
 //
 // gz 回调在 transport 线程执行，与 ROS 定时器线程并发：共享缓冲以互斥量保护。
 

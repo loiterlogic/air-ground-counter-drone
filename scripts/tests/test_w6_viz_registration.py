@@ -1,6 +1,6 @@
 """`w6.launch.py` 演示叠加层（viz）注册次数的回归测试（T0：不启任何进程）。
 
-**守护的缺陷**（P1-2 round-1 实测，round-2 修复）：
+**守护的缺陷**（ 实测， 修复）：
 `_compose()` 末尾曾有 `actions.extend(_viz_actions(context, sim_share))`，
 而 `generate_launch_description()` 末尾另有一个顶层
 `OpaqueFunction(lambda c: _viz_actions(c, sim_share))` → `backend:=full` 时
@@ -17,7 +17,7 @@
 **不 Popen 任何进程**），最后按 `Node(package, executable)` 计数。
 
 运行：
-  source /opt/ros/jazzy/setup.bash && source install/setup.bash
+ source /opt/ros/jazzy/setup.bash && source install/setup.bash
   python3 -m pytest scripts/tests/test_w6_viz_registration.py -q
 """
 
@@ -27,7 +27,7 @@ import sys
 
 import pytest
 
-# 项目根**自定位**（2026-10-31 P2-1 round-7，裁定 A）：本文件在 `<ROOT>/scripts/tests/`，上溯三级即根。
+# 项目根**自定位**（2026-10-31 ，裁定 A）：本文件在 `<ROOT>/scripts/tests/`，上溯三级即根。
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 LAUNCH_DIR = os.path.join(ROOT, 'src', 'agc_task', 'launch')
 W6 = os.path.join(LAUNCH_DIR, 'w6.launch.py')
@@ -39,7 +39,7 @@ VIZ_NODES = (
     'rviz2/rviz2',
 )
 
-# 本测试只查 launch 注册结构、不跨进程收发，但发现范围仍走单一真源
+# 本测试只查 launch 注册结构、不跨进程收发，但发现范围仍走配置文件
 # （scripts/demo/dds_transport.py），避免第三套 DDS 口径。
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'demo'))
 import dds_transport  # noqa: E402
@@ -99,11 +99,11 @@ def emitted_actions(backend, viz, overrides=None):
 
 def _walk(actions):
     """展开 action 树：`RegisterEventHandler` 的事件处理动作里也可能挂 Node
-    （本 launch 的 `intruder_driver` 就是这样注册的），不展开会把它误判为"缺失"。
+ （本 launch 的 `intruder_driver` 就是这样注册的），不展开会把它误判为"缺失"。
 
-    `launch` 把 on_event 的动作存在 `OnActionEventBase._OnActionEventBase__actions_on_event`
-    里（见 `launch/event_handlers/on_action_event_base.py`），名字里带类名前缀，故此处按
-    实际属性名取；取不到时退化为"不展开"，由测试的期望值暴露（不静默通过）。
+ `launch` 把 on_event 的动作存在 `OnActionEventBase._OnActionEventBase__actions_on_event`
+ 里（见 `launch/event_handlers/on_action_event_base.py`），名字里带类名前缀，故此处按
+ 实际属性名取；取不到时退化为"不展开"，由测试的期望值暴露（不静默通过）。
     """
     for a in actions:
         yield a

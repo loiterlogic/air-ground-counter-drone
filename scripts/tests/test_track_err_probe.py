@@ -3,16 +3,16 @@
 
 断言的是"两个**已定位**的脆弱点不再存在"，不是"跑起来看着对"：
 
-  1. **预热进程必须有确定上界，且上界必须能兑现**：`w6.launch.py` 的 prewarm 命令必须是
-     `timeout -k <K> <N> …`。**只给 `timeout <N>` 不够**——GNU `timeout` 到点只发 SIGTERM
-     然后无限期等子进程；round-5 T-B 的失败形态正是该进程 SIGINT 5 s / SIGTERM 10 s 都不退，
-     只能 SIGKILL。此时 `timeout` 自身永不返回 → `OnProcessExit` 依旧不触发 → 修复等于没做。
-  2. **采集器必须边采边写 + 中断安全**：`track_err_probe.py` 要有周期 flush（**json/samples/txt
-     三者全写**，被 SIGKILL 也不留悬空）、SIGINT/SIGTERM handler，且**先写最终结果再 destroy_node**。
-  3. **0 样本不得当 0 误差**：采集器在无配对样本时退出码 3，产物标 `NO_SAMPLES`。
-  4. **误差口径必须是生效参考**：主指标用 `tracking_ref`（生效参考），标称 8 字只作连续性对照；
-     否则量出来的是 standoff 偏置而不是跟踪误差（round-1 的 mean≈8 m / p95≈18 m 就是证据）。
-  5. **不改控制链/ABI**：w6 的修复只动 prewarm 命令，不改任务参数、终态、C10、安全阈值。
+ 1. **预热进程必须有确定上界，且上界必须能兑现**：`w6.launch.py` 的 prewarm 命令必须是
+ `timeout -k <K> <N> …`。**只给 `timeout <N>` 不够**——GNU `timeout` 到点只发 SIGTERM
+ 然后无限期等子进程； T-B 的失败形态正是该进程 SIGINT 5 s / SIGTERM 10 s 都不退，
+ 只能 SIGKILL。此时 `timeout` 自身永不返回 → `OnProcessExit` 依旧不触发 → 修复等于没做。
+ 2. **采集器必须边采边写 + 中断安全**：`track_err_probe.py` 要有周期 flush（**json/samples/txt
+ 三者全写**，被 SIGKILL 也不留悬空）、SIGINT/SIGTERM handler，且**先写最终结果再 destroy_node**。
+ 3. **0 样本不得当 0 误差**：采集器在无配对样本时退出码 3，产物标 `NO_SAMPLES`。
+ 4. **误差口径必须是生效参考**：主指标用 `tracking_ref`（生效参考），标称 8 字只作连续性对照；
+ 否则量出来的是 standoff 偏置而不是跟踪误差（ 的 mean≈8 m / p95≈18 m 就是证据）。
+ 5. **不改控制链/ABI**：w6 的修复只动 prewarm 命令，不改任务参数、终态、、安全阈值。
 """
 
 import ast
@@ -172,8 +172,8 @@ def test_probe_does_not_read_ground_truth():
 def test_probe_primary_metric_uses_tracking_ref():
     """主指标必须优先用 `tracking_ref`（生效参考）；标称 8 字只作连续性对照。
 
-    依据 `trajectory_tracker.cpp` ⑨ 的 source 裁定：tracking/hold → tracking_ref；base → base_ref。
-    round-1 只订 `/agc/air/ref`，量出的 mean≈8 m / p95≈18 m 是 standoff 偏置，不是跟踪误差。
+ 依据 `trajectory_tracker.cpp` ⑨ 的 source 裁定：tracking/hold → tracking_ref；base → base_ref。
+ 只订 `/agc/air/ref`，量出的 mean≈8 m / p95≈18 m 是 standoff 偏置，不是跟踪误差。
     """
     text = _text(PROBE)
     assert '--tracking-topic' in text
@@ -199,7 +199,7 @@ def test_probe_declares_base_metric_is_not_tracking_error():
 # --------------------------------------------------------------------------------------
 # 3b. 采集器的**纯函数行为**（真跑，不是读源码）
 #
-# 教训：round-2 臂 A 的采集器在真实运行里抛 `TypeError: dict is not a sequence` ——
+# 教训： 臂 A 的采集器在真实运行里抛 `TypeError: dict is not a sequence` ——
 # `pair_one` 被传了 dict 却按序列用。**只读源码的守卫抓不到这种错**，故这里直接导入并调用。
 # --------------------------------------------------------------------------------------
 

@@ -6,9 +6,9 @@
 （`os.environ["…"] = "LOCALHOST"` 未被匹配），靠这里的用例才被抓住。
 
 守护三件事：
-  1. 各种**真实写法**都被判为违规（含跨行、yaml、bash export）；
-  2. **合法的讲解/断言语境**不误报（反引号文档引用、`'…' in sh` 断言）；
-  3. 豁免范围不被悄悄扩大。
+ 1. 各种**真实写法**都被判为违规（含跨行、yaml、bash export）；
+ 2. **合法的讲解/断言语境**不误报（反引号文档引用、`'…' in sh` 断言）；
+ 3. 豁免范围不被悄悄扩大。
 
 见 [ADR-0028](../docs/adr/0028-dds-discovery-range-and-transport.md#guard)。
 """
@@ -150,10 +150,10 @@ def test_n3_matrix_entry_is_real():
 def test_perception_axis_and_no_target_scene_are_retired(check):
     """`perception` 场景轴 + `s17` 无目标负例已于 2026-11-06 整体退役（用户裁定）。
 
-    原 `test_n3_negative_scene_is_registered` 守护的是"诚实标注 s17 不可用"；本次
-    「彻底删」后改为守护**不复活**：场景表不得再声明 `perception` 轴、承载者表
-    不得再有该轴、`s17` 场景号不得回来。完整清退台账与闸门见
-    `scripts/tests/test_retirement_ledger.py` 与治理规范 5.2。
+ 原 `test_n3_negative_scene_is_registered` 守护的是"诚实标注 s17 不可用"；本次
+ 「彻底删」后改为守护**不复活**：场景表不得再声明 `perception` 轴、承载者表
+ 不得再有该轴、`s17` 场景号不得回来。完整清退台账与闸门见
+ `scripts/tests/test_retirement_ledger.py` 与治理规范。
     """
     import yaml
     with open(ROOT / 'src/agc_task/config/scenarios.yaml', encoding='utf-8') as f:
@@ -172,9 +172,9 @@ def test_perception_axis_and_no_target_scene_are_retired(check):
 def test_vision_localization_path_is_retired():
     """视觉定位路径已于 2026-11-04 退役：不得再被任何活跃代码/配置重新引入。
 
-    用户裁定：项目不做目标识别/追踪，目标位置**始终由真值给出**（ADR-0009 (a2)）。
-    本测试是**防回归闸门**——退役后若有人把 `vision_target` / `camera_tf` / `perception_path`
-    或 vision 专属 launch 参数加回来，这里立刻失败。
+ 用户裁定：项目不做目标识别/追踪，目标位置**始终由真值给出**（ADR-0009 (a2)）。
+ 本测试是**防回归闸门**——退役后若有人把 `vision_target` / `camera_tf` / `perception_path`
+ 或 vision 专属 launch 参数加回来，这里立刻失败。
     """
     forbidden_files = [
         ROOT / 'src' / 'agc_perception' / 'src' / 'vision_target.cpp',
@@ -191,7 +191,7 @@ def test_vision_localization_path_is_retired():
         assert ("'%s', default_value=" % arg) not in w6, \
             'w6.launch.py 仍在声明已退役的参数 %s' % arg
 
-    # N3 矩阵：vision 臂必须已删除（没有"感知代价臂"了）
+    # 矩阵：vision 臂必须已删除（没有"感知代价臂"了）
     import importlib.util
     spec = importlib.util.spec_from_file_location('n3m_retired', str(ROOT / 'tests' / 'run_n3_matrix.py'))
     m = importlib.util.module_from_spec(spec)
@@ -203,8 +203,8 @@ def test_vision_localization_path_is_retired():
 def test_episode_runner_records_perception_path():
     """report 仍记录感知路径键，但**值固定**为 truth / none（schema 不漂移）。
 
-    视觉退役后这两个键保留是为了让新旧 run 可直接对比（删键会让 schema 漂移）；
-    但值不再由 launch 参数驱动，因此不得再出现 `perception_path=vision` 一类的动态透传。
+ 视觉退役后这两个键保留是为了让新旧 run 可直接对比（删键会让 schema 漂移）；
+ 但值不再由 launch 参数驱动，因此不得再出现 `perception_path=vision` 一类的动态透传。
     """
     src = (ROOT / 'scripts' / 'episode_runner.py').read_text(encoding='utf-8')
     assert "'perception_path': 'truth'" in src

@@ -1,13 +1,13 @@
 // agc_air/agc_lifecycle_node.hpp —— 生命周期节点薄基类（Nav2 吸收点：lifecycle managed node）
 //
 // 对齐 Nav2 `nav2_util::LifecycleNode` 的用法（ADR-0003 吸收矩阵；口径见 ADR-0019）：
-//   - 四段语义：`on_configure / on_activate / on_deactivate / on_cleanup`，骨架统一转发；
-//   - **可重复资源状态机**：configure **幂等**（声明参数前先 `has_parameter`），cleanup **释放并注销**
-//     （`undeclare_parameter`）→ `configure→activate→deactivate→cleanup→configure` 可重复；
-//   - **转发** `on_shutdown` / `on_error` 到新的虚函数（默认复用 cleanup 语义）做**完整清理**；
-//   - **bond 失联检测**：对齐 Nav2 bond（topic=`bond`、id=节点名、`bond_heartbeat_period`），
-//     被 `lifecycle_manager` 心跳检测；节点侧看门狗在 **bond 已建立后断开**（manager 死亡）时
-//     触发**失效停机**（真实 `deactivate→cleanup` 转移，停止产出控制数据）。
+// - 四段语义：`on_configure / on_activate / on_deactivate / on_cleanup`，骨架统一转发；
+// - **可重复资源状态机**：configure **幂等**（声明参数前先 `has_parameter`），cleanup **释放并注销**
+// （`undeclare_parameter`）→ `configure→activate→deactivate→cleanup→configure` 可重复；
+// - **转发** `on_shutdown` / `on_error` 到新的虚函数（默认复用 cleanup 语义）做**完整清理**；
+// - **bond 失联检测**：对齐 Nav2 bond（topic=`bond`、id=节点名、`bond_heartbeat_period`），
+// 被 `lifecycle_manager` 心跳检测；节点侧看门狗在 **bond 已建立后断开**（manager 死亡）时
+// 触发**失效停机**（真实 `deactivate→cleanup` 转移，停止产出控制数据）。
 // 约定：**资源建在 configure**（订阅 / 参数），**发布器激活在 activate**，deactivate 停发，cleanup 释放。
 
 #pragma once
@@ -110,7 +110,7 @@ private:
   CallbackReturn on_configure(const rclcpp_lifecycle::State &) final
   {
     // ADR-0019：bond **不**在 configure 创建——Nav2 manager 只在 activate 时才建立其侧 bond；
-    //   在 configure 开始计时会在"配置→激活"间隔 > 4 s 时误触发 broken → 失效停机。
+    // 在 configure 开始计时会在"配置→激活"间隔 > 4 s 时误触发 broken → 失效停机。
     return on_configure_impl();
   }
   CallbackReturn on_activate(const rclcpp_lifecycle::State &) final

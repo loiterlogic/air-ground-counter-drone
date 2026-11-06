@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """`capture_run.py` 的**收尾路径**回归（T0：不启仿真、不启 GUI）。
 
-## 守护的缺陷（2026-10-31 P2-1 round-5 实测）
+## 守护的缺陷（2026-10-31 实测）
 
 一次**成功的** T2 取帧（22 帧已落盘、任务 `TRACKING_SUCCESS`）在**收尾阶段**崩溃：
 
@@ -53,8 +53,8 @@ def _main_fn():
 def _first_lineno(fn, name, *, as_store):
     """返回 `name` 在 fn 内首次**赋值**或**使用**的行号；找不到返回 None。
 
-    - as_store=True → 找 `name = ...`（含 tuple 解包）的赋值位置；
-    - as_store=False → 找 `name` 出现在**加载上下文**（读）的位置。
+ - as_store=True → 找 `name = ...`（含 tuple 解包）的赋值位置；
+ - as_store=False → 找 `name` 出现在**加载上下文**（读）的位置。
     """
     found = None
     for node in ast.walk(fn):

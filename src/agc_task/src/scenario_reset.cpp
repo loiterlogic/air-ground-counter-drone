@@ -1,18 +1,18 @@
-// scenario_reset —— M0 最小场景复位（W6 加厚）
+// scenario_reset —— 最小场景复位（ 加厚）
 //
 // * 服务 /agc/scenario/reset（std_srvs/Trigger）：经 GZ set_pose 把车 / 目标置回 spawn；
-//   受运行期门控（仅**非 active** 态可复位——IDLE + 全终态，含 INTERCEPT_CONFIRMED；契约 #lessons）。
-// * **R-015（ADR-0014）复位受控事务**：
-//   - 门控即「撤销运动许可」；随后做**有界等待**观察车静止（订阅 /agc/ground/odom；**不发布 cmd_vel**）。
-//   - 读回前置：订阅真值旁路 gt（车 / 目标），要求写入前缓存**新鲜**（年龄 ≤ readback_max_age_s）。
-//   - 事务：写车 → 读回（XY 欧氏距 ≤ 容差，有界等待）→ 写目标 → 读回；任一步失败 → **回滚**已写实体到
-//     「写入前」位姿；回滚再失败 → 持久标记 env_needs_rebuild_ 且 reason 后缀 env_rebuild_needed。
-//     **绝不留「车已移动、目标未复位」中间态。**
-//   - car_start（/agc/scenario/car_start）**仅在完整成功后**发布。
-//   - 每次成功复位 reset_epoch_++ 并发布 /agc/scenario/reset_epoch（Int32，transient_local）；应答含 epoch=N。
+// 受运行期门控（仅**非 active** 态可复位——IDLE + 全终态，含 INTERCEPT_CONFIRMED；docs/ROS2迁移交接文档.md#lessons）。
+// * **（ADR-0014）复位受控事务**：
+// - 门控即「撤销运动许可」；随后做**有界等待**观察车静止（订阅 /agc/ground/odom；**不发布 cmd_vel**）。
+// - 读回前置：订阅真值旁路 gt（车 / 目标），要求写入前缓存**新鲜**（年龄 ≤ readback_max_age_s）。
+// - 事务：写车 → 读回（XY 欧氏距 ≤ 容差，有界等待）→ 写目标 → 读回；任一步失败 → **回滚**已写实体到
+// 「写入前」位姿；回滚再失败 → 持久标记 env_needs_rebuild_ 且 reason 后缀 env_rebuild_needed。
+// **绝不留「车已移动、目标未复位」中间态。**
+// - car_start（/agc/scenario/car_start）**仅在完整成功后**发布。
+// - 每次成功复位 reset_epoch_++ 并发布 /agc/scenario/reset_epoch（Int32，transient_local）；应答含 epoch=N。
 // * 启动初始复位**走同一门控**（不 bypass），保留 4 s 延迟等 gz / 桥就绪。
 //
-// 统一执行口（契约 #execution-port）：本节点**禁止**发布任何 cmd_vel；「停止执行」以门控 + 车静止证据实现。
+// 统一执行口（docs/ROS2迁移交接文档.md#execution-port）：本节点**禁止**发布任何 cmd_vel；「停止执行」以门控 + 车静止证据实现。
 
 #include <chrono>
 #include <cmath>
@@ -51,10 +51,10 @@ public:
     target_y_ = declare_parameter<double>("target_y", 2.5);
     target_z_ = declare_parameter<double>("target_z", 0.12);  // 2026-11-05：2.0→0.12，见 spawn_layout.yaml
     target_yaw_ = declare_parameter<double>("target_yaw", 0.0);
-    // C7 出生净空（ADR-0012）：按新 C2 安全档 + 实体外伸推导的可标定下限（暂定 ≈6 m，
-    // 以"车-目标 spawn 中心距"为代理）；旧值 2.4 m 作废。R-014 起为车↔目标对下限（标定值）。
+    // 出生净空（ADR-0012）：按新 安全档 + 实体外伸推导的可标定下限（暂定 ≈6 m，
+    // 以"车-目标 spawn 中心距"为代理）；旧值 2.4 m 作废。 起为车↔目标对下限（标定值）。
     clearance_min_m_ = declare_parameter<double>("spawn_clearance_min_m", 6.0);
-    // R-014 出生净空统一候选校验（ADR-0012）：实体几何外伸 + 实体对下限 + 作业区边界。
+    // 出生净空统一候选校验（ADR-0012）：实体几何外伸 + 实体对下限 + 作业区边界。
     clearance_radius_car_m_ = declare_parameter<double>("clearance_radius_car_m", 0.5037);
     clearance_radius_uav_m_ = declare_parameter<double>("clearance_radius_uav_m", 0.25);
     clearance_radius_obstacle_m_ = declare_parameter<double>("clearance_radius_obstacle_m", 0.15);
@@ -64,16 +64,16 @@ public:
     clearance_min_car_obstacle_m_ = declare_parameter<double>("clearance_min_car_obstacle_m", -1.0);
     clearance_min_target_obstacle_m_ =
       declare_parameter<double>("clearance_min_target_obstacle_m", -1.0);
-    // R-014 出生净空统一候选校验（ADR-0012）：实体几何外伸 + 实体对下限 + 作业区边界。
-    // S-06（ADR-0007）：作业区边界（map_*）与静态障碍清单（obstacle_*）的**几何真源**为
-    //   `agc_sim/config/world_geometry.yaml`，由 w6_composition 派生注入；此处默认值
-    //   **仅**为 standalone 回退，不构成第二份几何真源（修改几何只改真源文件）。
+    // 出生净空统一候选校验（ADR-0012）：实体几何外伸 + 实体对下限 + 作业区边界。
+    // （ADR-0007）：作业区边界（map_*）与静态障碍清单（obstacle_*）的**配置文件**为
+    // `agc_sim/config/world_geometry.yaml`，由 w6_composition 派生注入；此处默认值
+    // **仅**为 standalone 回退，不构成第二份配置文件（修改几何只改配置文件文件）。
     // 2026-10-29 用户裁定作业区 80×80 → **100×100（origin −50,−50）**，回退默认值随之同步。
     map_x_min_ = declare_parameter<double>("map_x_min", -50.0);
     map_x_max_ = declare_parameter<double>("map_x_max", 50.0);
     map_y_min_ = declare_parameter<double>("map_y_min", -50.0);
     map_y_max_ = declare_parameter<double>("map_y_max", 50.0);
-    // 显式运行模式（同 R-001 air_present 原则：不得由实体缺席推定）
+    // 显式运行模式（同 air_present 原则：不得由实体缺席推定）
     own_uav_present_ = declare_parameter<bool>("own_uav_present", false);
     own_uav_x_ = declare_parameter<double>("own_uav_x", 0.0);
     own_uav_y_ = declare_parameter<double>("own_uav_y", 0.0);
@@ -87,7 +87,7 @@ public:
     spawn_seed_ = declare_parameter<int>("spawn_seed", 0);
     spawn_search_radius_m_ = declare_parameter<double>("spawn_search_radius_m", 4.0);
     spawn_internal_retry_ = declare_parameter<int>("spawn_internal_retry", 8);
-    // R-015（ADR-0014）：受控事务参数（config 单一注入，节点不得覆写）
+    // （ADR-0014）：受控事务参数（config 单一注入，节点不得覆写）
     car_entity_name_ = declare_parameter<std::string>("car_entity_name", "agc_car");
     target_entity_name_ = declare_parameter<std::string>("target_entity_name", "intruder_uav");
     car_gt_topic_ = declare_parameter<std::string>("car_gt_topic", "/agc/gt/agc_car");
@@ -125,7 +125,7 @@ public:
         target_gt_rx_ = now();
         have_target_gt_ = true;
       });
-    // R-015：车静止观察（**只读**，不发布 cmd_vel——唯一执行口 constraints #execution-port）
+    // 车静止观察（**只读**，不发布 cmd_vel——唯一执行口 constraints #execution-port）
     ground_odom_sub_ = create_subscription<nav_msgs::msg::Odometry>(
       ground_odom_topic, 10,
       [this](nav_msgs::msg::Odometry::SharedPtr m) {
@@ -142,15 +142,15 @@ public:
     set_pose_client_ = client_node_->create_client<SetEntityPose>(
       "/world/" + world_name_ + "/set_pose");
 
-    // R-015：复位服务 + 启动定时器置于**独立互斥回调组**。事务回调内会**有界阻塞**（静止观察 /
-    // 读回等待 / 回滚），订阅须留在默认组由多线程执行器在其它线程持续更新（对齐 R-013 执行器范式）。
+    // 复位服务 + 启动定时器置于**独立互斥回调组**。事务回调内会**有界阻塞**（静止观察 /
+    // 读回等待 / 回滚），订阅须留在默认组由多线程执行器在其它线程持续更新（对齐 执行器范式）。
     txn_cb_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
     reset_srv_ = create_service<Trigger>(
       "/agc/scenario/reset",
       std::bind(&ScenarioReset::onReset, this, std::placeholders::_1, std::placeholders::_2),
       rclcpp::ServicesQoS(), txn_cb_group_);
 
-    // 启动初始复位（延迟等待 gz / 桥就绪）；**经同一门控**（R-015 / tasks 3.4：不 bypass）。
+    // 启动初始复位（延迟等待 gz / 桥就绪）；**经同一门控**（ / tasks 3.4：不 bypass）。
     startup_timer_ = create_wall_timer(
       std::chrono::seconds(4), [this]() {
         startup_timer_->cancel();
@@ -160,7 +160,7 @@ public:
   }
 
 private:
-  // 可复位态集合 = 全部**非 active** 态：IDLE + 终态（含 INTERCEPT_CONFIRMED，R-015 / tasks 3.4）。
+  // 可复位态集合 = 全部**非 active** 态：IDLE + 终态（含 INTERCEPT_CONFIRMED， / tasks 3.4）。
   // active（AIR_SEARCH / TARGET_ACQUIRED / GROUND_APPROACH）一律拒（reason not_resettable）。
   bool isResettable() const
   {
@@ -177,13 +177,13 @@ private:
     return std::atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z));
   }
 
-  // R-014：实体对下限——若有显式覆盖（≥0）则用之，否则按两实体几何外伸之和推导。
+  // 实体对下限——若有显式覆盖（≥0）则用之，否则按两实体几何外伸之和推导。
   double pairMin(double r_a, double r_b, double override_min) const
   {
     return override_min >= 0.0 ? override_min : (r_a + r_b);
   }
 
-  // R-014：统一候选校验（ADR-0012）。按序检查，任一不满足即返回 false 并设 reason。
+  // 统一候选校验（ADR-0012）。按序检查，任一不满足即返回 false 并设 reason。
   bool validateCandidate(double cx, double cy, double tx, double ty,
     std::string & reason) const
   {
@@ -241,7 +241,7 @@ private:
     return true;
   }
 
-  // R-014：候选生成（按 scenario + seed）并对**每一轮**候选做统一校验。
+  // 候选生成（按 scenario + seed）并对**每一轮**候选做统一校验。
   bool selectCandidate(double & cx, double & cy, double & tx, double & ty,
     std::string & reason) const
   {
@@ -284,7 +284,7 @@ private:
     return future.get()->success;
   }
 
-  // R-015（tasks 3.2）：撤销运动许可（门控已保证非 active、无授权命令者）后**有界等待**观察车静止。
+  // （tasks 3.2）：撤销运动许可（门控已保证非 active、无授权命令者）后**有界等待**观察车静止。
   // 残余滑行为滑行（复位 teleport 会中和），**非致命**，仅记录证据（速度 / 等待时长）。**不发布 cmd_vel**。
   void waitForQuiescence()
   {
@@ -313,7 +313,7 @@ private:
     }
   }
 
-  // R-015（tasks 3.3）：写后读回校验——等待 gt 缓存**更新到写入之后**且 XY 欧氏距 ≤ 容差，有界等待。
+  // （tasks 3.3）：写后读回校验——等待 gt 缓存**更新到写入之后**且 XY 欧氏距 ≤ 容差，有界等待。
   bool awaitReadback(bool is_car, double x, double y, const rclcpp::Time & write_time)
   {
     const auto deadline = std::chrono::steady_clock::now() +
@@ -335,7 +335,7 @@ private:
     return false;
   }
 
-  // R-015（tasks 3.3）：回滚已写入实体到「写入前」位姿；任一失败 → 返回 false（→ env_needs_rebuild_）。
+  // （tasks 3.3）：回滚已写入实体到「写入前」位姿；任一失败 → 返回 false（→ env_needs_rebuild_）。
   bool rollback(const PoseStamped & pre_car, const PoseStamped & pre_tgt,
     bool wrote_car, bool wrote_tgt)
   {
@@ -367,7 +367,7 @@ private:
     // (2) 撤销运动许可 + 停止执行（有界观察车静止，非致命）。
     waitForQuiescence();
 
-    // (3) 候选生成 + 统一净空校验（R-014 / ADR-0012）。
+    // (3) 候选生成 + 统一净空校验（ / ADR-0012）。
     double cx, cy, tx, ty;
     std::string reason;
     if (!selectCandidate(cx, cy, tx, ty, reason)) {
@@ -482,7 +482,7 @@ private:
   double car_x_, car_y_, car_z_, car_yaw_;
   double target_x_, target_y_, target_z_, target_yaw_;
   double clearance_min_m_{6.0}, spawn_search_radius_m_{4.0};
-  // R-014（ADR-0012）：实体几何外伸 / 实体对下限覆盖 / 作业区边界 / 己方 UAV / 静态障碍
+  // （ADR-0012）：实体几何外伸 / 实体对下限覆盖 / 作业区边界 / 己方 UAV / 静态障碍
   double clearance_radius_car_m_{0.5037}, clearance_radius_uav_m_{0.25};
   double clearance_radius_obstacle_m_{0.15};
   double clearance_min_car_own_uav_m_{-1.0}, clearance_min_target_own_uav_m_{-1.0};
@@ -495,7 +495,7 @@ private:
   std::string last_reason_;
   bool spawn_randomize_{false};
   int spawn_seed_{0}, spawn_internal_retry_{8};
-  // R-015（ADR-0014）：受控事务
+  // （ADR-0014）：受控事务
   std::string car_entity_name_, target_entity_name_, car_gt_topic_, target_gt_topic_;
   std::string reset_epoch_topic_;
   double readback_tolerance_m_{0.25}, readback_timeout_s_{1.0}, readback_max_age_s_{0.5};
@@ -525,7 +525,7 @@ private:
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  // R-015：多线程执行器。复位服务 + 启动定时器在独立互斥回调组；订阅在默认组由其它线程持续更新，
+  // 多线程执行器。复位服务 + 启动定时器在独立互斥回调组；订阅在默认组由其它线程持续更新，
   // 使事务回调内的有界阻塞（静止观察 / 读回等待）期间 gt / odom 缓存仍得到刷新。
   auto node = std::make_shared<ScenarioReset>();
   rclcpp::executors::MultiThreadedExecutor executor;

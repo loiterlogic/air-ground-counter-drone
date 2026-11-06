@@ -4,13 +4,13 @@
 定位：[演示可观测性与产物语义](../../docs/conventions/演示可观测性与产物语义.md#top) 的**薄封装**基础层。
 本模块只提供四类机械能力，**不含**任何启动编排 / launch 参数语义 / 任务状态解释：
 
-  1. **运行状态文件**（`experiments/demo/.run/`）—— 让 `stop` 能在**另一个终端**里按
-     PID / PGID 找到并回收本次启动，而不靠 `pkill -f`（[整链排障速查](../../docs/conventions/整链排障速查.md#0-三条环境铁律)）。
-  2. **进程组回收** —— SIGINT（优雅）→ 轮询 → SIGKILL（清理游离子进程）→ 轮询确认。
-     纪律与 [`scripts/episode_runner.py`](../episode_runner.py) 的 `_reap_process_group` 同源：
-     **只**回收本 run 的进程组（`start_new_session=True`），不按裸名匹配、不杀其它会话。
-  3. **人话错误** —— 统一的 `[run_demo] 错误：…` + 建议行，绝不把 Python 栈丢给使用者。
-  4. **证据落点** —— `experiments/demo/<timestamp>/`（ADR-0006 campaign=demo）。
+ 1. **运行状态文件**（`experiments/demo/.run/`）—— 让 `stop` 能在**另一个终端**里按
+ PID / PGID 找到并回收本次启动，而不靠 `pkill -f`（[整链排障速查](../../docs/conventions/整链排障速查.md#0-三条环境铁律)）。
+ 2. **进程组回收** —— SIGINT（优雅）→ 轮询 → SIGKILL（清理游离子进程）→ 轮询确认。
+ 纪律与 [`scripts/episode_runner.py`](../episode_runner.py) 的 `_reap_process_group` 同源：
+ **只**回收本 run 的进程组（`start_new_session=True`），不按裸名匹配、不杀其它会话。
+ 3. **人话错误** —— 统一的 `[run_demo] 错误：…` + 建议行，绝不把 Python 栈丢给使用者。
+ 4. **证据落点** —— `experiments/demo/<timestamp>/`（ADR-0006 campaign=demo）。
 
 不做：不 source 环境（由 `run_demo.sh` 负责）、不写 `/agc/ground/cmd_vel`、不写模型位姿
 （[唯一执行口](../../docs/ROS2迁移交接文档.md#execution-port)）。
@@ -25,7 +25,7 @@ import subprocess
 import time
 import uuid
 
-# 项目根**自定位**（2026-10-31 P2-1 round-7，裁定 A）：
+# 项目根**自定位**（2026-10-31 ，裁定 A）：
 # 原来写死 `/home/chen/AGC` —— 在别处 clone 后跑 `run_demo.sh` 会操作**原仓库**
 # （实测：克隆目录 `doctor` 误报 PASS 14/14、产物落原仓库、启动的是原仓库的仿真）。
 # 本文件在 `<ROOT>/scripts/demo/common.py`，故上溯三级即为项目根。
@@ -37,20 +37,20 @@ CURRENT_JSON = os.path.join(STATE_DIR, 'current.json')
 PIDS_FILE = os.path.join(STATE_DIR, 'pids')
 LOCK_FILE = os.path.join(STATE_DIR, 'instance.lock')
 
-# 主场景口径（用户 2026-10-29 裁定；P1-1 round-7 验收口径）——**脚本固定**，不对外暴露。
+# 主场景口径（用户 2026-10-29 裁定； 验收口径）——**脚本固定**，不对外暴露。
 DEFAULT_SCENE = 's04_static_static_obs_track'
 DEFAULT_MAP = 'yard'
 DEFAULT_BACKEND = 'full'
 DEFAULT_SEED = 0
 # 观测指向臂的**实际生效值**（仅供展示 / 记录，**不**作为 launch 参数传递）。
 #
-# 2026-11-04 修正：`observe_yaw_mode` 的 launch 参数已清退（W7-b 对照臂结档），
-#   现只有「场景覆盖 > `air.yaml` 真源」两级，**没有** run 级 CLI 覆盖口。
-#   主场景 `s04` 在 `scenarios.yaml` 覆盖为 `track`（机头对准 `/agc/targets` 感知航迹，
-#   **非** oracle）；`air.yaml` 缺省 `velocity`。
-#   ⚠ 此前 demo 仍传 `observe_yaw_mode:=target`，而 ros2 launch 对**未声明**的
-#   `name:=value` 是**静默忽略**（实测：加 `totally_bogus:=1` 也不报错），
-#   故产物里报告的 `target` 与实际生效的 `track` **不一致**。本值改为如实反映实际生效档。
+# 2026-11-04 修正：`observe_yaw_mode` 的 launch 参数已清退（ 对照臂结档），
+# 现只有「场景覆盖 > `air.yaml` 配置文件」两级，**没有** run 级 CLI 覆盖口。
+# 主场景 `s04` 在 `scenarios.yaml` 覆盖为 `track`（机头对准 `/agc/targets` 感知航迹，
+# **非** oracle）；`air.yaml` 缺省 `velocity`。
+# ⚠ 此前 demo 仍传 `observe_yaw_mode:=target`，而 ros2 launch 对**未声明**的
+# `name:=value` 是**静默忽略**（实测：加 `totally_bogus:=1` 也不报错），
+# 故产物里报告的 `target` 与实际生效的 `track` **不一致**。本值改为如实反映实际生效档。
 DEFAULT_OBSERVE_YAW_MODE = 'track'
 
 WORLD_SDF = os.path.join(ROOT, 'install', 'agc_sim', 'share', 'agc_sim', 'worlds', 'agc_world.sdf')
@@ -118,25 +118,25 @@ def ensure_dir(path):
 def px4_run_root(run_dir):
     """本 run 的 PX4 可写运行根：`<run_dir>/px4`。
 
-    **为什么 demo 必须隔离**（2026-11-03 实测）：
-    不隔离时 own（实例 0）/ intruder（实例 1）**共用** `build/px4_sitl_default/rootfs/`
-    这一个工作目录——PX4 以 `cwd=<build>` 启动，看到 `PX4_BINARY_DIR/etc` 存在就落回
-    `rootfs/` 且**不追加实例号**（日志 `assuming working directory is rootfs, no symlinks
-    needed.`；`rootfs/` 下确实没有 `0/`、`1/`）。两个实例于是共用同一份 `parameters.bson`
-    与 `dataman`，`MAV_SYS_ID` / `UXRCE_DDS_KEY` 每次启动互相覆写。
+ **为什么 demo 必须隔离**（2026-11-03 实测）：
+ 不隔离时 own（实例 0）/ intruder（实例 1）**共用** `build/px4_sitl_default/rootfs/`
+ 这一个工作目录——PX4 以 `cwd=<build>` 启动，看到 `PX4_BINARY_DIR/etc` 存在就落回
+ `rootfs/` 且**不追加实例号**（日志 `assuming working directory is rootfs, no symlinks
+ needed.`；`rootfs/` 下确实没有 `0/`、`1/`）。两个实例于是共用同一份 `parameters.bson`
+ 与 `dataman`，`MAV_SYS_ID` / `UXRCE_DDS_KEY` 每次启动互相覆写。
 
-    实测后果：`px4_1` 的 EKF 间歇性报 `Preflight Fail: Yaw estimate error` + `ekf2 missing
-    data` → `ekf2` 不发布 `vehicle_odometry` → `intruder_driver` 收不到 odom → 不 ARM →
-    目标机停在地面 → 全程 `AIR_SEARCH` 失败。对照证据：目视成功的探针轮 0 次
-    `Yaw estimate error`，两次 `run_demo.sh` 失败轮各 3–5 次。
+ 实测后果：`px4_1` 的 EKF 间歇性报 `Preflight Fail: Yaw estimate error` + `ekf2 missing
+ data` → `ekf2` 不发布 `vehicle_odometry` → `intruder_driver` 收不到 odom → 不 ARM →
+ 目标机停在地面 → 全程 `AIR_SEARCH` 失败。对照证据：目视成功的探针轮 0 次
+ `Yaw estimate error`，两次 `run_demo.sh` 失败轮各 3–5 次。
 
-    2026-11-03 更正：旧注释以"3D 距离 ≥14 m > 感知量程 12 m ⇒ 感知恒盲"为**诊断特征**。
-    量程改为 30.0 后 √(26.17²+14²)=29.68 m 仍在量程内（余量 0.32 m），该特征**已失效**：
-    目标停地面时感知照样有航迹。⇒ 判定"目标没起飞"**只能**靠 `intruder_driver` 的
-    `have_odom` 错误日志与 `target_takeoff_guard`，**不得**依赖感知致盲。
+ 2026-11-03 更正：旧注释以"3D 距离 ≥14 m > 感知量程 12 m ⇒ 感知恒盲"为**诊断特征**。
+ 量程改为 30.0 后 √(26.17²+14²)=29.68 m 仍在量程内（余量 0.32 m），该特征**已失效**：
+ 目标停地面时感知照样有航迹。⇒ 判定"目标没起飞"**只能**靠 `intruder_driver` 的
+ `have_odom` 错误日志与 `target_takeoff_guard`，**不得**依赖感知致盲。
 
-    隔离后每实例独占 `instance_<n>/{dataman,parameters*.bson,log/,eeprom/}`，共享 build
-    只读（ADR-0024 (d) 的既有机制，此处只是把 opt-in 打开并固定落点）。
+ 隔离后每实例独占 `instance_<n>/{dataman,parameters*.bson,log/,eeprom/}`，共享 build
+ 只读（ADR-0024 (d) 的既有机制，此处只是把 opt-in 打开并固定落点）。
     """
     return os.path.join(run_dir, 'px4')
 
@@ -192,7 +192,7 @@ def pid_alive(pid):
 def read_stat(pid):
     """返回 `/proc/<pid>/stat` 的 (state, ppid, pgrp, ...)；读不到 → None。
 
-    解析注意：`comm` 可含空格与括号，故按**最后一个** `)` 切分。
+ 解析注意：`comm` 可含空格与括号，故按**最后一个** `)` 切分。
     """
     try:
         with open('/proc/%d/stat' % int(pid)) as f:
@@ -296,12 +296,12 @@ def reap_process_group(pgid, sigint_s=REAP_SIGINT_S, sigkill_s=REAP_SIGKILL_S,
                        on_tick=None, proc=None):
     """受限进程组回收：SIGINT → 等待 → SIGKILL → 轮询确认整组退出。
 
-    与 `episode_runner._reap_process_group` 的纪律一致（**只**动本 run 的进程组）；
-    本实现额外**计数**被回收的成员并支持进度回调，因为演示过程要把"已清理 N 个进程"
-    如实告诉使用者。
+ 与 `episode_runner._reap_process_group` 的纪律一致（**只**动本 run 的进程组）；
+ 本实现额外**计数**被回收的成员并支持进度回调，因为演示过程要把"已清理 N 个进程"
+ 如实告诉使用者。
 
-    返回 `{confirmed, members_before, members_after, sigint_sent, sigkill_sent,
-           returncode, wall_s}`。
+ 返回 `{confirmed, members_before, members_after, sigint_sent, sigkill_sent,
+ returncode, wall_s}`。
     """
     t0 = time.monotonic()
     before = pgid_members(pgid)
@@ -352,7 +352,7 @@ def reap_process_group(pgid, sigint_s=REAP_SIGINT_S, sigkill_s=REAP_SIGKILL_S,
 
     after = pgid_members(pgid)
     res['members_after'] = [{'pid': p, 'cmd': c} for p, c in after]
-    # **判据口径**（P1-2 round-2 实测修正）：`pgid_members` 只看**非僵尸**活进程，而
+    # **判据口径**（ 实测修正）：`pgid_members` 只看**非僵尸**活进程，而
     # `killpg(pgid, 0)` 对"只剩僵尸"的组仍返回成功（僵尸已被回收、不再执行任何代码）。
     # 若用 `and not pgid_alive(pgid)`，会出现"members_after=[] 但 confirmed=False"的自相矛盾
     # （实测于 Ctrl-C 回收：36 个进程全清、无任何残留进程，却被判 FAIL）。

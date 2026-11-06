@@ -1,45 +1,45 @@
-// capture_adjudicator —— 发射式网捕获裁决器（W6 R9 / ADR-0011；W7-b T2/E2 升级为「最小动态火控」）
+// capture_adjudicator —— 发射式网捕获裁决器（ R9 / ADR-0011； T2/E2 升级为「最小动态火控」）
 //
-// 物理捕获 = **发射式网**。W7-b（T2 / E2，ADR-0022 / F-11）把 W6 的**闭式包络占位**
+// 物理捕获 = **发射式网**。（T2 / E2，ADR-0022 / F-11）把 的**闭式包络占位**
 // 升级为**最小动态火控裁决**：
-//   ① 交战门（相对高度与可及集）：h = target.z − car.z − launcher_h；h∈[applicable_min, applicable_max]
-//      且该高度可达（vy0²−2gh ≥ 0）且水平距离 ≤ 该高度闭式射程 + d/2 → 可交战（envelope_in）。
-//   ② 确定射击时刻：可交战 ∧ 冷却结束 ∧ 任务窗口开 ∧ 身份匹配 → 本拍发射（新 shot_id）。
-//   ③ 目标预测：由目标 twist（缺则最近两次位姿差分）外推，取瞄准方位角。
-//   ④ 展开-飞行：网逐帧弹道积分——水平 = v0·cosθ·drag·t（常速）、垂直 = v0·sinθ·t − ½g t²；
-//      展开时间 net_t_exp_s 内有效半径线性增长至 d/2。
-//   ⑤ 命中 / 失手：逐帧以 GZ 提供的目标真值位姿与网位置作球比对（半径 = d/2）→ 命中；
-//      网落地 / 超 net_flight_timeout_s → 失手；随后进入冷却 fire_cooldown_s。
-//   ⑥ 证据：shot_id（epoch-seq）、射击时刻、预测目标位、最近逼近距离、命中/失手、飞行时长。
+// ① 交战门（相对高度与可及集）：h = target.z − car.z − launcher_h；h∈[applicable_min, applicable_max]
+// 且该高度可达（vy0²−2gh ≥ 0）且水平距离 ≤ 该高度闭式射程 + d/2 → 可交战（envelope_in）。
+// ② 确定射击时刻：可交战 ∧ 冷却结束 ∧ 任务窗口开 ∧ 身份匹配 → 本拍发射（新 shot_id）。
+// ③ 目标预测：由目标 twist（缺则最近两次位姿差分）外推，取瞄准方位角。
+// ④ 展开-飞行：网逐帧弹道积分——水平 = v0·cosθ·drag·t（常速）、垂直 = v0·sinθ·t − ½g t²；
+// 展开时间 net_t_exp_s 内有效半径线性增长至 d/2。
+// ⑤ 命中 / 失手：逐帧以 GZ 提供的目标真值位姿与网位置作球比对（半径 = d/2）→ 命中；
+// 网落地 / 超 net_flight_timeout_s → 失手；随后进入冷却 fire_cooldown_s。
+// ⑥ 证据：shot_id（epoch-seq）、射击时刻、预测目标位、最近逼近距离、命中/失手、飞行时长。
 //
 // 生命周期规则（ADR-0011）：网一旦在飞，弹道时钟 / 落地 / 超时结算**独立于**发射资格——
-//   车 / 目标位姿失效、置信度下降、目标越出适用高度 / 可达集 / 水平射程时仍**每拍**推进；
-//   目标无效时不判命中（不用缓存位姿），但落地 / 超时照常结算。落地 / 超时一律以 ROS 仿真时钟
-//   （use_sim_time=true）判定。每次 SHOT_FIRED 恰有一个结局：SHOT_HIT / SHOT_MISS，或复位 /
-//   时钟回退时的显式 SHOT_ABORTED（reason=episode_reset|clock_regression）。
+// 车 / 目标位姿失效、置信度下降、目标越出适用高度 / 可达集 / 水平射程时仍**每拍**推进；
+// 目标无效时不判命中（不用缓存位姿），但落地 / 超时照常结算。落地 / 超时一律以 ROS 仿真时钟
+// （use_sim_time=true）判定。每次 SHOT_FIRED 恰有一个结局：SHOT_HIT / SHOT_MISS，或复位 /
+// 时钟回退时的显式 SHOT_ABORTED（reason=episode_reset|clock_regression）。
 //
 // 模型边界（如实，不得外推）：网的弹道在本节点内逐帧积分（非 GZ 物理刚体）；
-//   「与 GZ 交叉核验」指逐帧与 GZ 目标/车真值位姿比对（目标运动来自 GZ 真值旁路），
-//   非把网做成 GZ 实体。applicable_* 高度与网参数仍为可标定暂定值；载荷物理启用后须重标。
-//   替换占位后任务难度先冻结（F-11）：命中结论一 episode 锁存；参数逐字沿用。
+// 「与 GZ 交叉核验」指逐帧与 GZ 目标/车真值位姿比对（目标运动来自 GZ 真值旁路），
+// 非把网做成 GZ 实体。applicable_* 高度与网参数仍为可标定暂定值；载荷物理启用后须重标。
+// 替换占位后任务难度先冻结（F-11）：命中结论一 episode 锁存；参数逐字沿用。
 //
 // 可插拔接口（R9）：本节点只依赖 CaptureAdjudicator 抽象；后续补真实弹道（含网体 GZ 实体）
-//   仅换实现，调用方（task_manager，订 /agc/task/capture_event 配套事件）不改。
+// 仅换实现，调用方（task_manager，订 /agc/task/capture_event 配套事件）不改。
 //
 // I/O 契约：
-//   输入：/agc/ground/odom（车世界位姿，含 z）、/agc/targets（目标世界位姿 + twist，含 z）
-//         /agc/task/state（AgcTaskState，任务窗口门控）、/agc/task/episode（episode 身份；ADR-0016）
-//   输出：/agc/task/capture_hit（std_msgs/String，命中值恰为 CAPTURE_NET，一次性 latched）
-//         /agc/task/capture_event（std_msgs/String，配套事件，
-//           CAPTURE_NET ep=<task episode id> t=<ros_sec> target=<id> shot=<id>；非命令者）
-//         /agc/task/envelope_in（std_msgs/Bool，可交战：目标是否在火控交战门内）
-//         /agc/task/envelope_jam（std_msgs/Bool，独立干扰作用包络，与网弹道不同源）
-//         /agc/task/fire_control（std_msgs/String，火控事件：
-//           SHOT_FIRED|SHOT_HIT|SHOT_MISS|SHOT_ABORTED shot=<id> …；中止事件附加 reason=<...> t=<sim>）
-//         /agc/task/capture_evidence（std_msgs/String，标注：命中/失手/越界/不可达，限频跳变）
-//   参数（launch/config 单一注入，节点不得覆写；契约 #params）：net_v0_mps / net_angle_deg / net_g /
-//         net_diameter_m / net_drag / launcher_height_m / net_t_exp_s / fire_cooldown_s /
-//         net_flight_timeout_s / model_id / applicable_min_alt_m / applicable_max_alt_m / jam_* + 话题名。
+// 输入：/agc/ground/odom（车世界位姿，含 z）、/agc/targets（目标世界位姿 + twist，含 z）
+// /agc/task/state（AgcTaskState，任务窗口门控）、/agc/task/episode（episode 身份；ADR-0016）
+// 输出：/agc/task/capture_hit（std_msgs/String，命中值恰为 CAPTURE_NET，一次性 latched）
+// /agc/task/capture_event（std_msgs/String，配套事件，
+// CAPTURE_NET ep=<task episode id> t=<ros_sec> target=<id> shot=<id>；非命令者）
+// /agc/task/envelope_in（std_msgs/Bool，可交战：目标是否在火控交战门内）
+// /agc/task/envelope_jam（std_msgs/Bool，独立干扰作用包络，与网弹道不同源）
+// /agc/task/fire_control（std_msgs/String，火控事件：
+// SHOT_FIRED|SHOT_HIT|SHOT_MISS|SHOT_ABORTED shot=<id> …；中止事件附加 reason=<...> t=<sim>）
+// /agc/task/capture_evidence（std_msgs/String，标注：命中/失手/越界/不可达，限频跳变）
+// 参数（launch/config 单一注入，节点不得覆写；docs/ROS2迁移交接文档.md#params）：net_v0_mps / net_angle_deg / net_g /
+// net_diameter_m / net_drag / launcher_height_m / net_t_exp_s / fire_cooldown_s /
+// net_flight_timeout_s / model_id / applicable_min_alt_m / applicable_max_alt_m / jam_* + 话题名。
 
 #include <algorithm>
 #include <cmath>
@@ -100,10 +100,10 @@ public:
     model_id_ = declare_parameter<std::string>("model_id", "net_ballistic_frame_v2");
     p.applicable_min = declare_parameter<double>("applicable_min_alt_m", 0.0);
     // ADR-0011：**上限不再由参数给出，改由弹道参数派生**。
-    //   旧式 `applicable_max_alt_m` 是手写的第二真源：它与 gateStatus 的 `disc<0`（可达性）
-    //   是**同一个条件** `h > (v0·sinθ)²/(2g)`，两处分别维护 → 改了 net_v0_mps / net_angle_deg
-    //   而忘了改本值，就会出现「明明打得到却被判 out_of_applicable_range」的静默不一致
-    //   （也是本次抬高度时"显式阻碍启动"的根源）。派生后改网参数，上限自动跟随。
+    // 旧式 `applicable_max_alt_m` 是手写的第二配置文件：它与 gateStatus 的 `disc<0`（可达性）
+    // 是**同一个条件** `h > (v0·sinθ)²/(2g)`，两处分别维护 → 改了 net_v0_mps / net_angle_deg
+    // 而忘了改本值，就会出现「明明打得到却被判 out_of_applicable_range」的静默不一致
+    // （也是本次抬高度时"显式阻碍启动"的根源）。派生后改网参数，上限自动跟随。
     const double vy0_param = p.v0 * std::sin(p.angle_rad);
     p.applicable_max = (vy0_param * vy0_param) / (2.0 * p.g);
     applicableMin_ = p.applicable_min;
@@ -119,7 +119,7 @@ public:
     required_target_id_ = declare_parameter<std::string>("required_target_id", "");
 
     rate_hz_ = declare_parameter<double>("rate_hz", 20.0);
-    // W7-b（T2/E2）：射击授权（任务决策，非自动）——缺省 false（保持跟踪类场景结局不变）。
+    // （T2/E2）：射击授权（任务决策，非自动）——缺省 false（保持跟踪类场景结局不变）。
     interception_authorized_ = declare_parameter<bool>("interception_authorized", false);
     const auto odom_topic = declare_parameter<std::string>("ground_odom_topic", "/agc/ground/odom");
     const auto target_topic = declare_parameter<std::string>("target_topic", "/agc/targets");
@@ -131,9 +131,9 @@ public:
       declare_parameter<std::string>("jam_envelope_topic", "/agc/task/envelope_jam");
     const auto task_state_topic =
       declare_parameter<std::string>("task_state_topic", "/agc/task/state");
-    // ADR-0016：episode 身份**单一来源** = `task_manager` 发布的 `/agc/task/episode`（而非物理复位 epoch）。
-    //   启动期 `scenario_reset` 的 initial gated reset 与 start 的 reset 存在竞态；若本节点沿用
-    //   `/agc/scenario/reset_epoch`，事件 ep 会比 task_manager 锁存的 episode 身份大 1 → 全部被拒收。
+    // ADR-0016：episode 身份**配置文件** = `task_manager` 发布的 `/agc/task/episode`（而非物理复位 epoch）。
+    // 启动期 `scenario_reset` 的 initial gated reset 与 start 的 reset 存在竞态；若本节点沿用
+    // `/agc/scenario/reset_epoch`，事件 ep 会比 task_manager 锁存的 episode 身份大 1 → 全部被拒收。
     const auto episode_topic =
       declare_parameter<std::string>("episode_topic", "/agc/task/episode");
     const auto event_topic =
@@ -160,8 +160,8 @@ public:
     target_sub_ = create_subscription<agc_msgs::msg::TargetTrackArray>(
       target_topic, 10, [this](agc_msgs::msg::TargetTrackArray::SharedPtr m) {
         // 空数组 = **本拍无新观测**（门控 / 丢包），不是目标消失（ADR-0009；N4 2026-11-03）。
-        //   与 standoff_follower / trajectory_tracker / task_manager 同款修正：
-        //   保持上一有效航迹，由年龄（target_max_age_s）判定失效——火控自身另有新鲜度门。
+        // 与 standoff_follower / trajectory_tracker / task_manager 同款修正：
+        // 保持上一有效航迹，由年龄（target_max_age_s）判定失效——火控自身另有新鲜度门。
         if (m->tracks.empty()) {
           ++diag_empty_;
           return;
@@ -169,13 +169,13 @@ public:
         const auto & t = m->tracks.front();
         const auto & pos = t.pose.pose.position;
         // ADR-0011：速度不再在回调里用逐帧差分（噪声被 1/dt 放大）；改由 TargetMotionFilter
-        //   在控制拍上做时间窗回归，并按静止阈值置零。
+        // 在控制拍上做时间窗回归，并按静止阈值置零。
         target_.x = pos.x; target_.y = pos.y; target_.z = pos.z;
         target_.valid = true;
         target_conf_ = t.confidence;
         target_id_ = t.target_id;
         target_rx_ = now();
-        // W7-b T3：观测年龄 / 航迹选择一致性诊断（只读，不改选择规则）。
+        // T3：观测年龄 / 航迹选择一致性诊断（只读，不改选择规则）。
         target_stamp_s_ = rclcpp::Time(t.header.stamp).seconds();
         target_stamp_valid_ = true;
         n_tracks_ = m->tracks.size();
@@ -385,7 +385,7 @@ private:
     }
   }
 
-  // W7-b T3：目标观测年龄 now − header.stamp（s；不可得时 -1）。
+  // T3：目标观测年龄 now − header.stamp（s；不可得时 -1）。
   double targetAgeS(const rclcpp::Time & t) const
   {
     return target_stamp_valid_ ? (t.seconds() - target_stamp_s_) : -1.0;
@@ -415,7 +415,7 @@ private:
   bool have_epoch_{false};
   float target_conf_{0.0f};
   std::string target_id_{};
-  // W7-b T3：航迹选择一致性 / 观测年龄（只读诊断，不参与发射判定）。
+  // T3：航迹选择一致性 / 观测年龄（只读诊断，不参与发射判定）。
   double target_stamp_s_{0.0};
   bool target_stamp_valid_{false};
   size_t n_tracks_{0};

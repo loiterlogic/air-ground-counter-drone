@@ -2,8 +2,8 @@
 """w6_c5_check —— W6-a R3/C5（相位复位触发）轻量验收。
 
 不依赖 PX4：单独起 `trajectory_tracker`（lifecycle），由本脚本提供
-  * `/agc/air/odom`（假 odom，50 Hz，使 offboard odom 有效）；
-  * `/agc/air/active_controller`（latched = "trajectory_tracker"，使 tracker 接管并发布 ref）；
+ * `/agc/air/odom`（假 odom，50 Hz，使 offboard odom 有效）；
+ * `/agc/air/active_controller`（latched = "trajectory_tracker"，使 tracker 接管并发布 ref）；
 经 `configure`→`activate` 后，读取 `/agc/air/ref` 轨迹点（相位推进），再调用
 `/agc/air/reset_phase`，校验相位归零（ref 回到接管起点、出现回跳）。
 

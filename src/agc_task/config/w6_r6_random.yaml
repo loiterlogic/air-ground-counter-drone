@@ -1,4 +1,4 @@
-# W6 R6 验收配置：randomize=true + seed=0 → 同 seed 两次 reset 生成相同 spawn（C7 可复现）。
+# R6 验收配置：randomize=true + seed=0 → 同 seed 两次 reset 生成相同 spawn（ 可复现）。
 task_manager:
   ros__parameters:
     world_name: "agc_world"
@@ -8,7 +8,7 @@ task_manager:
     odom_valid_topic: "/agc/ground/odom_valid"
     cmd_topic: "/agc/ground/cmd_vel"
     state_topic: "/agc/task/state"
-    # 运行模式（R-001）：本验收走 m0_skeleton（无空中链路）→ 显式声明无空中域
+    # 运行模式：本验收走 m0_skeleton（无空中链路）→ 显式声明无空中域
     air_present: false
     ground_controller_name: "agc_rl"
 

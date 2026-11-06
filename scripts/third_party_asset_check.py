@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """third_party_asset_check —— S-12（外部资产来源 / 许可 / 哈希清单）一致性核查（**只读**）。
 
-真源：`docs/conventions/第三方资产与许可.md`（政策 + 人读表 + 机器可读 ```yaml 块，
+配置文件：`docs/conventions/第三方资产与许可.md`（政策 + 人读表 + 机器可读 ```yaml 块，
 键 `agc_third_party_assets:`，`schema: 1`）。本脚本解析该清单并逐项记 PASS / FAIL：
 
-  (1) 清单存在且含可解析的 `agc_third_party_assets` yaml 块，`schema == 1`。
-  (2) 逐资产：`path` 存在；`sha256` == **实测**；`upstream_license` 非空且 **!= `Proprietary`**
-      （许可**分列**、**不外推**）；`license_status` ∈ {`resolved`,`unresolved`}，
-      且 `unresolved` 时 `license_note` 非空（**据实登记未决**，**不**静默断言）。
-  (3) 每个 `asset_dirs` 条目：清单内该目录下匹配 `include` 的资产集合 == 目录内**实际**文件集合
-      （**双向**比对 → 捕获「未列出的资产」与「清单虚构的资产」）。
+ (1) 清单存在且含可解析的 `agc_third_party_assets` yaml 块，`schema == 1`。
+ (2) 逐资产：`path` 存在；`sha256` == **实测**；`upstream_license` 非空且 **!= `Proprietary`**
+ （许可**分列**、**不外推**）；`license_status` ∈ {`resolved`,`unresolved`}，
+ 且 `unresolved` 时 `license_note` 非空（**据实登记未决**，**不**静默断言）。
+ (3) 每个 `asset_dirs` 条目：清单内该目录下匹配 `include` 的资产集合 == 目录内**实际**文件集合
+ （**双向**比对 → 捕获「未列出的资产」与「清单虚构的资产」）。
 
 环境无关：**不** source ROS，只读源码 / 文档与文件系统。
 用法：`python3 scripts/third_party_asset_check.py`；`--root` 可覆盖默认项目根 `/home/chen/AGC`。

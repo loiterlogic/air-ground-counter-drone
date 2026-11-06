@@ -1,4 +1,4 @@
-// test_epoch_seconds.cpp —— W8 P0 / T2：epoch 秒格式化精度回归
+// test_epoch_seconds.cpp —— P0 / T2：epoch 秒格式化精度回归
 
 #include <cmath>
 #include <string>

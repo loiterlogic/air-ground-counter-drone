@@ -2,14 +2,14 @@
 """gen_textures —— 程序化 albedo 贴图生成器（**自产资产，不引外部素材**）。
 
 为什么是"自产 + 程序化"：
-  * 项目纪律不引入外部 3D 资产 / 贴图（ADR-0007 / ADR-0005 的 provenance 纪律）；
-  * 自产 == 来源可解释、可复现（固定种子 + 本脚本 + 输出哈希）。
+ * 项目纪律不引入外部 3D 资产 / 贴图（ADR-0007 / ADR-0005 的 provenance 纪律）；
+ * 自产 == 来源可解释、可复现（固定种子 + 本脚本 + 输出哈希）。
 
 为什么只做**噪声/斑驳类**贴图，不做分格/拉缝图案：
-  本机 sdformat 的 `<albedo_map>` **没有 UV 缩放字段**，`box` / `plane` 图元的面 UV 固定 0–1。
-  一张贴图会被拉伸到整个面：200 m 的基层地面与 12×9 的场坪用同一张图，纹理密度差 20 倍。
-  → 只生成**尺度不敏感**的低频斑驳 + 细颗粒，分格/拉缝这类"有绝对尺度"的信息继续用
-    真几何表达（路缘石 / 排水沟 / 停车位线，见 agc_world.sdf 地面语义层）。
+ 本机 sdformat 的 `<albedo_map>` **没有 UV 缩放字段**，`box` / `plane` 图元的面 UV 固定 0–1。
+ 一张贴图会被拉伸到整个面：200 m 的基层地面与 12×9 的场坪用同一张图，纹理密度差 20 倍。
+ → 只生成**尺度不敏感**的低频斑驳 + 细颗粒，分格/拉缝这类"有绝对尺度"的信息继续用
+ 真几何表达（路缘石 / 排水沟 / 停车位线，见 agc_world.sdf 地面语义层）。
 
 输出：albedo/<name>.png（512×512，sRGB）+ manifest.json（sha256 / 尺寸 / 种子）。
 """
@@ -75,7 +75,7 @@ def main():
     manifest = {'generator': 'gen_textures.py', 'seed': SEED, 'size': SIZE,
                 'license': 'self-generated (project-owned)', 'textures': {}}
     for name, (base, lo, hi, cells) in SPECS.items():
-        # 用 crc32 派生每张贴图的种子：**不能用内置 hash()**，它受 PYTHONHASHSEED 随机化，
+        # 用 crc32 派生每张贴图的种子：**不能用内置 hash**，它受 PYTHONHASHSEED 随机化，
         # 会导致同一脚本两次运行产出不同贴图（不可复现）。
         rng = np.random.default_rng(SEED + zlib.crc32(name.encode()) % 100000)
         arr = build(name, base, lo, hi, cells, rng)

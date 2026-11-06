@@ -5,10 +5,10 @@
 “读取最近一次”（读整份文件取最后一条 Device Name）会把别的 run 的 renderer 记到本 run。
 本模块用 **snapshot + probe** 把证据绑定到“本 run 开始前的那一版日志”：
 
-  * `snapshot()`：记下 path / inode / size / mtime / 前缀 sha256（最多 4096 字节）；
+ * `snapshot`：记下 path / inode / size / mtime / 前缀 sha256（最多 4096 字节）；
   * `probe(snapshot)`：只读 **snapshot 之后新增 / 变化** 的那一段（有界），并返回
-    `read_mode`（appended / whole_created / whole_replaced / whole_after_truncate / none）
-    与本段解析出的 renderer；
+ `read_mode`（appended / whole_created / whole_replaced / whole_after_truncate / none）
+ 与本段解析出的 renderer；
   * `combine(startup, final)`：合并启动时与结束后的两次探测（冲突 → ambiguous）。
 
 证据只保留命中行（最多 20 行）+ 段 sha256，**不**保存整份共享日志。纯 stdlib。

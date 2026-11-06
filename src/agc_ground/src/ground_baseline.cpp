@@ -1,19 +1,19 @@
-// ground_baseline —— W5-c 离线对照基线（R8）
+// ground_baseline —— 离线对照基线（R8）
 //
 // 依 ADR-0004：地面主控维持 RL（agc_rl），Nav2 planner/controller 退为**可切换的离线基线**。
 // 本节点复用 Nav2 的 **plugin 抽象**（ADR-0003 吸收点）：
-//   * planner  = pluginlib 加载 Nav2 `navfn_planner` 插件（真复用 Nav2 planner，非自研）；
-//   * controller = pluginlib 加载 `agc_control` 的 LQR 控制器插件（共用实现，未复制，ADR-0004）。
+// * planner = pluginlib 加载 Nav2 `navfn_planner` 插件（真复用 Nav2 planner，非自研）；
+// * controller = pluginlib 加载 `agc_control` 的 LQR 控制器插件（共用实现，未复制，ADR-0004）。
 // 自持内建 costmap（`nav2_costmap_2d::Costmap2DROS`，节点名 `costmap`；参数取 `config/costmap.yaml`
 // 的 `costmap:` 段），与 planner 共用一个 costmap（对齐 Nav2 planner_server 的宿主模式）。
 //
 // 输出 `TwistStamped`（车体系）至 `/agc/ground/cmd_vel_raw`，**SHALL NOT** 直接写唯一执行口。
 // 与 RL 的**互斥**由 ground_bringup 的 `command_source` 单一选择（同一时刻仅一路下发）。
 //
-// R-041：目标失效与重规划抖动（ADR-0013）——**移除** goal 回调「任意浮点变化（>1e-6）即强制重规划」，
-//   重规划仅由 needReplan 的位移阈值（replan_displacement_m）/ 地图变化 / 时限 / 周期触发（对齐 Nav2
-//   GoalUpdated 离散事件语义）；仅**首次**获得 goal 时立即规划。消费伴随诊断 /agc/ground/goal_info 的
-//   `valid=`：目标失效（valid=false）→ 安全停车（fail-safe stop，先于路径跟随）。与 C10 空中 freeze 分别定义。
+// 目标失效与重规划抖动（ADR-0013）——**移除** goal 回调「任意浮点变化（>1e-6）即强制重规划」，
+// 重规划仅由 needReplan 的位移阈值（replan_displacement_m）/ 地图变化 / 时限 / 周期触发（对齐 Nav2
+// GoalUpdated 离散事件语义）；仅**首次**获得 goal 时立即规划。消费伴随诊断 /agc/ground/goal_info 的
+// `valid=`：目标失效（valid=false）→ 安全停车（fail-safe stop，先于路径跟随）。与 空中 freeze 分别定义。
 
 #include <algorithm>
 #include <chrono>
@@ -69,8 +69,8 @@ double wrapPi(double a)
   return a;
 }
 
-// R-041：从伴随诊断 `valid=<0|1>;...` 解析目标有效性。含 `valid=0` → false；否则 true（默认有效，
-//   兼容无此话题 / 消息的旧运行，保持既有行为）。
+// 从伴随诊断 `valid=<0|1>;...` 解析目标有效性。含 `valid=0` → false；否则 true（默认有效，
+// 兼容无此话题 / 消息的旧运行，保持既有行为）。
 bool parseGoalInfoValid(const std::string & s)
 {
   return s.find("valid=0") == std::string::npos;
@@ -108,8 +108,8 @@ public:
     odom_topic_ = declare_parameter<std::string>("odom_topic", "/agc/ground/odom");
     goal_topic_ = declare_parameter<std::string>("goal_topic", "/agc/ground/goal");
     state_topic_ = declare_parameter<std::string>("state_topic", "/agc/task/state");
-    // R-041：目标有效性 / 身份 / 时刻伴随诊断话题（std_msgs/String，transient_local，非命令者）。
-    //   消费其中的 valid=；valid=false → 失效安全停车（fail-safe stop，先于路径跟随）。
+    // 目标有效性 / 身份 / 时刻伴随诊断话题（std_msgs/String，transient_local，非命令者）。
+    // 消费其中的 valid=；valid=false → 失效安全停车（fail-safe stop，先于路径跟随）。
     goal_info_topic_ = declare_parameter<std::string>(
       "goal_info_topic", "/agc/ground/goal_info");
     cmd_raw_topic_ = declare_parameter<std::string>(
@@ -138,14 +138,14 @@ public:
     goal_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
       goal_topic_, 20,
       [this](geometry_msgs::msg::PoseStamped::SharedPtr m) {
-        // R-041：**移除**「任意浮点变化（>1e-6）即强制重规划」——重规划改由 needReplan 的
-        //   位移阈值（replan_disp_m_）/ 地图变化 / 时限 / 周期触发（对齐 Nav2 GoalUpdated 离散事件，
-        //   非逐消息浮点抖动）。仅在**首次**获得 goal（合法实质绑定）时立即规划。
+        // **移除**「任意浮点变化（>1e-6）即强制重规划」——重规划改由 needReplan 的
+        // 位移阈值（replan_disp_m_）/ 地图变化 / 时限 / 周期触发（对齐 Nav2 GoalUpdated 离散事件，
+        // 非逐消息浮点抖动）。仅在**首次**获得 goal（合法实质绑定）时立即规划。
         goal_x_ = m->pose.position.x;
         goal_y_ = m->pose.position.y;
         if (!have_goal_) {have_goal_ = true; force_replan_ = true;}
       });
-    // R-041：消费目标有效性伴随诊断——valid=false → 目标失效，安全停车（见 tick）。
+    // 消费目标有效性伴随诊断——valid=false → 目标失效，安全停车（见 tick）。
     goal_info_sub_ = create_subscription<std_msgs::msg::String>(
       goal_info_topic_, rclcpp::QoS(1).transient_local(),
       [this](std_msgs::msg::String::SharedPtr m) {
@@ -231,21 +231,21 @@ protected:
 
 private:
   // ---------------------------------------------------------------- 控制循环
-  // costmap 内容签名（尺寸 / 原点 / **致命占据栅格**），用于检测地图变化（R-012）。
-  // 复用 Nav2 组件 `Costmap2DROS::getCostmap()` + `Costmap2D::getCharMap()`（本机 Jazzy 头文件已核验）。
+  // costmap 内容签名（尺寸 / 原点 / **致命占据栅格**），用于检测地图变化。
+  // 复用 Nav2 组件 `Costmap2DROS::getCostmap` + `Costmap2D::getCharMap`（本机 Jazzy 头文件已核验）。
   // 只计入 **LETHAL_OBSTACLE=254**（真实占据格；static/obstacle/voxel 层 marking 的落点），
   // 以屏蔽 obstacle/voxel 层逐帧 raytrace clearing（FREE/UNKNOWN 翻转）与 inflation 传播的噪声：
   // 实测（r012 GUI）全景内容哈希在行驶中会瞬态抖动，而致命占据集在行驶中稳定、增障时即偏离。
   //
   // 2026-10-24（ADR-0013，P2 重规划审计）：此前的判据是 `cost >= 253`，把
-  //   `NO_INFORMATION=255`（未知 / `track_unknown_space` 下的 -1）与
-  //   `INSCRIBED_INFLATED_OBSTACLE=253`（inflation 内切圆环）也计为「硬障碍」——
-  //   未知格翻转与膨胀环变化都会造成**伪地图触发**。改为仅 `== 254` 后：
-  //   ① 真实增删占据格仍触发（回归用例 C4）；② 未知翻转（C5）与 inflation 环不再触发。
+  // `NO_INFORMATION=255`（未知 / `track_unknown_space` 下的 -1）与
+  // `INSCRIBED_INFLATED_OBSTACLE=253`（inflation 内切圆环）也计为「硬障碍」——
+  // 未知格翻转与膨胀环变化都会造成**伪地图触发**。改为仅 `== 254` 后：
+  // ① 真实增删占据格仍触发（回归用例 ）；② 未知翻转与 inflation 环不再触发。
   //
   // 诊断用：地图签名的分量（只读，不参与签名算法本身）。
-  //   `hash` 与 mapSignature() 逐位一致；`layers` 为各 CostmapLayer 自己的栅格中硬障碍格计数
-  //   （inflation 层不是 CostmapLayer，无法只读其内部栅格 → 标记为不可拆）。
+  // `hash` 与 mapSignature 逐位一致；`layers` 为各 CostmapLayer 自己的栅格中硬障碍格计数
+  // （inflation 层不是 CostmapLayer，无法只读其内部栅格 → 标记为不可拆）。
   struct MapSigInfo
   {
     uint64_t hash{0};
@@ -259,9 +259,9 @@ private:
   };
 
   // 地图签名（ADR-0013）：
-  //   只取 **static_layer 自身栅格** 的尺寸 / 原点 / LETHAL_OBSTACLE=254 格索引做 FNV-1a；
-  //   obstacle / voxel 层的动态 marking 不参与「地图变化」签名（由周期重规划消费完整 costmap）。
-  //   static 层尚不可用时回退 master，并在日志标注 signature_from_static=false。
+  // 只取 **static_layer 自身栅格** 的尺寸 / 原点 / LETHAL_OBSTACLE=254 格索引做 FNV-1a；
+  // obstacle / voxel 层的动态 marking 不参与「地图变化」签名（由周期重规划消费完整 costmap）。
+  // static 层尚不可用时回退 master，并在日志标注 signature_from_static=false。
   MapSigInfo mapSigInfo(bool with_layers = false) const
   {
     MapSigInfo info;
@@ -387,9 +387,9 @@ private:
     if (age < kReplanGuardS) {return false;}                 // 限流：刚规划完不立即重规划
     if (!path_valid_) {return age >= replan_period_s_;}      // 规划失败：按周期重试（期间失效停车）
     if (path_.poses.size() < 2) {return true;}
-    // 绑定检查：目标身份 / 地图签名 / 有效时限，任一变化 → 立即重规划（R-012）
+    // 绑定检查：目标身份 / 地图签名 / 有效时限，任一变化 → 立即重规划
     // 注（T2 审计）：本分支的判据是**目标位移**（L2 距离 > replan_disp_m_），不是 target_id；
-    //   日志标签沿用历史名称「目标身份变」，诊断行显式给出实际位移。
+    // 日志标签沿用历史名称「目标身份变」，诊断行显式给出实际位移。
     const double goal_delta_m =
       std::hypot(goal_x_ - last_plan_goal_.first, goal_y_ - last_plan_goal_.second);
     if (goal_delta_m > replan_disp_m_) {
@@ -503,8 +503,8 @@ private:
   void tick()
   {
     if (!active_ || !controller_ || !planner_) {return;}
-    // R-041：目标失效（valid=false）→ 安全停车（fail-safe stop），先于路径跟随 / 重规划。
-    //   地面失效动作与 C10 空中 `freeze`（冻结位姿 / 悬停）**分别定义**：地面=有期限保持后安全停车。
+    // 目标失效（valid=false）→ 安全停车（fail-safe stop），先于路径跟随 / 重规划。
+    // 地面失效动作与 空中 `freeze`（冻结位姿 / 悬停）**分别定义**：地面=有期限保持后安全停车。
     if (!goal_valid_) {
       publish(0.0, 0.0);
       return;
@@ -540,16 +540,16 @@ private:
     ref.acc = Eigen::Vector3d::Zero();
     const Eigen::Vector3d acc = controller_->computeAcceleration(st, ref);
 
-    // ⚠ R-038（见 ADR-0009）**适用性标注 —— 非完整差速动力学映射**（本批**不**重写控制律）：
-    //   共享 LQR 输出为**世界系加速度**（3 自由度，holonomic；与 air 同一模型），此处把世界系
-    //   期望速度积分后**仅**取车体系前进分量 `bx`（`lin=clamp(bx,0,v_max)`）与航向 `atan2(by,bx)`。
-    //   由此**丢弃 / 截断**以下自由度（**不**代表 air 与 ground 同等闭环）：
-    //     · `clamp(bx, 0, v_max)` **丢弃倒车**（bx<0 一律置 0）与超速；
-    //     · 侧向 `by` **只**转成偏航速率（`k_yaw·atan2(by, max(bx,0.1))`），**丢弃纯横向自由度**
-    //       （差速车无法直接产生车体横向速度 vy_body）；`max(bx,0.1)` 在 bx≤0 时对 by 放大 → 低速 / 原地大 yaw；
-    //     · 无加速度 / 轮速动力学约束（LQR 的 acc_max 不能直接映射为轮加速度）。
-    //   故此为**参考滤波 + 运动学近似**，其可达速率集 ⊊ 世界系 holonomic 参考集；须**单独**做可达性 /
-    //   跟踪对拍（验收脚本 analytic 对拍），**不得**据 air（无障碍、holonomic 参考）结论外推 ground 同等闭环。
+    // ⚠ （见 ADR-0009）**适用性标注 —— 非完整差速动力学映射**（本批**不**重写控制律）：
+    // 共享 LQR 输出为**世界系加速度**（3 自由度，holonomic；与 air 同一模型），此处把世界系
+    // 期望速度积分后**仅**取车体系前进分量 `bx`（`lin=clamp(bx,0,v_max)`）与航向 `atan2(by,bx)`。
+    // 由此**丢弃 / 截断**以下自由度（**不**代表 air 与 ground 同等闭环）：
+    // · `clamp(bx, 0, v_max)` **丢弃倒车**（bx<0 一律置 0）与超速；
+    // · 侧向 `by` **只**转成偏航速率（`k_yaw·atan2(by, max(bx,0.1))`），**丢弃纯横向自由度**
+    // （差速车无法直接产生车体横向速度 vy_body）；`max(bx,0.1)` 在 bx≤0 时对 by 放大 → 低速 / 原地大 yaw；
+    // · 无加速度 / 轮速动力学约束（LQR 的 acc_max 不能直接映射为轮加速度）。
+    // 故此为**参考滤波 + 运动学近似**，其可达速率集 ⊊ 世界系 holonomic 参考集；须**单独**做可达性 /
+    // 跟踪对拍（验收脚本 analytic 对拍），**不得**据 air（无障碍、holonomic 参考）结论外推 ground 同等闭环。
     const double dt = 1.0 / std::max(rate_hz_, 1e-3);
     double vx_des = vx_ + acc.x() * dt;
     double vy_des = vy_ + acc.y() * dt;
@@ -577,7 +577,7 @@ private:
   double v_ref_{1.0};
 
   bool active_{false}, have_odom_{false}, have_goal_{false}, force_replan_{false};
-  // R-041：目标有效性（由伴随诊断驱动；默认 true 保持既有行为，收到 valid=0 即安全停车）
+  // 目标有效性（由伴随诊断驱动；默认 true 保持既有行为，收到 valid=0 即安全停车）
   bool goal_valid_{true};
   // 路径有效性与绑定：path_valid_ = 最近一次规划成功；绑定 = last_plan_goal_ / last_plan_map_sig_ / last_plan_s_
   bool path_valid_{false};

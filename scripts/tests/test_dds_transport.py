@@ -101,9 +101,9 @@ def test_workers_can_still_force_udp_for_isolation():
 def test_selection_does_not_rely_on_trial_traffic():
     """选择必须是**纯函数式判据**（读内核标志），不能"发一条试试通没通"。
 
-    原因（2026-11-04 实测踩坑）：`LOCALHOST` 在本机按拓扑「不可靠」而非「恒废」——
-    1 pub↔1 sub 稳定零送达，而 1 sub↔N≥2 pub 偶能通（2/2、5–6/6）。任何"试探性探活"
-    都可能探出"能通"的假象，从而选回不可靠的配置。故本模块只用可核验标志，不探流量。
+ 原因（2026-11-04 实测踩坑）：`LOCALHOST` 在本机按拓扑「不可靠」而非「恒废」——
+ 1 pub↔1 sub 稳定零送达，而 1 sub↔N≥2 pub 偶能通（2/2、5–6/6）。任何"试探性探活"
+ 都可能探出"能通"的假象，从而选回不可靠的配置。故本模块只用可核验标志，不探流量。
     """
     src = (ROOT / 'scripts' / 'demo' / 'dds_transport.py').read_text(encoding='utf-8')
     for banned in ('rclpy', 'subprocess', 'socket', 'publish'):

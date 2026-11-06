@@ -1,20 +1,20 @@
-# agc_ground 分层 costmap 参数（W5 · R3）—— 由 ground_bringup.launch.py 单一注入
+# agc_ground 分层 costmap 参数（ · R3）—— 由 ground_bringup.launch.py 单一注入
 #
 # 用途：**离线对照基线**（R8 的 Nav2 planner/controller）**自持**
-#       （`ground_baseline` 内建 `Costmap2DROS`，节点名 `costmap`）；
-#       RL 主控**不消费** costmap（[ADR-0003](../../../docs/adr/0003-nav2-paradigm-absorption.md#top)），
-#       故 `command_source=rl` **不**起独立 costmap 进程；
-#       **不作** collision_monitor 的感知源（安全层走 `scan`，见 ground.yaml）。
+# （`ground_baseline` 内建 `Costmap2DROS`，节点名 `costmap`）；
+# RL 主控**不消费** costmap（[ADR-0003](../../../docs/adr/0003-nav2-paradigm-absorption.md#top)），
+# 故 `command_source=rl` **不**起独立 costmap 进程；
+# **不作** collision_monitor 的感知源（安全层走 `scan`，见 ground.yaml）。
 #
-# 分层语义（承接 W4 遗留；分层语义映射表见 W5 spec「Nav2 吸收点」）：
-#   static  ← W4 `/agc/map`（OccupancyGrid，latched）
-#   obstacle← `/agc/ground/scan_filtered`（2D LaserScan，车顶水平扫描，R-007 自滤后）
-#   voxel   ← `/agc/sim/car_points`（3D PointCloud2）
-#   inflation ← 本层本地膨胀（无外部输入）
-# 坐标：`global_frame=world`、`robot_base_frame=car/base_link`（契约 #namespace）；
-#       **全域（非滚动）**：`static` 层接入 W4 `/agc/map` 后，Nav2 static 层把栅格重设为
-#       W4 地图全域（160×160 @ 0.5，origin −40,−40），故 costmap 覆盖整个作业区。
-#       初值的 rolling/width/height 在 static 层生效前使用，之后由 static 层接管。
+# 分层语义（承接 遗留；分层语义映射表见 spec「Nav2 吸收点」）：
+# static ← `/agc/map`（OccupancyGrid，latched）
+# obstacle← `/agc/ground/scan_filtered`（2D LaserScan，车顶水平扫描， 自滤后）
+# voxel ← `/agc/sim/car_points`（3D PointCloud2）
+# inflation ← 本层本地膨胀（无外部输入）
+# 坐标：`global_frame=world`、`robot_base_frame=car/base_link`（docs/ROS2迁移交接文档.md#namespace）；
+# **全域（非滚动）**：`static` 层接入 `/agc/map` 后，Nav2 static 层把栅格重设为
+# 地图全域（160×160 @ 0.5，origin −40,−40），故 costmap 覆盖整个作业区。
+# 初值的 rolling/width/height 在 static 层生效前使用，之后由 static 层接管。
 
 costmap:
   ros__parameters:
@@ -29,7 +29,7 @@ costmap:
     robot_radius: 0.6
     track_unknown_space: true
     plugins: ["static_layer", "obstacle_layer", "voxel_layer", "inflation_layer"]
-    # —— static 层：W4 的 /agc/map ——
+    # —— static 层： 的 /agc/map ——
     static_layer:
       plugin: "nav2_costmap_2d::StaticLayer"
       map_subscribe_transient_local: True
@@ -40,7 +40,7 @@ costmap:
       enabled: True
       observation_sources: scan
       scan:
-        # R-007：消费 scan_self_filter 自滤后的扫描（与安全层同一口径）
+        # 消费 scan_self_filter 自滤后的扫描（与安全层同一口径）
         topic: /agc/ground/scan_filtered
         max_obstacle_height: 2.5
         clearing: True

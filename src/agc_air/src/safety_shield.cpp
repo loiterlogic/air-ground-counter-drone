@@ -1,4 +1,4 @@
-// agc_air/safety_shield.cpp —— R-033 联合安全屏障（联合约束复检 + 扫掠复检 + 显式不可行路径）
+// agc_air/safety_shield.cpp —— 联合安全屏障（联合约束复检 + 扫掠复检 + 显式不可行路径）
 
 #include "agc_air/safety_shield.hpp"
 
@@ -18,10 +18,10 @@ namespace agc_air
 
 namespace
 {
-/// 联合投影迭代预算：足够收敛单盘 / 相容盘组；**不**收敛即判「不可行」（见 R-033 非交换投影）。
+/// 联合投影迭代预算：足够收敛单盘 / 相容盘组；**不**收敛即判「不可行」（见 非交换投影）。
 constexpr int kMaxProjectIters = 64;
 
-/// R-033：联合约束（XY 圆盘）—— 静态障碍与目标间距**同时**生效的约束项。
+/// ：联合约束（XY 圆盘）—— 静态障碍与目标间距**同时**生效的约束项。
 /// ADR-0010「垂直门控」起带 `is_target`：仅用于**判定阶段归因**（哪个圆盘导致介入），
 /// 不参与几何计算（几何仍只看 `x/y/r`）。
 struct Disk
@@ -85,7 +85,7 @@ void pushOut(double & x, double & y, double cx, double cy, double r)
 
 /// 联合投影：反复推出**全部**违约约束，直至同时满足（收敛）或耗尽预算。
 /// 与旧实现的差别：**不**做"逐障碍 + 目标"的**单遍**投影即返回——单遍后投影可重新落入前约束
-/// （投影不可交换，R-033 病灶）；本函数**重复复检**，耗尽预算仍未同时满足即判不可行。
+/// （投影不可交换， 病灶）；本函数**重复复检**，耗尽预算仍未同时满足即判不可行。
 bool projectJointFeasible(const std::vector<Disk> & ds, double & x, double & y)
 {
   for (int it = 0; it < kMaxProjectIters; ++it) {
@@ -102,7 +102,7 @@ bool projectJointFeasible(const std::vector<Disk> & ds, double & x, double & y)
 }
 
 /// 端点是否落在**任一**圆盘内（`want_target=true` 只看目标盘，false 只看障碍盘）。
-/// 仅用于 `apply()` 的**归因**（reason 拆分），不改变任何几何判定。
+/// 仅用于 `apply` 的**归因**（reason 拆分），不改变任何几何判定。
 bool pointInsideAny(const std::vector<Disk> & ds, double x, double y, bool want_target)
 {
   for (const auto & d : ds) {
@@ -138,7 +138,7 @@ void SafetyShield::configure_parameters(
   target_min_dist_ = p.getDouble("target_min_dist", 8.0);
   obstacle_margin_m_ = p.getDouble("obstacle_margin", 2.5);
   target_margin_m_ = p.getDouble("target_margin", 1.5);
-  // R-033：跟踪误差 / 反应时间 / 可达性余量（配置项承载；绝对值为可标定量）
+  // 跟踪误差 / 反应时间 / 可达性余量（配置项承载；绝对值为可标定量）
   reaction_time_s_ = p.getDouble("reaction_time_s", 0.2);
   max_speed_mps_ = p.getDouble("max_speed_mps", 2.0);
   reachability_margin_m_ = p.getDouble("reachability_margin", 0.3);
@@ -156,13 +156,13 @@ void SafetyShield::configure_parameters(
   const auto ys = p.getDoubleArray("obstacle_y");
   const auto rs = p.getDoubleArray("obstacle_safety_radius");
   // ADR-0010「垂直门控」：第五个平行数组。**缺省为空** = 全部障碍顶高未知 → 门控永不生效
-  //   （保守退化为无限高圆柱，与旧行为逐值一致）；**不是**缺省 0——那会让所有障碍静默失效。
+  // （保守退化为无限高圆柱，与旧行为逐值一致）；**不是**缺省 0——那会让所有障碍静默失效。
   const auto zs = p.getDoubleArray("obstacle_z_top");
 
-  // R-038（见 ADR-0009）：障碍表为**平行数组**，五者长度**必须一致**。
-  //   **删除**旧的 `n=min({...})` 静默按最短长度截断 —— 漏配一个数组会**静默漏障碍**；
-  //   改为一律**拒绝**（抛错 → configure 失败 → 生命周期 error 路径接管；**不**静默运行）。
-  //   `obstacle_z_top` 只在**非空**时参与等长校验（standalone / 单测可不提供 → 门控不生效）。
+  // （见 ADR-0009）：障碍表为**平行数组**，五者长度**必须一致**。
+  // **删除**旧的 `n=min({...})` 静默按最短长度截断 —— 漏配一个数组会**静默漏障碍**；
+  // 改为一律**拒绝**（抛错 → configure 失败 → 生命周期 error 路径接管；**不**静默运行）。
+  // `obstacle_z_top` 只在**非空**时参与等长校验（standalone / 单测可不提供 → 门控不生效）。
   if (names.size() != xs.size() || names.size() != ys.size() || names.size() != rs.size() ||
     (!zs.empty() && names.size() != zs.size()))
   {
@@ -176,7 +176,7 @@ void SafetyShield::configure_parameters(
 
   obstacles_.clear();
   for (std::size_t i = 0; i < names.size(); ++i) {
-    // R-038：几何合法性 —— 半径必须有限且 > 0，坐标必须有限；非法一律**拒绝**。
+    // 几何合法性 —— 半径必须有限且 > 0，坐标必须有限；非法一律**拒绝**。
     if (!std::isfinite(rs[i]) || rs[i] <= 0.0) {
       std::ostringstream oss;
       oss << "安全层障碍几何非法（拒绝启动）：obstacle_safety_radius[" << i << "]=" << rs[i]
@@ -209,10 +209,10 @@ RingSet SafetyShield::deriveRings(const agc_control::Vector3 & current_pos,
   const agc_control::Vector3 & target_pos, bool target_valid) const
 {
   // 垂直门控（ADR-0010）：判据含**下降前视**——以当前垂直速度再看 reaction_time_s 秒。
-  //   descend_rate = max(−v_z, 0)：下降（v_z < 0）时把判定高度**降到** `τ` 秒后的高度
-  //   → 圆盘在**到达之前**即复活。上升 / 平飞时 descend_rate = 0（判据不用上升速度）。
-  //   用 `current_pos.z()`（实际高度）而**不是**参考高度：本层是参考滤波器，参考比实际超前，
-  //   用参考会让圆盘在不该失效时失效（LQR 滞后余量已在 dynamicMargin 中）。
+  // descend_rate = max(−v_z, 0)：下降（v_z < 0）时把判定高度**降到** `τ` 秒后的高度
+  // → 圆盘在**到达之前**即复活。上升 / 平飞时 descend_rate = 0（判据不用上升速度）。
+  // 用 `current_pos.z`（实际高度）而**不是**参考高度：本层是参考滤波器，参考比实际超前，
+  // 用参考会让圆盘在不该失效时失效（LQR 滞后余量已在 dynamicMargin 中）。
   const double descend_rate = std::max(-current_vel.z(), 0.0);
   const double z_gate = current_pos.z() - descend_rate * reaction_time_s_;
 
@@ -251,8 +251,8 @@ SafetyResult SafetyShield::apply(const agc_control::Reference & desired,
 
   // 联合约束集（XY 圆盘）：静态障碍约束 **与** 目标间距约束 **同时** 生效。
   // ⚠ 二维静态限定模型（**限实验用途**）：仅含 XY 静态圆盘；**不含**车 / 动态障碍状态
-  //   （动态障碍状态 = unsupported），**不**建模三维机体外形 / 载荷外伸。
-  //   修正后边界 = 真实安全半径 + 跟踪误差 + 反应 + 可达性余量。
+  // （动态障碍状态 = unsupported），**不**建模三维机体外形 / 载荷外伸。
+  // 修正后边界 = 真实安全半径 + 跟踪误差 + 反应 + 可达性余量。
   // ADR-0010「垂直门控」：圆盘集由 `deriveRings` 构建（含垂直门控 + 归因），此处不再手搓。
   const RingSet rings = deriveRings(current_pos, current_vel, target_pos, target_valid);
   out.rings_obstacles = rings.obstacles;
@@ -280,8 +280,8 @@ SafetyResult SafetyShield::apply(const agc_control::Reference & desired,
     if (std::hypot(qx - desired.pos.x(), qy - desired.pos.y()) > 1e-6) {
       out.modified = true;
       // 归因（**不改语义**，只把 `adjusted` 拆成可分辨的两类）：
-      //   期望端点就落在某目标圆盘内 → 目标盘；否则是障碍盘。两者都是"介入"，
-      //   但「目标间距盘导致」与「避障导致」的调参方向完全相反，必须能分开看。
+      // 期望端点就落在某目标圆盘内 → 目标盘；否则是障碍盘。两者都是"介入"，
+      // 但「目标间距盘导致」与「避障导致」的调参方向完全相反，必须能分开看。
       out.reason = pointInsideAny(disks, desired.pos.x(), desired.pos.y(), true)
         ? "adjusted_target" : "adjusted_obstacle";
       out.ref.pos.x() = qx;

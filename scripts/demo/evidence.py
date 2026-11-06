@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
 """演示回合的**证据采集**（P1-2 round-2 裁定的 GUI 口径落地）。
 
-Leader 裁定（[round-2 派工单](../../.coordination/task/20261030-007-p1-2-demo-entry/round-2/request.md#p1-2-r2-request) 第 3 条）：
-P1-2 **不要求**通用桌面截图工具，但 GUI 形态必须**同时**取得四类证据：
+Leader 裁定（[ 派工单](../../ADR-0026) 第 3 条）：
+ **不要求**通用桌面截图工具，但 GUI 形态必须**同时**取得四类证据：
 
-  | # | 证据 | 本模块怎么取 |
-  |---|---|---|
-  | 1 | 本 run Gazebo GUI **非 headless** 的进程/launch 证据 | 本 run PGID 的进程成员 + `gz sim` 命令行**无 `-s`** + launch 日志 `gazebo` 行 |
-  | 2 | 本 run **OGRE renderer** 证据 | 复用 [`scripts/gui_renderer_evidence.py`](../gui_renderer_evidence.py) 的 `snapshot/probe/combine`（逐 run 有界） |
-  | 3 | 本 run **X11 窗口**存在证据 | `xdpyinfo`（连通性）+ `xwininfo -root -tree`（窗口树），**原样保存**原始输出 |
-  | 4 | **单个** RViz2 + viz_markers + world_frame_tf 的进程/launch 证据 | 进程组 + launch 日志双源计数，必须各**恰好 1** |
+ | # | 证据 | 本模块怎么取 |
+ |---|---|---|
+ | 1 | 本 run Gazebo GUI **非 headless** 的进程/launch 证据 | 本 run PGID 的进程成员 + `gz sim` 命令行**无 `-s`** + launch 日志 `gazebo` 行 |
+ | 2 | 本 run **OGRE renderer** 证据 | 复用 [`scripts/gui_renderer_evidence.py`](../gui_renderer_evidence.py) 的 `snapshot/probe/combine`（逐 run 有界） |
+ | 3 | 本 run **X11 窗口**存在证据 | `xdpyinfo`（连通性）+ `xwininfo -root -tree`（窗口树），**原样保存**原始输出 |
+ | 4 | **单个** RViz2 + viz_markers + world_frame_tf 的进程/launch 证据 | 进程组 + launch 日志双源计数，必须各**恰好 1** |
 
 **两段采集**（顺序是判定正确的前提）：
-  * `collect_running()` —— 进程组**仍在**时拍：进程成员、X11 窗口、launch 日志、renderer 启动探测；
-  * `collect_final()` —— 回收**之后**拍：renderer 结束探测（与启动探测 `combine`）、补 launch 日志。
+ * `collect_running` —— 进程组**仍在**时拍：进程成员、X11 窗口、launch 日志、renderer 启动探测；
+ * `collect_final` —— 回收**之后**拍：renderer 结束探测（与启动探测 `combine`）、补 launch 日志。
 
 纪律：
-  * 全部只读（`ps` 等价读 `/proc`、`xwininfo`、读日志），**不**启停任何东西；
-  * 取不到就如实标 `missing` / `not_applicable`，**不**用别的东西冒充（尤其**不**把
-    无头渲染或历史截图说成本次 GUI 截图）；
-  * Gazebo Screenshot 插件**若能**取到真实帧就附上（`screenshot` 字段），取不到则
-    `screenshot_present=false`，报告不得称"有截图"。
+ * 全部只读（`ps` 等价读 `/proc`、`xwininfo`、读日志），**不**启停任何东西；
+ * 取不到就如实标 `missing` / `not_applicable`，**不**用别的东西冒充（尤其**不**把
+ 无头渲染或历史截图说成本次 GUI 截图）；
+ * Gazebo Screenshot 插件**若能**取到真实帧就附上（`screenshot` 字段），取不到则
+ `screenshot_present=false`，报告不得称"有截图"。
 """
 
 import json
@@ -34,7 +34,7 @@ import common
 
 # `gui_renderer_evidence.py` 在 `scripts/`（顶层长期工具），本模块在 `scripts/demo/`。
 # runner 通过 `sys.path.insert(0, scripts/)` 导入它；这里同样显式补路径，**不**假设
-# 调用方已经设置好 PYTHONPATH（P1-2 round-2 实测：漏了这一步 → renderer 证据恒 missing）。
+# 调用方已经设置好 PYTHONPATH（ 实测：漏了这一步 → renderer 证据恒 missing）。
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 RVIZ_EXE = 'rviz2'
@@ -45,7 +45,7 @@ MISSING, OK, NA = 'missing', 'ok', 'not_applicable'
 
 # 叠加层的 TF 是 **map→world** 恒等变换（`w6.launch.py::_viz_actions`，RViz Fixed Frame=map 的前提）。
 # world_bringup 另有 2 个 car 相关 static_tf（car/base_link→car/lidar_link 等），**必须排除**，
-# 否则"单份"判据会被正常进程污染（P1-2 round-2 实测：按可执行名计数得 3，实为 1 个叠加 + 2 个自带）。
+# 否则"单份"判据会被正常进程污染（ 实测：按可执行名计数得 3，实为 1 个叠加 + 2 个自带）。
 WORLD_TF_FRAMES = ('map world', 'map->world')
 
 

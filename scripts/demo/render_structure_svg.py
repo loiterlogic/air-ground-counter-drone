@@ -3,12 +3,12 @@
 
 ## 为什么不用 mermaid-cli / 不手绘
 
-- 本机没有 `mmdc`，不该为一个图去装 Node 包；手绘 PNG 必然与真源漂移，且漂移在 diff 里看不出来。
+- 本机没有 `mmdc`，不该为一个图去装 Node 包；手绘 PNG 必然与配置文件漂移，且漂移在 diff 里看不出来。
 - 折中：输入是下面的声明式表（抄自 [包边界](../../docs/conventions/包边界.md#1-包清单) 与各包
-  `package.xml` / `CMakeLists.txt` / `launch`），输出是**确定性 SVG**（同输入 → 逐字节相同）。
+ `package.xml` / `CMakeLists.txt` / `launch`），输出是**确定性 SVG**（同输入 → 逐字节相同）。
   改图 = 改表，不是改像素。
 
-## 两张图，各回答一个问题（round-2 按审查意见拆分）
+## 两张图，各回答一个问题（ 按审查意见拆分）
 
 | 资产 | 回答的问题 | 内容 |
 |---|---|---|
@@ -16,7 +16,7 @@
 | `system-structure-detail.svg` | **每一类到底有哪几条边** | 四类各自的规则 + **完整边清单**（逐条，含源包与依据） |
 
 拆开的动因：把「概览」和「25 条边清单」塞进一张图，只能靠缩字号或把图拉长——两者都是
-用版面换信息量，读者反而读不了（round-1 实测：正文 10 px 在 820 px 宽下仍偏小）。
+用版面换信息量，读者反而读不了（ 实测：正文 10 px 在 820 px 宽下仍偏小）。
 
 ## 字号纪律（不靠改测试阈值来「通过」）
 
@@ -27,12 +27,12 @@
 ## 版面纪律（可计算，不靠肉眼）
 
 1. **画布宽度 = 显示宽度**：`width="820"` 与 README 的 `width="820"` 一致。浏览器仍可能因
-   缩放 / DPI 让实际观感变化，本脚本**只能**保证 1 SVG px = 1 CSS px 这个前提成立，
-   不能保证任何客户端都清晰（round-1 的「无缩放损失」措辞过强，已删）。
+ 缩放 / DPI 让实际观感变化，本脚本**只能**保证 1 SVG px = 1 CSS px 这个前提成立，
+ 不能保证任何客户端都清晰（ 的「无缩放损失」措辞过强，已删）。
 2. **正交布线**：所有线段轴对齐，拐点落在行间隙 / 列间隙 / 侧轨里。`validate_routes()` 检查
    「不穿框」「跨类别不交叉」，`validate_labels()` 检查「不压框、不互压、不被线穿过」。
 3. **文字容量**：按 DejaVu Sans 的**实测逐字符字宽**（`_EM`）累加，与 Qt 实测偏差 < 6%
-   （有专门用例）。所以「这行放不放得下」是可以算出来的，不需要等渲染出来才发现溢出。
+ （有专门用例）。所以「这行放不放得下」是可以算出来的，不需要等渲染出来才发现溢出。
 
 ## 一致性守卫（`scripts/tests/test_structure_diagram.py`）
 
@@ -48,10 +48,10 @@
 
 ```bash
 python3 scripts/demo/render_structure_svg.py \
-    --out         docs/plan/assets/system-structure.svg \
-    --png         docs/plan/assets/system-structure.png \
-    --detail      docs/plan/assets/system-structure-detail.svg \
-    --detail-png  docs/plan/assets/system-structure-detail.png --scale 2
+    --out         docs/conventions/assets/system-structure.svg \
+    --png         docs/conventions/assets/system-structure.png \
+    --detail      docs/conventions/assets/system-structure-detail.svg \
+    --detail-png  docs/conventions/assets/system-structure-detail.png --scale 2
 python3 scripts/demo/render_structure_svg.py --check-only     # 只自检，不写盘
 ```
 
@@ -114,8 +114,8 @@ SEP = ' · '
 def _atoms(text):
     """切成语义原子：` · ` 与括号都是不可再分的边界。
 
-    `Nav2 collision_monitor` / `（ADR-0004 唯一例外）` 一旦被拆到两行，读者会把一对概念读成两个，
-    或让一对括号跨行——所以原子内部不允许自动换行。
+ `Nav2 collision_monitor` / `（ADR-0004 唯一例外）` 一旦被拆到两行，读者会把一对概念读成两个，
+ 或让一对括号跨行——所以原子内部不允许自动换行。
     """
     parts, buf, depth, i = [], '', 0, 0
     while i < len(text):
@@ -174,7 +174,7 @@ def wrap_text(text, inner_px, size, bold=False, max_lines=8):
 
 
 # ======================================================================================
-# 2. 声明式真源（抄自 包边界#1-包清单 与各包 package.xml / CMakeLists / launch）
+# 2. 配置文件（抄自 包边界#1-包清单 与各包 package.xml / CMakeLists / launch）
 # ======================================================================================
 # 概览图每包只保留：包名 + 角色行 + 1 句职责 + ④ 短标签。完整职责与边清单在明细图与
 # docs/conventions/系统结构图.md，概览不重复。
@@ -272,7 +272,7 @@ NODE_X0, NODE_X1 = 118, 770               # 节点横向范围
 RAIL_L, RAIL_R = 106, 782                 # ① 总线侧轨（帧内、节点带外）
 FRAME_Y0 = 124
 
-# 字号：概览图正文 ≥ 12 px，包名 15 px（round-2 审查要求；与版面耦合，见 docstring）
+# 字号：概览图正文 ≥ 12 px，包名 15 px（ 审查要求；与版面耦合，见 docstring）
 FS_TITLE, FS_SUB = 20.0, 12.5
 FS_NODE, FS_ROLE, FS_DESC, FS_EXT = 15.0, 12.0, 12.0, 12.0
 FS_LAYER, FS_PANEL, FS_FOOT = 12.0, 13.5, 11.0
@@ -370,11 +370,11 @@ def layout():
 def routes(nodes, bands):
     """返回 [dict(kind, pts, head)]；坐标全部由矩形派生，移动框即移动线。
 
-    `head=True` 表示最后一点落在**目标框的边上**（画箭头）；落在总线 / 通道上的 T 形汇合点
-    `head=False`——在汇合处画箭头会假装「那里是终点」。
+ `head=True` 表示最后一点落在**目标框的边上**（画箭头）；落在总线 / 通道上的 T 形汇合点
+ `head=False`——在汇合处画箭头会假装「那里是终点」。
 
-    ① 的竖线必须绕开 `agc_control` 的横向跨度：左轨收 task，air 在 control 左边界外直落，
-    右轨收 perception；ground / rl 在 control 右边界外直落。
+ ① 的竖线必须绕开 `agc_control` 的横向跨度：左轨收 task，air 在 control 左边界外直落，
+ 右轨收 perception；ground / rl 在 control 右边界外直落。
     """
     out = []
     task, sim, per = nodes['agc_task'], nodes['agc_sim'], nodes['agc_perception']

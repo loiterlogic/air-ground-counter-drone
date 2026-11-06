@@ -2,15 +2,15 @@
 """G2 round-3 最小判别探针：记录空中跟踪链的实际几何（**只读**，不发任何命令）。
 
 用途：在 full 场景运行时旁路记录
-  * 己方机位置/姿态（`/agc/air/odom`，world ENU）
-  * 目标观测位置（`/agc/targets`，world ENU）与真值（`/agc/gt/target` 若存在）
-  * 跟踪参考（`/agc/air/tracking_ref`）
-  * 由此算出的**机体系方位角** az（按原 `air_perception::gatePoint` 的几何口径；
-    该节点已于 2026-11-06 退役，探针独立复算同一几何，不依赖它）
+ * 己方机位置/姿态（`/agc/air/odom`，world ENU）
+ * 目标观测位置（`/agc/targets`，world ENU）与真值（`/agc/gt/target` 若存在）
+ * 跟踪参考（`/agc/air/tracking_ref`）
+ * 由此算出的**机体系方位角** az（按原 `air_perception::gatePoint` 的几何口径；
+ 该节点已于 2026-11-06 退役，探针独立复算同一几何，不依赖它）
 
 判别目标：区分"目标真的跑到机身后方"（几何/参考问题）与"机体系朝向/坐标变换错"
 （姿态问题），二者在 az 序列上的表现不同：
-  * 几何问题：`|az|` 平滑增长并越过 ±50°（hfov/2），r 仍 ≤ 12 m；
+ * 几何问题：`|az|` 平滑增长并越过 ±50°（hfov/2），r 仍 ≤ 12 m；
   * 姿态/变换问题：`fwd = cos(az)` 直接翻负（behind），或 az 在 ±180° 附近跳变。
 
 **只订阅、不发布**，因此不改变被测系统行为；也不写任何实验产物，只打印 CSV 到 stdout。

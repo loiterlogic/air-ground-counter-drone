@@ -5,20 +5,20 @@
 唯一执行口（spec R6/R7；契约 [唯一执行口](../../docs/ROS2迁移交接文档.md#execution-port)）。
 
 - 订阅：`/agc/ground/odom`（world 位姿/速度）、`/agc/ground/scan`（2D LaserScan）、`/agc/ground/goal`、
-  `/agc/task/state`（仅 `GROUND_APPROACH` 允许驱动）。
+ `/agc/task/state`（仅 `GROUND_APPROACH` 允许驱动）。
 - 输出：`TwistStamped`（车体系）至 `cmd_vel_raw`，定频（默认 20 Hz）。
-- 失效语义（R-010）：四类必需输入（task 授权 / odom / goal / scan）各持**独立寿命**（`rl.yaml`
-  `input_timeout.*` 单一注入），任一过期 / 无效即输出**零速**；`scan` 的「未知」（NaN）与
-  「合法无回波」（`+inf`）区分见 `agc_rl.interface`；**从未收到 / 全 NaN** 的扫描**不**默认无遮挡。
+- 失效语义：四类必需输入（task 授权 / odom / goal / scan）各持**独立寿命**（`rl.yaml`
+ `input_timeout.*` 单一注入），任一过期 / 无效即输出**零速**；`scan` 的「未知」（NaN）与
+ 「合法无回波」（`+inf`）区分见 `agc_rl.interface`；**从未收到 / 全 NaN** 的扫描**不**默认无遮挡。
 - 策略由 config `policy_path` 加载（`agc_rl.policy`）；obs/action 语义由 `agc_rl.interface` 冻结。
-- **路径消费（G2，ADR-0013/0109）**：另订 `/agc/ground/path`（`nav_msgs/Path`，`frame_id=world`），
-  经 `agc_rl.path_consumer` 的五类质量门后算出**确定性参考点**，用它替换原来的 goal 航向参考。
-  这是**确定性占位消费者**：路径**不进入** obs（`interface.py` 的 obs/action 空间与冻结口径不变），
+- **路径消费（，ADR-0013/0109）**：另订 `/agc/ground/path`（`nav_msgs/Path`，`frame_id=world`），
+ 经 `agc_rl.path_consumer` 的五类质量门后算出**确定性参考点**，用它替换原来的 goal 航向参考。
+ 这是**确定性占位消费者**：路径**不进入** obs（`interface.py` 的 obs/action 空间与冻结口径不变），
   因此"能沿路径走"**不等于**"训练 RL 已具备路径跟踪能力"（ADR-0013(b)）。
   路径任一质量门不过 → **清缓存 + 持续零速**，**不得**静默退回 goal-only（ADR-0013(e)）。
 - 语言：Python（RL 域，[ADR-0020](../../docs/adr/0020-package-boundaries-and-runtime-topology.md#top)）。
 
-RL 节点**不写文件**（W5 spec R13）：run 级日志 / 产物归 W6 `agc_run_logger` 与 `experiments/`。
+RL 节点**不写文件**（ spec R13）：run 级日志 / 产物归 `agc_run_logger` 与 `experiments/`。
 """
 
 import math
@@ -85,12 +85,12 @@ class GroundPolicyRL(Node):
             'k_heading': self.declare_parameter('control.k_heading', 1.5).value,
             'k_lateral': self.declare_parameter('control.k_lateral', 0.8).value,
             'max_yaw_rate': self.declare_parameter('control.max_yaw_rate', 1.0).value,
-            # 净空参考值（**米**，与车前净空同量纲）；R-011 量纲一致化，动作强度与 lidar_max_range 解耦。
+            # 净空参考值（**米**，与车前净空同量纲）； 量纲一致化，动作强度与 lidar_max_range 解耦。
             'clearance_ref_m': self.declare_parameter('control.clearance_ref_m', 1.0).value,
         }
 
-        # R-010：四类必需输入的**独立寿命**（秒，由 config 单一注入）。到达时刻按
-        # **单调时钟**记（与 R-009 同口径：不受 ROS 时钟冻结 / 回拨影响）。
+        # 四类必需输入的**独立寿命**（秒，由 config 单一注入）。到达时刻按
+        # **单调时钟**记（与 同口径：不受 ROS 时钟冻结 / 回拨影响）。
         self.timeouts = {
             'task_auth': self.declare_parameter('input_timeout.task_auth_s', 2.0).value,
             'odom': self.declare_parameter('input_timeout.odom_s', 0.5).value,
@@ -98,9 +98,9 @@ class GroundPolicyRL(Node):
             'scan': self.declare_parameter('input_timeout.scan_s', 0.5).value,
         }
 
-        # G2 路径消费（ADR-0013/0109）：**确定性占位消费者**，路径不进入 obs。
-        #   path_enabled=False → 行为与既有版本完全一致（纯 goal 参考），用于对照与回退；
-        #   path_enabled=True  → 路径成为**必要输入**：质量门任一不过即零速，绝不 goal-only 兜底。
+        # 路径消费（ADR-0013/0109）：**确定性占位消费者**，路径不进入 obs。
+        # path_enabled=False → 行为与既有版本完全一致（纯 goal 参考），用于对照与回退；
+        # path_enabled=True → 路径成为**必要输入**：质量门任一不过即零速，绝不 goal-only 兜底。
         self.path_enabled = bool(self.declare_parameter('path.enabled', True).value)
         self.path_topic = self.declare_parameter(
             'path.topic', '/agc/ground/path').value
@@ -108,9 +108,9 @@ class GroundPolicyRL(Node):
         self.path_max_age_s = self.declare_parameter('path.max_age_s', 5.0).value
         self.path_lookahead_m = self.declare_parameter('path.lookahead_m', 1.0).value
         # 最近点搜索的弧长窗口（ADR-0013 的限界语义）。**默认有限界**：
-        #   发布侧在车位位移 > replan_displacement_m(1.0 m) 时重发路径，故车距路径起点可达 ~1.0 m；
-        #   叠加前视 lookahead_m(1.0 m) -> 2.0 m 覆盖“起点到前视点”的完整相关段。
-        #   `<= 0` 表示显式不限界，**仅供测试对照**（折返路径会选到后段，不用于生产）。
+        # 发布侧在车位位移 > replan_displacement_m(1.0 m) 时重发路径，故车距路径起点可达 ~1.0 m；
+        # 叠加前视 lookahead_m(1.0 m) -> 2.0 m 覆盖“起点到前视点”的完整相关段。
+        # `<= 0` 表示显式不限界，**仅供测试对照**（折返路径会选到后段，不用于生产）。
         self.path_search_m = self.declare_parameter(
             'path.search_dist_m', self.path_lookahead_m * 2.0).value
         self.path_goal_tol_m = self.declare_parameter('path.goal_tol_m', 0.3).value
@@ -147,7 +147,7 @@ class GroundPolicyRL(Node):
         self.sectors = [1.0] * self.num_sectors
         self.scan_valid = False
         self.last_action = 0
-        # 各输入的**到达时刻**（单调钟）；`None` = 从未收到（R-010 独立寿命）。
+        # 各输入的**到达时刻**（单调钟）；`None` = 从未收到（ 独立寿命）。
         self._t_odom = None
         self._t_goal = None
         self._t_state = None
@@ -187,8 +187,8 @@ class GroundPolicyRL(Node):
     def _on_path(self, msg):
         """收到新路径：**整体替换**，并立刻做一次质量门判定。
 
-        无效路径**不保留**：缓存清空后按"无路径"处理（持续零速），
-        以免出现"最后一条能用的路径继续驱动"（ADR-0013 明令禁止）。
+ 无效路径**不保留**：缓存清空后按"无路径"处理（持续零速），
+ 以免出现"最后一条能用的路径继续驱动"（ADR-0013 明令禁止）。
         """
         self._path_ever = True
         gate = self._gate(msg)
@@ -204,7 +204,7 @@ class GroundPolicyRL(Node):
         """源 stamp 与**本节点 ROS 时钟当前值**之差（秒）。
 
         用同一时钟相减，所以"重新打 now()"无法伪造新鲜；仿真 reset 导致 stamp 在未来
-        （age<0）时由质量门判为不可信。ROS 时钟不可用 / stamp 为 0 时返回 None。
+ （age<0）时由质量门判为不可信。ROS 时钟不可用 / stamp 为 0 时返回 None。
         """
         stamp = msg.header.stamp
         if stamp.sec == 0 and stamp.nanosec == 0:
@@ -259,7 +259,7 @@ class GroundPolicyRL(Node):
         """路径参考：返回 `(aim_x, aim_y, dist_to_aim)` 或 `None`（路径不可用）。
 
         路径可用性 = 质量门（含**逐拍重算的过期**，因为 age 随时间增长）通过
-        **且**路径末端与当前 goal 一致。任一不满足返回 `None`，调用方据此零速。
+ **且**路径末端与当前 goal 一致。任一不满足返回 `None`，调用方据此零速。
         """
         if self.path is None:
             return None
@@ -285,10 +285,10 @@ class GroundPolicyRL(Node):
         return ax, ay, math.hypot(ax - self.x, ay - self.y), ref['finished']
 
     def _tick(self):
-        # R-010：task 授权 / odom / goal / scan 各自**独立寿命与无效语义**；
+        # task 授权 / odom / goal / scan 各自**独立寿命与无效语义**；
         # 任一必需输入过期 / 无效 → 输出零速（不延续旧状态）。
-        # G2：`path.enabled` 时路径也是**必要输入**——启动从未收到路径即持续零速，
-        #     不依赖安全层兜底（ADR-0013、G2 出口 ③①）。
+        # `path.enabled` 时路径也是**必要输入**——启动从未收到路径即持续零速，
+        # 不依赖安全层兜底（ADR-0013、 出口 ③①）。
         if not self._authorized():
             self._stop()
             return
@@ -325,7 +325,7 @@ class GroundPolicyRL(Node):
         action = self.policy.act(obs, self.num_sectors)
         self.last_action = action
 
-        # 车前净空（米）：扇区为 range / lidar_max_range 的归一值，乘量程还原为米（R-011 量纲一致）。
+        # 车前净空（米）：扇区为 range / lidar_max_range 的归一值，乘量程还原为米（ 量纲一致）。
         forward_clearance_m = interface.forward_clearance(
             self.sectors, self.num_sectors, 1) * self.lidar_max_range
         v, w = interface.action_to_twist(

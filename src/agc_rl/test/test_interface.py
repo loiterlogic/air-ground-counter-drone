@@ -1,9 +1,9 @@
 """R-011 判据：`interface.action_to_twist` 符号（ROS 约定）与量纲一致 / 量程解耦。
 
-判据（spec「车体系动作方向与量纲一致性（R-011）」）：
-  * 符号：`left` / `left_fast` → 正 `angular.z`（左转）；`right` / `right_fast` → 负（右转）；
-    航向项（`k_heading·heading_err`）与横向项（`k_lateral·lateral`）同号（统一左 / 右约定）。
-  * 量纲：净空与偏移同为**米**；同一真实净空下 `lidar_max_range` 10 → 20，动作强度**不变**（解耦）。
+判据（spec「车体系动作方向与量纲一致性」）：
+ * 符号：`left` / `left_fast` → 正 `angular.z`（左转）；`right` / `right_fast` → 负（右转）；
+ 航向项（`k_heading·heading_err`）与横向项（`k_lateral·lateral`）同号（统一左 / 右约定）。
+ * 量纲：净空与偏移同为**米**；同一真实净空下 `lidar_max_range` 10 → 20，动作强度**不变**（解耦）。
 """
 
 import pytest
@@ -64,7 +64,7 @@ def test_clearance_decoupled_from_lidar_max_range():
     """同一真实净空（米）下，lidar_max_range 10 → 20，动作输出逐一致（量纲解耦）。
 
     模拟推理节点链路：`sectors_from_angles(range, max_range)` 归一回 [0,1]，
-    再乘回 `max_range` 还原为**米**，故不同量程下`forward_clearance_m` 相同 → `(v, w)` 相同。
+ 再乘回 `max_range` 还原为**米**，故不同量程下`forward_clearance_m` 相同 → `(v, w)` 相同。
     """
     d_m = 0.5  # 同一真实车前净空（米）
     outputs = []

@@ -23,6 +23,7 @@ AGC（空地协同反无人机仿真）：同一世界、同一时钟下，无�
 - [归档导航](docs/archive/README.md#archive) — 只剩历史 Runbook 与 ROS1 基线盘点（规格与过程台账已于 2026-11-03 删除）
 - [工程规范](docs/conventions/目录与命名规范.md#10-产物分类与生命周期) — 目录、命名、产物分类与生命周期
 - [**路线分支治理**](docs/conventions/路线分支治理.md#rule) — **没有用户明确允许不得创造路线分支**；现行分支台账与清退规则
+- [**引用与注释纪律**](docs/conventions/引用与注释纪律.md#rule) — **代码中引用决策只允许 ADR**；注释只写做什么/为什么
 - [技能](.agents/README.md#skills) — 领域建模 / 访谈类可复用技能（`.agents/skills/`）
 
 Leader / Worker 交接见 [协作规则](.coordination/README.md#protocol)、[当前交接](.coordination/CURRENT.md#current)；协作原则见 [单任务链、决策自主、消息来源与停止条件](.coordination/README.md#协作原则)（每链一个任务；[独立链可并行](.coordination/README.md#parallel)，N=6 记录检查点 / K=4 无进展熔断）。

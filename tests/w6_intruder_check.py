@@ -4,9 +4,9 @@
 不依赖 PX4：向 `/<ns>/fmu/out/{vehicle_odometry,vehicle_status}` 注入**伪造**的已解锁/
 OFFBOARD 状态，使 `intruder_driver` 持续输出 `/<ns>/fmu/in/trajectory_setpoint`；采集
 setpoint 位置随时间，按运动类型判据辨识：
-  * `static`   —— setpoint 位置近似不变（dx≈0, dy≈0）；
-  * `linear`   —— 沿 NED +y 匀速推进（dy 大、dx≈0）；
-  * `maneuver` —— 圆周机动（dx 与 dy 均显著）。
+ * `static` —— setpoint 位置近似不变（dx≈0, dy≈0）；
+ * `linear` —— 沿 NED +y 匀速推进（dy 大、dx≈0）；
+ * `maneuver` —— 圆周机动（dx 与 dy 均显著）。
 
 **范围说明**：本检查验证 driver **运动指令逻辑**可辨；机体真实响应（gz `model -p`）属
 "双 PX4 整链 launch 集成"（Task 5.3 的 GUI 观测部分，`static` 已由前置 P 实跑）。

@@ -1,10 +1,10 @@
 """GUI 渲染后端选择（W8 / ADR-0021）。
 
 `gui_render_backend`:
-  * ``auto``（项目默认）—— WSL2 + ``/dev/dxg`` + X11 时使用 Mesa D3D12；
-    其它环境保持系统默认 GL（原生 Linux 走硬件 GL，无 GPU 时自然回退软件）。
-  * ``d3d12`` —— 强制 Mesa D3D12 + X11（显式选择；不支持时 GUI 可能起不来）。
-  * ``software`` —— 强制 llvmpipe 软件渲染（受限 GUI 条件，便于复现旧的软件 GUI 基线）。
+ * ``auto``（项目默认）—— WSL2 + ``/dev/dxg`` + X11 时使用 Mesa D3D12；
+ 其它环境保持系统默认 GL（原生 Linux 走硬件 GL，无 GPU 时自然回退软件）。
+ * ``d3d12`` —— 强制 Mesa D3D12 + X11（显式选择；不支持时 GUI 可能起不来）。
+ * ``software`` —— 强制 llvmpipe 软件渲染（受限 GUI 条件，便于复现旧的软件 GUI 基线）。
 
 只在 GUI（``gz sim -r``）下有影响；headless（``gz sim -s``）没有渲染客户端。
 调用方（``world_bringup.launch.py``）把返回的 dict 转成 ``SetEnvironmentVariable``。

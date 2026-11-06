@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """`run_demo.sh stop` —— 按记录的 PID / PGID 回收本次演示（可跨终端；幂等）。
 
-派工单要求（[round-1](../../.coordination/task/20261030-007-p1-2-demo-entry/round-1/request.md#p1-2-r1-request) 第 3 条 /
-[round-2](../../.coordination/task/20261030-007-p1-2-demo-entry/round-2/request.md#p1-2-r2-request) 继续交付）：
+派工单要求（[](../../ADR-0026) 第 3 条 /
+[](../../ADR-0026) 继续交付）：
 
-  * **独立进程组 + PID/PGID 归属**：只回收 `current.json` 里登记的 PGID；
-  * **不能 `pkill -f`**、**不清他人进程**、**不删证据**；
-  * 幂等：没有实例 / 已退出 / 重复执行 → 都返回 0 并说清楚。
+ * **独立进程组 + PID/PGID 归属**：只回收 `current.json` 里登记的 PGID；
+ * **不能 `pkill -f`**、**不清他人进程**、**不删证据**；
+ * 幂等：没有实例 / 已退出 / 重复执行 → 都返回 0 并说清楚。
 
 回收顺序（与 `episode_runner._reap_process_group` 同源纪律）：
 `SIGINT`（给 launch 与各节点优雅退出的机会，run_logger 借机落 summary）→ 轮询 →

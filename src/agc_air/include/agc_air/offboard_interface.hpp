@@ -2,7 +2,7 @@
 //
 // 契约 [唯一执行口]（空中控制权）：任一时刻**只有一个** setpoint 发布者。
 // 本类把「订阅归一化状态 + 发布 offboard setpoint / 命令」收在一处，供两个控制者复用；
-// setpoint 世界系为 ENU（契约 #namespace），发布前转 PX4 NED（ADR-0005）。
+// setpoint 世界系为 ENU（docs/ROS2迁移交接文档.md#namespace），发布前转 PX4 NED（ADR-0005）。
 
 #pragma once
 
@@ -69,15 +69,15 @@ public:
   void sendArm(bool arm);
   void sendOffboardMode();
 
-  /// setpoint 发布者计数（图 API 内省）——R-035：**仅作告警**（含静默 publisher / DDS 发现延迟），
+  /// setpoint 发布者计数（图 API 内省）——：**仅作告警**（含静默 publisher / DDS 发现延迟），
   /// **不**单独决定控制权威（权威由 `trajectory_tracker` 的显式控制许可判定，见 ADR-0010）。
   std::size_t countSetpointPublishers() const;
 
-  /// R-035：setpoint 写入记账（**诊断**，非 ABI）——回答「谁在写、写了多久、频率」。
+  /// ：setpoint 写入记账（**诊断**，非 ABI）——回答「谁在写、写了多久、频率」。
   std::uint64_t setpointWriteCount() const {return setpoint_write_count_;}
-  /// R-035：自写入速率（Hz）= 计数 /（末次 − 首次）；跨度 ≤ 0 → 0。
+  /// ：自写入速率（Hz）= 计数 /（末次 − 首次）；跨度 ≤ 0 → 0。
   double setpointRateHz() const;
-  /// R-035：本接口当前是否持有**已激活** setpoint 发布器（= 是否在写）。
+  /// ：本接口当前是否持有**已激活** setpoint 发布器（= 是否在写）。
   bool hasSetpointPublisher() const {return sp_pub_ && sp_pub_->is_activated();}
 
   double setpointDt() const {return params_.setpoint_dt;}
@@ -88,7 +88,7 @@ private:
 
   rclcpp_lifecycle::LifecycleNode & node_;
   OffboardParams params_;
-  /// 局部原点（世界 ENU，R-003）：PX4 的 setpoint 在**局部 NED**（相对 EKF 原点），
+  /// 局部原点（世界 ENU，）：PX4 的 setpoint 在**局部 NED**（相对 EKF 原点），
   /// 本接口对外为世界 ENU，故发布前减去该原点；由 `origin_pose` 参数（launch 以 spawn 位姿注入）确定。
   Vector3 origin_enu_{Vector3::Zero()};
 
@@ -104,7 +104,7 @@ private:
   rclcpp_lifecycle::LifecyclePublisher<px4_msgs::msg::TrajectorySetpoint>::SharedPtr sp_pub_;
   rclcpp_lifecycle::LifecyclePublisher<px4_msgs::msg::VehicleCommand>::SharedPtr cmd_pub_;
 
-  // R-035：setpoint 写入记账（首次 / 末次写入时刻 + 计数），`cleanup()` 清零（非 ABI）。
+  // setpoint 写入记账（首次 / 末次写入时刻 + 计数），`cleanup` 清零（非 ABI）。
   std::uint64_t setpoint_write_count_{0};
   rclcpp::Time first_setpoint_write_{0, 0, RCL_ROS_TIME};
   rclcpp::Time last_setpoint_write_{0, 0, RCL_ROS_TIME};

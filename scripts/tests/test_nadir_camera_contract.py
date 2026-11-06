@@ -4,26 +4,26 @@
 
 1. **默认臂没有相机**：`gz_x500`（默认 `px4_sim_model`）的启动路径里不得出现任何相机模型。
    历史坑：bridge.yaml 一旦有相机条目，默认臂的 `ros2 topic list` 也会出现
-   `/agc/air/nadir/*`（桥节点自己是订阅者），**看起来有相机、其实一帧都没有**
-   （见 experiments/p1-4/round-2/evidence/camera-ownership-finding.md）。
-   ⇒ 判据必须落在"模型资产与机型注入"上，不能落在"话题是否存在"上。
+ `/agc/air/nadir/*`（桥节点自己是订阅者），**看起来有相机、其实一帧都没有**
+ （见 experiments/p1-4//evidence/camera-ownership-finding.md）。
+ ⇒ 判据必须落在"模型资产与机型注入"上，不能落在"话题是否存在"上。
 
 2. **模型本身**：`agc_x500_nadir` 存在、`<model name>` 正确（决定实体名 `agc_x500_nadir_0`）、
-   恰好 1 个 `type="camera"` 传感器、相机挂在**独立 link + fixed joint** 上
-   （往 `include merge` 里塞 `<link>` 会被 sdformat 静默丢弃，见 intruder_uav 注释）。
+ 恰好 1 个 `type="camera"` 传感器、相机挂在**独立 link + fixed joint** 上
+ （往 `include merge` 里塞 `<link>` 会被 sdformat 静默丢弃，见 intruder_uav 注释）。
 
 3. **相机朝向**：`pitch == +1.5708`（容差 1e-3 rad）**且**把该 pitch 代进旋转矩阵算出的
-   **有效光轴 z ≈ −1**（容差 1e-2）。双断言的理由：只钉数值挡不住"约定变了"，
+ **有效光轴 z ≈ −1**（容差 1e-2）。双断言的理由：只钉数值挡不住"约定变了"，
    只钉语义挡不住"符号写反但按反的约定解读"。`R_y(θ)·x̂ = (cosθ, 0, −sinθ)`：
    θ=+90° → (0,0,−1) 正下方；θ=−90° → (0,0,+1) 拍天空。
 
 4. **话题名逐字一致**：SDF `<topic>` / `<camera_info_topic>` 与 `bridge.yaml` 的
-   `gz_topic_name` 必须逐字相同。`camera_info` 若不显式写，gz-sensors 按 `<topic>_info`
-   派生（→ `/agc/air/nadir_info`），与桥的 `/agc/air/nadir/camera_info` **不符且静默**。
+ `gz_topic_name` 必须逐字相同。`camera_info` 若不显式写，gz-sensors 按 `<topic>_info`
+ 派生（→ `/agc/air/nadir_info`），与桥的 `/agc/air/nadir/camera_info` **不符且静默**。
 
 5. **机型解析不改工具链**：`gz_agc_x500_nadir` 时己方 PX4 进程注入 `PX4_SYS_AUTOSTART=4001`；
-   且 `toolchain/PX4-Autopilot/ROMFS/px4fmu_common/init.d-posix/airframes/` 下**没有**本仓新增的
-   airframe 文件（防"改工具链"的捷径复活）。PX4 是 pin 的外部依赖，有哈希校验。
+ 且 `toolchain/PX4-Autopilot/ROMFS/px4fmu_common/init.d-posix/airframes/` 下**没有**本仓新增的
+ airframe 文件（防"改工具链"的捷径复活）。PX4 是 pin 的外部依赖，有哈希校验。
 
 **为什么不测"帧率"**：帧率需要真实仿真（T2），不在纯静态闸门里跑；A3 的实测证据在
 `experiments/nadir-camera/<run-id>/`，由 report 引用。
@@ -70,10 +70,10 @@ def _read(p: Path) -> str:
 def _strip_comments(sdf: str) -> str:
     """去掉 XML 注释后再做结构断言。
 
-    **为什么必须去注释**：本模型的注释里**逐字**解释了"往 include merge 里塞 <link> 会被静默丢弃"
-    这类坑，注释文本本身含 `<link>` / `<include merge="true">` 字样。若直接对原文跑正则，
-    断言会被自己的说明文字绊倒（实测：本文件第一版就是这么红的）。
-    注释是给人看的证据，不是 SDF 结构；结构断言必须在去注释后的文本上做。
+ **为什么必须去注释**：本模型的注释里**逐字**解释了"往 include merge 里塞 <link> 会被静默丢弃"
+ 这类坑，注释文本本身含 `<link>` / `<include merge="true">` 字样。若直接对原文跑正则，
+ 断言会被自己的说明文字绊倒（实测：本文件第一版就是这么红的）。
+ 注释是给人看的证据，不是 SDF 结构；结构断言必须在去注释后的文本上做。
     """
     return re.sub(r'<!--.*?-->', '', sdf, flags=re.S)
 
@@ -104,10 +104,10 @@ def _effective_axis_z(pitch: float) -> float:
 def test_default_model_has_no_camera_anywhere():
     """默认 `px4_sim_model` 的启动路径**不包含任何相机模型资产**。
 
-    2026-11-05 更新：默认机型由 PX4 官方 `gz_x500` 改为本仓 `gz_agc_x500`
-    （= x500 + **纯视觉**青色高亮球，无 camera 传感器；原因：默认 x500 在 50 m 正俯视下
-    仅约 5 px，GUI 里看不见我方机）。本条的**语义未变**——默认臂仍然没有相机；
-    变的只是默认机型名，故断言改为"默认值 ∈ {无相机的本仓高亮机型, PX4 官方 x500}"。
+ 2026-11-05 更新：默认机型由 PX4 官方 `gz_x500` 改为本仓 `gz_agc_x500`
+ （= x500 + **纯视觉**青色高亮球，无 camera 传感器；原因：默认 x500 在 50 m 正俯视下
+ 仅约 5 px，GUI 里看不见我方机）。本条的**语义未变**——默认臂仍然没有相机；
+ 变的只是默认机型名，故断言改为"默认值 ∈ {无相机的本仓高亮机型, PX4 官方 x500}"。
     """
     for path in (W6_LAUNCH, AIR_LAUNCH):
         src = _read(path)
@@ -288,13 +288,13 @@ def test_no_new_airframe_in_toolchain():
 def test_no_vision_consumer_of_nadir_image():
     """图像不得被任何节点订阅（无消费者、不接任务链）。
 
-    **判据是"有没有订阅者"，不是"代码里有没有出现 nadir 字样"**：
-    机型选择（`nadir_sim_model` / `nadir_enabled`）必然出现该词，那不是消费者。
-    第一版按"出现即违规"判，把 launch 里的机型开关全判成消费者——过宽的闸门会被人关掉，
-    等于没有闸门。故改为查**订阅/回调**形态：
-      * C++/Python 里对 `ROS_IMAGE_TOPIC` 字面量的订阅调用；
-      * 任何 `create_subscription` / `image_transport` / `rclcpp::Subscription` 附近的该话题；
-      * yaml 里把它当 `ros_topic_name` 之外的输入（桥自身条目已排除）。
+ **判据是"有没有订阅者"，不是"代码里有没有出现 nadir 字样"**：
+ 机型选择（`nadir_sim_model` / `nadir_enabled`）必然出现该词，那不是消费者。
+ 第一版按"出现即违规"判，把 launch 里的机型开关全判成消费者——过宽的闸门会被人关掉，
+ 等于没有闸门。故改为查**订阅/回调**形态：
+ * C++/Python 里对 `ROS_IMAGE_TOPIC` 字面量的订阅调用；
+ * 任何 `create_subscription` / `image_transport` / `rclcpp::Subscription` 附近的该话题；
+ * yaml 里把它当 `ros_topic_name` 之外的输入（桥自身条目已排除）。
     """
     topic = ROS_IMAGE_TOPIC
     src_root = ROOT / 'src'
@@ -339,9 +339,9 @@ def _strip_code_comments(txt: str, suffix: str) -> str:
 def _call_args(code: str, fname: str) -> list[tuple[int, int, list[str]]]:
     """抽出所有 `fname(...)` 调用：(起始位置, 结束位置, **顶层实参**列表)。
 
-    正确处理嵌套括号 / C++ 模板尖括号 / 字符串字面量 —— 不能像第一版那样用 `[^;]{0,N}`
-    跨行瞎扫，那会把**相邻的另一次调用**吞进来（实测把 `create_subscription` 的实参
-    当成 `create_publisher` 的实参，误判出假的发布者）。
+ 正确处理嵌套括号 / C++ 模板尖括号 / 字符串字面量 —— 不能像第一版那样用 `[^;]{0,N}`
+ 跨行瞎扫，那会把**相邻的另一次调用**吞进来（实测把 `create_subscription` 的实参
+ 当成 `create_publisher` 的实参，误判出假的发布者）。
     """
     calls = []
     for m in re.finditer(r'\b' + re.escape(fname) + r'\b', code):
@@ -412,10 +412,10 @@ def _call_args(code: str, fname: str) -> list[tuple[int, int, list[str]]]:
 def _topic_defaults(code: str) -> dict[str, str]:
     """`变量 -> /agc/targets`：该变量**在它自己那次 declare_parameter 调用里**取了 /agc/targets。
 
-    **为什么不能用 `[^;]*?` 正则**：那会跨行把**下一条** declare_parameter 的默认值
-    （如 `targets_topic`）算到上一行的变量（如 `goal_topic`）头上。实测因此把
-    `agc_rl/high_level_node.py` 的 `self.goal_topic` 误认成 /agc/targets 的发布话题。
-    ⇒ 必须按**单次调用的实参**判定。
+ **为什么不能用 `[^;]*?` 正则**：那会跨行把**下一条** declare_parameter 的默认值
+ （如 `targets_topic`）算到上一行的变量（如 `goal_topic`）头上。实测因此把
+ `agc_rl/high_level_node.py` 的 `self.goal_topic` 误认成 /agc/targets 的发布话题。
+ ⇒ 必须按**单次调用的实参**判定。
     """
     out = {}
     for start, _end, args in _call_args(code, 'declare_parameter'):
@@ -431,20 +431,20 @@ def _topic_defaults(code: str) -> dict[str, str]:
 def test_targets_publisher_is_still_gt_adapter_only():
     """/agc/targets 的发布者仍是 gt_adapter —— 相机不得改变任务链的数据来源。
 
-    **这条判据写错过两次，记下来防止再犯**（两次都是"判据与真实代码脱节"）：
+ **这条判据写错过两次，记下来防止再犯**（两次都是"判据与真实代码脱节"）：
 
-    1. 第一版在 `create_publisher` 的**同一行**里 grep `/agc/targets`。但该话题在代码里是
-       **参数默认值**（`target_topic_`），`create_publisher` 收到的是**变量**，故永远匹配不到
-       ⇒ 断言恒空。这比没有断言更糟：它会让"真的多了一个发布者"也照样绿。
-    2. 第二版改成"`create_publisher` 附近 200 字符内出现该变量"。但 `[^;]` 会跨行吞掉**下一条**
+ 1. 第一版在 `create_publisher` 的**同一行**里 grep `/agc/targets`。但该话题在代码里是
+ **参数默认值**（`target_topic_`），`create_publisher` 收到的是**变量**，故永远匹配不到
+ ⇒ 断言恒空。这比没有断言更糟：它会让"真的多了一个发布者"也照样绿。
+ 2. 第二版改成"`create_publisher` 附近 200 字符内出现该变量"。但 `[^;]` 会跨行吞掉**下一条**
        `create_subscription(..., self.targets_topic, ...)`，把 `agc_rl/high_level_node.py`
-       （它只**订阅** targets、发布的是 goal_topic）误判成发布者。
+ （它只**订阅** targets、发布的是 goal_topic）误判成发布者。
 
     **正确做法**：解析 `create_publisher(...)` 的**顶层实参**，只看**话题那个实参**：
-      * C++ `create_publisher<Msg>(topic, qos)` → 实参[0] 是话题；
+ * C++ `create_publisher<Msg>(topic, qos)` → 实参[0] 是话题；
       * Python `self.create_publisher(Msg, topic, qos)` → 实参[1] 是话题。
-    再把该实参解析成"字面量 / 已知默认值为 /agc/targets 的变量"，只有后者才算发布者。
-    另加**退化保护**：一处发布者都找不到即 FAIL（说明判据已与代码脱节）。
+ 再把该实参解析成"字面量 / 已知默认值为 /agc/targets 的变量"，只有后者才算发布者。
+ 另加**退化保护**：一处发布者都找不到即 FAIL（说明判据已与代码脱节）。
     """
     src_root = ROOT / 'src'
     if not src_root.is_dir():

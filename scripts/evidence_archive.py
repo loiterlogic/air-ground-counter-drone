@@ -4,17 +4,17 @@
 为每个 experiment run 生成三件产物（**只新增，不覆盖既有 run 产物**）：
 
 1. **入库 manifest** `experiments/<campaign>/<run_id>/config/evidence_manifest.json`
-   —— 逐产物 `sha256` / 大小 / 类型 + 运行身份（`run_id` / `episode_id` / `git_commit` /
-   `backend`）+ 生成器版本 + **访问位置**（归档路径）+ **保留期**。
+ —— 逐产物 `sha256` / 大小 / 类型 + 运行身份（`run_id` / `episode_id` / `git_commit` /
+ `backend`）+ 生成器版本 + **访问位置**（归档路径）+ **保留期**。
 2. **本地不可变归档** `experiments/_archive/<campaign>/<run_id>.tar` + 同名 `.tar.sha256`
-   （只读 0444；归档文件哈希与取回验证记录见侧车文件）。
+ （只读 0444；归档文件哈希与取回验证记录见侧车文件）。
 3. **跨路径取回验证**：归档解包到**另一路径**（临时目录）逐文件哈希比对，证明「**可取回**」，
-   结果落 `experiments/_archive/<campaign>/<run_id>.retrieval.json`。
+ 结果落 `experiments/_archive/<campaign>/<run_id>.retrieval.json`。
 
-决策真源：[ADR-0006](../docs/adr/0006-experiment-artifacts-and-evidence-discipline.md#top)；
+决策配置文件：[ADR-0006](../docs/adr/0006-experiment-artifacts-and-evidence-discipline.md#top)；
 产物纪律 [ADR-0006](../docs/adr/0006-experiment-artifacts-and-evidence-discipline.md#top)；
 运行身份 [ADR-0006](../docs/adr/0006-experiment-artifacts-and-evidence-discipline.md#top)。
-R-030 证据丢失事实**只引用** [ADR-0006](../docs/adr/0006-experiment-artifacts-and-evidence-discipline.md#top)，
+ 证据丢失事实**只引用** [ADR-0006](../docs/adr/0006-experiment-artifacts-and-evidence-discipline.md#top)，
 本脚本**不**伪造 / **不**重建 / **不**冒充复核已丢失原件。
 
 用法::

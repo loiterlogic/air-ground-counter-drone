@@ -2,7 +2,7 @@
 //
 // 控制层用 agc_control 的 **pluginlib** 插件（轨迹生成器 + LQR 控制器），本节只做
 // 「取参考 → 安全层 → LQR → 世界系 ENU 转 PX4 setpoint」的消费者工作（ADR-0004）。
-// 接管后才成为 setpoint 发布者；R-035：以**显式控制许可**（`active_controller==own_name` 的
+// 接管后才成为 setpoint 发布者；：以**显式控制许可**（`active_controller==own_name` 的
 // 唯一授权 + claim/ack 顺序）判定「本机是否唯一授权命令者」，发布者计数**仅作告警**（对齐契约 [唯一执行口]）。
 
 #include <algorithm>
@@ -56,7 +56,7 @@ public:
   }
 
 protected:
-  /// R-035：进程实例唯一标识（getpid + 随机）——用于区分**同名重复节点**（竞争者检出）。
+  /// ：进程实例唯一标识（getpid + 随机）——用于区分**同名重复节点**（竞争者检出）。
   static std::string makeSelfUid()
   {
     char buf[64];
@@ -86,39 +86,39 @@ protected:
       "tracking_status_topic", "/agc/air/tracking_status");
     own_name_ = declare_param_idempotent<std::string>("controller_name", "trajectory_tracker");
     tracking_ref_timeout_s_ = declare_param_idempotent<double>("tracking_ref_timeout_s", 0.5);
-    // R-032：目标门同时校验**源时间窗**与 **confidence**（对齐契约 C10：ref_max_age_s / confidence≥0.5）。
+    // 目标门同时校验**源时间窗**与 **confidence**（对齐契约 ：ref_max_age_s / confidence≥0.5）。
     target_max_age_s_ = declare_param_idempotent<double>("target_max_age_s", 0.5);
     confidence_min_ = declare_param_idempotent<double>("confidence_min", 0.5);
     // N4（2026-11-03）：`acquired_` 判据 = **连续新鲜** `latch_hold_s` 秒（0 = 旧行为"一帧即建立"）。
-    //   理由见 ⑨ 参考来源裁定处注释：一帧看见 ≠ 已捕获（实测会导致永久 hold）。
+    // 理由见 ⑨ 参考来源裁定处注释：一帧看见 ≠ 已捕获（实测会导致永久 hold）。
     latch_hold_s_ = declare_param_idempotent<double>("latch_hold_s", 3.0);
-    // R-032：RL 局部偏移的**寿命 / 生效窗口**与**能力限幅**（幅值上限）。
+    // RL 局部偏移的**寿命 / 生效窗口**与**能力限幅**（幅值上限）。
     rl_offset_timeout_s_ = declare_param_idempotent<double>("rl_offset_timeout_s", 0.5);
     rl_offset_max_m_ = declare_param_idempotent<double>("rl_offset_max_m", 2.0);
     conflict_persist_s_ = declare_param_idempotent<double>("conflict_persist_s", 1.0);
-    // R-035：控制许可 —— 竞争者 claim 消失清冲突阈值（s）；许可 claim/ack 话题（配套诊断，**非** ABI、**非**命令者）。
+    // 控制许可 —— 竞争者 claim 消失清冲突阈值（s）；许可 claim/ack 话题（配套诊断，**非** ABI、**非**命令者）。
     conflict_clear_s_ = declare_param_idempotent<double>("conflict_clear_s", 2.0);
     control_permit_topic_ = declare_param_idempotent<std::string>(
       "control_permit_topic", "/agc/air/control_permit");
     max_yaw_rate_ = declare_param_idempotent<double>("max_yaw_rate", 2.0);
-    // W7-b（P1 甲方案）：观测偏航模式——P1 自变量 α 的落地（单一真源 air.yaml，缺省行为不变）。
-    //   "velocity"（缺省）= 机头随速度方向（= 既有行为 / 非协同观测臂）；
-    //   "target"          = 机头（固连前视相机）**对准目标**（= 空地协同观测臂）。
+    // （P1 甲方案）：观测偏航模式——P1 自变量 α 的落地（配置文件 air.yaml，缺省行为不变）。
+    // "velocity"（缺省）= 机头随速度方向（= 既有行为 / 非协同观测臂）；
+    // "target" = 机头（固连前视相机）**对准目标**（= 空地协同观测臂）。
     observe_yaw_mode_ =
       declare_param_idempotent<std::string>("observe_yaw_mode", "velocity");
-    // W7-b（P1 甲）：**指向信息来源**（仅 `observe_yaw_mode=target` 时创建订阅与使用）。
-    //   如实标注：本段用**真值方位**（`/agc/gt/intruder_uav`）作**指向**信息 → 该臂 = **显式 oracle
-    //   指向臂**（ADR-0022 允许「显式 oracle 臂」并须标注）；**测量**仍走真实感知通道
-    //   （噪声 / 丢包 / FOV 照常生效，不因指向而放宽）。
-    //   为何不用 `/agc/targets`（融合航迹）：对准会依赖「相机已看见目标」→ **冷启动自锁**
-    //   （实测：目标不在初始视场时两臂可见性同为 0，对不准 ⇒ 看不见 ⇒ 更对不准）。
+    // （P1 甲）：**指向信息来源**（仅 `observe_yaw_mode=target` 时创建订阅与使用）。
+    // 如实标注：本段用**真值方位**（`/agc/gt/intruder_uav`）作**指向**信息 → 该臂 = **显式 oracle
+    // 指向臂**（ADR-0022 允许「显式 oracle 臂」并须标注）；**测量**仍走真实感知通道
+    // （噪声 / 丢包 / FOV 照常生效，不因指向而放宽）。
+    // 为何不用 `/agc/targets`（融合航迹）：对准会依赖「相机已看见目标」→ **冷启动自锁**
+    // （实测：目标不在初始视场时两臂可见性同为 0，对不准 ⇒ 看不见 ⇒ 更对不准）。
     yaw_aim_gt_topic_ =
       declare_param_idempotent<std::string>("yaw_aim_gt_topic", "/agc/gt/intruder_uav");
-    // G2（ADR-0009）：`observe_yaw_mode=track` —— **感知航迹指向**（非 oracle）。
-    //   输入缝 = 既有 `/agc/targets`（`target_pos_` / `target_stamp_` / `target_confidence_`），
-    //   **不**创建 `/agc/gt/*` 指向订阅；与 `target` 分支的差别只在这里。
-    //   无 fresh 航迹时执行**确定性偏航搜索**（三角波扫掠）以打破"先看见才能对准"的自锁；
-    //   搜索**只改偏航**，不改平移八字 / 恒速 / 相位或高度基准（C1 不受影响）。
+    // （ADR-0009）：`observe_yaw_mode=track` —— **感知航迹指向**（非 oracle）。
+    // 输入缝 = 既有 `/agc/targets`（`target_pos_` / `target_stamp_` / `target_confidence_`），
+    // **不**创建 `/agc/gt/*` 指向订阅；与 `target` 分支的差别只在这里。
+    // 无 fresh 航迹时执行**确定性偏航搜索**（三角波扫掠）以打破"先看见才能对准"的自锁；
+    // 搜索**只改偏航**，不改平移八字 / 恒速 / 相位或高度基准（ 不受影响）。
     yaw_search_rate_dps_ =
       declare_param_idempotent<double>("yaw_search_rate_dps", 25.0);
     yaw_search_amplitude_deg_ =
@@ -166,19 +166,19 @@ protected:
       conflict_topic_, rclcpp::QoS(1).transient_local().reliable());
     active_pub_ = create_publisher<std_msgs::msg::String>(
       active_topic_, rclcpp::QoS(1).transient_local().reliable());
-    // R-032：配套诊断（参考来源 / 冻结 / 安全层介入 / offset 应用），**非**命令者 / 非 ABI。
+    // 配套诊断（参考来源 / 冻结 / 安全层介入 / offset 应用），**非**命令者 / 非 ABI。
     track_status_pub_ = create_publisher<std_msgs::msg::String>(
       track_status_topic_, rclcpp::QoS(rclcpp::KeepLast(10)).reliable());
-    // R-035：控制许可 claim/ack（std_msgs/String JSON，transient_local + reliable；**非** ABI、**非**命令者）。
+    // 控制许可 claim/ack（std_msgs/String JSON，transient_local + reliable；**非** ABI、**非**命令者）。
     // 判据 = 显式 claim（不同 uid 且 by==own_name）；**从不**凭发布者计数决定权威。交权顺序 =
-    // takeoff 先 releaseSetpointPublishers() 让出唯一发布者，再 publishActive("trajectory_tracker")。
+    // takeoff 先 releaseSetpointPublishers 让出唯一发布者，再 publishActive("trajectory_tracker")。
     permit_pub_ = create_publisher<std_msgs::msg::String>(
       control_permit_topic_, rclcpp::QoS(1).transient_local().reliable());
     permit_sub_ = create_subscription<std_msgs::msg::String>(
       control_permit_topic_, rclcpp::QoS(1).transient_local().reliable(),
       [this](std_msgs::msg::String::SharedPtr m) {onPermitClaim(*m);});
 
-    // 相位复位触发（C5）：episode 起始把轨迹相位归零（spec R3；供 R2 起始时序调用）
+    // 相位复位触发：episode 起始把轨迹相位归零（spec R3；供 R2 起始时序调用）
     reset_phase_srv_ = create_service<std_srvs::srv::Trigger>(
       reset_phase_service_,
       [this](
@@ -190,7 +190,7 @@ protected:
       tracking_ref_topic_, rclcpp::QoS(rclcpp::KeepLast(1)).reliable(),
       [this](trajectory_msgs::msg::MultiDOFJointTrajectory::SharedPtr m) {
         tracking_ref_ = agc_air::fromMsg(*m);
-        // R-032：以**消息自身 header.stamp** 计参考年龄（不再以接收 now 覆盖 → 旧包重放不会"变新鲜"）。
+        // 以**消息自身 header.stamp** 计参考年龄（不再以接收 now 覆盖 → 旧包重放不会"变新鲜"）。
         tracking_ref_stamp_ = sourceStamp(m->header.stamp);
         have_tracking_ref_ = true;
       });
@@ -199,10 +199,10 @@ protected:
       target_topic_, rclcpp::QoS(rclcpp::KeepLast(1)).reliable(),
       [this](agc_msgs::msg::TargetTrackArray::SharedPtr m) {
         // 空数组 = **本拍无新观测**（感知侧门控 / 丢包），**不是**目标消失（ADR-0009）。
-        //   2026-11-03（N4）修正，与 `standoff_follower` 同款：旧实现 `have_target_=false` 把
-        //   "没新数据"当成"目标丢了"，`drop_prob=0.1` 下每 ~10 拍就误判一次 → `targetFresh()`
-        //   假阴性 → `acquired_` 分支进入 hold。保持上一有效航迹，由年龄（`target_max_age_s=0.5`）
-        //   判定失效——那才是契约 C10 的过期语义。
+        // 2026-11-03（N4）修正，与 `standoff_follower` 同款：旧实现 `have_target_=false` 把
+        // "没新数据"当成"目标丢了"，`drop_prob=0.1` 下每 ~10 拍就误判一次 → `targetFresh`
+        // 假阴性 → `acquired_` 分支进入 hold。保持上一有效航迹，由年龄（`target_max_age_s=0.5`）
+        // 判定失效——那才是契约 的过期语义。
         if (m->tracks.empty()) {
           ++diag_empty_;
           return;
@@ -223,7 +223,7 @@ protected:
       rl_offset_topic_, rclcpp::QoS(rclcpp::KeepLast(1)).reliable(),
       [this](geometry_msgs::msg::Vector3Stamped::SharedPtr m) {
         rl_offset_ = agc_air::Vector3(m->vector.x, m->vector.y, m->vector.z);
-        // R-032：记录偏移**源时间**（寿命 / 生效窗口判据）。
+        // 记录偏移**源时间**（寿命 / 生效窗口判据）。
         rl_offset_stamp_ = sourceStamp(m->header.stamp);
         have_rl_offset_ = true;
       });
@@ -245,11 +245,11 @@ protected:
     have_control_ = false;
     conflict_since_ = now();
     last_yaw_ = 0.0;
-    // R-032：新 episode 起点重置"已获模式"与冻结状态。
+    // 新 episode 起点重置"已获模式"与冻结状态。
     acquired_ = false;
     latch_start_ = rclcpp::Time(0, 0, RCL_ROS_TIME);   // N4：连续新鲜计时清零
     last_good_ref_ = agc_control::Reference();
-    // R-035：**重启不残留旧权威**——重置授权 / 冲突 / 竞争者与 claim；随后由当前 active_controller 指定推导。
+    // **重启不残留旧权威**——重置授权 / 冲突 / 竞争者与 claim；随后由当前 active_controller 指定推导。
     resetAuthorityState();
     publishConflict(false);   // 发布初值，便于观测（冲突置位时再翻转）
 
@@ -268,7 +268,7 @@ protected:
     if (active_pub_) {active_pub_->on_deactivate();}
     if (track_status_pub_) {track_status_pub_->on_deactivate();}
     if (permit_pub_) {permit_pub_->on_deactivate();}
-    // R-035：停发即重置授权 / 冲突 / 竞争者与 claim（重启不残留旧权威，见 ADR-0010）。
+    // 停发即重置授权 / 冲突 / 竞争者与 claim（重启不残留旧权威，见 ADR-0010）。
     resetAuthorityState();
     return CallbackReturn::SUCCESS;
   }
@@ -296,7 +296,7 @@ protected:
   }
 
 private:
-  /// /agc/air/odom 的 twist 为**机体系 FLU**（nav_msgs 约定，见 R-003）→ 还原世界 ENU 速度
+  /// /agc/air/odom 的 twist 为**机体系 FLU**（nav_msgs 约定，见 ）→ 还原世界 ENU 速度
   static agc_air::Vector3 worldVelFromOdom(const nav_msgs::msg::Odometry & o)
   {
     const agc_air::Quaternion q(o.pose.pose.orientation.w, o.pose.pose.orientation.x,
@@ -305,7 +305,7 @@ private:
       o.twist.twist.linear.x, o.twist.twist.linear.y, o.twist.twist.linear.z));
   }
 
-  /// R-032：以**消息自身 header.stamp**（源时间）为准；未设源时间（全 0）则退回接收 now
+  /// ：以**消息自身 header.stamp**（源时间）为准；未设源时间（全 0）则退回接收 now
   /// （兼容未置 stamp 的发布者，且不把接收时刻当作源时刻）。
   rclcpp::Time sourceStamp(const builtin_interfaces::msg::Time & stamp) const
   {
@@ -313,7 +313,7 @@ private:
     return rclcpp::Time(stamp, RCL_ROS_TIME);
   }
 
-  /// R-032：参考新鲜度以**源时间**计（旧 ref 重放 → 源 stamp 为过去 → 过期即拒）。
+  /// ：参考新鲜度以**源时间**计（旧 ref 重放 → 源 stamp 为过去 → 过期即拒）。
   bool trackingRefFresh() const
   {
     if (!have_tracking_ref_) {return false;}
@@ -321,10 +321,10 @@ private:
     return age >= 0.0 && age < tracking_ref_timeout_s_;
   }
 
-  /// G2（ADR-0009）：`track` 模式的指向新鲜门。
-  ///   与 `targetFresh()` **同语义**（源时间窗 + confidence），但**必须独立存在**：
-  ///   * 它是"感知航迹可用"的唯一判据，审计时能一眼看出 `track` 分支没有读 GT；
-  ///   * 另加非有限值保护（NaN/Inf 航迹视为不可用）。
+  /// （ADR-0009）：`track` 模式的指向新鲜门。
+  /// 与 `targetFresh` **同语义**（源时间窗 + confidence），但**必须独立存在**：
+  /// * 它是"感知航迹可用"的唯一判据，审计时能一眼看出 `track` 分支没有读 GT；
+  /// * 另加非有限值保护（NaN/Inf 航迹视为不可用）。
   bool track_aim_fresh() const
   {
     if (!have_target_) {return false;}
@@ -332,7 +332,7 @@ private:
     return targetFresh();
   }
 
-  /// R-032：目标新鲜度 = **源时间窗内** **且** `confidence >= confidence_min`（对齐契约 C10）。
+  /// ：目标新鲜度 = **源时间窗内** **且** `confidence >= confidence_min`（对齐契约 ）。
   bool targetFresh() const
   {
     if (!have_target_) {return false;}
@@ -340,8 +340,8 @@ private:
     return age >= 0.0 && age < target_max_age_s_ && target_confidence_ >= confidence_min_;
   }
 
-  /// W7-b（P1 甲）：**指向源**（真值方位）新鲜度——仅 `observe_yaw_mode=target` 时使用；
-  /// 复用 `target_max_age_s_` 作年龄界（与契约 C10 目标窗口同量级），超龄即**不指向**（不凭陈旧方位转机头）。
+  /// （P1 甲）：**指向源**（真值方位）新鲜度——仅 `observe_yaw_mode=target` 时使用；
+  /// 复用 `target_max_age_s_` 作年龄界（与契约 目标窗口同量级），超龄即**不指向**（不凭陈旧方位转机头）。
   bool yawAimFresh() const
   {
     if (!have_yaw_aim_) {return false;}
@@ -349,7 +349,7 @@ private:
     return age >= 0.0 && age < target_max_age_s_;
   }
 
-  /// R-032：RL offset 的**寿命 / 生效窗口**（源时间 + 超时归零）。
+  /// ：RL offset 的**寿命 / 生效窗口**（源时间 + 超时归零）。
   bool rlOffsetFresh() const
   {
     if (!have_rl_offset_) {return false;}
@@ -367,9 +367,9 @@ private:
         odom.pose.pose.position.z);   // 世界 ENU（px4_adapter 已含 EKF 原点平移）
     state.vel = worldVelFromOdom(odom);   // 机体系 FLU → 世界 ENU（R-003）
 
-    // ① 显式唯一授权（R-035）：仅由 active_controller 指定（交权路线：takeoff 先
-    //    releaseSetpointPublishers() 让出唯一发布者，**再** publishActive("trajectory_tracker")）。
-    //    **不**凭发布者计数判定权威（计数含静默 publisher / DDS 发现延迟）。
+    // ① 显式唯一授权：仅由 active_controller 指定（交权路线：takeoff 先
+    // releaseSetpointPublishers 让出唯一发布者，**再** publishActive("trajectory_tracker")）。
+    // **不**凭发布者计数判定权威（计数含静默 publisher / DDS 发现延迟）。
     is_authorized_ = (commanded_controller_ == own_name_);
 
     // ② 冲突裁决：显式竞争者 claim 持续 > conflict_persist_s_ → conflict_；消失 ≥ conflict_clear_s → 清。
@@ -384,17 +384,17 @@ private:
     // ⑤ 冲突 / 许可状态可观测（control_conflict）——冲突置位（若有）**先于**任何 setpoint 发布。
     publishConflict(conflict_);
 
-    // ⑥ 仅在被授权且无冲突时接管（在有效接管点重置相位，C5 语义：接管即 t=0）。
+    // ⑥ 仅在被授权且无冲突时接管（在有效接管点重置相位， 语义：接管即 t=0）。
     if (permit && !have_control_) {
       trajectory_->reset(state);
       controller_->reset();
       t0_ = now();   // R-035：新一集起点（接管 = 新许可生效点）。
       // 高度基准（ADR-0008，唯一世界高度语义 = 世界 ENU z）：状态已是世界 ENU（px4_adapter 含 EKF
-      // 原点平移，R-003），此处 z_offset 是**层高基准**选择（轨迹 h=2.5 m 相对接管时刻机体高度）——
+      // 原点平移，），此处 z_offset 是**层高基准**选择（轨迹 h=2.5 m 相对接管时刻机体高度）——
       // **非**世界原点代偿；对外 base_ref 与该 effective **同一基准**（发布带同一 z_offset_）。
       z_offset_ = state.pos.z() - trajectory_->sample(0.0).pos.z();
       have_control_ = true;
-      // R-032：新一集起点——重置"已获模式" / 冻结 / 最后有效参考。
+      // 新一集起点——重置"已获模式" / 冻结 / 最后有效参考。
       frozen_ = false;
       acquired_ = false;
       latch_start_ = rclcpp::Time(0, 0, RCL_ROS_TIME);   // N4：连续新鲜计时清零
@@ -402,8 +402,8 @@ private:
       last_yaw_ = agc_air::yawFromQuaternion(
         agc_air::Quaternion(odom.pose.pose.orientation.w, odom.pose.pose.orientation.x,
         odom.pose.pose.orientation.y, odom.pose.pose.orientation.z));
-      // G2（ADR-0009）：搜索相位基准 = 接管瞬间机头（**不是**真值方位）。
-      //   同接管点重置日志锁，保证新一集的"搜索生效 / 指向生效"各记一次。
+      // （ADR-0009）：搜索相位基准 = 接管瞬间机头（**不是**真值方位）。
+      // 同接管点重置日志锁，保证新一集的"搜索生效 / 指向生效"各记一次。
       search_center_yaw_ = last_yaw_;
       track_aim_logged_ = false;
       track_search_logged_ = false;
@@ -414,17 +414,17 @@ private:
     const agc_control::Reference base_ref = trajectory_->sample(t);
 
     // ⑦ 始终发布基础参考（对外话题，spec R8）——**非** setpoint（不构成命令者）。
-    // R-036（ADR-0008）：对外 `base_ref` 与生效 `effective` 须**同一世界高度基准**——发布前对**副本**
-    //   加 `z_offset_`（层高基准），使公开 base_ref 的 z 与 effective 一致（**不**静默不同）；
-    //   **不**改动下游使用的 `base_ref`（下游 / effective 仍按世界 ENU 轨迹原高 + 同一 z_offset）。
+    // （ADR-0008）：对外 `base_ref` 与生效 `effective` 须**同一世界高度基准**——发布前对**副本**
+    // 加 `z_offset_`（层高基准），使公开 base_ref 的 z 与 effective 一致（**不**静默不同）；
+    // **不**改动下游使用的 `base_ref`（下游 / effective 仍按世界 ENU 轨迹原高 + 同一 z_offset）。
     if (ref_pub_ && ref_pub_->is_activated()) {
       agc_control::Reference base_ref_out = base_ref;
       base_ref_out.pos.z() += z_offset_;
       ref_pub_->publish(agc_air::toMsg(base_ref_out, world_frame_, now()));
     }
 
-    // ⑧ 无许可 → relinquish（**已定义安全状态**）：置位后**本拍不发** OCM / setpoint（复用 R-032 hold
-    //    内部状态：冲突期已置 frozen_=true）→ PX4 自身 failsafe 保持/降落。
+    // ⑧ 无许可 → relinquish（**已定义安全状态**）：置位后**本拍不发** OCM / setpoint（复用 hold
+    // 内部状态：冲突期已置 frozen_=true）→ PX4 自身 failsafe 保持/降落。
     if (!permit) {
       if (have_control_) {
         have_control_ = false;
@@ -438,21 +438,21 @@ private:
       return;   // **本拍不发 OCM / setpoint**（不继续争夺）
     }
 
-    // ⑨ 许可路径：参考 / 目标新鲜度（以**源 header.stamp**计，目标门并检 confidence，R-032）。
+    // ⑨ 许可路径：参考 / 目标新鲜度（以**源 header.stamp**计，目标门并检 confidence，）。
     const bool ref_fresh = trackingRefFresh();
     const bool tgt_fresh = targetFresh();
 
-    // 参考来源裁定（spec R6 + R-032 冻结下游封闭）：
-    //   tracking —— 参考与目标均新鲜 → 采用 tracking_ref（覆盖基础轨迹）；
-    //   hold     —— **已获目标后**失参考 / 失目标 → 显式 hold（保持最后有效位置、前馈清零）；
-    //   base     —— **从未获目标** → 正常基础八字。
+    // 参考来源裁定（spec R6 + 冻结下游封闭）：
+    // tracking —— 参考与目标均新鲜 → 采用 tracking_ref（覆盖基础轨迹）；
+    // hold —— **已获目标后**失参考 / 失目标 → 显式 hold（保持最后有效位置、前馈清零）；
+    // base —— **从未获目标** → 正常基础八字。
     //
     // 2026-11-03（N4 / N1 子计划第 3 步）：`acquired_` 判据由「收到一帧新鲜航迹」改为
-    //   **「连续 `latch_hold_s` 秒满足新鲜度」**。理由：旧判据把"偶然看见一帧"当成"已捕获"，
-    //   实测后果是——八字偶然扫进量程、看见 1 帧（`gate_ok=30`）后立刻失新鲜 → 永久 hold
-    //   → 全程 `gate_ok=0` → TIMEOUT（`20261103-n1-stag70` episode 1 的真实死因）。
-    //   契约 C10 的"过期即冻结"针对的是**已捕获目标后**失联；"一帧看见"不等于"已捕获"。
-    //   判据放宽的是**捕获的定义**，不是**冻结的语义**——冻结仍然在过期后立即生效。
+    // **「连续 `latch_hold_s` 秒满足新鲜度」**。理由：旧判据把"偶然看见一帧"当成"已捕获"，
+    // 实测后果是——八字偶然扫进量程、看见 1 帧（`gate_ok=30`）后立刻失新鲜 → 永久 hold
+    // → 全程 `gate_ok=0` → TIMEOUT（`20261103-n1-stag70` episode 1 的真实死因）。
+    // 契约 的"过期即冻结"针对的是**已捕获目标后**失联；"一帧看见"不等于"已捕获"。
+    // 判据放宽的是**捕获的定义**，不是**冻结的语义**——冻结仍然在过期后立即生效。
     agc_control::Reference effective;
     const char * source = "base";
     if (ref_fresh && tgt_fresh) {
@@ -492,7 +492,7 @@ private:
       source = "base";
     }
 
-    // RL 局部偏移：**仅正常跟踪模式**生效（hold / 基础模式不叠加）；寿命 / 生效窗口 + 能力限幅（R-032）。
+    // RL 局部偏移：**仅正常跟踪模式**生效（hold / 基础模式不叠加）；寿命 / 生效窗口 + 能力限幅。
     bool offset_applied = false;
     bool offset_clamped = false;
     if (std::string(source) == "tracking" && rlOffsetFresh()) {
@@ -509,10 +509,10 @@ private:
     // 高度基准对齐（见接管处说明）
     effective.pos.z() += z_offset_;
 
-    // 联合安全屏障（spec R7 + R-033）：联合约束复检（障碍 + 目标间距**同时**）+ 扫掠复检
-    //      + **显式不可行路径**（无可行参考 → hold / 逃逸）；R-032 记录安全层是否介入。
+    // 联合安全屏障（spec R7 + ）：联合约束复检（障碍 + 目标间距**同时**）+ 扫掠复检
+    // + **显式不可行路径**（无可行参考 → hold / 逃逸）； 记录安全层是否介入。
     // ADR-0010「垂直门控」：传入**实测垂直速度**——门控用 `z − v_z⁺·τ` 判定，下降穿越顶面
-    //      之前圆盘即复活（不需要状态机 / 滞回）。
+    // 之前圆盘即复活（不需要状态机 / 滞回）。
     const agc_air::SafetyResult shield_res =
       shield_.apply(effective, state.pos, state.vel, target_pos_, tgt_fresh);
     effective = shield_res.ref;
@@ -523,15 +523,15 @@ private:
     const agc_air::Vector3 acc = controller_->computeAcceleration(state, effective);
 
     // 偏航：默认**随速度方向**（限速率，零速时保持）；`observe_yaw_mode == "target"` 时
-    // **对准目标** —— W7-b P1（甲方案）自变量 α 的落地：空地协同观测 = 令机体**固连前视相机**
+    // **对准目标** —— P1（甲方案）自变量 α 的落地：空地协同观测 = 令机体**固连前视相机**
     // 持续对准目标（反之机头随速度 → 目标常被甩出 ±50° 视场 → 观测间歇）。
-    // 目标须过**指向源新鲜门** `yawAimFresh()`（真值方位，年龄 ≤ `target_max_age_s_`）；
+    // 目标须过**指向源新鲜门** `yawAimFresh`（真值方位，年龄 ≤ `target_max_age_s_`）；
     // 不过门则**退回随速度**（不凭陈旧方位转机头）。
     double yaw = last_yaw_;
     double desired_yaw = std::numeric_limits<double>::quiet_NaN();
     const bool aim_fresh = yawAimFresh();
-    // G2（ADR-0009）：`track` 模式的指向源是**感知航迹**（`/agc/targets`），不是真值。
-    //   与 `target` 分支互斥：本分支**不读** `yaw_aim_pos_`（那是 GT），只用 `target_pos_`。
+    // （ADR-0009）：`track` 模式的指向源是**感知航迹**（`/agc/targets`），不是真值。
+    // 与 `target` 分支互斥：本分支**不读** `yaw_aim_pos_`（那是 GT），只用 `target_pos_`。
     if (observe_yaw_mode_ == "track" && track_aim_fresh()) {
       const double dx = target_pos_.x() - state.pos.x();
       const double dy = target_pos_.y() - state.pos.y();
@@ -547,10 +547,10 @@ private:
       }
     } else if (observe_yaw_mode_ == "track") {
       // 无 fresh 航迹 → **确定性搜索**（ADR-0009）。
-      //   形态：以 `yaw_search_rate_dps_` **匀速**扫过 ±`yaw_search_amplitude_deg_` 的扇区，
-      //   到边界折返（三角波）。相对正弦的好处：角速度恒定、覆盖均匀、可预测——
-      //   同一接管相位必然得到同一朝向（可复现），且**不用真值播种**。
-      //   只输出**偏航**，平移由 `effective` 照常给出 → C1 八字/恒速/高度完全不变。
+      // 形态：以 `yaw_search_rate_dps_` **匀速**扫过 ±`yaw_search_amplitude_deg_` 的扇区，
+      // 到边界折返（三角波）。相对正弦的好处：角速度恒定、覆盖均匀、可预测——
+      // 同一接管相位必然得到同一朝向（可复现），且**不用真值播种**。
+      // 只输出**偏航**，平移由 `effective` 照常给出 → 八字/恒速/高度完全不变。
       const double t = have_control_ ? (now() - t0_).seconds() : 0.0;
       const double amp = yaw_search_amplitude_deg_ * M_PI / 180.0;
       const double rate = std::max(yaw_search_rate_dps_, 1e-3) * M_PI / 180.0;
@@ -606,8 +606,8 @@ private:
     offboard_->publishControlMode();
     offboard_->publishSetpoint(effective.pos, effective.vel, acc, yaw);
 
-    // R-032/R-035：配套诊断（std_msgs/String，非 ABI、非命令者）——许可 / 冲突 / 参考来源 /
-    //   安全层介入 / offset / 实际写入者与频率（claim 另发 control_permit）。
+    // /：配套诊断（std_msgs/String，非 ABI、非命令者）——许可 / 冲突 / 参考来源 /
+    // 安全层介入 / offset / 实际写入者与频率（claim 另发 control_permit）。
     publishClaim(permit);
     publishTrackStatus(permit, source, ref_fresh, tgt_fresh, offset_applied, offset_clamped,
       shield_active, shield_infeasible, shield_res.reason, shield_res.action,
@@ -615,9 +615,9 @@ private:
       shield_res.gate_height_m);
   }
 
-  /// R-035：冲突裁决——判据为**显式竞争者 claim**（不同 uid 且 by==own_name），**非**发布者计数：
-  ///   竞争者 claim 持续 > conflict_persist_s_ → conflict_=true（复用 R-032 hold：置 frozen_）；
-  ///   竞争者 claim 停止刷新 ≥ conflict_clear_s_ → 视为消失 → 清 conflict_（若仍被授权则恢复）。
+  /// ：冲突裁决——判据为**显式竞争者 claim**（不同 uid 且 by==own_name），**非**发布者计数：
+  /// 竞争者 claim 持续 > conflict_persist_s_ → conflict_=true（复用 hold：置 frozen_）；
+  /// 竞争者 claim 停止刷新 ≥ conflict_clear_s_ → 视为消失 → 清 conflict_（若仍被授权则恢复）。
   void updateConflict()
   {
     const auto t = now();
@@ -640,7 +640,7 @@ private:
     }
   }
 
-  /// R-035：许可 claim/ack 受理——**只有显式 claim**（`by==own_name` 且 `uid!=self_uid`）才算竞争者；
+  /// ：许可 claim/ack 受理——**只有显式 claim**（`by==own_name` 且 `uid!=self_uid`）才算竞争者；
   /// 对**合法静默 publisher**（从不 claim）不误报。重复节点检出：同名重复实例（不同 uid）互相检出。
   void onPermitClaim(const std_msgs::msg::String & m)
   {
@@ -656,7 +656,7 @@ private:
     competitor_uid_ = uid;
   }
 
-  /// R-035：发布控制许可 claim（std_msgs/String JSON；transient_local + reliable，**非** ABI、**非**命令者）。
+  /// ：发布控制许可 claim（std_msgs/String JSON；transient_local + reliable，**非** ABI、**非**命令者）。
   /// 状态变化或每 ~1s heartbeat 发一次（避免 50 Hz 刷屏）。
   void publishClaim(bool permit)
   {
@@ -682,7 +682,7 @@ private:
     }
   }
 
-  /// R-035：claim JSON 字段解析（`"key": "value"` 或 `"key": value`；无空格 / 有空格均容错）。
+  /// ：claim JSON 字段解析（`"key": "value"` 或 `"key": value`；无空格 / 有空格均容错）。
   static std::string claimField(const std::string & s, const std::string & key)
   {
     const auto kp = s.find("\"" + key + "\"");
@@ -702,7 +702,7 @@ private:
     return s.substr(vp, e - vp);
   }
 
-  /// R-035：重置授权 / 冲突 / 竞争者与 claim 状态（on_activate / deactivate / cleanup / shutdown / error）。
+  /// ：重置授权 / 冲突 / 竞争者与 claim 状态（on_activate / deactivate / cleanup / shutdown / error）。
   void resetAuthorityState()
   {
     is_authorized_ = false;
@@ -718,7 +718,7 @@ private:
     last_conflict_pub_valid_ = false;
   }
 
-  /// R-035：`control_conflict`（std_msgs/Bool，transient_local + reliable）——对消费方可观测。
+  /// ：`control_conflict`（std_msgs/Bool，transient_local + reliable）——对消费方可观测。
   /// **仅状态变化时发布**（避免 50 Hz 刷屏；transient_local 锁存最近值供晚订阅者回放）。
   void publishConflict(bool value)
   {
@@ -731,16 +731,16 @@ private:
     last_conflict_pub_valid_ = true;
   }
 
-  /// R-032/R-033：跟踪诊断（std_msgs/String JSON）——`source` 区分参考来源（base / tracking / hold）、
+  /// /：跟踪诊断（std_msgs/String JSON）——`source` 区分参考来源（base / tracking / hold）、
   /// **安全层必要修正**（`shield_active`）vs **offset 叠加**（`offset_applied` / `offset_clamped`）；
-  /// R-033 追加**显式不可行**诊断（`shield_infeasible` / `shield_reason` / `shield_action`）。
-  /// R-035 追加**控制许可 / 冲突 / 写者记账**（`permit` / `conflict` / `writers` / `sp_hz` / `uid` /
-  ///   `competitor_uid`）——既有字段**保持不变**（兼容 R-032/R-033 检查）。
-  /// R-036 追加**高度基准**诊断（`z_offset` / `height_datum`）：显式标注对外 base_ref 与 effective 的
-  ///   同一世界高度基准（唯一世界高度语义 = 世界 ENU z），使差异**可辨**（见 ADR-0008）。
+  /// 追加**显式不可行**诊断（`shield_infeasible` / `shield_reason` / `shield_action`）。
+  /// 追加**控制许可 / 冲突 / 写者记账**（`permit` / `conflict` / `writers` / `sp_hz` / `uid` /
+  /// `competitor_uid`）——既有字段**保持不变**（兼容 / 检查）。
+  /// 追加**高度基准**诊断（`z_offset` / `height_datum`）：显式标注对外 base_ref 与 effective 的
+  /// 同一世界高度基准（唯一世界高度语义 = 世界 ENU z），使差异**可辨**（见 ADR-0008）。
   /// ADR-0010「垂直门控」：追加 `shield_rings_obstacles` / `shield_rings_gated_off` /
-  ///   `shield_rings_target` / `shield_gate_height_m`——**归因可观测**：任何一次介入都能分辨
-  ///   「障碍盘」还是「目标间距盘」，以及本拍有多少障碍圆盘被垂直门控移除。
+  /// `shield_rings_target` / `shield_gate_height_m`——**归因可观测**：任何一次介入都能分辨
+  /// 「障碍盘」还是「目标间距盘」，以及本拍有多少障碍圆盘被垂直门控移除。
   void publishTrackStatus(bool permit, const char * source, bool ref_fresh, bool tgt_fresh,
     bool offset_applied, bool offset_clamped, bool shield_active,
     bool shield_infeasible, const std::string & shield_reason,
@@ -775,7 +775,7 @@ private:
     track_status_pub_->publish(msg);
   }
 
-  // C5：相位复位触发 —— 复用接管处同一套语义（trajectory_->reset(state); t0_=now()）。
+  // 相位复位触发 —— 复用接管处同一套语义（trajectory_->reset(state); t0_=now）。
   // 有有效 odom 时以当前机体状态重置轨迹与高度基准；无 odom 时以零状态重置相位。
   void onResetPhase(const std::shared_ptr<std_srvs::srv::Trigger::Response> & res)
   {
@@ -801,8 +801,8 @@ private:
     last_good_ref_ = agc_control::Reference();
     res->success = true;
     res->message = "phase reset: t0=0";
-    // G2（ADR-0009）：相位复位必须**同时**重置航迹指向的搜索状态——
-    //   否则上一集的搜索相位 / "已指向" 标记会被下一集复用（request 明令禁止）。
+    // （ADR-0009）：相位复位必须**同时**重置航迹指向的搜索状态——
+    // 否则上一集的搜索相位 / "已指向" 标记会被下一集复用（request 明令禁止）。
     search_center_yaw_ = last_yaw_;
     track_aim_logged_ = false;
     track_search_logged_ = false;
@@ -857,8 +857,8 @@ private:
   bool have_tracking_ref_{false};
   agc_air::Vector3 target_pos_{agc_air::Vector3::Zero()};
 
-  // G2（ADR-0009）`observe_yaw_mode=track` 参数与状态。
-  //   搜索相位基准 = 接管瞬间的机头朝向（`search_center_yaw_`），**不用真值播种**。
+  // （ADR-0009）`observe_yaw_mode=track` 参数与状态。
+  // 搜索相位基准 = 接管瞬间的机头朝向（`search_center_yaw_`），**不用真值播种**。
   double yaw_search_rate_dps_{25.0};
   double yaw_search_amplitude_deg_{120.0};
   double search_center_yaw_{0.0};
@@ -877,7 +877,7 @@ private:
   bool have_rl_offset_{false};
   std::string commanded_controller_;
 
-  // R-032：已获模式 / 冻结 / 最后有效跟踪参考（供 hold 用）
+  // 已获模式 / 冻结 / 最后有效跟踪参考（供 hold 用）
   bool acquired_{false};
   bool frozen_{false};
   agc_control::Reference last_good_ref_;
@@ -886,7 +886,7 @@ private:
   double z_offset_{0.0};
   rclcpp::Time t0_{0, 0, RCL_ROS_TIME};
   double last_yaw_{0.0};
-  // R-035：控制许可状态
+  // 控制许可状态
   bool conflict_{false};
   rclcpp::Time conflict_since_{0, 0, RCL_ROS_TIME};
   bool is_authorized_{false};                 // 本机是否为被指定的授权命令者（active_controller==own_name）

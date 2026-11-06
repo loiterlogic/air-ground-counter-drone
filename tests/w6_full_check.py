@@ -2,8 +2,8 @@
 """w6_full_check —— W6 双 PX4 整链验收（R0 复核 / R4 机体层 / R8 注入）。
 
 在 `w6.launch.py backend:=full` 运行中执行：
-  * 采样 `/agc/gt/intruder_uav`（世界真值）→ 机体层辨识目标运动（static/linear/maneuver）；
-  * 读 `/px4_1/fmu/out/vehicle_status` → 入侵者 armed + OFFBOARD；
+ * 采样 `/agc/gt/intruder_uav`（世界真值）→ 机体层辨识目标运动（static/linear/maneuver）；
+ * 读 `/px4_1/fmu/out/vehicle_status` → 入侵者 armed + OFFBOARD；
   * 可选 `--jam`：发 `/agc/task/jam_cmd=LAND`，观测 `nav_state` 切换（若目标在作用包络内）。
 
 结果落 `experiments/w6-task-eval/<run_id>/metrics/full.json`。

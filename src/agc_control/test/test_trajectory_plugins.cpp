@@ -1,6 +1,6 @@
 // test_trajectory_plugins.cpp —— 轨迹生成器插件测试
 //
-// 重点复核 C1：真八字（Gerono）全程恒速、无加减速，几何为自交 ∞ 形。
+// 重点复核 ：真八字（Gerono）全程恒速、无加减速，几何为自交 ∞ 形。
 
 #include <cmath>
 #include <memory>

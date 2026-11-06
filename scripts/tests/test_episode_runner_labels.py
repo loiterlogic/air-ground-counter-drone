@@ -3,15 +3,15 @@
 守护今天修掉的三类**静默错误**：
 
 1. **backend 标注**：`run_episode` 曾把 `result['backend']` / 验收命题硬写成常量
-   `lightweight` → `backend:=full` 的 episode 被误标为"轻量栈"。
+ `lightweight` → `backend:=full` 的 episode 被误标为"轻量栈"。
 2. **轴账本**：`axis_coverage` 曾按模块常量判 backend → full 链的空中依赖轴被误标 `not_carried`。
 3. **判定口径**：primary DV 曾对"缺值"整对剔除 → infra / 失败回合（其 DV 常缺）被排除在分母外，
-   与预注册 `keep_all_failures_and_infra` 不一致；现须记 0 并**计入分母**。
+ 与预注册 `keep_all_failures_and_infra` 不一致；现须记 0 并**计入分母**。
 
 另有 infra 重试协议的行为约束：`mission` 结果**一律不重试**（不得以重试掩盖任务结果）。
 
 运行（需先 source ROS 与工程）：
-  source /opt/ros/jazzy/setup.bash && source install/setup.bash
+ source /opt/ros/jazzy/setup.bash && source install/setup.bash
   python3 -m pytest scripts/tests/test_episode_runner_labels.py -q
 """
 

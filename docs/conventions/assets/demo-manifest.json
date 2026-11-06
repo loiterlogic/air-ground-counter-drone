@@ -1,6 +1,6 @@
 {
   "schema": "p2-1-gif/1",
-  "out": "/home/chen/AGC/docs/plan/assets/demo.gif",
+  "out": "/home/chen/AGC/docs/conventions/assets/demo.gif",
   "source_frames": 18,
   "source_fps": 1.25,
   "final": {

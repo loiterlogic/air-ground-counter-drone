@@ -2,9 +2,9 @@
 """w6_jam_check —— W6 R8 干扰链（作用包络门控 + 命令输出）轻量验收。
 
 不依赖 PX4：向 `capture_adjudicator` 提供车/目标位姿，令目标**进入作用包络**；随后
-  * 先发 `jam_cmd`（包络外/未就绪时）→ `jammer` 应**拒绝**（`jam_state` 不置 JAM_*）；
-  * 再在包络内发 `jam_cmd=LAND` → `jammer` 应发 `/px4_1/fmu/in/vehicle_command`
-    （`VEHICLE_CMD_SET_NAV_STATE`，param1=18=AUTO_LAND）并置 `jam_state=JAM_LAND`。
+ * 先发 `jam_cmd`（包络外/未就绪时）→ `jammer` 应**拒绝**（`jam_state` 不置 JAM_*）；
+ * 再在包络内发 `jam_cmd=LAND` → `jammer` 应发 `/px4_1/fmu/in/vehicle_command`
+ （`VEHICLE_CMD_SET_NAV_STATE`，param1=18=AUTO_LAND）并置 `jam_state=JAM_LAND`。
 
 PX4 侧响应（`nav_state 14→18`）已由前置 P 实跑；本条补"包络门控 + 命令发射"路径。
 
