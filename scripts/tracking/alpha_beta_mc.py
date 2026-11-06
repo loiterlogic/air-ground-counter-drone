@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""alpha_beta_mc —— N4 出口判据 3 的可复跑产物：差分 vs α-β 的 σ_v 对照。
+"""alpha_beta_mc —— 可复跑产物：位置差分 vs α-β 滤波的 σ_v 对照。
 
 ## 为什么需要它
 
@@ -114,7 +114,7 @@ def main():
     doc = {
         'tool': 'scripts/tracking/alpha_beta_mc.py',
         'definition_version': 'n4_alpha_beta_mc_v1',
-        'purpose': 'N4 出口判据 3：证明 α-β 滤波器确实抑制了位置差分对噪声的放大',
+        'purpose': '证明 α-β 滤波器确实抑制了位置差分对噪声的放大',
         'not_a_summary_field': True,
         'config': cfg,
         'gains_formula': 'Λ = σ_w·Δt²/σ_p; α = 1−r²; β = 2(2−α)−4√(1−α)（Kalata）',

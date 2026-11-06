@@ -3,8 +3,8 @@
 
 ## 为什么有这个文件
 
-`tests/` 有 57 个验收核查，但**没有"一次跑完并全绿"的入口**（ 出口判据第 6 项）。
-57 个里很多要拉起完整 SITL / 整链仿真，跑一遍几十分钟，**不适合**作为"新人改完一行代码
+`tests/` 有 59 个 `*_check.py` 验收核查，但**原本没有"一次跑完并全绿"的入口**。
+这些核查里很多要拉起完整 SITL / 整链仿真，跑一遍几十分钟，**不适合**作为"新人改完一行代码
 先跑这个"的门槛。本文件只挑**秒级、只读、无副作用**的那几项，构成可信的冒烟集：
 
 | 组 | 断言什么 | 为什么进冒烟集 |
@@ -15,9 +15,8 @@
 | `index` | 脚本索引与实际文件集合一致（`scripts/adr_index.py --check` + `scripts/tests/test_scripts_index.py`） | 索引漂移靠测试拦，不靠纪律 |
 | `offline` | `scripts/tests/` 全部离线单测（不启 ROS 节点 / 不启仿真） | 演示入口、视觉接线、视觉高亮等回归 |
 
-**不是**要求 57 个核查全绿——那需要整链环境，语义是"验收"而非"冒烟"
-（见第 5 项与
-[tests/README](../../tests/README.md)）。
+**不是**要求全部核查全绿——那需要整链环境，语义是"验收"而非"冒烟"
+（见 [tests/README](README.md#top)）。
 
 ## 用法
 
@@ -49,7 +48,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 ROS_SETUP = '/opt/ros/jazzy/setup.bash'
 WS_SETUP = os.path.join(ROOT, 'install', 'setup.bash')
 
-# 整轮预算： 出口判据要求"5 分钟内全绿"
+# 整轮预算：设计目标"5 分钟内全绿"（超预算即返回非 0，见 main()）
 TOTAL_BUDGET_S = 300
 GROUP_TIMEOUT_S = 300
 

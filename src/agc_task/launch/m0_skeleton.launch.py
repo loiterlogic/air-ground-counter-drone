@@ -126,7 +126,7 @@ def generate_launch_description():
         'target_source', default_value='gt_adapter',
         description='观测来源（gt_adapter；air_fusion 已退役）'))
     # 2026-11-06 清退：`seed` 与 `sensors_file` 随 `perception` 场景轴退役，
-    # 本入口不再声明、也不再向 perception_bringup 透传（见治理规范）。
+    # 本入口不再声明、也不再向 perception_bringup 透传（见 docs/conventions/路线分支治理.md）。
     # 2026-11-04 清退：`shield` 开关已删除——安全层恒定启用
     # （见 docs/conventions/路线分支治理.md 5.3）。
     # 场景轴承载者接线（缺省 = 既有行为：static 世界 + 默认障碍 + 无 manifest）

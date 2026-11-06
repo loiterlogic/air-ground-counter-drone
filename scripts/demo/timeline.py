@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""事件时间线——`experiments/demo/<timestamp>/timeline.txt`（P1-3 出口判据 3）。
+"""事件时间线——`experiments/demo/<timestamp>/timeline.txt`。
 
 **人读**的事件流，不替代机器可读的 `metrics/summary.json`（配置文件仍是 `run_logger`）。
 

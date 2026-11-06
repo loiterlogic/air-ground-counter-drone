@@ -768,7 +768,7 @@ def main():
                 'new_blocked_cells_vs_minimal': len(cells - baseline),
                 'blocked_cells': len(cells),
             }
-        # 出口判据：**空中安全层在每张地图上均存在可行解**——
+        # 判据：**空中安全层在每张地图上均存在可行解**——
         # ① 环带可行率 > 0（不是全被膨胀圆盘吃掉）；② 最长连续可行弧 ≥ 90°（够 standoff 驻留）。
         # 新增阻塞量只作登记：yard 按用户要求增加中央内容后必然更挡环带，须如实报告而不据此判 FAIL。
         i_res['feasible_solution_exists'] = all(

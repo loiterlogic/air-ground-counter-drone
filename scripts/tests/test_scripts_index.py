@@ -38,7 +38,7 @@ ARCHIVE = SCRIPTS / 'archive'
 ARCHIVE_README = ARCHIVE / 'README.md'
 
 # --------------------------------------------------------------------------------------
-# 第二配置文件：顶层允许的长期工具（ 出口判据：≤ 12）
+# 第二配置文件：顶层允许的长期工具（上限 ≤ 12）
 # --------------------------------------------------------------------------------------
 # 判定依据：当前阶段（项目收尾 / P1 一键演示入口）会用到的**常驻**工程工具。
 # 研究期 / 一次性脚本一律进 research/ 或 archive/，不进此表。
@@ -153,10 +153,10 @@ def test_top_level_matches_curated_set():
 
 
 def test_top_level_under_limit():
-    """P0-4 出口判据：顶层执行脚本 ≤ 12 个。"""
+    """顶层执行脚本上限：≤ 12 个。"""
     actual = _top_level_scripts()
     assert len(actual) <= TOP_LEVEL_LIMIT, (
-        'scripts/ 顶层 %d 个执行脚本，超过 P0-4 出口判据上限 %d：\n%s'
+        'scripts/ 顶层 %d 个执行脚本，超过上限 %d：\n%s'
         % (len(actual), TOP_LEVEL_LIMIT, _fmt(actual)))
 
 

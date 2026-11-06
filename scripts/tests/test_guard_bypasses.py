@@ -8,7 +8,7 @@
 **攻击面而不是登记面**失守：
 
   A. `test_branch_ledger.py` 的命名正则只收 `_source|_mode|_backend|_path`，
-     漏 `_type` —— 而治理规范 2.1 明确把它列为路线分支的命名形状。
+     漏 `_type` —— 而治理规范明确把它列为路线分支的命名形状。
      实测：加 `evil_type` 时闸门 PASS。
   B. `test_reference_discipline.py` 用"行首前缀"判断注释，**docstring 正文行**
      全部漏扫（那 ~300 处历史编号正是这么活下来的）。
@@ -61,14 +61,14 @@ def ref_discipline():
     'perception_path', 'vision_mode', 'detector_backend', 'target_source',
 ])
 def test_branch_name_shape_covers_all_five_suffixes(branch_ledger, name):
-    """规范 2.1 的五种命名形状都必须命中（`_type` 曾漏收）。"""
+    """规范列出的五种命名形状都必须命中（`_type` 曾漏收）。"""
     assert branch_ledger.BRANCH_NAME_RE.match(name), (
         '%r 应被识别为路线分支命名形状，但正则未命中——'
         '这类参数会被"顺手加进 launch"而不触发闸门' % name)
 
 
 @pytest.mark.parametrize('name', [
-    'px4_sim_model',    # 资产选择（规范 2.1 排除项）
+    'px4_sim_model',    # 资产选择（规范明列的排除项）
     'world_map',
     'seed',
     'goal_follow_target',

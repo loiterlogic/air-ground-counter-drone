@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""退役物总台账核对 —— 治理规范 5.2 / 5.3 的可执行防复活闸门。
+"""退役物总台账核对 —— 治理规范已退役台账 / 保留项的可执行防复活闸门。
 
 见 docs/conventions/路线分支治理.md#current（4.2/4.3/4.4/4.5）。
 
@@ -74,7 +74,7 @@ def test_deleted_retired_paths_do_not_exist():
     """5.2：登记为「已删除」的退役物不得复活。"""
     revived = [p for p in DELETED_PATHS if (ROOT / p).exists()]
     assert not revived, (
-        '已退役对象又在活跃层出现（违反治理规范 4.3 防复活闸门）：\n  - %s\n'
+        '已退役对象又在活跃层出现（违反防复活闸门）：\n  - %s\n'
         '若确需恢复：须按 2.2 节四项重新立项（含用户明确允许 + 退役条件），'
         '并从 5.2 台账移除本条。' % '\n  - '.join(revived))
 
@@ -85,7 +85,7 @@ def test_no_retired_symbols_in_alive_files():
         text = _text(path)
         for sym in symbols:
             assert sym not in text, (
-                '%s 仍含已退役标识 %r：清退未做干净（规范 4.2「解析/注入链一并删」）'
+                '%s 仍含已退役标识 %r：清退未做干净（承载物与解析/注入链须一并删）'
                 % (path.relative_to(ROOT), sym))
 
 
@@ -120,7 +120,7 @@ def test_manifest_keeps_sensors_file_key_with_fixed_value():
     }
     manifest = w6c.build_manifest('lightweight', info, {}, {})
     eff = manifest['effective_params']
-    assert 'sensors_file' in eff, 'manifest 丢了 sensors_file 键（schema 漂移；规范 4.4）'
+    assert 'sensors_file' in eff, 'manifest 丢了 sensors_file 键（schema 漂移）'
     assert eff['sensors_file'] == 'retired:perception-axis', (
         'sensors_file 必须恒为退役标记，实际 %r' % eff['sensors_file'])
     # 声明轴里不得再出现 perception
@@ -143,7 +143,7 @@ def test_ledger_constants_agree_with_code():
     # 已退役分支不得在 launch 里复活（与 test_branch_ledger 同口径，这里从台账侧再核一次）
     conv = _text(CONVENTION)
     for arg in sorted(retired):
-        assert arg in conv, 'RETIRED_BRANCHES 的 %s 未在治理规范 5.2 台账登记' % arg
+        assert arg in conv, 'RETIRED_BRANCHES 的 %s 未在治理规范台账登记' % arg
 
 
 def test_keep_register_entries_have_four_fields():

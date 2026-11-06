@@ -343,7 +343,7 @@ def test_cruise_altitude_has_single_source_in_base():
 def test_cruise_altitude_manifest_block_reports_source_and_datum():
     """H0：manifest 必须能还原**实际生效巡航高度 + 来源 + 参考基准**。
 
- 判据（对应 H0 出口判据 2/3）：`effective_m` / `source` / `datum` 三项齐备，且显式声明
+ 判据：`effective_m` / `source` / `datum` 三项齐备，且显式声明
  它**不是**世界 ENU 绝对高度、**不与**世界 spawn 值叠加——避免下游把相对量当绝对量。
     """
     mod = _composition_module('h0_manifest')

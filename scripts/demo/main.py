@@ -71,7 +71,7 @@ def cmd_doctor(args):
         'headless': bool(args.headless), 'summary': summary, 'results': results,
     })
     print('[doctor] 证据：%s' % os.path.relpath(out_dir, common.ROOT))
-    # 预算硬门：doctor 必须 ≤30 s（ 出口判据）
+    # 预算硬门：doctor 必须 ≤30 s（超时即判失败并报出耗时）
     if elapsed > doctor.DOCTOR_BUDGET_S:
         print('[doctor] 超预算：%.1f s > %.0f s' % (elapsed, doctor.DOCTOR_BUDGET_S),
               file=sys.stderr)
@@ -124,7 +124,7 @@ def cmd_start(args):
         elif e.startswith('follow-timeout:'):
             opts['follow_timeout_s'] = float(e.split(':', 1)[1])
         elif e == 'escape':
-            # 目标逃逸（plan.md 出口判据 1）：显式参数才逃逸，默认 static 语义不变。
+            # 目标逃逸：只由显式参数触发，默认 static 语义不变。
             # `target_motion:=epicycle` 走 ADR-0031 的漂移轨道（参数由
             # w6_composition.apply_target_motion_override 配置文件补齐 radius_m=1.8 等）；
             # `goal_follow_target:=true` 让任务目标跟随感知目标——否则 s04 的固定 goal

@@ -30,6 +30,9 @@ EXCLUDED_MARKERS = (
     '/archive/', '/reviews/', '/temp/', '.coordination', 'scripts/research/',
     'docs/adr/', 'tests/w6_r0', 'tests/w5_r0', 'tests/w7', 'tests/w8',
     'scripts/tests/test_reference_discipline.py',
+    # 反例本体：本文件必须**写出**被禁止的形态（如 R-031）才能测"闸门能否拦住它"。
+    # 与 test_reference_discipline.py 同理豁免；新增需同样说明"为什么自指"。
+    'scripts/tests/test_guard_bypasses.py',
     'docs/conventions/引用与注释纪律.md',
     'docs/plan/README.md',
 )
