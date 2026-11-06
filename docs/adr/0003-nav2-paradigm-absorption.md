@@ -90,6 +90,6 @@ accepted（2026-11-02 由 ADR-0003 / 0008 / 0060 合并；结论未变）
 
 ## 参考
 
-- 契约：[#execution-port](../ROS2迁移交接文档.md#execution-port) / [#hard-constraints](../ROS2迁移交接文档.md#hard-constraints) / [#messages](../ROS2迁移交接文档.md#messages) / [#params](../ROS2迁移交接文档.md#params)
+- 契约：[#execution-port](0020-package-boundaries-and-runtime-topology.md#execution-port) / [#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints) / [#messages](0020-package-boundaries-and-runtime-topology.md#messages) / [#params](0020-package-boundaries-and-runtime-topology.md#params)
 - 相关决策：[ADR-0004](0004-ground-control-rl-primary-and-nav2-safety.md#top)（地面主控与安全层）、[ADR-0020](0020-package-boundaries-and-runtime-topology.md#top)（包边界与运行拓扑）、[ADR-0013](0013-ground-planning-path-contract.md#top)（地面规划与路径契约）、[ADR-0010](0010-safety-thresholds-and-failsafe.md#top)（安全阈值与安全屏障）、[ADR-0019](0019-lifecycle-and-startup-robustness.md#top)（生命周期与启动健壮性）
 - 术语：`GLOSSARY.md` 的「选择性吸收」

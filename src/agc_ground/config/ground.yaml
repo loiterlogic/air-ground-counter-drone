@@ -1,4 +1,4 @@
-# agc_ground 参数——由 ground_bringup.launch.py 单一注入，节点不得覆写（docs/ROS2迁移交接文档.md#params）
+# agc_ground 参数——由 ground_bringup.launch.py ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params）
 #
 # 安全层：Nav2 collision_monitor（直接复用 Nav2 组件，ADR-0004 / ADR-0003）。
 # 链路：RL/占位策略 → /agc/ground/cmd_vel_raw → collision_monitor → /agc/ground/cmd_vel
@@ -100,7 +100,7 @@ collision_monitor:
     stop_pub_timeout: 1.0e9
     # 注：stop_pub_timeout 置极大 → 安全层**持续发布**（含零速），使唯一执行口始终有实时命令；
     # 同时满足 门禁的 cmd_vel 回环确认（否则 idle 时 collision_monitor 停发零速导致门禁死锁）。
-    # 契约要求 /agc/ground/cmd_vel 为 TwistStamped（docs/ROS2迁移交接文档.md#namespace）
+    # 契约要求 /agc/ground/cmd_vel 为 ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#namespace）
     enable_stamped_cmd_vel: True
     polygons: ["SlowSafety", "StopCollision", "StopEmergency"]
     # ——安全档（扫掠 4.0 m，slowdown）——

@@ -1,4 +1,4 @@
-# 脚本级最小场景参数（R9）——由 safety_scenario.launch.py 单一注入（docs/ROS2迁移交接文档.md#params）
+# 脚本级最小场景参数（R9）——由 safety_scenario.launch.py ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params）
 #
 # 场景：车正对立柱 pole_1（world (0,-6)）前方 5 m、朝 -y 直行 → 由 RL 主控驱动，
 # 安全层（collision_monitor）应在安全/碰撞/紧急档依次降速 / 停车，车真实停住（ 顺序 +）。

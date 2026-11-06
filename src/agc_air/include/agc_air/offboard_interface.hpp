@@ -2,7 +2,7 @@
 //
 // 契约 [唯一执行口]（空中控制权）：任一时刻**只有一个** setpoint 发布者。
 // 本类把「订阅归一化状态 + 发布 offboard setpoint / 命令」收在一处，供两个控制者复用；
-// setpoint 世界系为 ENU（docs/ROS2迁移交接文档.md#namespace），发布前转 PX4 NED（ADR-0005）。
+// setpoint 世界系为 ../../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#namespace），发布前转 PX4 NED（ADR-0005）。
 
 #pragma once
 

@@ -1,7 +1,7 @@
 // scenario_reset —— 最小场景复位（ 加厚）
 //
 // * 服务 /agc/scenario/reset（std_srvs/Trigger）：经 GZ set_pose 把车 / 目标置回 spawn；
-// 受运行期门控（仅**非 active** 态可复位——IDLE + 全终态，含 INTERCEPT_CONFIRMED；docs/ROS2迁移交接文档.md#lessons）。
+// 受运行期门控（仅**非 active** 态可复位——IDLE + 全终态，含 ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#lessons）。
 // * **（ADR-0014）复位受控事务**：
 // - 门控即「撤销运动许可」；随后做**有界等待**观察车静止（订阅 /agc/ground/odom；**不发布 cmd_vel**）。
 // - 读回前置：订阅真值旁路 gt（车 / 目标），要求写入前缓存**新鲜**（年龄 ≤ readback_max_age_s）。
@@ -12,7 +12,7 @@
 // - 每次成功复位 reset_epoch_++ 并发布 /agc/scenario/reset_epoch（Int32，transient_local）；应答含 epoch=N。
 // * 启动初始复位**走同一门控**（不 bypass），保留 4 s 延迟等 gz / 桥就绪。
 //
-// 统一执行口（docs/ROS2迁移交接文档.md#execution-port）：本节点**禁止**发布任何 cmd_vel；「停止执行」以门控 + 车静止证据实现。
+// ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#execution-port）：本节点**禁止**发布任何 cmd_vel；「停止执行」以门控 + 车静止证据实现。
 
 #include <chrono>
 #include <cmath>

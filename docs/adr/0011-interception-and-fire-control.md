@@ -143,4 +143,4 @@ d_min ≤ 0.5 · diameter − aim_margin
 - 整链覆盖与因果记录：[ADR-0018](0018-acceptance-and-coverage-matrix.md)
 -裁定记录（含 miss 实测与决策门）：[ADR-0023](0023-w7b-adjudication-record-and-exit.md)
 - 安全阈值与失效停车：[ADR-0010](0010-safety-thresholds-and-failsafe.md)
-- 契约：[终态语义](../ROS2迁移交接文档.md#terminal-semantics)、[参数入口](../ROS2迁移交接文档.md#params)、[硬约束](../ROS2迁移交接文档.md#hard-constraints)
+- 契约：[终态语义](0014-task-fsm-and-scenario-transaction.md#terminal-semantics)、[参数入口](0020-package-boundaries-and-runtime-topology.md#params)、[硬约束](0020-package-boundaries-and-runtime-topology.md#hard-constraints)

@@ -11,7 +11,7 @@ accepted（2026-11-02 由 ADR-0039 / 0047 / 0054 合并；结论未变）
 
 空中与地面各有一次「把接收时刻当测量时刻」的缺陷：参考 / 目标年龄用接收 `now` 重置，旧包重放会被"变新鲜"；地面 odom 用发布时刻当 `header.stamp`、`age` 把负年龄钳为 0、速度历史不与复位关联，teleport 位移被差分成非物理速度尖峰。
 
-契约真源见 [#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)、[#terminal-semantics](../ROS2迁移交接文档.md#terminal-semantics)、[#namespace](../ROS2迁移交接文档.md#namespace)、[#params](../ROS2迁移交接文档.md#params)。
+契约真源见 [#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、[#terminal-semantics](0014-task-fsm-and-scenario-transaction.md#terminal-semantics)、[#namespace](0020-package-boundaries-and-runtime-topology.md#namespace)、[#params](0020-package-boundaries-and-runtime-topology.md#params)。
 
 ## 决策
 
@@ -119,6 +119,6 @@ episode 结束判定**收敛到唯一函数** `classify_episode_outcome(...)`：
 
 ## 参考
 
-- 契约：[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints) / [#terminal-semantics](../ROS2迁移交接文档.md#terminal-semantics) / [#namespace](../ROS2迁移交接文档.md#namespace) / [#params](../ROS2迁移交接文档.md#params) / [#messages](../ROS2迁移交接文档.md#messages)
+- 契约：[#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints) / [#terminal-semantics](0014-task-fsm-and-scenario-transaction.md#terminal-semantics) / [#namespace](0020-package-boundaries-and-runtime-topology.md#namespace) / [#params](0020-package-boundaries-and-runtime-topology.md#params) / [#messages](0020-package-boundaries-and-runtime-topology.md#messages)
 - 相关决策：[ADR-0006](0006-experiment-artifacts-and-evidence-discipline.md#top)（产物与证据纪律）、[ADR-0018](0018-acceptance-and-coverage-matrix.md#top)（验收判定与覆盖矩阵）、[ADR-0014](0014-task-fsm-and-scenario-transaction.md#top)（任务 FSM 与终态锁存）、[ADR-0012](0012-spawn-clearance-and-reset-transaction.md#top)（复位事务）、[ADR-0009](0009-perception-truth-derived-and-vision-path.md#top)（真值派生感知）、[ADR-0003](0003-nav2-paradigm-absorption.md#top)（Nav2 吸收）
 - 证据：`experiments/w6-task-eval/20261016-w6-r024-0/metrics/r024.json`、`experiments/w6-task-eval/<run_id>/r032/bench.json`、`experiments/w6-task-eval/<run_id>/r039/bench.json`

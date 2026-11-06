@@ -97,6 +97,100 @@ manifest 记 `launch='main.launch.py'` + 实际 `backend` + `nodes`（完整展�
 `TimerAction` 并在代码旁注明理由—— 二者属 **gz 引擎 spawn 时序**（世界 / 入侵者模型于 gz+3 s spawn，
 PX4 才具 gz 资源与时钟 / 可 attach 模型），本层**无可达就绪信号**，故保留最小计时。
 
+### (g) 命名空间与坐标系
+
+<a id="namespace"></a>
+
+- 协同层统一命名空间 `/agc/`。
+- **坐标系基准**：`agc_world`（Gazebo world，ENU：+x 东、+y 北、+z 上；位置 m、速度 m/s、角度 rad）为唯一基准。
+- **机体系命名固定**：`drone/base_link`、`car/base_link`，**禁止裸 `base_link`**。
+  > PX4 SITL 会一次性发布 `map` / `odom` / `base_link_frd` 等历史静态帧；协同层不发布裸 `base_link`。
+- 含 Header 的协同位置/速度/地图/路径/状态消息 `frame_id=world` 或 Gazebo `world`；
+  `/agc/ground/cmd_vel` 用车体系 `TwistStamped`。
+
+### (h) 唯一执行口
+
+<a id="execution-port"></a>
+
+- **地面唯一执行口**：`/agc/ground/cmd_vel`；**唯一**命令车体运动的通道为地面执行中继
+  （原 `ground_drive_adapter`），任何其它节点**不得**命令车体运动。车体位姿由 GZ Sim 物理引擎产生；
+  **唯一例外**为场景复位的位姿写入（受运行期门控，见 [ADR-0014](0014-task-fsm-and-scenario-transaction.md#top)）。
+- **空中控制权**：起飞阶段归起飞控制器（原 `drone_launch_controller`）；`release_control` 后由
+  LQR 轨迹跟踪节点接管（见 [ADR-0010](0010-safety-thresholds-and-failsafe.md#top) (h) 的控制许可）。
+
+### (i) 参数入口
+
+<a id="params"></a>
+
+由 launch **单一设置**，节点**不得覆写**：
+
+`/agc/target/source`、`/agc/obstacles/source`、`/agc/air/takeoff_altitude_m`、`/agc/air/follow/*`、
+`/agc/scenario/dynamic_obstacles`、`/agc/world_file`、`/agc/log/seed`
+
+> `/agc/perception/sensors_file` 已于 **2026-11-06** 随 `perception` 场景轴与 `air_perception`
+> 节点退役（用户裁定）：该参数原指向的 4 个 `perception_sensors*.yaml` 通道变体无消费者、
+> 运行期行为完全相同，已整体删除。不再保留该参数入口；量程 R=30.0 的推导登记处
+> 改为 `air.yaml` 的 `standoff_follower` 注释与[飞行高度规范 K1](../conventions/飞行高度分层与按地图定高.md#where)。
+
+目标源选择（`/agc/target/source`）：`/agc/targets` 的**唯一发布者**恒为 `gt_adapter`，详见
+[ADR-0009](0009-perception-truth-derived-and-vision-path.md#top)。
+
+### (j) 消息与服务
+
+<a id="messages"></a>
+
+协同层消息（`air_ground_core`，迁移后独立为 `agc_msgs`）共 9 个，**字段与顺序不得变更**：
+
+`AgcTaskState`、`AirObservationArray`、`ObstacleObservation`、`ObstacleTrack`、`ObstacleTrackArray`、
+`SensorObservation`、`TargetObservation`、`TargetTrack`、`TargetTrackArray`
+
+> 其余包的消息/服务清单见 [归档的 ROS1 基线盘点](../archive/ros1-baseline.md#appendix-a-archived)（A.4）。
+> 迁移后**接口语义不得变更**。
+
+<a id="empty-array-semantics"></a>
+
+**数组消息的空数组语义**：`TargetTrackArray` 的空数组 = 「本拍无新观测」，不是「目标消失」。
+消费者（`standoff_follower` / `trajectory_tracker` / `task_manager` / `capture_adjudicator`）
+**SHALL** 保持上一有效航迹不动，由**年龄**判定失效——即硬约束「过期即冻结」（见 (k) 第 10 条）。
+判定口径与四个消费者的误判后果见 [ADR-0017](0017-time-budget-and-clock-sources.md#top) (g)。
+
+### (k) 硬约束（逐条复验）
+
+<a id="hard-constraints"></a>
+
+<a id="hc-1"></a>
+1. 8 字轨迹为**真八字**（Gerono，`rx=15` / `ry=9` / `h=2.5 m`），全程恒速、无加减速（线速度 `v=2.0 m/s`，弧长参数化）。
+<a id="hc-2"></a>
+2. 距离阈值顺序必须满足 紧急 < 碰撞 < 安全。**顺序为不变量**；**绝对值为可标定量**，由地面安全层按 [ADR-0010](0010-safety-thresholds-and-failsafe.md#top) 的 Nav2 时间窗口径、以实测动力学标定为 `1.0 < 2.0 < 4.0 m`（ADR-0010 已实测回填；旧值 `0.7/0.9/2.4 m` **作废**）。
+<a id="hc-3"></a>
+3. 实证 / 验收**定性、关键场景**使用**非无头（GUI）**并留记录；**规模数值统计**允许 **headless**，但**须经 GUI ↔ headless 等价核验**（同参数 / 同 seed、关键指标一致），且产物**如实标注** `backend` / `mode`；默认仍无头以向后兼容（[ADR-0018](0018-acceptance-and-coverage-matrix.md#top)）。
+<a id="hc-4"></a>
+4. 训练与评估成功定义统一：**超时一律算失败**，只有显式完成才算成功。
+<a id="hc-5"></a>
+5. 每个 episode 起始必须把轨迹相位复位到 t=0。
+<a id="hc-6"></a>
+6. 安全滤波器参数须用**真实逃逸能力**（如 `lateral_speed = min(max_offset_xy, max_offset_change/dt)`）。
+<a id="hc-7"></a>
+7. 场景生成须保证**出生净空 ≥ 可标定下限**（按安全档 + 实体外伸推导，见 [ADR-0012](0012-spawn-clearance-and-reset-transaction.md#top)；旧值 `2.4 m` **作废**）；复位失败最多重试 3 次且不占 episode 预算。
+<a id="hc-8"></a>
+8. 状态机终态为"抵近并持续跟踪"，`SUCCESS` **不得**表述为"拦截完成"。
+<a id="hc-9"></a>
+9. 评估报告须含 `shield_infeasible_rate` 与 `reset_failure_rate`。
+<a id="hc-10"></a>
+10. **无人机对目标的跟踪常开**（非可选；原"跟随默认关闭"作废）：保持**安全间距**（不紧贴），目的为**不丢失目标**；跟踪要求目标新鲜（`ref_max_age_s=0.5`）且 `confidence≥0.5`，过期即冻结。无人机同时负责**自身飞行安全**（自避障）。
+
+> **回归挂载**：每条约束挂到"首次使其可验证"的 workstream，映射表见归档 Runbook 的
+> [硬约束挂载表](../archive/ROS2迁移步骤.md#hard-constraint-mounting)（历史编排记录，非约束）。
+
+### (l) 不可回退教训
+
+<a id="lessons"></a>
+
+- **已知竞态（必须在 ROS2 版修复）**：`/agc/task/start` 门禁先校验 odom 再调 `/agc/scenario/reset`，
+  导致 `odom_valid` 被无条件置 false、`evaluate()` 读到 `ODOM_INVALID`。**必须改为 reset 后再校验。**
+- **已修复教训（必须保留门控）**：非运行期写车体位姿会覆盖 `car_start`，必须用 `/agc/task/state`
+  运行期门控。
+
 ## 不做什么（边界）
 - **不**允许任意包互依赖（无类别区分即退化为无架构）。
 - **不**把 `agc_air_lib` 升格为公共库、**不**为修 export 新建跨域链接。

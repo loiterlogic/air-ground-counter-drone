@@ -12,7 +12,7 @@
 > 现行流程见 [SKILL.md](../SKILL.md)，闸门口径见 [GATES.md](../GATES.md)，
 > schema 与派生链见 [SCHEMA-AND-DERIVATION.md](../SCHEMA-AND-DERIVATION.md)，
 > 取证纪律见 [EVIDENCE.md](../EVIDENCE.md)。
-> 约束仍只引用[契约真源](../../../../docs/ROS2迁移交接文档.md#hard-constraints)。
+> 约束仍只引用[契约真源](../../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)。
 
 > **这是什么**：AGC 项目「场景地图」从零到当前形态的**完整技术流程**，含三轮演化的决策史、
 > 可复用的操作步骤、实测闸门数值、以及踩过的坑。**目的是被改写成技能**（`.agents/skills/<name>/SKILL.md`），

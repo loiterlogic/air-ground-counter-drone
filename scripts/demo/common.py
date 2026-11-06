@@ -13,7 +13,7 @@
  4. **证据落点** —— `experiments/demo/<timestamp>/`（ADR-0006 campaign=demo）。
 
 不做：不 source 环境（由 `run_demo.sh` 负责）、不写 `/agc/ground/cmd_vel`、不写模型位姿
-（[唯一执行口](../../docs/ROS2迁移交接文档.md#execution-port)）。
+（[唯一执行口](../../docs/adr/0020-package-boundaries-and-runtime-topology.md#execution-port)）。
 """
 
 import json

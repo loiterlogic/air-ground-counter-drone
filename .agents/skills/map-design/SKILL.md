@@ -7,7 +7,7 @@ description: "设计或修改 AGC 场景地图（静态障碍几何真源）：�
 
 地图 = **一份 yaml 里的静态障碍几何 + 作业区**。物理世界、空中安全层、感知先验、感知栅格、
 复位校验**全部由它派生**。本技能是"怎么安全地改这份几何"的操作手册，**不是约束**：
-约束只引用 [契约真源](../../../docs/ROS2迁移交接文档.md#hard-constraints)，几何 schema 的唯一出口是
+约束只引用 [契约真源](../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)，几何 schema 的唯一出口是
 [`world_map.py`](../../../src/agc_sim/launch/world_map.py)。
 
 > **数字不许抄。** 本技能**不写**"现在有几个实体 / 覆盖多少 / 净空几米"—— 那些是随时漂移的实测值。
@@ -20,7 +20,7 @@ description: "设计或修改 AGC 场景地图（静态障碍几何真源）：�
 
 - **用**：新增地图、重做布局、加障碍、改材质与配色、判断某个候选布局能不能过核查。
 - **别用**：只想看现状（直接读 yaml 或跑核查）；改契约（轨迹形状 / 安全阈值 / 终态语义等）——
-  那些不在本技能范围，见[硬约束](../../../docs/ROS2迁移交接文档.md#hard-constraints)。
+  那些不在本技能范围，见[硬约束](../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)。
   待裁定事项按 AGENTS 红线显式挂起，不静默假设。
 
 ## 不可协商的三条
@@ -85,7 +85,7 @@ description: "设计或修改 AGC 场景地图（静态障碍几何真源）：�
 
 ## 边界
 
-- **不复制约束**：坐标系、执行口、硬约束、终态语义只引用[契约真源](../../../docs/ROS2迁移交接文档.md#hard-constraints)；
+- **不复制约束**：坐标系、执行口、硬约束、终态语义只引用[契约真源](../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)；
   技能里**不转录**任何契约条文（包括轨迹形状、验收形态这类具体条款），避免出现第二规则源。
   运行时命令、后端与默认值以**当前演示入口与当次派工**为准（不确定就去读入口脚本与 launch 默认值，
   不照抄技能）。

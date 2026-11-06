@@ -8,7 +8,7 @@
 // 该臂无安全层，碰撞风险由仿真承担。属 F-06「with-shield / 等预算对照臂」的**无 shield 一支**。
 //
 // 唯一执行口纪律：本节点是 `/agc/ground/cmd_vel` 的发布者（有 shield 时该角色属 `collision_monitor`）；
-// 上游只有命令源，**不**构成第二命令者（docs/ROS2迁移交接文档.md#execution-port）。
+// ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#execution-port）。
 
 #include <memory>
 #include <string>

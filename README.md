@@ -33,7 +33,7 @@
 **当前状态**：主场景 `s04_static_static_obs_track` 在 `yard` 地图上**可复现跑通**，
 终态 `TRACKING_SUCCESS`（"抵近并持续跟踪"，阶段 A）——**这不是"拦截完成"**。
 阶段 B 的拦截（`INTERCEPT_CONFIRMED`）另有终态与判据，见
-[终态语义](docs/ROS2迁移交接文档.md#terminal-semantics)。
+[终态语义](docs/adr/0014-task-fsm-and-scenario-transaction.md#terminal-semantics)。
 
 ## 快速开始
 
@@ -223,7 +223,7 @@ PX4 SITL + uXRCE-DDS Agent /agc/ground/cmd_vel（唯一执行口）
 | 入口 | 内容 |
 |---|---|
 | [任务计划规则](docs/plan/README.md#plan-index) | **临时工作区**：结论归宿表与 plan 最小结构 |
-| [契约真源](docs/ROS2迁移交接文档.md#hard-constraints) | 不可变约束、坐标系、终态语义、接口语义（**唯一**约束来源） |
+| [契约真源](docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints) | 不可变约束、坐标系、终态语义、接口语义（**唯一**约束来源） |
 | [ADR 索引](docs/adr/README.md#adr-index) | 全部决策的编号 / 标题 / 状态 / 结论 |
 | [包边界](docs/conventions/包边界.md) | 8 包职责与四类依赖方向 |
 | [FAQ](docs/faq.md#top) | 新人高频 8 条症状与处置 |

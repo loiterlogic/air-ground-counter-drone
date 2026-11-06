@@ -19,7 +19,7 @@ accepted（2026-11-02 由 0002 / 0066 合并；结论未变）
 
 | 信息 | 家 |
 |---|---|
-| 不可变约束（硬约束 / 坐标系 / 终态 / 接口语义） | [契约真源](../ROS2迁移交接文档.md#hard-constraints) |
+| 不可变约束（硬约束 / 坐标系 / 终态 / 接口语义） | [契约真源](0020-package-boundaries-and-runtime-topology.md#hard-constraints) |
 | 当前方向 / 进度 | [`docs/plan/`](../plan/README.md#plan-index) |
 | 难以逆转的决策 | `docs/adr/` |
 | 术语 | [`GLOSSARY.md`](../../GLOSSARY.md) |

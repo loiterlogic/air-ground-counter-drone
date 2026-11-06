@@ -2,7 +2,7 @@
 # .agents/ — 项目级 Agent 资产
 
 > **角色**：本目录存放**项目级可复用 Agent 资产**（当前只有技能），随仓库入库、供任何 Agent 会话使用。
-> **不是约束**：技能是"怎么做某类事"的操作手册，不是项目约束；约束见 [契约真源](../docs/ROS2迁移交接文档.md#hard-constraints)。
+> **不是约束**：技能是"怎么做某类事"的操作手册，不是项目约束；约束见 [契约真源](../docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)。
 
 ## 为什么在这里
 
@@ -43,5 +43,5 @@
 - **工具缺失要写明确回退**，不能让读者去调用不存在的工具。
 - **事实自查**：技能里要求"查事实"时，自己读文件/跑只读命令，不把可查的事实推给用户。
 - **不强制访谈**：`grilling` 系列只在用户明确要求设计访谈时触发；普通实现任务不应被访谈或"最终再确认"阻塞。
-- **技能不做真源**：技能里不复制约束、不复述规格；指回 [契约真源](../docs/ROS2迁移交接文档.md#hard-constraints)、[ADR 索引](../docs/adr/README.md#adr-index)、[项目完成路线](../docs/plan/README.md#plan-index)。
+- **技能不做真源**：技能里不复制约束、不复述规格；指回 [契约真源](../docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)、[ADR 索引](../docs/adr/README.md#adr-index)、[项目完成路线](../docs/plan/README.md#plan-index)。
 - **技能里不钉死会漂移的事实**：易变的实测值（实体数、覆盖率、净空、内存占用）用"跑哪个命令读哪个产物"表达，历史数值只放**明确标注为历史快照**的资源里，且不再冒充现行约束。

@@ -46,7 +46,7 @@ accepted（2026-11-02 由 ADR-0028 / 0030 / 0031 / 0037 / 0076 合并；结论�
 `GROUND_APPROACH`）一律拒（`not_resettable`）。门控通过即撤销运动许可—— 非 active 期间无授权命令者
 （RL 仅在 `GROUND_APPROACH` 驱动），「停止执行」在策略层面已成立。
 
-**门控窗口裁定**：契约 [#task-gating](../ROS2迁移交接文档.md#task-gating) 的「运行期」明确为
+**门控窗口裁定**：契约 [#task-gating](0014-task-fsm-and-scenario-transaction.md#task-gating) 的「运行期」明确为
 **任务已获运动许可（active）期间**，即「复位允许窗口 = 非 active + 受控事务；禁止窗口 = active」。
 这是**措辞澄清**、非语义变更：门控意图是防「active 期间被复位覆盖 `car_start`」，而又要求 start
 前复位（此刻尚未 active）—— 只有把「运行期」锚定 active 才不自相矛盾。契约文字未改，裁定以本篇为准。
@@ -137,6 +137,27 @@ capture 场景里里程碑先 `enterTerminal(TRACKING_SUCCESS)` → 状态离开
 `s12_linear_dynamic_nominal_capture` **不**覆盖（其 `interception_authorized` 缺省 false，同时关掉
 里程碑终态会注定超时，显式登记为待办）。不改 `t_dwell_s` / `d_track_m` / `t_max_s` / 网弹道 / 火控
 门限，不改场景 `expected_terminal`（**不**用「改期望」迁就实现）。
+
+### (n) 任务门控与场景复位
+
+<a id="task-gating"></a>
+
+- 任务门控 `/agc/task/start`；状态 `/agc/task/state`（`AgcTaskState`）。
+- 场景复位 `/agc/scenario/reset`；`scenario_reset` 受**运行期门控**（非运行期不得写位姿）。
+
+### (o) 终态语义
+
+<a id="terminal-semantics"></a>
+
+- 阶段划分：**阶段 A = 跟踪**；**阶段 B = 拦截**（本轮启用阶段 B）。
+- 地面任务**跟踪**终态统一为 `TRACKING_SUCCESS`（"抵近并持续跟踪"）；**不得**表述为"拦截完成"。
+- **拦截达成**终态为 **`INTERCEPT_CONFIRMED`**（阶段 B 启用，见
+  [ADR-0011](0011-interception-and-fire-control.md#top)），由 `reason_code` 区分方式：
+  物理捕获 `CAPTURE_NET`（[ADR-0011](0011-interception-and-fire-control.md#top)）/
+  行为级干扰 `JAM_RTL|JAM_LAND|JAM_HOLD|JAM_LOST`；**不新增消息枚举**
+  （消息字段 / 顺序不得变更，见 [ADR-0020](0020-package-boundaries-and-runtime-topology.md#messages)）。
+- 失败 / 中止终态：`MISSION_FAILED`（超时 / 未达成）、`ABORTED`（外部中止）、
+  `INFRA_FAILURE`（门禁失败）。
 
 ## 不做什么（边界）
 - **不**引入 `bt_navigator` / 行为树；`task_manager` 仍是自研确定性 C++ 状态机。

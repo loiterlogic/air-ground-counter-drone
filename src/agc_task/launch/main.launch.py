@@ -11,7 +11,7 @@
 
 场景配置解析（base/registry/carriers 加载、carrier 校验、参数合并、轴断言、manifest 生成）
 **配置文件**在共享模块 `launch/composition.py`；本入口不含重复解析逻辑。约束类信息
-（参数入口 / 唯一执行口 / 命名空间 / 硬约束）**只引用不复述**——配置文件 `docs/ROS2迁移交接文档.md`。
+（参数入口 / 唯一执行口 / 命名空间 / 硬约束）**只引用不复述**——约束条文见 `docs/adr/0020-package-boundaries-and-runtime-topology.md`。
 
 用法：
   ros2 launch agc_task main.launch.py backend:=lightweight scene:=s01_static_none_nominal_track

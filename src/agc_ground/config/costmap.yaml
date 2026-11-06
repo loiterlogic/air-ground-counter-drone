@@ -11,7 +11,7 @@
 # obstacle← `/agc/ground/scan_filtered`（2D LaserScan，车顶水平扫描， 自滤后）
 # voxel ← `/agc/sim/car_points`（3D PointCloud2）
 # inflation ← 本层本地膨胀（无外部输入）
-# 坐标：`global_frame=world`、`robot_base_frame=car/base_link`（docs/ROS2迁移交接文档.md#namespace）；
+# 坐标：`global_frame=world`、`robot_base_frame=car/base_link`../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#namespace）；
 # **全域（非滚动）**：`static` 层接入 `/agc/map` 后，Nav2 static 层把栅格重设为
 # 地图全域（160×160 @ 0.5，origin −40,−40），故 costmap 覆盖整个作业区。
 # 初值的 rolling/width/height 在 static 层生效前使用，之后由 static 层接管。

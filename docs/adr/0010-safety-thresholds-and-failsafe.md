@@ -9,7 +9,7 @@ accepted（2026-11-02 由 ADR-0021 / 0025 / 0042 / 0048 / 0050 合并；结论�
 
 地面与空中各有一次「安全层看起来存在、实际不成立」的事故级发现：地面三档距离阈值继承自 40×40 m 小场地旧配置，作业区放大到 80×80 m、车速提到 1.5 m/s 后没有推导依据；末端（GZ `DiffDrive`）对命令中继死亡**没有任何超时保证**；安全层把「触发拍 + 前向扫描 ≤ contact」当成碰撞，正常提前停车被统计成高不可行率；空中安全参考只是**端点**安全而非**轨迹**安全；空中控制权用「发布者计数 > 1」判定，既漏报真实争夺也误报合法静默发布者。这五项都必须给出**可复核口径**，而不是补一句注释。
 
-约束真源见 [#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)与 [#execution-port](../ROS2迁移交接文档.md#execution-port)（**唯一执行口语义**）。
+约束真源见 [#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints)与 [#execution-port](0020-package-boundaries-and-runtime-topology.md#execution-port)（**唯一执行口语义**）。
 
 ## 决策
 
@@ -189,7 +189,7 @@ accepted（2026-11-02 由 ADR-0021 / 0025 / 0042 / 0048 / 0050 合并；结论�
 
 ## 参考
 
-- 契约：[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints) / [#execution-port](../ROS2迁移交接文档.md#execution-port) / [#messages](../ROS2迁移交接文档.md#messages) / [#params](../ROS2迁移交接文档.md#params)
+- 契约：[#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints) / [#execution-port](0020-package-boundaries-and-runtime-topology.md#execution-port) / [#messages](0020-package-boundaries-and-runtime-topology.md#messages) / [#params](0020-package-boundaries-and-runtime-topology.md#params)
 - 相关决策：[ADR-0002](0002-docs-source-of-truth-and-reference-discipline.md#top)（引用纪律）、[ADR-0006](0006-experiment-artifacts-and-evidence-discipline.md#top)（产物与证据）、[ADR-0004](0004-ground-control-rl-primary-and-nav2-safety.md#top)（地面主控与安全层）、[ADR-0003](0003-nav2-paradigm-absorption.md#top)（Nav2 吸收）、[ADR-0017](0017-time-budget-and-clock-sources.md#top)（时间预算与源时刻）、[ADR-0019](0019-lifecycle-and-startup-robustness.md#top)（生命周期）
 - 第三方资产与许可：[`docs/conventions/第三方资产与许可.md`](../conventions/第三方资产与许可.md)
 - 证据：`experiments/w5-ground-nav-safety/`（r008 / r009）、`experiments/w6-task-eval/<run_id>/metrics/r027.json`

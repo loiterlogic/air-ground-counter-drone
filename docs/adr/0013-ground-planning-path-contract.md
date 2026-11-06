@@ -180,7 +180,7 @@ Nav2 `collision_monitor` 的 `process` **只由 `cmd_vel_in` 回调触发**，�
 
 ## 不做什么（边界）
 
-- 不改冻结 9 消息 / 服务 ABI；不改 `/agc/ground/goal` 的类型与语义；不变**唯一执行口语义**；**不新增第二 ROS 命令者**（契约 [#execution-port](../ROS2迁移交接文档.md#execution-port)）。
+- 不改冻结 9 消息 / 服务 ABI；不改 `/agc/ground/goal` 的类型与语义；不变**唯一执行口语义**；**不新增第二 ROS 命令者**（契约 [#execution-port](0020-package-boundaries-and-runtime-topology.md#execution-port)）。
 - 不引入 `bt_navigator` / 行为树；不改 Nav2 planner 插件本体；不改控制律 / 安全层 / 终态语义。
 - 不把占位规划器写成"Nav2 原生 Path 订阅"；也不因"自定义"就认为方案不成立。
 - 不做"按目标位置排除 lethal 格"、不直接过滤目标点云、不对 voxel 层做去抖、不改用 `/agc/map` 内容身份（属另一
@@ -211,9 +211,9 @@ Nav2 `collision_monitor` 的 `process` **只由 `cmd_vel_in` 回调触发**，�
 
 ## 参考
 
-- 契约真源：[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)、
-  [#execution-port](../ROS2迁移交接文档.md#execution-port)、[#params](../ROS2迁移交接文档.md#params)、
-  [#terminal-semantics](../ROS2迁移交接文档.md#terminal-semantics)
+- 契约真源：[#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、
+  [#execution-port](0020-package-boundaries-and-runtime-topology.md#execution-port)、[#params](0020-package-boundaries-and-runtime-topology.md#params)、
+  [#terminal-semantics](0014-task-fsm-and-scenario-transaction.md#terminal-semantics)
 - 相关决策：[ADR-0003](0003-nav2-paradigm-absorption.md#top)（按命令源裁剪）、
   [ADR-0004](0004-ground-control-rl-primary-and-nav2-safety.md#top)（RL 主控 + 安全层）、
   [ADR-0007](0007-scene-geometry-single-source-and-layout.md#top)（地图内容身份）、

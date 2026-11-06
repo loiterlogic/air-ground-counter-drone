@@ -162,8 +162,8 @@ legacy `vis_rate=0.2292` < 串行包络下界）—— 按 (f) 回退保留单 w
 
 ## 参考
 
-- 契约：[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)、[#params](../ROS2迁移交接文档.md#params)、
-  [#namespace](../ROS2迁移交接文档.md#namespace)、[#execution-port](../ROS2迁移交接文档.md#execution-port)
+- 契约：[#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、[#params](0020-package-boundaries-and-runtime-topology.md#params)、
+  [#namespace](0020-package-boundaries-and-runtime-topology.md#namespace)、[#execution-port](0020-package-boundaries-and-runtime-topology.md#execution-port)
 - 相关决策：[ADR-0027](0027-uxrce-startup-reproducibility.md#top)（uXRCE 预热与错峰）、
   [ADR-0005](0005-px4-toolchain-and-link.md#top)（PX4 工具链 pin）、
   [ADR-0006](0006-experiment-artifacts-and-evidence-discipline.md#top)（产物与 run 身份）、

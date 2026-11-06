@@ -34,7 +34,7 @@
 文案统一走 [`status_map`](status_map.py)（唯一映射， 表述红线在此实现并自检）。
 
 **不做**：不写 `/agc/ground/cmd_vel`、不写模型位姿、不发任务目标
-（唯一执行口 [execution-port](../../docs/ROS2迁移交接文档.md#execution-port)）。任务启动只用
+（唯一执行口 [execution-port](../../docs/adr/0020-package-boundaries-and-runtime-topology.md#execution-port)）。任务启动只用
 `/agc/task/start`（既有服务）与 `/agc/task/state`（既有话题）。
 """
 

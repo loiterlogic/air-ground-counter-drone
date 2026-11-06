@@ -184,4 +184,4 @@ n ≈ ((z_{1−α/2} + z_{1−power}) · σ / (Δ_true − MME))² （双侧 CI 
 - 裁定记录与出口闭合：[ADR-0023](0023-w7b-adjudication-record-and-exit.md)
 - 种子协议：[ADR-0027](0027-uxrce-startup-reproducibility.md)
 - 预注册真源：`src/agc_rl/config/research_prereg.yaml`；判定脚本 `scripts/research/w7b_p1_adjudicate.py` / `w7b_p2_adjudicate.py`
-- 契约：[硬约束](../ROS2迁移交接文档.md#hard-constraints)、[终态语义](../ROS2迁移交接文档.md#terminal-semantics)、[参数入口](../ROS2迁移交接文档.md#params)
+- 契约：[硬约束](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、[终态语义](0014-task-fsm-and-scenario-transaction.md#terminal-semantics)、[参数入口](0020-package-boundaries-and-runtime-topology.md#params)

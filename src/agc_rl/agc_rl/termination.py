@@ -13,8 +13,8 @@
 （`mission_sim_budget` / `episode_wall_watchdog` / `process_wall_duration`），**不产生第三套**。
 
 约束类信息（超时失败 / infra 单列 / 缺失掩码）配置文件为契约
-[#hard-constraints](../../docs/ROS2迁移交接文档.md#hard-constraints) 与
-[#terminal-semantics](../../docs/ROS2迁移交接文档.md#terminal-semantics)；本模块只**引用**不复述。
+[#hard-constraints](../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints) 与
+[#terminal-semantics](../../../docs/adr/0014-task-fsm-and-scenario-transaction.md#terminal-semantics)；本模块只**引用**不复述。
 """
 
 from agc_msgs.msg import AgcTaskState

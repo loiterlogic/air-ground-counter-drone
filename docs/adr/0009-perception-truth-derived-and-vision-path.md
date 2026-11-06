@@ -23,7 +23,7 @@ accepted（2026-11-02 由 0020 / 0052 / 0053 / 0103 / 0110 合并；2026-11-03 �
   没有任何订阅者。故上句描述的通道模型是**保留能力**，**不**在当前运行的整链中生效；
   `/agc/targets` 由 `gt_adapter` 发布且**无几何门控**（见 (a2)）。
   通道定义与噪声 / 置信度模型由 `/agc/perception/sensors_file` **单一注入**（契约
-  [#params](../ROS2迁移交接文档.md#params)），节点不得覆写。
+  [#params](0020-package-boundaries-and-runtime-topology.md#params)），节点不得覆写。
 - **不做**真实视觉 / 雷达检测算法（点云聚类、图像识别等）；感知**不**消费-full 点云（点云属地面 costmap 输入）。
 - **表述纪律**：文档 / 报告 / 论文**不得**把本感知表述为「真实视觉 / 雷达检测」或「目标识别」；涉及「跟踪精度」
   等指标必须限定为**仿真口径**。
@@ -129,6 +129,7 @@ accepted（2026-11-02 由 0020 / 0052 / 0053 / 0103 / 0110 合并；2026-11-03 �
 可容忍连续空拍 3/2/1/**0** 拍。同理 `drop_burst_mean_s` 也必须 < 该余量，
 否则每次 burst 必然打断 tracking（原 0.5 已改为 0.1）。
 
+<a id="perception-path"></a>
 <a id="b"></a>
 ### (b) 视觉驱动路径：**已于 2026-11-04 整体退役**
 
@@ -142,7 +143,7 @@ accepted（2026-11-02 由 0020 / 0052 / 0053 / 0103 / 0110 合并；2026-11-03 �
 | `camera_tf` / `vision_target`（`agc_perception`） | 源文件删除，CMake / package.xml 依赖（`vision_msgs`）移除 |
 | `scripts/vision/`（检测器桩、数据集采样、相机探针、N1 探针与指标） | 目录删除 |
 | `perception_path` / `vision_detector` / `detector_backend` / `vision_model_*` / `target_plane_z_m` | 7 个 launch 参数删除 |
-| `/agc/perception/path` 契约参数 | 契约[参数入口](../ROS2迁移交接文档.md#params)清单中删除 |
+| `/agc/perception/path` 契约参数 | 契约[参数入口](0020-package-boundaries-and-runtime-topology.md#params)清单中删除 |
 | `perception.yaml` 的 `camera_tf` / `vision_target` 两段 | 删除 |
 | N3 回归矩阵的 `vision-cost` 臂 | 删除（矩阵不再有"感知代价臂"） |
 | 5 个视觉专项测试 | 删除；替换为**防复活闸门** `test_vision_localization_path_is_retired` |
@@ -327,8 +328,8 @@ accepted（2026-11-02 由 0020 / 0052 / 0053 / 0103 / 0110 合并；2026-11-03 �
 
 - 评审：[10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-037)（传感器 / 车体能力）、
   [10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-038)（数值模型与配置边界）；契约：
-  [#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)、[#execution-port](../ROS2迁移交接文档.md#execution-port)、
-  [#params](../ROS2迁移交接文档.md#params)、[#messages](../ROS2迁移交接文档.md#messages)
+  [#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、[#execution-port](0020-package-boundaries-and-runtime-topology.md#execution-port)、
+  [#params](0020-package-boundaries-and-runtime-topology.md#params)、[#messages](0020-package-boundaries-and-runtime-topology.md#messages)
 - 相关决策：[ADR-0010](0010-safety-thresholds-and-failsafe.md#top)（安全阈值与接触真值）、
   [ADR-0011](0011-interception-and-fire-control.md#top)（拦截与火控）、
   [ADR-0012](0012-spawn-clearance-and-reset-transaction.md#top)（出生净空）、

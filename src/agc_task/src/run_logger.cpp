@@ -3,7 +3,7 @@
 // 按 ADR-0006 落 experiments/<campaign>/<run_id>/{config,metrics}：
 // * config/：参数快照 + git commit hash
 // * metrics/summary.json：见下 finalize。
-// 两指标（docs/ROS2迁移交接文档.md#hard-constraints）：
+// ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints）：
 // * shield_infeasible_rate —— **重定义**：安全层触发（collision_monitor STOP/SLOWDOWN）
 // 且"触发时不可行"（前向扫描 ≤ contact_dist_m，或 TTC < ttc_min_s）的事件占比 =
 // infeasible_ticks / triggered_ticks（无触发时记 0）。与旧义（RL 安全集为空）**不可对照**。

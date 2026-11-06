@@ -2,7 +2,7 @@
 #
 # 轴：目标运动 {static|linear|maneuver|epicycle} × 障碍 {none|static|dynamic}
 # × 结局 {tracking|capture|jam|unreachable|timeout}
-# 由 main.launch.py 读取，与 config/base.yaml 合并（场景覆盖基参）后单一注入（docs/ROS2迁移交接文档.md#params）。
+# 由 main.launch.py 读取，与 config/base.yaml ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params）。
 # 说明：
 # * `intruder_driver` 段描述目标运动（ PX4 驱动；整数 load 由双 PX4 整链 launch 集成承载）。
 # * capture / jam 类场景的**期望终态**依赖 裁决器（Task 9–11）；spawn/goal 已就绪，裁决落地即达终态。

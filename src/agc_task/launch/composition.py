@@ -6,7 +6,7 @@
 carrier 承载者校验、参数合并、轴断言、manifest 生成、临时文件落盘。**不再**在多入口内联重复。
 
 约束类信息（参数入口 / 唯一执行口 / 命名空间 / 硬约束 – / 终态语义）**只引用不复述**，
-配置文件见 `docs/ROS2迁移交接文档.md` 的对应锚点。
+约束条文见 `docs/adr/0020-package-boundaries-and-runtime-topology.md` 的对应锚点。
 
 设计要点：
  * `BACKENDS` 为 **backend 能力表**：每 backend 声明 `air_link` / `px4` / `target_source` /

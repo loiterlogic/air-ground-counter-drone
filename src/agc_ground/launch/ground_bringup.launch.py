@@ -25,7 +25,7 @@
 "无 shield 对照臂"属 消融研究，演示与验收**永远不该关安全层**。
 
 参数配置文件：`config/ground.yaml`（安全层 / 中继）、`config/costmap.yaml`（分层 costmap，基线自持）、
-`config/baseline.yaml`（基线）、`agc_rl/config/rl.yaml`（RL）（docs/ROS2迁移交接文档.md#params）。
+`config/baseline.yaml`（基线）、`agc_rl/config/rl.yaml`../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params）。
 
 路径输入与命令源的关系（2026-11-01，ADR-0013）：
  * `/agc/ground/path`（`nav_msgs/Path`，`frame_id=world`）是地面侧占位规划器发布的**路径数据**，

@@ -2,7 +2,7 @@
 
 链路位置：`ground_policy_rl → cmd_vel_raw → collision_monitor → 唯一执行口 → ground_drive_relay → GZ`。
 本节点**只**写中间话题 `cmd_vel_raw`（`/agc/ground/cmd_vel_raw`），**SHALL NOT** 直接写契约
-唯一执行口（spec R6/R7；契约 [唯一执行口](../../docs/ROS2迁移交接文档.md#execution-port)）。
+唯一执行口（spec R6/R7；契约 [唯一执行口](../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#execution-port)）。
 
 - 订阅：`/agc/ground/odom`（world 位姿/速度）、`/agc/ground/scan`（2D LaserScan）、`/agc/ground/goal`、
  `/agc/task/state`（仅 `GROUND_APPROACH` 允许驱动）。

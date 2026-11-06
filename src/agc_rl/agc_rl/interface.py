@@ -2,7 +2,7 @@
 
 本模块是 `agc_rl` 的**接口配置文件**：观测（obs）空间与动作（action）空间的唯一冻结定义。
 节点（`inference_node`）与策略（`policy`）**只**经本模块构造 obs / 解释 action，
-不得各自另立维度或语义（契约 [参数入口](../../docs/ROS2迁移交接文档.md#params)：由 config 单一注入）。
+不得各自另立维度或语义（契约 [参数入口](../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params)：由 config 单一注入）。
 
 对齐旧行为事实（旧树归档 `reference/` 已于 2026-10-31 退役，见 `docs/adr/0025-publishing-boundary-and-retirement.md`；
 以下保留当时的对齐来源记录，只对齐 WHAT、不复制代码）：

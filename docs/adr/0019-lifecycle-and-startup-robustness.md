@@ -109,4 +109,4 @@ px4_msgs / uORB `VehicleOdometry.q` 为 `float32[4]`，`q[0]` 即实部 `w`（�
 - PX4 工具链与链路：[ADR-0005](0005-px4-toolchain-and-link.md)
 - 整链覆盖与同 run 因果记录：[ADR-0018](0018-acceptance-and-coverage-matrix.md)
 - 感知口径与能力边界（`rmax` 几何盲区）：[ADR-0009](0009-perception-truth-derived-and-vision-path.md)
-- 契约：[硬约束](../ROS2迁移交接文档.md#hard-constraints)、[执行口](../ROS2迁移交接文档.md#execution-port)、[参数入口](../ROS2迁移交接文档.md#params)、[消息](../ROS2迁移交接文档.md#messages)、[命名空间](../ROS2迁移交接文档.md#namespace)
+- 契约：[硬约束](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、[执行口](0020-package-boundaries-and-runtime-topology.md#execution-port)、[参数入口](0020-package-boundaries-and-runtime-topology.md#params)、[消息](0020-package-boundaries-and-runtime-topology.md#messages)、[命名空间](0020-package-boundaries-and-runtime-topology.md#namespace)

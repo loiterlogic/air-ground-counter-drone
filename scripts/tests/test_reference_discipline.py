@@ -58,7 +58,7 @@ FORBIDDEN = (
 )
 
 # 允许的契约条目引用形式：契约没有 ADR 时，用硬约束锚点而非 C1/C10。
-CONTRACT_ANCHOR_RE = re.compile(r'docs/ROS2迁移交接文档\.md#hc-\d+|#hc-\d+')
+CONTRACT_ANCHOR_RE = re.compile(r'docs/adr/0020-[a-z-]+\.md#hc-\d+|#hc-\d+')
 
 ADR_REF = re.compile(r'ADR-(\d{4})')
 COMMENT_PREFIXES = ('#', '//', '/*', '*', '"""', "'''")

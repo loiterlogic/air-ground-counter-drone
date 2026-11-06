@@ -4,7 +4,7 @@
 背景：地面执行中继 `ground_drive_relay` 原以 ROS 时钟判接收年龄，而 GZ 的
 DiffDrive 插件**没有**命令超时（已核验 libgz-sim8-diff-drive-system.so 参数清单无 timeout/deadman），
 故中继自身死亡或时钟异常时末端可能持续执行最后命令。
-契约：docs/ROS2迁移交接文档.md#execution-port（唯一执行口）、#params（参数单一注入）。
+../docs/adr/0020-package-boundaries-and-runtime-topology.md#execution-port（唯一执行口）、#params（参数单一注入）。
 
 本脚本三个场景（`--scenario`）：
   relay    —— 不依赖 GZ、独立进程拉起中继，验证「中继自身」鲁棒化（S1–S6）。见下。

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """rl_inference —— RL 推理节点启动（供上层 launch include）。
 
-参数配置文件 `config/rl.yaml`（docs/ROS2迁移交接文档.md#params）。由 `agc_ground` 的 ground_bringup 在
+参数配置文件 `config/rl.yaml`../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params）。由 `agc_ground` 的 ground_bringup 在
 `command_source: rl` 时 include。
 """
 

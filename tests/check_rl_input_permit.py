@@ -4,7 +4,7 @@
 背景：`ground_policy_rl` 原对 odom / goal / scan / task 状态只记「到达过即**永久有效**」
 （have_odom / have_goal 布尔永不失效），且 `interface` 把 NaN / <=0 一并当「无遮挡」；`task_manager`
 若死在 `GROUND_APPROACH`，策略仍每拍发**新时间戳**的运动命令。契约：
-docs/ROS2迁移交接文档.md#execution-port（唯一执行口）、#params（参数单一注入）。
+../docs/adr/0020-package-boundaries-and-runtime-topology.md#execution-port（唯一执行口）、#params（参数单一注入）。
 
 两个场景（`--scenario`）：
   node —— 独立进程（不依赖 GZ）：拉起 `ground_policy_rl`，本脚本向四类输入发合成消息，逐一注入

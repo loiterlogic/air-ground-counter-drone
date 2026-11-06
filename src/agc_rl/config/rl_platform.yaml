@@ -1,4 +1,4 @@
-# agc_rl · 平台参数——**配置文件**（docs/ROS2迁移交接文档.md#params；spec R6）。
+# agc_rl · ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params；spec R6）。
 #
 # 由 训练 / 评估 runner（`scripts/w7_episode_runner.py`）与 env 适配层（`agc_rl/env.py`）读取；
 # **不**由 ROS 节点覆写。共享的 obs / 控制 / 寿命参数（`num_sectors` / `lidar_max_range` /

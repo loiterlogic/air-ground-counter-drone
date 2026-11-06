@@ -123,7 +123,7 @@ inline bool parseSpawnPositionXyz(const std::string & s, Vector3 & out)
 /// PX4 时间戳（自 boot 的 µs）→ ROS 时间（sim 时钟）的仿射映射。
 ///
 /// PX4 内部时间与 gz `/clock`（sim 时间）不同源；用指数滑动平均估计二者的常数偏移，
-/// 既保留 PX4 数据流内部的相对时序，又把绝对时间锚定到唯一时钟（docs/ROS2迁移交接文档.md#namespace）。
+/// 既保留 PX4 ../../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#namespace）。
 class Px4TimeMapper
 {
 public:

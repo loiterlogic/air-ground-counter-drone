@@ -140,9 +140,9 @@ accepted（2026-11-02 由 0019 / 0051 合并；口径与容限结论未变，跟
 
 - 评审：[10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-036)、
   [10-风险](../reviews/agc-review-2026-10-14/10-风险.md#x-01)
-- 契约：[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)、
-  [#namespace](../ROS2迁移交接文档.md#namespace)、[#execution-port](../ROS2迁移交接文档.md#execution-port)、
-  [#messages](../ROS2迁移交接文档.md#messages)
+- 契约：[#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、
+  [#namespace](0020-package-boundaries-and-runtime-topology.md#namespace)、[#execution-port](0020-package-boundaries-and-runtime-topology.md#execution-port)、
+  [#messages](0020-package-boundaries-and-runtime-topology.md#messages)
 - 相关决策：[ADR-0009](0009-perception-truth-derived-and-vision-path.md#top)（感知口径与机头指向）、
   [ADR-0010](0010-safety-thresholds-and-failsafe.md#top)（安全阈值与空中单一控制权）、
   [ADR-0003](0003-nav2-paradigm-absorption.md#top)（Nav2 范式吸收）、

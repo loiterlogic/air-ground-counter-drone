@@ -13,7 +13,7 @@
 
 **越往上越贵，所以下层没过就别上上层。** 上层证据不能替代下层的断言，反之亦然。
 第三层属 **T2 真实实验**：**未派发不启动**，也不得用"只是看一下"自我授权。
-第二层要不要起 GUI、用哪种后端，按当次派工与[硬约束](../../../docs/ROS2迁移交接文档.md#hard-constraints)办。
+第二层要不要起 GUI、用哪种后端，按当次派工与[硬约束](../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)办。
 
 ### 1.1 先学后做的取证顺序
 
@@ -79,7 +79,7 @@
 - `backend=gz-offscreen-camera`（或等价的相机传感器渲染）**不等于** GUI 截图，必须标注；
 - 起了 GUI 就写 GUI，带了 headless 就写 headless；**headless 下用相机传感器出图是合法证据**，
   照实写 `backend` 与渲染方式即可，不是缺陷；
-- 验收用哪种形态、要不要 GUI ↔ headless 等价核验，按[硬约束](../../../docs/ROS2迁移交接文档.md#hard-constraints)
+- 验收用哪种形态、要不要 GUI ↔ headless 等价核验，按[硬约束](../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)
   与当次派工执行（**条文不在本技能复述**）。
 
 **不要把相机传感器渲染冒充"GUI 截图"**—— 这是伪造证据，比没有证据更糟。

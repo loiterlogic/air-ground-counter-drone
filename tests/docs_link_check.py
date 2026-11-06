@@ -96,6 +96,10 @@ LOCAL_ONLY_PREFIXES = (
 # 历史范围：断链只列名，不计入失败。
 HISTORICAL_PREFIXES = (
     "docs/archive/",
+    # 评审快照与协作台账同属过程证据：按 ADR-0002 / 铁律「历史证据不改写」，
+    # 其中的链接指向当时存在的文件，约束条文迁移后必然失效——只报告，不改写、不计失败。
+    "docs/reviews/",
+    ".coordination/",
 )
 
 # 永不扫描（生成物 / 外部树 / 实验证据）。

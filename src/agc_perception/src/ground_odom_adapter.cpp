@@ -14,7 +14,7 @@
 // → 清 `history_`；另有**位置跳变守卫**（teleport 不连续）双保险。重建 ≥2 个新样本前速度输出 0。
 //
 // twist 仍按 ROS Odometry 约定表达在 child frame：world 速度短窗差分后旋转到车体系。
-// 帧名遵循docs/ROS2迁移交接文档.md#namespace：机体系固定 car/base_link（禁止裸 base_link）。
+// ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#namespace：机体系固定 car/base_link（禁止裸 base_link）。
 
 #include <algorithm>
 #include <cmath>

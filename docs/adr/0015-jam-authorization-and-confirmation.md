@@ -83,4 +83,4 @@ accepted（2026-11-02 由 ADR-0032 / ADR-0033 / ADR-0034 合并；结论未变�
 - 任务 FSM 与终态锁存：[ADR-0014](0014-task-fsm-and-scenario-transaction.md)
 - 时间源与 `UXRCE_DDS_SYNCT`：[ADR-0027](0027-uxrce-startup-reproducibility.md)
 - 安全阈值与失效停车：[ADR-0010](0010-safety-thresholds-and-failsafe.md)
-- 契约：[硬约束](../ROS2迁移交接文档.md#hard-constraints)、[执行口](../ROS2迁移交接文档.md#execution-port)、[参数入口](../ROS2迁移交接文档.md#params)、[消息](../ROS2迁移交接文档.md#messages)、[终态语义](../ROS2迁移交接文档.md#terminal-semantics)
+- 契约：[硬约束](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、[执行口](0020-package-boundaries-and-runtime-topology.md#execution-port)、[参数入口](0020-package-boundaries-and-runtime-topology.md#params)、[消息](0020-package-boundaries-and-runtime-topology.md#messages)、[终态语义](0014-task-fsm-and-scenario-transaction.md#terminal-semantics)

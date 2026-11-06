@@ -15,7 +15,7 @@ description: "构建并打磨本项目的领域模型：维护 GLOSSARY.md、在
 - **语言**：项目文档用中文；术语**键保留原始形式**（如 `AGC`、`LQR`、`DQN`），释义用中文，被否的同义词列在 `_Avoid_`。
 - **术语的家只有一个**：[GLOSSARY.md](../../../GLOSSARY.md)。不要另起新表、不要在各处复制定义。
 - **决策的家**：`docs/adr/`，编号连续，索引见 [ADR 索引](../../../docs/adr/README.md#adr-index)。
-- **真源分层**：约束类信息（坐标系、唯一执行口、参数入口、硬约束、终态语义）**只存在**于 [契约真源](../../../docs/ROS2迁移交接文档.md#hard-constraints)，术语表**只引用不复述**（[ADR-0002](../../../docs/adr/0002-docs-source-of-truth-and-reference-discipline.md#top)）。
+- **真源分层**：约束类信息（坐标系、唯一执行口、参数入口、硬约束、终态语义）**只存在**于 [契约真源](../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)，术语表**只引用不复述**（[ADR-0002](../../../docs/adr/0002-docs-source-of-truth-and-reference-discipline.md#top)）。
 - **引用纪律**：跨文档一律用**稳定锚点** `<文件>#<锚点>`，**禁止** `§` 章节号。
 - **历史与现行分开**：`docs/archive/` 是历史，术语表里不要把它当现行规定引用。
 

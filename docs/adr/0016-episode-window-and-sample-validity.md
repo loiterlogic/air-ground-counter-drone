@@ -50,7 +50,7 @@ accepted（2026-11-02 由 0036 / 0038 / 0043 / 0078 合并；结论未变，其�
   `not_applicable.clearance` 改判「是否有新鲜 scan 帧」—— 全窗无回波时 `clearance_min_m` 仍为 `null`，
   但 `clearance` **不再**标 not_applicable（已知 = ∞）。
 - **可标定参数**：`scan_max_age_s` / `action_max_age_s`（默认 `0.5 s`），由 launch **单一注入**
-  （契约 [#params](../ROS2迁移交接文档.md#params)），节点不得覆写。
+  （契约 [#params](0020-package-boundaries-and-runtime-topology.md#params)），节点不得覆写。
 - **`proxy_v1` 计算逻辑保持不变**（触发判定仍用 `cm_action_ == 1 || == 2`），历史字段在有回波场景**逐值不变**。
 - **口径版本**：`definition_version` 记 `scan_valid_mask: "scan_frame_fresh_v2"`、
   `shield_infeasible_rate_window: "window_valid_v2"`、`terminal_state: "first_terminal_latch_v1"`；
@@ -185,9 +185,9 @@ accepted（2026-11-02 由 0036 / 0038 / 0043 / 0078 合并；结论未变，其�
 - 评审风险：[10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-021)、
   [10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-023)、
   [10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-028)
-- 契约：[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)、[#terminal-semantics](../ROS2迁移交接文档.md#terminal-semantics)、
-  [#params](../ROS2迁移交接文档.md#params)、[#execution-port](../ROS2迁移交接文档.md#execution-port)、
-  [#messages](../ROS2迁移交接文档.md#messages)
+- 契约：[#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、[#terminal-semantics](0014-task-fsm-and-scenario-transaction.md#terminal-semantics)、
+  [#params](0020-package-boundaries-and-runtime-topology.md#params)、[#execution-port](0020-package-boundaries-and-runtime-topology.md#execution-port)、
+  [#messages](0020-package-boundaries-and-runtime-topology.md#messages)
 - 相关决策：[ADR-0014](0014-task-fsm-and-scenario-transaction.md#top)（任务 FSM 与终态锁存）、
   [ADR-0011](0011-interception-and-fire-control.md#top)（拦截与火控窗口）、
   [ADR-0006](0006-experiment-artifacts-and-evidence-discipline.md#top)（产物与证据纪律）、

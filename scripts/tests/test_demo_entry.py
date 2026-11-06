@@ -6,7 +6,7 @@
  （`s04` → `track`），**不**经 launch 参数传入，
  且 `target` 是**显式**写在命令行里的（不能靠 `air.yaml` 的默认 `velocity` 蒙过去）；
 2. **不新增命令者**：演示代码不发布 `/agc/ground/cmd_vel`、不写模型位姿
- （[#execution-port](../../docs/ROS2迁移交接文档.md#execution-port)）；
+ （[#execution-port](../../docs/adr/0020-package-boundaries-and-runtime-topology.md#execution-port)）；
 3. **禁止 `pkill -f`**：回收只按 PID/PGID（[整链排障速查](../../docs/conventions/整链排障速查.md#0-三条环境铁律)）；
 4. **doctor 有区分度**：端口被占 / 有残留 / 未 source 时**真的**为 FAIL（不是恒 OK 的摆设）；
 5. **等价比较有区分度**：`EQUIVALENT` / `NOT_EQUIVALENT` / `NOT_COMPARABLE` / `INCOMPLETE`

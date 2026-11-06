@@ -3,7 +3,7 @@
 
 **口径不是本脚本定的**：全部读
 [`experiments/p1-2//preregistration/gui-headless-equivalence.json`](../../experiments/p1-2//preregistration/gui-headless-equivalence.json)
-（在**任何真实运行之前**落盘的预登记，见 [](../../docs/ROS2迁移交接文档.md#hard-constraints)）。
+（在**任何真实运行之前**落盘的预登记，见 [](../../docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)）。
 脚本只做三件事：取值 → 按预登记规则判定 → 输出可引用的判定与逐项明细。
 
 四类结论（与预登记 `verdict_rule` 一一对应）：

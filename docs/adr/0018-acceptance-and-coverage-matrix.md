@@ -13,7 +13,7 @@ accepted（2026-11-02 由 ADR-0040 / 0041 / 0046 / 0057 合并；结论未变）
 - **验收整链范围**：批量入口跑的是**轻量栈**（任务层 + 裁决器，无 PX4 / 空中链路），却把「期望终态匹配」呈现为整链完成；「轻量 PASS」可能被误读为「双 PX4 整链 / GUI 验收」。
 - **场景轴未执行**：`scenarios.yaml` 登记 `target_motion × obstacle × perception × outcome`，但运行参数没有对应实验因子——`dynamic` 无障碍驱动覆盖、`s06/s07` 无 drop / fov 参数、`none/static` 用同一世界、空中节点读独立 `air.yaml`、轻量栈不起 `intruder_driver`；名义 12 场景可能实为少量配置变种。
 
-契约真源见 [#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)、[#terminal-semantics](../ROS2迁移交接文档.md#terminal-semantics)、[#params](../ROS2迁移交接文档.md#params)（单一注入）。
+契约真源见 [#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、[#terminal-semantics](0014-task-fsm-and-scenario-transaction.md#terminal-semantics)、[#params](0020-package-boundaries-and-runtime-topology.md#params)（单一注入）。
 
 ## 决策
 
@@ -127,6 +127,6 @@ accepted（2026-11-02 由 ADR-0040 / 0041 / 0046 / 0057 合并；结论未变）
 
 ## 参考
 
-- 契约：[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints) / [#terminal-semantics](../ROS2迁移交接文档.md#terminal-semantics) / [#params](../ROS2迁移交接文档.md#params) / [#messages](../ROS2迁移交接文档.md#messages)
+- 契约：[#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints) / [#terminal-semantics](0014-task-fsm-and-scenario-transaction.md#terminal-semantics) / [#params](0020-package-boundaries-and-runtime-topology.md#params) / [#messages](0020-package-boundaries-and-runtime-topology.md#messages)
 - 相关决策：[ADR-0006](0006-experiment-artifacts-and-evidence-discipline.md#top)（产物与证据纪律）、[ADR-0016](0016-episode-window-and-sample-validity.md#top)（episode 窗口与样本有效性）、[ADR-0014](0014-task-fsm-and-scenario-transaction.md#top)（任务 FSM 与终态）、[ADR-0021](0021-w8-gui-headless-equivalence.md#top)（GUI / headless 等价与平台冻结）、[ADR-0007](0007-scene-geometry-single-source-and-layout.md#top)（场景几何真源）
 - 证据：`experiments/w6-task-eval/20261016-w6-r025-0/`（`coverage_matrix.md` / `same_run.json` / `metrics/r025.json`）、`<run_id>/metrics/r026.json`、`<run_id>/metrics/r031.json`

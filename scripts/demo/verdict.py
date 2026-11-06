@@ -14,7 +14,7 @@
 `reason_code` 的 `CAPTURE_NET` / `JAM_*` 表达）。**禁词字面量只存在于 `status_map`**，
 本模块不复制，避免静态禁词检查被"到处都是例外"绕空。
 
-[#terminal-semantics]: ../../docs/ROS2迁移交接文档.md#terminal-semantics
+[#terminal-semantics]: ../../docs/adr/0014-task-fsm-and-scenario-transaction.md#terminal-semantics
 """
 
 import os

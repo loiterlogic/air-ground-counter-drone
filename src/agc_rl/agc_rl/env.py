@@ -54,7 +54,7 @@ DEFAULT_CONTROL = {
 }
 
 # 内置回落默认（`config/*.yaml` 不可读时用）——正常运行以 share 的 `rl.yaml` + `rl_platform.yaml`
-# 为**配置文件**（spec R6；docs/ROS2迁移交接文档.md#params）。obs / 控制 / 寿命参数取自 `rl.yaml`（与 agent 共用），
+# 为**配置文件**（spec ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params）。obs / 控制 / 寿命参数取自 `rl.yaml`（与 agent 共用），
 # 平台参数取自 `rl_platform.yaml`。
 _ENV_DEFAULTS = {
     'base_frame': 'car/base_link', 'rate_hz': 20.0,

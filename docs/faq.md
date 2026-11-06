@@ -150,8 +150,8 @@ python3 scripts/demo/gui_capture.py snap --out /tmp/shot.png
 **症状**：终态 `TRACKING_SUCCESS`，想确认能不能说"拦截成功"。
 
 **答案**：**不能**。`TRACKING_SUCCESS` = **"抵近并持续跟踪"**（阶段 A），
-**不得**表述为"拦截完成"（[契约](ROS2迁移交接文档.md#hard-constraints) 与
-[终态语义](ROS2迁移交接文档.md#terminal-semantics)）。
+**不得**表述为"拦截完成"（[契约](adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints) 与
+[终态语义](adr/0014-task-fsm-and-scenario-transaction.md#terminal-semantics)）。
 阶段 B 的拦截另有终态 `INTERCEPT_CONFIRMED`（`CAPTURE_NET` 物理捕获 / `JAM_*` 行为级干扰）。
 
 另外两个口径也要一起说清，否则结论会被误读：

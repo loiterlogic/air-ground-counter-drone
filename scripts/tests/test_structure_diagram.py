@@ -627,8 +627,8 @@ def test_redlines_are_pure_references():
     assert sec, '找不到「红线（只引用，不复述）」节'
     body = sec.group(1)
     # 必须有指向契约的锚点
-    assert 'ROS2迁移交接文档.md#execution-port' in body
-    assert 'ROS2迁移交接文档.md#terminal-semantics' in body
+    assert '../adr/0020-package-boundaries-and-runtime-topology.md#execution-port' in body
+    assert '../adr/0014-task-fsm-and-scenario-transaction.md#terminal-semantics' in body
     # 不得把条文写回来（这些是契约里的措辞，本节只允许出现指针）
     for forbidden in ('不得直接写', '不是"拦截完成"', '同一 run 不得混跑'):
         assert forbidden not in body, '红线节复述了条文：%r' % forbidden

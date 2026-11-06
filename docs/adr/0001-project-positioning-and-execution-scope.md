@@ -23,7 +23,7 @@ accepted（2026-11-02 由 ADR-0001 / 0006 / 0009 / 0013 / 0014 / 0016 / 0017 合
 - **「平台搭建」交付物** = 本**仿真**平台（世界 + 车 + 无人机 + 协同栈），不是实物平台；
 - **论文素材** = 本仓库仿真实验产物（`experiments/`），论文在本仓库内完成。
 
-三者**共用同一份代码与产物**，接口语义与终态口径一律以[契约真源](../ROS2迁移交接文档.md#hard-constraints)
+三者**共用同一份代码与产物**，接口语义与终态口径一律以[契约真源](0020-package-boundaries-and-runtime-topology.md#hard-constraints)
 为准，**不得为凑交付物而分叉**。申报书里的「研究进度安排（阶段）」**不作为执行约束**。
 
 ### (b) 全新重写，而非逐包等价迁移
@@ -82,12 +82,12 @@ accepted（2026-11-02 由 ADR-0001 / 0006 / 0009 / 0013 / 0014 / 0016 / 0017 合
 ## Consequences
 
 - 接口设计保留可替换边界，实机适配作为独立后续任务，不在当前 workstream 范围内。
-- 软著、平台、论文三者共用代码与产物；契约 [终态语义](../ROS2迁移交接文档.md#terminal-semantics) 的
+- 软著、平台、论文三者共用代码与产物；契约 [终态语义](0014-task-fsm-and-scenario-transaction.md#terminal-semantics) 的
   「阶段 A / 阶段 B」口径由此消解（阶段 A = 跟踪，阶段 B = 拦截）。
 - 拦截相关决策见 [ADR-0011](0011-interception-and-fire-control.md#top)；协同回路的具体实现落在
   地面规划（[ADR-0013](0013-ground-planning-path-contract.md#top)）与感知（[ADR-0009](0009-perception-truth-derived-and-vision-path.md#top)）。
 
 ## 参考
 
-- 契约真源：[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)
+- 契约真源：[#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints)
 - 术语口径：[GLOSSARY](../../GLOSSARY.md)（「无人机跟踪」「协同感知」与「跟随」的区别）

@@ -12,10 +12,10 @@
 `TRACKING_SUCCESS` 的**任何展示文案**都不含"拦截"二字；本模块用
 [`assert_display_safe`](#status_map.py) 在导入期与回归测试里双向把关。
 
-> 改文案前先读 [终态语义](../../docs/ROS2迁移交接文档.md#terminal-semantics)；
+> 改文案前先读 [终态语义](../../docs/adr/0014-task-fsm-and-scenario-transaction.md#terminal-semantics)；
 > 想加"拦截完成"之类的措辞，请先改契约——不要在这里偷偷改。
 
-[#hard-constraints]: ../../docs/ROS2迁移交接文档.md#hard-constraints
+[#hard-constraints]: ../../docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints
 """
 
 import re

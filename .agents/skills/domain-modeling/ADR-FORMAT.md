@@ -91,4 +91,4 @@ python3 scripts/adr_index.py --check # 校验索引与 ADR 一致（非 0 = 漂�
 
 - 不要给一次性实现细节升 ADR（留在对应任务的规格/记录里）。
 - 不要把 ADR 写成规格：要求、验收判据归 plan 与规格，ADR 只记"决定了什么、为什么"。
-- 不要在 ADR 里复述契约约束：引用 [契约真源](../../../docs/ROS2迁移交接文档.md#hard-constraints) 的稳定锚点即可。
+- 不要在 ADR 里复述契约约束：引用 [契约真源](../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints) 的稳定锚点即可。

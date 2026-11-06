@@ -57,7 +57,7 @@ ring_r = target_min_dist + target_margin + extra
 
 轨迹形状以 `agc_air/config/air.yaml` 的 `traj.rx / traj.ry` 与 `agc_control` 的
 `Figure8Trajectory` 实现为准（形状的契约语义见
-[硬约束](../../../docs/ROS2迁移交接文档.md#hard-constraints)，此处**不复述条文**）：
+[硬约束](../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)，此处**不复述条文**）：
 
 ```text
 x(θ) = center_x + rx · sinθ

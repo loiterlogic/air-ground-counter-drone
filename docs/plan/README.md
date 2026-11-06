@@ -5,8 +5,8 @@
 > **本目录是临时工作区，不是真源。**
 > 这里的文件**只回答"这一轮做什么、做到什么算完成"**，任务结束即**删除**。
 > **任何地方不得长期引用本目录的文件**—— 结论必须写进永久归宿（[ADR](../adr/README.md#adr-index) /
-> [工程规范](../conventions/) / [契约真源](../ROS2迁移交接文档.md#hard-constraints)）后再删。
-> 约束仍只引用[契约真源](../ROS2迁移交接文档.md#hard-constraints)，本目录**不复述**约束。
+> [工程规范](../conventions/) / [契约真源](../adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)）后再删。
+> 约束仍只引用[契约真源](../adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)，本目录**不复述**约束。
 
 <a id="lifecycle"></a>
 ## 1. 生命周期：**写完就删**
@@ -31,7 +31,7 @@
 |---|---|---|
 | **难以逆转的决策**（选了什么、否了什么、为什么） | [`docs/adr/`](../adr/README.md#adr-index) | 一篇 ADR 一个决策域；含 Status / 背景 / 决策 / 不做什么 / Consequences |
 | **工程规范**（怎么做的规则、口径、命名、分层） | [`docs/conventions/`](../conventions/) | 按主题一份；不复述契约 |
-| **不可变约束 / 坐标系 / 终态语义 / 接口语义** | [契约真源](../ROS2迁移交接文档.md#hard-constraints) | 唯一约束来源；下游**只引用、不复述** |
+| **不可变约束 / 坐标系 / 终态语义 / 接口语义** | [契约真源](../adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints) | 唯一约束来源；下游**只引用、不复述** |
 | **能力边界 / 已知限制** | [根 README「已知边界」](../../README.md#已知边界当前能力范围) | 解读结果的前提；写"不成立的范围" |
 | **可执行的判据** | `tests/` / `src/*/test/` | 结论固化为测试；测试比文档可靠 |
 | **排障知识**（症状 → 根因 → 修法） | [`docs/conventions/整链排障速查.md`](../conventions/整链排障速查.md) | 按症状可搜 |

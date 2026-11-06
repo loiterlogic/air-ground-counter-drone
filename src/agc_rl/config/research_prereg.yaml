@@ -1,4 +1,4 @@
-# 确证实验**预注册**（R4；ADR-0022）——配置文件（docs/ROS2迁移交接文档.md#params）。
+# ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params）。
 #
 # 本文件在**确证实验之前**写定判定规则 / 样本量 / 显著性阈值；运行顺序即证据：
 # 预注册文件（git 提交时间）**早于**确证 run（`experiments/w7-rl-b/<run_id>`）。
@@ -196,8 +196,8 @@ w7b_prereg:
     shield: true
     obs_horizon_s: 60.0
     task_goal_follow_target: false      # 两臂同用固定任务目标（非 IV；s15 与 s08 一致）
-    terminal_semantics: "docs/ROS2迁移交接文档.md#terminal-semantics"
-    execution_port: "docs/ROS2迁移交接文档.md#execution-port"
+    terminal_semantics: ../../../docs/adr/0014-task-fsm-and-scenario-transaction.md#terminal-semantics"
+    execution_port: ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#execution-port"
     iv:
       cooperate:
         observe_yaw_mode: target
@@ -251,8 +251,8 @@ w7b_prereg:
     task_goal_source: "/agc/targets（原载体 air_fusion，已于 2026-11-04 退役）"
     obs_horizon_s: 60.0
     shield: true
-    terminal_semantics: "docs/ROS2迁移交接文档.md#terminal-semantics"
-    execution_port: "docs/ROS2迁移交接文档.md#execution-port"
+    terminal_semantics: ../../../docs/adr/0014-task-fsm-and-scenario-transaction.md#terminal-semantics"
+    execution_port: ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#execution-port"
     cooperative_reference: "P1 p1_coop（ADR-0023）"
     iv:
       a:

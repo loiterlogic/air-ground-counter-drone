@@ -18,7 +18,7 @@ AGC（空地协同反无人机仿真）：同一世界、同一时钟下，无�
 ## 按需查（不预读，按任务取用）
 
 - [术语表](GLOSSARY.md) — 项目特有概念与边界；**设计、命名、写文档时读**，纯执行既定步骤不读
-- [契约真源](docs/ROS2迁移交接文档.md#hard-constraints) — 不可变约束、坐标系、终态语义、接口语义（**唯一约束来源**）
+- [契约真源](docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints) — 不可变约束、坐标系、终态语义、接口语义（**唯一约束来源**）
 - [ADR 索引](docs/adr/README.md#adr-index) — 全部决策的编号 / 标题 / Status / 结论，先扫表再点开 1–2 篇
 - [归档导航](docs/archive/README.md#archive) — 只剩历史 Runbook 与 ROS1 基线盘点（规格与过程台账已于 2026-11-03 删除）
 - [工程规范](docs/conventions/目录与命名规范.md#10-产物分类与生命周期) — 目录、命名、产物分类与生命周期
@@ -31,11 +31,11 @@ Leader / Worker 交接见 [协作规则](.coordination/README.md#protocol)、[�
 ## 铁律
 
 - **项目根** `/home/chen/AGC`；colcon 根即项目根。
-- **真源分层**：每类信息只有一个家。约束类信息**只存在**于[契约真源](docs/ROS2迁移交接文档.md#hard-constraints)，下游**只引用、不复述**。
+- **真源分层**：每类信息只有一个家。约束类信息**只存在**于[契约真源](docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)，下游**只引用、不复述**。
 - **引用**：跨文档一律用**稳定锚点** `<文件>#<锚点>`；**禁止** `§` 章节号。
 - **无旧树**：旧树归档 `reference/` 已于 **2026-10-31 退役删除**（[ADR-0025](docs/adr/0025-publishing-boundary-and-retirement.md#top)）；任何决定**不得**再以旧树为依据，**禁止**从旧树复制代码或沿用其格式、命名、目录、任务粒度。
 - **先学后做**：遇到任何问题，**先学习别人已验证的成功解法**，再动手。查参照的优先顺序：① 项目内**同版本、可运行**的同类实现（首推 Nav2：`nav2_minimal_tb3_sim` / `nav2_bringup`）→ ② ROS 2 社区同类包与官方文档 → ③ 外部搜索。**禁止**仅凭假设反复试错；**对照他人做法之后**再改自己的实现（[ADR-0003](docs/adr/0003-nav2-paradigm-absorption.md#top) 吸收原则在排障流程上的延伸）。
-- **红线**：**发现任一硬约束（[#hard-constraints](docs/ROS2迁移交接文档.md#hard-constraints)）未被满足，立即停止并报告，不得带错继续推进。**
+- **红线**：**发现任一硬约束（[#hard-constraints](docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)）未被满足，立即停止并报告，不得带错继续推进。**
 - **未决事项**：不得静默假设，必须显式挂到对应任务，或在 `docs/adr/` 记录。
 - **路线分支**：**没有用户明确允许，不得创造路线分支**（`xxx_source` / `xxx_mode` / `xxx_backend` / `xxx_path`
   形式的参数、或"同一功能两套实现由开关选择"）。现行台账与清退规则见

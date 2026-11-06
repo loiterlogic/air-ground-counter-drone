@@ -138,6 +138,6 @@ gate 仍为 **`not_evaluable_as_specified`**；headless 规模统计**未授权*
 
 ## 参考
 
-- 契约：[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)、[#terminal-semantics](../ROS2迁移交接文档.md#terminal-semantics)、[#execution-port](../ROS2迁移交接文档.md#execution-port)
+- 契约：[#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、[#terminal-semantics](0014-task-fsm-and-scenario-transaction.md#terminal-semantics)、[#execution-port](0020-package-boundaries-and-runtime-topology.md#execution-port)
 - 相关决策：[ADR-0024](0024-w7c-multi-worker-isolation.md#top)（单 worker 与扩容准入）、[ADR-0022](0022-w7b-research-propositions-and-decision-rule.md#top)（三态判据与 MME 治理）、[ADR-0023](0023-w7b-adjudication-record-and-exit.md#top)（pre-fix verdict）、[ADR-0027](0027-uxrce-startup-reproducibility.md#top)（启动协议与错峰）、[ADR-0006](0006-experiment-artifacts-and-evidence-discipline.md#top)（产物与证据纪律）、[ADR-0018](0018-acceptance-and-coverage-matrix.md#top)（GUI 验收范围）、[ADR-0025](0025-publishing-boundary-and-retirement.md#top)（旧树退役）
 - 计划与规格：`src/agc_rl/config/gui_headless_plan.yaml`、`gui_headless_gpu_plan.yaml`、`docs/archive/specs/w8-parity-freeze/spec.md`、`docs/archive/specs/w8-measurement-p2/spec.md`

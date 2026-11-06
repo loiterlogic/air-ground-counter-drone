@@ -127,7 +127,7 @@ class IntruderDriver(Node):
         self.arm_retry_s_ = self.declare_parameter('arm_retry_s', 2.0).value
         # 目标 sys id：入侵者 PX4 实例 1 → MAV_SYS_ID = px4_instance+1 = 2
         self.target_system_ = int(self.declare_parameter('target_system', 2).value)
-        # 起点协议参数（docs/ROS2迁移交接文档.md#params 单一注入，节点不得覆写）
+        # ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params 单一注入，节点不得覆写）
         self.start_tol_m_ = float(self.declare_parameter('start_tol_m', 0.4).value)
         self.start_vel_eps_mps_ = float(self.declare_parameter('start_vel_eps_mps', 0.35).value)
         self.start_dwell_s_ = float(self.declare_parameter('start_dwell_s', 0.5).value)

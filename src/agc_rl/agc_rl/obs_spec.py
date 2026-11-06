@@ -3,7 +3,7 @@
 引入 `obs_version`、归一化统计与 checkpoint 元数据；**旧版本可回放**。
 
 原则（spec R2）：
- * **不**静默改冻结接口（契约 [#messages](../../docs/ROS2迁移交接文档.md#messages)）；观测语义变更须
+ * **不**静默改冻结接口（契约 [#messages](../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#messages)）；观测语义变更须
  **新版本号**（旧版本 `v1` 的定义**永久保留**，不原地改）；
  * obs **维度扩展**（目标方位 / 相对速度 / 观测年龄）依 的策略职责裁定 —— 本模块只落**机制**、
  **留位**（`register` 可追加新版本），**不**在本段定扩展维度；

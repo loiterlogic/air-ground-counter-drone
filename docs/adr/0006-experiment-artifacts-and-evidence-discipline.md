@@ -147,7 +147,7 @@ campaign 汇总报告 `report.{json,md}` 落 campaign run 的 **`metrics/`**（�
   [20-结构](../reviews/agc-review-2026-10-14/20-结构.md#s-08)、
   [10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-029)、
   [10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-030)
-- 契约：[#hard-constraints](../ROS2迁移交接文档.md#hard-constraints)、[#params](../ROS2迁移交接文档.md#params)
+- 契约：[#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、[#params](0020-package-boundaries-and-runtime-topology.md#params)
 - 相关决策：[ADR-0016](0016-episode-window-and-sample-validity.md#top)（episode 窗口与有效样本掩码）、
   [ADR-0018](0018-acceptance-and-coverage-matrix.md#top)（验收判定与覆盖矩阵）、
   [ADR-0019](0019-lifecycle-and-startup-robustness.md#top)（生命周期可重建）、
