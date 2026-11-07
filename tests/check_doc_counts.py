@@ -127,6 +127,39 @@ def documented_categories():
     return claimed
 
 
+def documented_reproducibility():
+    """从 `tests/README.md` 的「新 clone 能跑多少」表里取三类前提的数量。
+
+    只认表格行「| ... | **N** | **P%** | ...」里带 `static` / `experiments` / `仿真` 的三种行。
+    取不到就返回 None 让判据 f 失败——**表格被改坏也算漂移**，不能静默放过。
+    """
+    text = _read(os.path.join(TESTS, 'README.md')) or ''
+    out = {}
+    # 行形如：| **什么都不用准备** | **6** | **9.5%** | ... |
+    # 判定必须用**第一列**的措辞（不是整行包含）：`experiments/` 在 static 行的说明里也出现，
+    # 用「整行包含」会把 static 行误判成 evidence 行（实测踩过）。
+    markers = (
+        ('static', '什么都不用准备'),
+        ('evidence', '历史证据'),
+        ('needs_sim', '仿真'),
+    )
+    for line in text.splitlines():
+        if not line.startswith('|'):
+            continue
+        cells = [c.strip() for c in line.strip('|').split('|')]
+        if len(cells) < 2:
+            continue
+        first = cells[0]
+        for key, marker in markers:
+            if key in out or marker not in first:
+                continue
+            # 第二列可能带加粗（`**6**`）也可能不带；取第一个整数即可。
+            nums = re.findall(r'(\d+)', cells[1].replace('*', ''))
+            if nums:
+                out[key] = int(nums[0])
+    return out if len(out) == 3 else None
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description='文档计数一致性核查')
     ap.add_argument('--out', default=None, help='证据 JSON 落盘目录（可选）')
@@ -183,6 +216,23 @@ def main(argv=None):
     results['e_check_categories_match'] = {
         'pass': not problems_e,
         'actual': actual_cats, 'documented': claimed_cats, 'problems': problems_e,
+    }
+
+    # f：新 clone 可跑比例。本仓最容易被误读的事实是"有 60 多个验收脚本"——
+    # 实际只有 static 类在 clone 后能直接跑，其余需要历史证据或活仿真。
+    # 文档写的数字必须与 `checklib.check_categories()` 的实况一致。
+    claimed_repro = documented_reproducibility()
+    problems_f = []
+    if claimed_repro is None:
+        problems_f.append('tests/README.md 缺少「新 clone 能跑多少」表或格式不符')
+    else:
+        for cat in checklib.CATEGORIES:
+            if claimed_repro[cat] != actual_cats[cat]:
+                problems_f.append('%s：文档写 %d，实际 %d'
+                                  % (cat, claimed_repro[cat], actual_cats[cat]))
+    results['f_reproducibility_ratio_matches'] = {
+        'pass': not problems_f,
+        'actual': actual_cats, 'documented': claimed_repro, 'problems': problems_f,
     }
 
     all_pass = all(v.get('pass') for v in results.values())

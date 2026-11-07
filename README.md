@@ -154,12 +154,15 @@ PX4 SITL + uXRCE-DDS Agent /agc/ground/cmd_vel（唯一执行口）
 ./run_demo.sh test
 ```
 
-7 组：几何派生链（地图真源 → 世界 SDF）/ 9 消息 ABI 字段序 / 文档断链与锚点 /
-索引一致（ADR + 脚本）/ `scripts/tests` 全部离线单测 / DDS 契约 / 工具链 pin。
-实测 **27 s** 全绿（2026-11-06，本机）。
+9 组：入口可解析 / 几何派生链（地图配置 → 世界 SDF）/ **配置孤儿**（每个 YAML 都被引用）/
+9 消息 ABI 字段序 / 文档断链与锚点 / 索引一致（ADR + 脚本）/ `scripts/tests` 全部离线单测 /
+DDS 契约 / 工具链 pin。实测 **36 s** 全绿（2026-11-07，本机）。
 
-> 它**不是**"全部核查全绿"—— 那些大多要拉起完整 SITL，语义是验收不是冒烟。
-> 详见 [tests/README](tests/README.md) 与 [`tests/run_smoke.py`](tests/run_smoke.py)。
+> **它才是回归防线**：`tests/` 下另有 61 个 `check_*.py`，但其中 **90% 在新 clone 上跑不动**
+> （22 个要 `experiments/` 历史证据、33 个要活仿真，只有 6 个纯静态）。
+> 它们是一次性取证档案，不是"每次提交都跑"的测试套件——把两者混为一谈会得出
+> "新 clone 跑不动测试 ⇒ 代码坏了"的错误结论。比例与依据见
+> [tests/README](tests/README.md#categories)，由 `tests/check_doc_counts.py` 判据 f 对账。
 
 ## 常见问题
 

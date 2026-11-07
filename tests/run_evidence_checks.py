@@ -104,6 +104,8 @@ def main(argv=None):
     print('=' * 74)
     print('证据核查可选组 · %d 项 · 证据根 %s' % (len(names), args.experiments_root))
     print('提示：这些核查判"历史证据仍在且自洽"，空证据根下会如实 FAIL')
+    print('      实测：空证据根下 22 项里 21 项 FAIL（唯一 PASS 的是 obs 版本化，它自带样本）。')
+    print('      这是**预期行为**，不是代码坏了——见 tests/README.md#categories。')
     print('=' * 74, flush=True)
 
     failures = []
