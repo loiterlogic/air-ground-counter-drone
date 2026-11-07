@@ -22,6 +22,7 @@ AGC（空地协同反无人机仿真）：同一世界、同一时钟下，无�
 - [ADR 索引](docs/adr/README.md#adr-index) — 全部决策的编号 / 标题 / Status / 结论，先扫表再点开 1–2 篇
 - [归档导航](docs/archive/README.md#archive) — 只剩历史 Runbook 与 ROS1 基线盘点（规格与过程台账已于 2026-11-03 删除）
 - [工程规范](docs/conventions/目录与命名规范.md#10-产物分类与生命周期) — 目录、命名、产物分类与生命周期
+- [测试分层与可测性](docs/conventions/测试分层与可测性.md#layers) — **写判据前读**：四层怎么分、新 clone 只能跑 9.5%、判定逻辑怎么抽成可单测的纯类
 - [**路线分支治理**](docs/conventions/路线分支治理.md#rule) — **没有用户明确允许不得创造路线分支**；现行分支台账与清退规则
 - [**引用与注释纪律**](docs/conventions/引用与注释纪律.md#rule) — **代码中引用决策只允许 ADR**；注释只写做什么/为什么
 - [技能](.agents/README.md#skills) — 领域建模 / 访谈类可复用技能（`.agents/skills/`）
