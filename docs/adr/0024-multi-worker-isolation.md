@@ -1,5 +1,5 @@
 <a id="top"></a>
-#多 worker 隔离与扩容准入
+# 多 worker 隔离与扩容准入
 
 ## Status
 
@@ -15,7 +15,7 @@ accepted（2026-11-02 由 ADR-0077 / 0095 合并；隔离机制与准入指标�
 4. **本机 `ROS_DOMAIN_ID` 非 0 时 lifecycle 服务数据面不通**（实测 77/81：`ChangeState` 一律超时，话题仍正常）⇒ **不能**用"每 worker 一个 domain id"隔离。
 5. **清场脚本不区分 worker 归属**，并行时后启动者会杀掉先启动者的进程。
 
-另一个背景问题是**准入口径本身错配**：/的比较用的是 `window_fixed_v1`（含终态后停泊）的率，与 active 窗口的
+另一个背景问题是**准入口径本身错配**：P1 / P2 的比较用的是 `window_fixed_v1`（含终态后停泊）的率，与 active 窗口的
 primary DV 不可比，导致的结论被错误归因为并行负载。
 
 ## 决策
@@ -93,7 +93,7 @@ run 后不修改、偏离单独登记。条件：A 普通单 worker ×3；B 隔�
   中位数的 90%（RTF 未劣化到采不满窗口）。
 - **任一失败** ⇒ **显式接受单 worker**；P 通过也只记录"当前主机并行可行"，**不启动全量批跑**。
 
-> **deferred**：的**并行扩容本身**至今仍处于 deferred—— 原因是 A/B 门未通过（1 次 `INFRA_FAILURE`），不是隔离方案
+> **deferred**：本篇的**并行扩容本身**至今仍处于 deferred—— 原因是 A/B 门未通过（1 次 `INFRA_FAILURE`），不是隔离方案
 > 不可行。若未来重试，须先满足本条全部门、并重新预声明容差。
 
 ## 结果
@@ -114,7 +114,7 @@ run 后不修改、偏离单独登记。条件：A 普通单 worker ×3；B 隔�
 
 - 历史3 次 active FCO 0.0053–0.2158 由 `env_occ|visible` 0.0054–0.2199 解释（active 可见率稳定 0.981–0.992），归因
   **physical_scatter**（同 seed 下进入 1 m 火控包络的时机 / 停留拍数不同）。
--worker 0 的 active 窗口晚至 56.24 s 归因 **startup_state**：release / start 墙钟晚约 30.7 s，start OK 仿真时刻仅差
+- [硬约束 hc-4](0020-package-boundaries-and-runtime-topology.md#hc-4) 的 worker 0 active 窗口晚至 56.24 s 归因 **startup_state**：release / start 墙钟晚约 30.7 s，start OK 仿真时刻仅差
   0.97 s，窗口相对 start OK 晚 25.77 s；同期 own PX4 有 44 次 `invalid setpoints / Failsafe: blind land`。该证据只说明时间
   线因果链，**不证明**并行负载因果。
 - A/B 的 6 个 case 中 B3 无窗口，其余归因见报告，`unexplained=[]`。
@@ -126,11 +126,11 @@ run 后不修改、偏离单独登记。条件：A 普通单 worker ×3；B 隔�
 legacy `vis_rate=0.2292` < 串行包络下界）—— 按 (f) 回退保留单 worker。事后勘误（上述 (e)）说明该数值是口径错配，**不回溯
 改判**。
 
-###输入
+### 输入
 
 单 worker 吞吐：整链 headless 单 run 墙钟约 100–130 s。GUI / headless 数值等价的初核结论是"未建立 / 证据不足"
 （P1 GUI 首跑 `MISSION_FAILED(TIMEOUT)`、重跑 active FCO 0.0004 vs headless 0.0682；P2 seed0 GUI 0.0311 vs headless
-0.0625）；两组成功不构成等价证据，后续由 [ADR-0021](0021-w8-gui-headless-equivalence.md#top) 承接。B3 的
+0.0625）；两组成功不构成等价证据，后续由 [ADR-0021](0021-gui-headless-equivalence.md#top) 承接。B3 的
 `cmd_vel_loopback_missing` 在中作为**独立 infra 项**登记，不归因于 GUI / headless 或隔离栈。
 
 ## 不做什么（边界）
@@ -168,7 +168,7 @@ legacy `vis_rate=0.2292` < 串行包络下界）—— 按 (f) 回退保留单 w
   [ADR-0005](0005-px4-toolchain-and-link.md#top)（PX4 工具链 pin）、
   [ADR-0006](0006-experiment-artifacts-and-evidence-discipline.md#top)（产物与 run 身份）、
   [ADR-0016](0016-episode-window-and-sample-validity.md#top)（episode 窗口指标）、
-  [ADR-0021](0021-w8-gui-headless-equivalence.md#top)（输入与等价门）
+  [ADR-0021](0021-gui-headless-equivalence.md#top)（输入与等价门）
 - 证据：`experiments/w7-rl-b/20261025-w7-rl-b-repeat-ab/ab_series.json`（A/B 环境与参数初态）、
   `experiments/w7-rl-b/20261025-w7-rl-b-repeat-ab-diagnosis/metrics/worker_repeatability.json`、
   各 B run 的 `worker_0/metrics/px4_writable_isolation.json`、`20261025-w7-rl-b-c4-trial3`、`20261025-w7-rl-b-smoke-isolation`

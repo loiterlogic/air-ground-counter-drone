@@ -95,7 +95,7 @@ def test_launch_starts_planner_only_in_rl_branch():
 
 
 def test_launch_has_no_path_planner_switch():
-    """必须**没有** launch 级路径开关（round-1 review C1）：对照只能用节点本地 path.enabled。"""
+    """必须**没有** launch 级路径开关：对照只能用节点本地 path.enabled。"""
     src = _read(GROUND_LAUNCH)
     assert 'path_planner' not in src.replace('placeholder_path_planner', ''), \
         '不应存在 path_planner launch 参数'

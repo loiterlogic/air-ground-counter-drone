@@ -235,5 +235,5 @@ PX4 才具 gz 资源与时钟 / 可 attach 模型），本层**无可达就绪�
 - [ADR-0003](0003-nav2-paradigm-absorption.md#top)（Nav2 范式吸收：模式全覆盖、按命令源裁剪）
 - [ADR-0004](0004-ground-control-rl-primary-and-nav2-safety.md#top)（共享控制库 `agc_control`）
 - [ADR-0019](0019-lifecycle-and-startup-robustness.md#top)（生命周期可重建与启动健壮性）
-- [ADR-0021](0021-w8-gui-headless-equivalence.md#top)（backend 与 GUI / headless 等价）
+- [ADR-0021](0021-gui-headless-equivalence.md#top)（backend 与 GUI / headless 等价）
 - 规范真源：[包边界](../conventions/包边界.md)、[目录与命名规范](../conventions/目录与命名规范.md#10-产物分类与生命周期)

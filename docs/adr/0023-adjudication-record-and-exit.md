@@ -1,5 +1,5 @@
 <a id="top"></a>
-#裁定记录与出口闭合
+# 裁定记录与出口闭合
 
 ## Status
 
@@ -7,7 +7,7 @@ accepted（2026-11-02 由 0071 / 0073 / 0082 / 0083 / 0085 / 0087 / 0090 / 0093 
 
 ## 背景
 
-的科研设计（命题 / 变量 / 对照 / 判定规则）由 [ADR-0022](0022-w7b-research-propositions-and-decision-rule.md#top) 承载。本篇记录**执行过程中产生的裁定与证据**：入口前置能力落地、火控占位升级带来的行为变更、臂定义与公平性修正、两轮 pilot 选场景、P1 / P2 的历次判定与修正、机制消融与负向诊断，最后是出口闭合与修复前溯源。
+的科研设计（命题 / 变量 / 对照 / 判定规则）由 [ADR-0022](0022-research-propositions-and-decision-rule.md#top) 承载。本篇记录**执行过程中产生的裁定与证据**：入口前置能力落地、火控占位升级带来的行为变更、臂定义与公平性修正、两轮 pilot 选场景、P1 / P2 的历次判定与修正、机制消融与负向诊断，最后是出口闭合与修复前溯源。
 
 执行中反复出现的模式是：**一次 run 的结论往往被下一次审计推翻**（臂信息不等价、DV 被终态后停泊污染、火控状态机缺陷、地图签名伪触发）。因此本篇的原则是：**历史 verdict 逐字保留、标注污染来源、只让最后一轮可采信的判定作为现行结论**，而不是把旧数字删掉假装没发生。
 
@@ -33,7 +33,7 @@ accepted（2026-11-02 由 0071 / 0073 / 0082 / 0083 / 0085 / 0087 / 0090 / 0093 
 
 ### (c) P1 臂定义：非协同臂 = 空中固定航迹
 
-首轮 P1 曾出现**臂定义混淆**：两臂仅差 `observe_yaw_mode`，但都跑同一 `standoff_follower` 跟踪栈。非协同臂接管瞬间短暂获目标后丢失，触发的「已获目标后不回落八字」hold → `vel=0` 停在空中、机头不再转动 → 目标永久出视场 → **自我锁死** → `MISSION_FAILED(TIMEOUT)`（实测冻结 42 s、yaw 冻结 −107.8°、目标方位差 ≈+140° 远超 FOV）。α 因此由「观测指向」退化为「能否持续观测」，结论偏乐观，该轮作废（产物保留为反例证据）。
+首轮 P1 曾出现**臂定义混淆**：两臂仅差 `observe_yaw_mode`，但都跑同一 `standoff_follower` 跟踪栈。非协同臂接管瞬间短暂获目标后丢失，触发 [硬约束 hc-10](0020-package-boundaries-and-runtime-topology.md#hc-10) 的「已获目标后不回落八字」hold → `vel=0` 停在空中、机头不再转动 → 目标永久出视场 → **自我锁死** → `MISSION_FAILED(TIMEOUT)`（实测冻结 42 s、yaw 冻结 −107.8°、目标方位差 ≈+140° 远超 FOV）。α 因此由「观测指向」退化为「能否持续观测」，结论偏乐观，该轮作废（产物保留为反例证据）。
 
 修正后：
 
@@ -83,7 +83,7 @@ P2 v2 批次判定后被审计出两处缺陷，**不能**作为「职责分层 
 | ④ | `velocity` | `on` | `p1_track_only` |
 
 - **先定规则**：同批四 cell 单 run、每 cell N=20、seeds 0–19、CRN 逐 seed 配对，**不**跨 run 拼 cell；分析为**估计型**（析因对比 + 置信区间），**不设门槛判定**；DV = **真实过程 FCO**（失败回合保留真实值、缺测配对剔除，**不等于**判定口径的失败置零）；pilot 先行（3 seeds × 4 cell）确认可承载。
-- **预登记的已知风险**：cell ④ 会触发hold 自锁而退化；若退化，照实报告并把「跟踪主效应」只按 pointing=target 一侧解读，**不得**把退化 cell 当公平基线。
+- **预登记的已知风险**：cell ④ 会触发 [硬约束 hc-10](0020-package-boundaries-and-runtime-topology.md#hc-10) hold 自锁而退化；若退化，照实报告并把「跟踪主效应」只按 pointing=target 一侧解读，**不得**把退化 cell 当公平基线。
 - **结果（80 episodes）**：**指向主效应** +0.0658（tracking=on，p=0.0019）与 +0.1347（tracking=off，p=5.6e-05）；**跟踪主效应**（pointing=target）**−0.0719**（p=0.011，跟踪参考无收益、反而降低 FCO）；tracking=velocity 侧 +0.0006（p=0.949，该侧退化严重）；**交互 −0.0667**（负交互）；对角总差 +0.0628。
 - cell ④ 如预登记退化（4/20 捕获），其成功回合 FCO 0.094（n=4）说明该组合并非「无能力」，而是**任务成功率崩塌**。
 - **诚实边界**：收益主要来自「指向」；「跟踪位置」在本场景（静止目标）无收益且在指向开启时有害，**限 s15 静止目标**，不得外推到移动目标；③ 的 FCO 优势（0.155 vs 0.083）**伴随更低的任务成功率**（15/20 vs 19/20），本消融的 DV 只有 FCO，**不** adjudicate 成功率。证据 `experiments/w7-rl-b/20261023-w7-rl-b-p1abl-n20/metrics/p1_ablation.{json,md}`。
@@ -112,7 +112,7 @@ P2 v2 批次判定后被审计出两处缺陷，**不能**作为「职责分层 
 ### (j) 不注册 v7、不进在线 RL
 
 - **不注册 v7**：没有独立工程 / 科学理由降低 MME，也没有预先定义的任务成功率保障；诊断 run 未复现旧失败（`p1_point_only` 的 5 个超时 seeds 在 2026-10-24 诊断中多数转为捕获），不构成「仅指向足够」的新证据；不得仅为消除 `inconclusive` 而立项或投入上百对重跑。
-- **MME 与历史记录不变**：MME 0.10、α=0.05、power=0.80、N=20 与三态判据不变；**不**因观测 0.0804 倒推门槛；所有历史 verdict 与 `executed_*` 字段保持原文（治理规则见 [ADR-0022](0022-w7b-research-propositions-and-decision-rule.md#top)）。
+- **MME 与历史记录不变**：MME 0.10、α=0.05、power=0.80、N=20 与三态判据不变；**不**因观测 0.0804 倒推门槛；所有历史 verdict 与 `executed_*` 字段保持原文（治理规则见 [ADR-0022](0022-research-propositions-and-decision-rule.md#top)）。
 - **不进在线 RL**：P1 `inconclusive` + P2 `falsified` + 火控状态机缺陷未修 ⇒ 规则高层的后置触发条件未满足，维持「规则高层优先」。
 
 ### (k) 出口闭合与修复前溯源（pre-fix）
@@ -150,12 +150,12 @@ P2 侧「协同观测」与「目标预测」消融**未执行**，裁定：**�
 ## Consequences
 
 - **正面**：臂可运行、火控行为变更被显式裁定而非静默；两处污染（臂信息、窗口口径）在成为结论前被审计拦下；P1 的两项贡献可归因；「不进 RL / 不注册 v7」是显式裁定而非默认；剩余消融有范围裁定而非沉默跳过；历史 verdict 完整、修复前后以 `model_id` 明确分离。
-- **代价 / 限制**：P1 停在 `inconclusive`、P2 停在 `falsified`，未取得论文级结论；修复前 run 的射击时序不可与修复后直接混用；`p1_track_only` 退化使「跟踪主效应」只能单侧解读；P2 侧机制消融与整链小批留待。
-- **未决 / 后续**：P2 侧协同观测 / 目标预测消融（须新预注册）；若主张「仅指向足够」须预注册 v7 + 新种子（seeds ≥ 20）+ 重新规划 N + 成功率保障；移动目标 marking 触发的独立处置；多 worker（[ADR-0024](0024-w7c-multi-worker-isolation.md#top)）；对照与冻结（[ADR-0021](0021-w8-gui-headless-equivalence.md#top)）。
+- **代价 / 限制**：P1 停在 `inconclusive`、P2 停在 `falsified`，本篇未取得论文级结论；修复前 run 的射击时序不可与修复后直接混用；`p1_track_only` 退化使「跟踪主效应」只能单侧解读；P2 侧机制消融与整链小批留待。
+- **未决 / 后续**：P2 侧协同观测 / 目标预测消融（须新预注册）；若主张「仅指向足够」须预注册 v7 + 新种子（seeds ≥ 20）+ 重新规划 N + 成功率保障；移动目标 marking 触发的独立处置；多 worker（[ADR-0024](0024-multi-worker-isolation.md#top)）；对照与冻结（[ADR-0021](0021-gui-headless-equivalence.md#top)）。
 
 ## 参考
 
-- [ADR-0022](0022-w7b-research-propositions-and-decision-rule.md#top) 科研命题、度量口径与判定规则（含三态判据与 MME 治理）
+- [ADR-0022](0022-research-propositions-and-decision-rule.md#top) 科研命题、度量口径与判定规则（含三态判据与 MME 治理）
 - [ADR-0004](0004-ground-control-rl-primary-and-nav2-safety.md#top) 地面控制栈（c2 现状）
 - [ADR-0011](0011-interception-and-fire-control.md#top) 拦截与火控（在飞生命周期修复）
 - [ADR-0013](0013-ground-planning-path-contract.md#top) 地面规划与地图签名

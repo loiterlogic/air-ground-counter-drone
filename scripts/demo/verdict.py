@@ -134,7 +134,7 @@ def explain(summary, thresholds=None, terminal_state=None, terminal_reason=None,
     elif entry['name'] == status_map.PHASE_B_INTERCEPT:
         lines.append(status_map.PHASE_B_CAVEAT)
     elif status_map.is_terminal(entry['name']):
-        lines.append('口径      任务未成功；原因见下（判定不改写：超时一律算失败，C4）。')
+        lines.append('口径      任务未成功；原因见下（判定不改写：超时一律算失败）。')
     else:
         lines.append('口径      未观测到任务终态（当前 %s）；本次**不能**作为成功证据。'
                      % entry['name'])

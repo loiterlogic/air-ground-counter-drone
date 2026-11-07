@@ -238,14 +238,14 @@ def generate_launch_description():
         DeclareLaunchArgument('px4_sim_model', default_value='gz_agc_x500',
                               description='己方 PX4 gz 机型：gz_agc_x500（**默认**，x500 + 纯视觉高亮球）| '
                                           'gz_x500（PX4 官方原厂，无高亮）| '
-                                          'gz_x500_mono_cam（机载前视单目相机，P1-4）| '
+                                          'gz_x500_mono_cam（机载前视单目相机）| '
                                           'gz_agc_x500_nadir（机载正下视相机，ADR-0030，仅取证/测绘、无消费者）'),
         DeclareLaunchArgument('agent_port', default_value='8888'),
         DeclareLaunchArgument('autostart', default_value='true',
                               description='是否自动 configure/activate 空中节点'),
         DeclareLaunchArgument('target_source', default_value='gt_adapter',
-                              description='契约 /agc/target/source（W4 目标源）：'
-                                          'gt_adapter | none（air_fusion 已退役；none 用于单独录制 C1 八字轨迹）'),
+                              description='契约 /agc/target/source（目标源）：'
+                                          'gt_adapter | none（air_fusion 已退役；none 用于单独录制八字轨迹）'),
         DeclareLaunchArgument('seed', default_value='0',
                               description='实验随机种子（注入 PX4 GPS 仿真；原 air_perception 已于 2026-11-06 退役）'),
         # 地图（配置文件选择）；缺省 minimal = 既有行为（几何逐值不变）。

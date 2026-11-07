@@ -13,7 +13,7 @@
 // 目标失效与重规划抖动（ADR-0013）——**移除** goal 回调「任意浮点变化（>1e-6）即强制重规划」，
 // 重规划仅由 needReplan 的位移阈值（replan_displacement_m）/ 地图变化 / 时限 / 周期触发（对齐 Nav2
 // GoalUpdated 离散事件语义）；仅**首次**获得 goal 时立即规划。消费伴随诊断 /agc/ground/goal_info 的
-// `valid=`：目标失效（valid=false）→ 安全停车（fail-safe stop，先于路径跟随）。与 空中 freeze 分别定义。
+// `valid=`：目标失效（valid=false）→ 安全停车（fail-safe stop，先于路径跟随）。与空中 `freeze` 分别定义（[ADR-0013](../../docs/adr/0013-ground-planning-path-contract.md#top) (g)）。
 
 #include <algorithm>
 #include <chrono>
@@ -504,7 +504,7 @@ private:
   {
     if (!active_ || !controller_ || !planner_) {return;}
     // 目标失效（valid=false）→ 安全停车（fail-safe stop），先于路径跟随 / 重规划。
-    // 地面失效动作与 空中 `freeze`（冻结位姿 / 悬停）**分别定义**：地面=有期限保持后安全停车。
+    // 地面失效动作与空中 `freeze`（冻结位姿 / 悬停）**分别定义**：地面=有期限保持后安全停车。
     if (!goal_valid_) {
       publish(0.0, 0.0);
       return;

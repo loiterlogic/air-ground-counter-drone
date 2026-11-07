@@ -114,7 +114,7 @@ def test_infra_retry_stops_on_mission_result(monkeypatch):
 
 
 def test_mission_failure_is_never_retried(monkeypatch):
-    """契约 C4：超时属**任务终态**，不得重试掩盖。"""
+    """契约硬约束（超时算失败）：超时属**任务终态**，不得重试掩盖。"""
     seen = []
     _fake_sequence(monkeypatch, [
         {'classification': 'mission', 'terminal_state': 'MISSION_FAILED', 'reason_code': 'TIMEOUT'},

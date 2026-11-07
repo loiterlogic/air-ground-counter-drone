@@ -145,7 +145,7 @@ accepted（2026-11-02 由 0020 / 0052 / 0053 / 0103 / 0110 合并；2026-11-03 �
 | `perception_path` / `vision_detector` / `detector_backend` / `vision_model_*` / `target_plane_z_m` | 7 个 launch 参数删除 |
 | `/agc/perception/path` 契约参数 | 契约[参数入口](0020-package-boundaries-and-runtime-topology.md#params)清单中删除 |
 | `perception.yaml` 的 `camera_tf` / `vision_target` 两段 | 删除 |
-| N3 回归矩阵的 `vision-cost` 臂 | 删除（矩阵不再有"感知代价臂"） |
+| 回归矩阵的 `vision-cost` 臂 | 删除（矩阵不再有"感知代价臂"） |
 | 5 个视觉专项测试 | 删除；替换为**防复活闸门** `test_vision_localization_path_is_retired` |
 
 **保留项（重要，不是遗漏）**：
@@ -203,7 +203,7 @@ accepted（2026-11-02 由 0020 / 0052 / 0053 / 0103 / 0110 合并；2026-11-03 �
 - **净空（布局约束）**：载荷外伸 `1.0 m` **仅**作为出生净空推导的外伸登记（见 [ADR-0012](0012-spawn-clearance-and-reset-transaction.md#top)），约束场景随机化不得使其侵入他实体初始包络；
 - **安全层（2D 视野）**：载荷位于 z=1.60、**不**在 z=0.48 扫描面 → **不**进安全层视野（显式声明）；
 - **物理碰撞**：载荷**无 collision** → 捕获 / 干扰**行为级**以外的物理接触验证**不适用**（登记 `unsupported`）；
-- **重标定义务**：载荷**物理启用（加 collision）后**，/与本外伸 / 碰撞口径**必须重新标定**，不得借旧标定维持。
+- **重标定义务**：载荷**物理启用（加 collision）后**，[硬约束 hc-2](0020-package-boundaries-and-runtime-topology.md#hc-2) / [硬约束 hc-6](0020-package-boundaries-and-runtime-topology.md#hc-6) 与本外伸 / 碰撞口径**必须重新标定**，不得借旧标定维持。
 
 ### (e) 能力标定：换装后车体的制动 / 转向（优先真跑 gz 取真值 / 接触证据）
 
@@ -267,7 +267,7 @@ accepted（2026-11-02 由 0020 / 0052 / 0053 / 0103 / 0110 合并；2026-11-03 �
 - **冷启动不自锁**：无 fresh 航迹时**不**退回 `velocity`、**不**用真值播种，而是执行**确定性偏航搜索**：以
   `yaw_search_rate_dps` 匀速扫过 `±yaw_search_amplitude_deg` 扇区、到边界**折返**（三角波）；基准是**接管瞬间的
   机头朝向** `search_center_yaw_`（**不是**目标方位）；相位只由接管后经过时间决定（`fmod`），同起点必得同一朝向。
-  **只改偏航**：平移仍由 `effective`（八字 + 恒速 + 高度基准）给出，搜索分支**不触碰**轨迹、`z_offset_` 或参考位置。
+  **只改偏航**：平移仍由 `effective`（[硬约束 hc-1](0020-package-boundaries-and-runtime-topology.md#hc-1) 八字 + 恒速 + 高度基准）给出，搜索分支**不触碰**轨迹、`z_offset_` 或参考位置。
 - **失效与复位**：航迹为空 / 过期 / 低 confidence / 非有限 → 视为无 fresh 航迹，回到确定性搜索，**不**无限期沿用旧航迹；`/agc/air/reset_phase` 与接管**同时**重置 `search_center_yaw_` 与「已指向 / 已搜索」日志锁。
 - **生效参数（节点本地 config，未进契约参数清单）**：`yaw_search_rate_dps=25.0`、`yaw_search_amplitude_deg=120.0`；
   由 `episode_runner --observe-yaw-mode track` 显式启用并记入产物；`velocity` / `target` / `run_demo` 的选择**均不改**。
@@ -321,12 +321,12 @@ accepted（2026-11-02 由 0020 / 0052 / 0053 / 0103 / 0110 合并；2026-11-03 �
   `unsupported`；//的绝对值重标须另行批准；搜索是**开环扫掠**，不保证任一时刻对准目标（只能「扫到就看见」），
   幅度外仍可能长时间不可见，属**有意取舍**；`track` 的指向质量受 `/agc/targets` 新鲜度与 confidence 限制；
   ground 控制律未换为完整差速动力学，对拍为**解析分析**（非整链仿真）。
-- **未决 / 后续**：载荷物理启用后**必须重标**/与外伸 / 碰撞口径；容限、视觉模型检测性能与
+- **未决 / 后续**：载荷物理启用后**必须重标** [硬约束 hc-2](0020-package-boundaries-and-runtime-topology.md#hc-2) / [硬约束 hc-6](0020-package-boundaries-and-runtime-topology.md#hc-6) 与外伸 / 碰撞口径；[硬约束 hc-1](0020-package-boundaries-and-runtime-topology.md#hc-1) 容限、视觉模型检测性能与
   `DetectionArray` 消息形态、相机挂载点在实现批闭合；ground 完整差速动力学 / 可达集实测后续批次。
 
 ## 参考
 
-- 评审：`R-037`（传感器 / 车体能力）、`R-038`（数值模型与配置边界）——评审快照已于 2026-11-06 退役，见 [ADR-0033](0033-review-snapshot-retirement.md#top)；契约：
+- 评审：**传感器 / 车体模型**、**数值模型与配置边界**——评审快照已于 2026-11-06 退役，见 [ADR-0033](0033-review-snapshot-retirement.md#top)；契约：
   [#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、[#execution-port](0020-package-boundaries-and-runtime-topology.md#execution-port)、
   [#params](0020-package-boundaries-and-runtime-topology.md#params)、[#messages](0020-package-boundaries-and-runtime-topology.md#messages)
 - 相关决策：[ADR-0010](0010-safety-thresholds-and-failsafe.md#top)（安全阈值与接触真值）、

@@ -115,13 +115,13 @@ def generate_launch_description():
     ld.add_action(DeclareLaunchArgument('use_sim_time', default_value='true'))
     ld.add_action(DeclareLaunchArgument(
         'params_file', default_value=default_params,
-        description='任务层参数文件（默认 config/skeleton.yaml；W5 场景用 config/safety_scenario.yaml）'))
+        description='任务层参数文件（默认 config/skeleton.yaml；安全场景用 config/safety_scenario.yaml）'))
     ld.add_action(DeclareLaunchArgument(
         'gz_args', default_value=['-r -v 3 ', world_file],
         description='gz sim 参数（加 -s 可无头）'))
     ld.add_action(DeclareLaunchArgument(
         'command_source', default_value='rl',
-        description='W5 地面命令源（互斥）：rl | baseline'))
+        description='地面命令源（互斥）：rl | baseline'))
     ld.add_action(DeclareLaunchArgument(
         'target_source', default_value='gt_adapter',
         description='观测来源（gt_adapter；air_fusion 已退役）'))
@@ -158,13 +158,13 @@ def generate_launch_description():
     ld.add_action(DeclareLaunchArgument(
         'map_file',
         default_value=os.path.join(perception_share, 'config', 'map.yaml'),
-        description='S-06 地图几何文件（缺省 = 包内回退副本；由上层按几何来源派生传入）'))
+        description='地图几何文件（缺省 = 包内回退副本；由上层按几何来源派生传入）'))
     ld.add_action(DeclareLaunchArgument(
         'scene_manifest_file', default_value='',
-        description='R-026 scene_manifest.json 路径（由上层生成；空 = 不落）'))
+        description='scene_manifest.json 路径（由上层生成；空 = 不落）'))
     ld.add_action(DeclareLaunchArgument(
         'world_file', default_value=world_file,
-        description='R-029 世界模型文件路径（run_logger 记 sha256；缺省 = agc_world.sdf）'))
+        description='世界模型文件路径（run_logger 记 sha256；缺省 = agc_world.sdf）'))
     ld.add_action(world_bringup)
     ld.add_action(perception)
     ld.add_action(ground_bringup)

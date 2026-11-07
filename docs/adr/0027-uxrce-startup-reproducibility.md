@@ -145,7 +145,7 @@ dirty/untracked 改动及子模块状态，**不放行**额外未登记改动（
    `s15/p1_coop/seed5` 一次、P2 `s08/p2_rl_high/seed0` 一次，总预算 2 attempts、infra 重试 0。这是
    **工程验证**，不是模式 pilot / 等价或科研样本；失败尝试不以补跑替代。第一场同时完成 seed 运行证据
    核对，缺失或不符则第二场不启动；无 GUI 或渲染后端不符则回报，**不改用 headless**。
-4. **交回新设计草案**：覆盖 [ADR-0021](0021-w8-gui-headless-equivalence.md#top) 的全部待办；草案标
+4. **交回新设计草案**：覆盖 [ADR-0021](0021-gui-headless-equivalence.md#top) 的全部待办；草案标
    `draft_pending_codex_review`，**不得自动冻结**执行计划。缺测处理先采用保守门：任何 mission 的新
    FCO 存在未知区间或拒算，正式门**不得**宣布等价；保留该任务及识别界，不做 available-case 删除。
    前置失败须阻塞后续；需要改 PX4 RNG / seed 协议或控制行为则交回裁定，不在本单试改。Gate 仍为
@@ -185,7 +185,7 @@ dirty/untracked 改动及子模块状态，**不放行**额外未登记改动（
   `.../log/px4_build.log`、`.../metrics/pin_check_after.json`（41 PASS / 0 FAIL / 0 SKIP）；种子协议
   13 项测试通过（同 seed 重启一致、异 seed 区分、实例 0/1/3 私有、seed=0 映射 `0x6D2B79F5`、
   unset=1、非法值拒绝、uint32 边界接受）。
-- **未决**：①多 worker 下 warmup / 错峰是否仍成立（每 worker 独立 agent / netns 后应成立，需
+- **未决**：① 多 worker（[ADR-0024](0024-multi-worker-isolation.md#top)）下 warmup / 错峰是否仍成立（每 worker 独立 agent / netns 后应成立，需
   验证）；② 若必须恢复 12/25 启动时序，须另立 ADR 并给出新的 1 s 预算方案；③ **清场与并行 worker
   冲突**——`sweep_stale_processes` 按本项目特征 SIGKILL、**不区分进程属于哪个 worker**，同机并行时
   后启动者会杀掉先启动者的进程，故在隔离手段（独立 `ROS_DOMAIN_ID` 前缀 + 进程标记 + 或每 worker
@@ -197,6 +197,6 @@ dirty/untracked 改动及子模块状态，**不放行**额外未登记改动（
 - [ADR-0005](0005-px4-toolchain-and-link.md#top)（PX4 工具链与 uXRCE-DDS 链路）
 - [ADR-0006](0006-experiment-artifacts-and-evidence-discipline.md#top)（产物与证据纪律）
 - [ADR-0018](0018-acceptance-and-coverage-matrix.md#top)（验收判定与三层闸门）
-- [ADR-0021](0021-w8-gui-headless-equivalence.md#top)（测量门与 P3 待办）
-- [ADR-0023](0023-w7b-adjudication-record-and-exit.md#top)（出口闭合）
-- [ADR-0024](0024-w7c-multi-worker-isolation.md#top)（多 worker 隔离与扩容准入）
+- [ADR-0021](0021-gui-headless-equivalence.md#top)（测量门与 P3 待办）
+- [ADR-0023](0023-adjudication-record-and-exit.md#top)（出口闭合）
+- [ADR-0024](0024-multi-worker-isolation.md#top)（多 worker 隔离与扩容准入）

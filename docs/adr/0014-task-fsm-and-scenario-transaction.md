@@ -202,4 +202,4 @@ capture 场景里里程碑先 `enterTerminal(TRACKING_SUCCESS)` → 状态离开
 - [ADR-0016](0016-episode-window-and-sample-validity.md#top)（episode 窗口与有效样本掩码）
 - [ADR-0017](0017-time-budget-and-clock-sources.md#top)（时间预算口径与时钟源）
 - [ADR-0019](0019-lifecycle-and-startup-robustness.md#top)（生命周期可重建与启动健壮性）
-- [ADR-0023](0023-w7b-adjudication-record-and-exit.md#top)（裁定记录与出口闭合）
+- [ADR-0023](0023-adjudication-record-and-exit.md#top)（裁定记录与出口闭合）

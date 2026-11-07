@@ -1,21 +1,21 @@
 <a id="current"></a>
 # 当前交接
 
-来源：Leader 于 2026-11-01 验收归档 G2、2026-11-02 验收归档 H0。用户要求按 N1、N2、N3 顺序推进；2026-11-02 用户另裁定：Leader 派工禁用 `subagent`，`task/` 及时归档，阻塞时结档并开新 Worker。本表由 Leader 独占写入。
+来源：Leader 于 2026-11-01 验收归档「占位路径规划」、2026-11-02 验收归档「高度语义」。用户要求按「视觉最小闭环 → 后续两项」的顺序推进；2026-11-02 用户另裁定：Leader 派工禁用 `subagent`，`task/` 及时归档，阻塞时结档并开新 Worker。本表由 Leader 独占写入。
 
 - 状态：**两条独立链并行执行中（2026-11-04 18:10 派发）**
 - 并行链（用户 2026-11-04 指示「互不影响的任务并行」）：
 
 | 任务 ID | 内容 | 状态 | Worker 子会话 | 派工单 |
 |---|---|---|---|---|
-| `20261104-001-nadir-camera` | 机载正下视相机（结档 `plan/无人机俯视相机.md`） | 待执行 | `3f1b4d37-43c7-460b-b35c-3f54a96fef09` | [round-1](task/20261104-001-nadir-camera/round-1/request.md#request) |
-| `20261104-002-target-motion-speed` | 目标运动规则 + 速度/节奏（结档两个 plan） | 待执行 | `1f2c928a-13a4-43a4-9eb7-6ec65ccf4f9d` | [round-1](task/20261104-002-target-motion-speed/round-1/request.md#request) |
+| `20261104-001-nadir-camera` | 机载正下视相机（结档 `plan/无人机俯视相机.md`） | 待执行 | `3f1b4d37-43c7-460b-b35c-3f54a96fef09` | [第 1 轮派工](task/20261104-001-nadir-camera/round-1/request.md#request) |
+| `20261104-002-target-motion-speed` | 目标运动规则 + 速度/节奏（结档两个 plan） | 待执行 | `1f2c928a-13a4-43a4-9eb7-6ec65ccf4f9d` | [第 1 轮派工](task/20261104-002-target-motion-speed/round-1/request.md#request) |
 
 - **并行边界**：独占资源 = 仿真/构建，用 `.coordination/locks/sim.lock`（flock）；
   `docs/adr/README.md` 由 `adr_index.py` 生成，两条链各自持 `.coordination/locks/docs.lock` 后再生成。
   文件白名单互斥（见各自派工单第六节）。
-- N1 链（`20261102-002`）**暂停**：本轮不推进，但**不结档**，round-7 的结论与缺口仍有效。
-- 上一轮：round-8 第 1、2 步已完成（火控修复 + 抬高度 + 地图派生注入），第 3 步（相机分工）
+- **视觉最小闭环**链（`20261102-002`）**暂停**：本轮不推进，但**不结档**，第 7 轮的结论与缺口仍有效。
+- 上一轮：第 8 轮第 1、2 步已完成（火控修复 + 抬高度 + 地图派生注入），第 3 步（相机分工）
   已由 `20261104-001` 承接实施。
 
 ## 用户裁定（2026-11-02 晚，U1–U5 全部定案）
@@ -24,13 +24,13 @@
 |---|---|
 | U1 | `c_clear` 不单独定，**跟地图走**（写入各图 `flight_altitude.own_clearance_min_m`） |
 | U2 | **抬**。目标 12 m / 己方 14 m，**且与地图绑定**（后续做小障碍高密度/大障碍低密度图） |
-| U3 | **双相机分工**：测绘相机正俯视、跟踪相机前视（见规范 §7.1） |
+| U3 | **双相机分工**：测绘相机正俯视、跟踪相机前视（见 [飞行高度分层](docs/conventions/飞行高度分层与按地图定高.md#camera-split)） |
 | U4 | **要**做禁用预设轨迹的启动断言，但须配 `purpose: counter_uav\|regression` 豁免 |
 | U5 | **采纳**，并进一步删除 `applicable_max_alt_m` 第二真源（改派生） |
 
 裁定原文与依据见 [飞行高度分层与按地图定高](../docs/conventions/飞行高度分层与按地图定高.md#ruling-20261102)。
 
-## round-8 进度
+## 第 8 轮进度
 
 - **第 1 步（已完成，2026-11-02）**：火控修复，见 [ADR-0011](../docs/adr/0011-interception-and-fire-control.md#top)。
   - 交战门改为「预演弹道能命中才开火」（旧式在包络最外沿开火，余量仅 0.18 m / 抬高度后 0.08 m）；
@@ -44,17 +44,17 @@
   - `air_hover_climb_m` 随起飞高度派生（否则起飞门永不满足）；`jam_envelope_max_alt_m` 只升不降。
   - **capture 场景 goal 必须偏离目标**：网是抛射体，车停在正下方必空（既有缺陷，非本次引入）。
     s08 的 `goal_x` 4.5 → 5.5（偏移 1.0 m，命中余量 0.49 m）。
-  - H0 的「vision 平面必须 source=scene」按用户裁定改为 `{map, scene}`（`base` 仍拒绝）。
+  - 「高度语义」任务的「vision 平面必须 source=scene」按用户裁定改为 `{map, scene}`（`base` 仍拒绝）。
   - 验证：C++ 单测 16/16、场景不变量 37/37、`scripts/tests/` 358/358、`w6_geometry_check` PASS（三图）。
 - **第 3 步（待做）**：相机分工（测绘相机正俯视）——见 [ADR-0007 未决节](../docs/adr/0007-scene-geometry-single-source-and-layout.md#top)。
-- 最近结档：`20261102-001-h0-altitude-semantics`（H0 已验收；逐轮台账已于 2026-11-03 删除）
+- 最近结档：`20261102-001-h0-altitude-semantics`（高度语义任务已验收；逐轮台账已于 2026-11-03 删除）
 
-## round-7 成果（Leader 已验收）
+## 第 7 轮成果（Leader 已验收）
 
 - 主交付：`docs/conventions/飞行高度分层与按地图定高.md`（五层高度语义、反无人机场景禁用固定轨迹硬规则、按地图定高推导规则、三图建议值、复用清单）。
-- 核心结论：**抬己方机反而降低感知**（K1 `|dz| ≤ 6.32 m`）；**两机同步等量抬升才感知中性**；`traj.height` / `takeoff_altitude_m` / `standoff_follower.height` 是三个**独立键**；**只有改 `traj.height` 才动 C1**。
+- 核心结论：**抬己方机反而降低感知**（K1 `|dz| ≤ 6.32 m`）；**两机同步等量抬升才感知中性**；`traj.height` / `takeoff_altitude_m` / `standoff_follower.height` 是三个**独立键**；**只有改 `traj.height` 才动八字轨迹约束**。
 - 反无人机场景的己方机参考来源 = `/agc/targets → standoff_follower → /agc/air/tracking_ref → trajectory_tracker`，禁用 Figure8 后兜底应换 `HoverTrajectory`。
-- 口径纠正：`shield_infeasible_rate` 是**地面** `collision_monitor` 的 proxy_v1，**不是**空中安全层（Leader 已逐行核实 `run_logger.cpp:7-10,15-16,155-157,983-989`）。round-6 审查的"安全层不可行"表述失准，已在本轮记录更正。
+- 口径纠正：`shield_infeasible_rate` 是**地面** `collision_monitor` 的 proxy_v1，**不是**空中安全层（Leader 已逐行核实 `run_logger.cpp:7-10,15-16,155-157,983-989`）。第 6 轮审查的"安全层不可行"表述失准，已在本轮记录更正。
 - 外部依据 14 条（FAA / UK CAA / EU / CCAR-92 / PX4 / ArduPilot / AirSim），法规仅作量级参照、不构成合规声明。
 
 ## 待用户裁定（5 项，Leader 不代决）
@@ -67,33 +67,33 @@
 | U4 | 是否把"反无人机禁用预设轨迹"做成启动断言 | 会拒绝运行 |
 | U5 | 是否采纳 `flight_altitude` 派生注入 + 4 条断言 | 改 `w6_composition` + 三地图文件 |
 
-## N1 仍缺口（未验收原因）
+## 视觉最小闭环仍缺口（未验收原因）
 
 1. **GUI 证据 0 帧** —— 环境无 X display，Leader 已三次独立确认不可得（含无 root 解包 Xvfb 尝试），属环境限制。
-2. **视觉精度病根未定位** —— 剔除离群后 p95 仍 12.43 m、x 轴均值 +3.39 m 且随时间恶化；round-7 用同一平面重算残余仍 p50 10.14 m → 方位（像素）侧也有问题，但机制未定位（需原始检测框，T1 级）。
+2. **视觉精度病根未定位** —— 剔除离群后 p95 仍 12.43 m、x 轴均值 +3.39 m 且随时间恶化；第 7 轮用同一平面重算残余仍 p50 10.14 m → 方位（像素）侧也有问题，但机制未定位（需原始检测框，T1 级）。
 3. **失败率未统计** —— 同配置同 seed 下 2 成功/1 失败，需 ≥10 次运行；且 155603 探针缺 `pairing_chain`，须先统一探针。
 
 ## 授权
 
-- round-7 已结算：墙钟 2,729 / 7,200 s，**T1 = 0、T2 = 0**（未跑仿真）。
-- round-8 额度待 U1–U5 裁定后另行授权。
-- N1 完成前不启动 N2/N3。
+- 第 7 轮已结算：墙钟 2,729 / 7,200 s，**T1 = 0、T2 = 0**（未跑仿真）。
+- 第 8 轮额度待 U1–U5 裁定后另行授权。
+- 视觉最小闭环完成前不启动后续两项。
 
-## round-2 授权与裁定（Leader，2026-11-04 19:10）
+## 第 2 轮授权与裁定（Leader，2026-11-04 19:10）
 
-两条链的 round-1 均**只完成 T0 调研、未写代码、未跑仿真**（被中断，非资源耗尽）。
-Leader 已**逐条独立复算**其调研结论后原会话续派 round-2：
+两条链的第 1 轮均**只完成 T0 调研、未写代码、未跑仿真**（被中断，非资源耗尽）。
+Leader 已**逐条独立复算**其调研结论后原会话续派第 2 轮：
 
 | 链 | 裁定要点 |
 |---|---|
-| `20261104-001` | pitch 取 **+1.5708**（Worker 推导正确，纠正了派工单）；§7.1 边缘 GSD **不改**（Leader 复算 `H·sec²θ/f`，35°→7.90 cm/px 与 §7.1 一致，Worker 该条不成立）；`gz_x500_mono_cam` **保留**；ADR 号维持 **0030** |
-| `20261104-002` | `traj.speed` **不改**（`HoverTrajectory` 不读 `traj.*`，已核 `trajectory_generators.cpp:214-218`）；判据阈值**全不改**；选定 M2 `epicycle`；否决 M5 规避式（需订 `/agc/air/odom`，破坏确定性）；ADR 号维持 **0031** |
+| `20261104-001` | pitch 取 **+1.5708**（Worker 推导正确，纠正了派工单）；[飞行高度分层](docs/conventions/飞行高度分层与按地图定高.md#camera-split) 的边缘 GSD **不改**（Leader 复算 `H·sec²θ/f`，35°→7.90 cm/px 与该规范一致，Worker 该条不成立）；`gz_x500_mono_cam` **保留**；ADR 号维持 **0030** |
+| `20261104-002` | `traj.speed` **不改**（`HoverTrajectory` 不读 `traj.*`，已核 `trajectory_generators.cpp:214-218`）；判据阈值**全不改**；选定 `epicycle` 漂移轨道；否决「规避式」候选（需订 `/agc/air/odom`，破坏确定性）；ADR 号维持 **0031** |
 
 **Leader 自查纠正（如实记录）**：一度把两条链的 ADR 号改判为 `0108`，理由是 `0030/0031` 出现在"合并映射"表。
 **该改判错了** —— 先例 `0028`/`0029` 同样是"活文件 + 出现在映射表"，故规则是
 「活文件号 = 现有最大活文件号 + 1」，映射表是"旧号→新篇"查询表，二者并行不冲突。已回退为 0030/0031。
 
-**资源**：两链 T1 各 1200 s、T2 分别为 3600 s / 5400 s，round-1 均 0 消耗。
+**资源**：两链 T1 各 1200 s、T2 分别为 3600 s / 5400 s，第 1 轮均 0 消耗。
 
 ## 20:39 机器重启与串行裁定（2026-11-04）
 
@@ -119,18 +119,18 @@ Leader 已**逐条独立复算**其调研结论后原会话续派 round-2：
 
 | 任务 ID | 状态 | 说明 |
 |---|---|---|
-| `20261104-001-nadir-camera` | **已验收（2026-11-04 21:40 结档）** | A1–A8 全部达成，Leader 独立复验（12/12 pytest、索引 PASS、链接 PASS、亲验 `frame_004.png` 为地面、0 帧对照成立）。结论已归位 ADR-0030 / §7.1 / README 边界第 8 条 |
-| `20261104-002-target-motion-speed` | **待返工（round-3 验收未通过，2026-11-04 22:20）** | T2 已完成（8 run，procs=0）：s18×3 全 TRACKING_SUCCESS、s08/s13 均 CAPTURE_NET、`RANGE_EXCEEDED` 根因已实测锁定（最长 dwell 段 2.884 s vs 阈值 3.0）。**返工仅限 3 处文档/可复现性，不需重跑仿真**：P1 ADR-0031:98「实测上界 1.063」无来源且与报告 max 1.525 矛盾（阻塞项）；P2 报告的 1.122/1.382/30.9% 不可复现、缺脚本；P3 A2 逐字节证明不可复核 |
+| `20261104-001-nadir-camera` | **已验收（2026-11-04 21:40 结档）** | A1–A8 全部达成，Leader 独立复验（12/12 pytest、索引 PASS、链接 PASS、亲验 `frame_004.png` 为地面、0 帧对照成立）。结论已归位 ADR-0030 / [飞行高度分层](docs/conventions/飞行高度分层与按地图定高.md#camera-split) / README 边界第 8 条 |
+| `20261104-002-target-motion-speed` | **待返工（第 3 轮验收未通过，2026-11-04 22:20）** | T2 已完成（8 run，procs=0）：s18×3 全 TRACKING_SUCCESS、s08/s13 均 CAPTURE_NET、`RANGE_EXCEEDED` 根因已实测锁定（最长 dwell 段 2.884 s vs 阈值 3.0）。**返工仅限 3 处文档/可复现性，不需重跑仿真**：P1 ADR-0031:98「实测上界 1.063」无来源且与报告 max 1.525 矛盾（阻塞项）；P2 报告的 1.122/1.382/30.9% 不可复现、缺脚本；P3 A2 逐字节证明不可复核 |
 
 ## A 链结档（2026-11-04 21:40，Leader）
 
-**验收通过**，审查见 [round-2 review](task/20261104-001-nadir-camera/round-2/review.md#review)。
+**验收通过**，审查见 [第 2 轮审查](task/20261104-001-nadir-camera/round-2/review.md#review)。
 
 - **交付**：opt-in 正下视相机 `gz_agc_x500_nadir`（复用已有 `px4_sim_model`，无新 launch 参数）；
   实测 144 帧 / 28.49 Hz、`fx=fy=268.60`（推导 268.51）、图像确为地面。
 - **默认臂不变**：`gz_x500` 探针 **0 帧 / 45 s**，主场景仍 `TRACKING_SUCCESS`。
-- **关键纠错**：SDF `pitch` 必须 **+1.5708**（−90° 会拍天空）；plan 与 §7.1 原写"−90° 俯角"是把
-  **下俯量**当成了**字段值**，已在 ADR-0030 §3 写明并留纠错记录。
+- **关键纠错**：SDF `pitch` 必须 **+1.5708**（−90° 会拍天空）；plan 与 [飞行高度分层](docs/conventions/飞行高度分层与按地图定高.md#camera-split) 原写"−90° 俯角"是把
+  **下俯量**当成了**字段值**，已在 [ADR-0030](docs/adr/0030-nadir-camera-capability.md#top) 写明并留纠错记录。
 - **闸门**：`scripts/tests/test_nadir_camera_contract.py` 12 条，且用**变异测试**证明会真红
   （翻 pitch / 改话题名 / 删 `PX4_SYS_AUTOSTART` 各触发对应断言）。
 - **未采纳**：`gz_x500_mono_cam` **保留不退休**（仍有 3 处白名单外引用）。
@@ -158,9 +158,9 @@ Leader 已**逐条独立复算**其调研结论后原会话续派 round-2：
 
 **这次是 Leader 定错规则，不是 Worker 执行不到位**；B 链按规则停下来报告的行为**正确**。
 
-## B 链 round-3 审查（2026-11-04 22:20，Leader）
+## B 链第 3 轮审查（2026-11-04 22:20，Leader）
 
-**结论：验收不通过 → `待返工`。** 审查见 [round-3 review](task/20261104-002-target-motion-speed/round-3/review.md#review)。
+**结论：验收不通过 → `待返工`。** 审查见 [第 3 轮审查](task/20261104-002-target-motion-speed/round-3/review.md#review)。
 
 **已达成**：s18×3 `TRACKING_SUCCESS`（72.6/74.1/75.7 s，离散 4.3%）；s08/s13 均 `CAPTURE_NET`；
 11 条 epicycle 单测绿；344 offline + 7/7 冒烟；索引 31 篇 PASS；两个 plan 已删；
@@ -170,24 +170,24 @@ Leader 已**逐条独立复算**其调研结论后原会话续派 round-2：
 `dwell-s04b.jsonl` 15 次 `DWELL_START` / 14 次 `DWELL_INTERRUPT` 全为 `RANGE_EXCEEDED`，
 最长段 **2.884 s**，距 `t_dwell=3.0` 仅差 **0.116 s**。⇒ `s04` TIMEOUT 根因已锁定。
 
-**阻塞项 P1**：ADR-0031:98 写「实测上界 1.063」，但报告写 max **1.525**、p95 1.382。
+**阻塞项（数字溯源）**：ADR-0031:98 写「实测上界 1.063」，但报告写 max **1.525**、p95 1.382。
 我 `grep` 全仓「1.063」只命中该行本身，无脚本无数据；用 1 s 平滑复算得 max 1.193，仍非 1.063。
 ⇒ **该数字无来源，且方向是"让约束看起来被满足"**，必须删或改成有出处的值。
 
-**返工范围仅 3 处**：P1 删/改该数字；P2 补 `analyze_traj.py` 使数字可复算；
-P3 A2 改可判定形式（「无删除行」比哈希更硬）。**不需重跑仿真**（T2 剩 4217 s）。
+**返工范围仅 3 处**：数字溯源（删/改该数字）；可复算（补 `analyze_traj.py`）；
+判据形式（A2 改可判定形式（「无删除行」比哈希更硬）。**不需重跑仿真**（T2 剩 4217 s）。
 
-## B 链 round-4 派工（2026-11-04 22:30，Leader）
+## B 链第 4 轮派工（2026-11-04 22:30，Leader）
 
 **用户裁定（22:27 原话）**：「返工吧，顺便让它跑一下 GUI 我看看效果」。
 
-⇒ round-4 范围 = **3 处文档返工 + 1 次 GUI 演示运行**，**不重跑 T2 的 8 个 run**（结论已成立）。
+⇒ 第 4 轮范围 = **3 处文档返工 + 1 次 GUI 演示运行**，**不重跑 T2 的 8 个 run**（结论已成立）。
 
 | # | 项 | 性质 |
 |---|---|---|
-| P1 | 删/改 ADR-0031:98「实测上界 1.063」（无来源、与报告 max 1.525 矛盾） | **阻塞** |
-| P2 | 补 `analyze_traj.py` 使 median/p95/max/超限占比可一条命令复现 | 须补证 |
-| P3 | A2 改「无删除行」可判定形式（比哈希更硬） | 须补证 |
+| 数字溯源 | 删/改 ADR-0031:98「实测上界 1.063」（无来源、与报告 max 1.525 矛盾） | **阻塞** |
+| 可复算 | 补 `analyze_traj.py` 使 median/p95/max/超限占比可一条命令复现 | 须补证 |
+| 判据形式 | A2 改「无删除行」可判定形式（比哈希更硬） | 须补证 |
 | GUI | `./run_demo.sh --scene s18 --duration 200`（**真 GUI，非 headless**），≥3 张截图 + 终态证据 | 用户演示要求 |
 
 **资源**：T2 剩 4217 s；GUI run 约 90–200 s。环境 procs=0、lock FREE、shm 169 段（1%）、`DISPLAY=:0` OK。

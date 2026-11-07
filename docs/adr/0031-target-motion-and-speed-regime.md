@@ -19,7 +19,7 @@ accepted（2026-11-04）
    要么以 0.5 m/s 缓慢平移—— 不像"入侵者"。
 2. **整体观感偏慢**。基线一轮 `duration_s 149.5`（sim 116.4 s，RTF 0.776）才到终态。
 
-本轮**先反解再动手**：把四条下游影响链（感知/ 跟踪安全带 / 火控提前量 / 网弹道）
+本轮**先反解再动手**：把四条下游影响链（感知 [硬约束 hc-10](0020-package-boundaries-and-runtime-topology.md#hc-10) / 跟踪安全带 / 火控提前量 / 网弹道）
 逐条量化成不等式，再从约束**反解**速度，而不是先拍数再找理由。
 
 <a id="constraints"></a>
@@ -199,7 +199,7 @@ setpoint.velocity[0] = (type_mask & POSITION_TARGET_TYPEMASK_VX_IGNORE) ? NAN : 
   `agc_control/HoverTrajectory`，其 `initialize` 只读 `use_hold_z` / `hold_z`，
   **`traj.*` 整段不被读取**（`agc_control/src/trajectory_generators.cpp`；
   另有 `test_counter_uav_scenes_declare_non_motion_trajectory` 守护）。改它 = 改契约换零运行时收益。
-- **不改任何判据阈值**：`d_track_m 3.0` / `t_dwell_s 3.0` /`max_offset 1.0` /
+- **不改任何判据阈值**：`d_track_m 3.0` / `t_dwell_s 3.0` / [硬约束 hc-2](0020-package-boundaries-and-runtime-topology.md#hc-2) `max_offset 1.0` /
   `safe_max 11.2` / 网弹道参数，**逐项不变**（理由见 (c) 的"上界来源"列）。
 - **不提车与己方机速度**（理由见 (c)）。
 - **不做** RL 训练、不引入新依赖、不改感知链路、不新增 `xxx_mode/xxx_source/xxx_path` 类 launch 参数。

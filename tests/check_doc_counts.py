@@ -73,7 +73,7 @@ def documented_check_counts():
     hits = []
     targets = [
         'README.md', 'tests/README.md', 'tests/run_smoke.py', 'tests/checklib.py',
-        'tests/run_all.py', 'tests/run_full_regression.py', 'tests/run_n3_matrix.py',
+        'tests/run_all.py', 'tests/run_full_regression.py', 'tests/run_regression_matrix.py',
     ]
     pat = re.compile(r'(\d+)\s*个\s*[`\s]*check')
     for rel in targets:

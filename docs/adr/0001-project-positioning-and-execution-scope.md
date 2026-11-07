@@ -77,7 +77,7 @@ accepted（2026-11-02 由 ADR-0001 / 0006 / 0009 / 0013 / 0014 / 0016 / 0017 合
   迁移推进暂停而失效，现行执行入口是 [`docs/plan/`](../plan/README.md#plan-index)。该决定**唯一仍然有效**的
   内核是：拦截**不单独立项**，落在地面侧任务与评估链路内。
 - 「/归项目结束后后续」：/后续实际已执行并结档，见
-  [ADR-0021](0021-w8-gui-headless-equivalence.md#top)、[ADR-0022](0022-w7b-research-propositions-and-decision-rule.md#top)。
+  [ADR-0021](0021-gui-headless-equivalence.md#top)、[ADR-0022](0022-research-propositions-and-decision-rule.md#top)。
 
 ## Consequences
 

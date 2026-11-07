@@ -141,7 +141,7 @@ def run_scene(scene, expected, timeout_s, campaign, seed, verbose):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description='N3 · full 整链定时回归')
+    ap = argparse.ArgumentParser(description='full 整链定时回归')
     ap.add_argument('--scenes', nargs='+', default=None,
                     help='只跑指定场景（默认：%s）' % ' '.join(s for s, _t, _d in SCENES))
     ap.add_argument('--seed', type=int, default=0)
@@ -165,7 +165,7 @@ def main(argv=None):
         todo = list(SCENES)
 
     if args.list:
-        print('N3 整链回归（backend=full, headless, seed=%d）' % args.seed)
+        print('整链回归（backend=full, headless, seed=%d）' % args.seed)
         for s, t, d in todo:
             print('\n[%s] 期望 %s — %s' % (s, t, d))
             print('  python3 scripts/episode_runner.py --scenes %s --seeds %d '
@@ -178,7 +178,7 @@ def main(argv=None):
         return '%s%s%s' % (code, text, RESET) if color else text
 
     print('=' * 78)
-    print('N3 整链回归 · %d 场景 · backend=full · headless · 单场景上限 %d s'
+    print('整链回归 · %d 场景 · backend=full · headless · 单场景上限 %d s'
           % (len(todo), args.timeout))
     print('独占仿真；判据取 episode_runner 的 report.json（不解析日志）')
     print('=' * 78, flush=True)

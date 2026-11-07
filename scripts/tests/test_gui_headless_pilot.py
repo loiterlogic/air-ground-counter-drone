@@ -9,7 +9,7 @@
 6. `--dry-run` 只构造命令、不启动子进程、不落盘。
 
 运行：
-  python3 -m pytest scripts/tests/test_w8_gui_headless_pilot.py -q
+  python3 -m pytest scripts/tests/test_gui_headless_pilot.py -q
 """
 
 import os

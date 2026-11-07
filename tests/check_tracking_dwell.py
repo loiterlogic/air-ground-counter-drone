@@ -69,7 +69,7 @@ _T_DWELL = 2.0
 
 
 def _tl_qos():
-    """对齐 scenario_reset / epoch 发布端：depth=1 + RELIABLE + TRANSIENT_LOCAL（R-015 / R-022）。"""
+    """对齐 scenario_reset / epoch 发布端：depth=1 + RELIABLE + TRANSIENT_LOCAL（ADR-0014 / ADR-0016）。"""
     return QoSProfile(depth=1, reliability=ReliabilityPolicy.RELIABLE,
                       durability=DurabilityPolicy.TRANSIENT_LOCAL)
 
@@ -267,7 +267,7 @@ def _wait_services(node):
 
 
 def _std_overrides():
-    """R-023 用例统一参数覆盖（语义判据不削弱）。"""
+    """用例统一参数覆盖（语义判据不削弱）。"""
     return {'air_present': False, 't_dwell_s': _T_DWELL, 'fsm_hz': 20.0,
             'd_track_m': 3.0, 'car_odom_max_age_s': 0.5, 't_max_s': 120.0}
 

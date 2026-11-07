@@ -45,7 +45,7 @@ MANIFEST_REL = os.path.join('config', 'evidence_manifest.json')
 GENERATOR = 'scripts/evidence_archive.py'
 GENERATOR_VERSION = '1.0.0'
 MANIFEST_VERSION = 1
-RETENTION = '长期保留（≥ W8 对照冻结）；本地不可变归档（ADR-0006）'
+RETENTION = '长期保留（≥ 平台对照冻结）；本地不可变归档（ADR-0006）'
 
 KNOWN_TYPES = ('config', 'metrics', 'log', 'bag', 'figures')
 
@@ -276,7 +276,7 @@ def process_run(campaign, run_id, run_dir, force=False, verify=True):
 
 
 def main():
-    ap = argparse.ArgumentParser(description='证据不可变归档与入库 manifest（S-08）')
+    ap = argparse.ArgumentParser(description='证据不可变归档与入库 manifest')
     ap.add_argument('--campaign', default=None, help='仅处理该 campaign')
     ap.add_argument('--run-id', default=None, help='仅处理该 run_id')
     ap.add_argument('--force', action='store_true', help='重建既有 manifest / 归档')

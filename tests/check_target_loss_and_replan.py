@@ -124,7 +124,7 @@ def case_c_displacement_thresholded_replan(bench):
 
 
 def case_d_failsafe_stop(bench):
-    """(d) 失效安全停车：valid=0 → cmd_vel_raw≈0；地面失效动作与 C10 空中 freeze 分别定义。"""
+    """(d) 失效安全停车：valid=0 → cmd_vel_raw≈0；地面失效动作与空中 freeze 分别定义。"""
     fs = (bench or {}).get('scenarios', {}).get('failsafe_stop', {})
     src = _code_only(_read(os.path.join(ROOT, 'src/agc_ground/src/ground_baseline.cpp')) or '')
     src_raw = _read(os.path.join(ROOT, 'src/agc_ground/src/ground_baseline.cpp')) or ''
@@ -136,33 +136,33 @@ def case_d_failsafe_stop(bench):
         'source_goal_valid_gate': ('if (!goal_valid_)' in src),
         'source_parse_goal_info': ('parseGoalInfoValid' in src),
         'source_goal_info_sub': ('goal_info_topic_' in src and 'goal_info_sub_' in src),
-        'source_c10_freeze_divergence_note': ('C10' in src_raw and 'freeze' in src_raw),
+        'source_freeze_divergence_note': ('freeze' in src_raw),
     }
     res['pass'] = bool(res['bench_pre_valid_max_lin'] is not None and res['bench_pre_valid_max_lin'] > 0.1 and
                        res['bench_post_invalid_max_lin'] is not None and res['bench_post_invalid_max_lin'] < 1e-6 and
                        res['bench_post_invalid_max_ang'] is not None and res['bench_post_invalid_max_ang'] < 1e-6 and
                        res['bench_post_samples'] and res['bench_post_samples'] > 0 and
                        res['source_goal_valid_gate'] and res['source_parse_goal_info'] and
-                       res['source_goal_info_sub'] and res['source_c10_freeze_divergence_note'])
+                       res['source_goal_info_sub'] and res['source_freeze_divergence_note'])
     return res
 
 
 def case_e_adr_0056():
-    """(e) 口径记录 ADR-0013：accepted + 取证节 + R-041 + 契约引用 + 边界 + C10 分野。"""
+    """(e) 口径记录 ADR-0013：accepted + 取证节 + 契约引用 + 边界 + freeze 分野。"""
     matches = sorted(glob.glob(os.path.join(ROOT, 'docs/adr/0013-ground-planning-path-contract.md')))
     res = {'path': os.path.relpath(matches[0], ROOT) if matches else None, 'exists': bool(matches)}
     if matches:
         t = _read(matches[0]) or ''
         res['status_accepted'] = ('## Status' in t and 'accepted' in t)
         res['has_evidence_section'] = '取证' in t
-        res['has_r041_ref'] = 'r-041' in t.lower()
+        res['has_contract_ref_pre'] = 'hard-constraints' in t
         res['no_section_ref'] = not bool(re.search(r'§\s*[0-9]', t))
         res['has_contract_ref'] = 'hard-constraints' in t
         res['has_boundary_note'] = ('冻结' in t) and ('唯一执行口语义' in t) and ('第二 ROS 命令者' in t)
-        res['has_c10_freeze_divergence'] = ('C10' in t) and ('freeze' in t)
+        res['has_freeze_divergence'] = 'freeze' in t
     res['pass'] = bool(res['exists'] and res.get('status_accepted') and res.get('has_evidence_section') and
-                       res.get('has_r041_ref') and res.get('no_section_ref') and res.get('has_contract_ref') and
-                       res.get('has_boundary_note') and res.get('has_c10_freeze_divergence'))
+                       res.get('has_contract_ref_pre') and res.get('no_section_ref') and res.get('has_contract_ref') and
+                       res.get('has_boundary_note') and res.get('has_freeze_divergence'))
     return res
 
 

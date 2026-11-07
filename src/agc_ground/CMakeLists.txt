@@ -28,7 +28,7 @@ find_package(nav2_util REQUIRED)
 add_executable(ground_drive_relay src/ground_drive_relay.cpp)
 ament_target_dependencies(ground_drive_relay rclcpp geometry_msgs)
 
-# · ：自体过滤（自返回置 inf，供包围式旋转/后向 zone 使用）
+# 自体过滤（自返回置 inf，供包围式旋转/后向 zone 使用）
 add_executable(scan_self_filter src/scan_self_filter.cpp)
 ament_target_dependencies(scan_self_filter rclcpp sensor_msgs)
 
@@ -39,7 +39,7 @@ ament_target_dependencies(ground_baseline
   rclcpp rclcpp_lifecycle geometry_msgs nav_msgs agc_msgs
   agc_control pluginlib tf2_ros nav2_core nav2_costmap_2d nav2_util)
 
-# ：无 shield 对照臂的恒等透传（纯仿真；ADR-0022）
+# 无 shield 对照臂的恒等透传（纯仿真；[ADR-0022](../../docs/adr/0022-research-propositions-and-decision-rule.md#top)）
 add_executable(cmd_vel_passthrough src/cmd_vel_passthrough.cpp)
 ament_target_dependencies(cmd_vel_passthrough rclcpp geometry_msgs)
 

@@ -15,7 +15,7 @@
  * `baseline` —— `agc_ground` 的离线对照基线（Nav2 planner 插件 + `agc_control` LQR 插件）；
  基线自持内建 costmap（同一 `config/costmap.yaml` 参数源），故不再单起 costmap 节点。
  * ~~`train`~~ / ~~`rl_high`~~ —— **2026-11-04 已删除**：两者都服务 / 的研究臂，
- 而 已结档（[ADR-0023](../../../docs/adr/0023-w7b-adjudication-record-and-exit.md#top)：
+ 而 已结档（[ADR-0023](../../../docs/adr/0023-adjudication-record-and-exit.md#top)：
  P1 inconclusive / P2 falsified）。研究复跑须用 `scripts/research/` 自带的参数文件，
  **不得**在主链保留"外部进程作命令源"的分支。见
  [路线分支治理](../../../docs/conventions/路线分支治理.md#rule) 5.3。
@@ -178,7 +178,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'command_source', default_value='rl',
             description='命令源（互斥）：rl（RL 主控，ADR-0004）| baseline（离线对照基线，R8）'
-                        '（train / rl_high 已于 2026-11-04 随 W7 结档清退，'
+                        '（train / rl_high 已于 2026-11-04 随研究结档清退，'
                         '见 docs/conventions/路线分支治理.md 5.3）'),
         # 2026-11-04 清退：`shield` 开关已删除——安全层恒定启用。
         OpaqueFunction(function=_nodes),

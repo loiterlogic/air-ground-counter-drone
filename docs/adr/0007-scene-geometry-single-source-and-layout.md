@@ -156,7 +156,7 @@ capture 场景 goal 必须与目标保持水平偏移（`minimal` / `open_field`
 - **不**新增第二 ROS 命令者；**不**改冻结 9 消息 / 服务 ABI；**不**改 `/agc/ground/cmd_vel` 的
   「唯一执行口语义」。几何真源与派生链一律遵守[契约](0020-package-boundaries-and-runtime-topology.md#hard-constraints)，
   本篇不复述约束内容。
-- 与的**分野**：管目标新鲜度导致的跟踪冻结（`freeze`），本篇管几何与高度派生；
+- 与 [硬约束 hc-10](0020-package-boundaries-and-runtime-topology.md#hc-10) 的**分野**：跟踪冻结（`freeze`）归跟踪常开约束，本篇管几何与高度派生；
   两者都在本 ADR 边界之外互不替代—— 高度派生只喂参数，不改变的 `freeze` 语义。
 
 ## Considered Options

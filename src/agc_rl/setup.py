@@ -19,7 +19,7 @@ setup(
     zip_safe=True,
     maintainer='AGC Dev',
     maintainer_email='agc@example.com',
-    description='AGC RL 平台（W5-b 地面最小版 + W7-a 最小平台）',
+    description='AGC RL 平台（地面最小版 + 研究最小平台）',
     license='Proprietary',
     entry_points={
         'console_scripts': [

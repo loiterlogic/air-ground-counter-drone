@@ -68,7 +68,7 @@ def test_default_launch_argv_passes_oracle_mode_explicitly():
 # --------------------------------------------------------------------------------------
 
 def test_gui_enables_viz_overlay():
-    """GUI 形态：`viz:=true`（P1-1 的 RViz 语义层是 GUI 演示的一部分）。"""
+    """GUI 形态：`viz:=true`（RViz 语义层是 GUI 演示的一部分）。"""
     assert demo_start.viz_enabled(headless=False) is True
     argv = demo_start.launch_argv(backend='full', scene=common.DEFAULT_SCENE,
                                   world_map=common.DEFAULT_MAP, headless=False)
@@ -523,7 +523,7 @@ def test_compare_not_equivalent_on_terminal_mismatch():
 
 
 def test_compare_rejects_none_c9_metrics_as_equal():
-    """C9 缺值（None）**不得**当作 0 或相等 —— 必须 NOT_EQUIVALENT。"""
+    """报告指标缺值（None）**不得**当作 0 或相等 —— 必须 NOT_EQUIVALENT。"""
     gui = _run(_summary(shield_infeasible_rate=None))
     head = _run(_summary(shield_infeasible_rate=0.0), mode='headless')
     out = compare.compare(gui, head, _prereg())

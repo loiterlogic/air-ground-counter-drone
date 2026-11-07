@@ -53,7 +53,7 @@
 3. 它是**一次性**（跑完即归档）吗？→ `scripts/archive/`，并登记 [archive/README](archive/README.md#archive)。
 4. 它在**断言行为、有退出码语义**吗？→ `../tests/`（项目根，非本目录）。
 
-不要往 `scripts/` 顶层平铺一次性脚本 —— 这正是curation 要根治的问题。**索引漂移靠测试拦，不靠纪律**：新增/移动脚本后跑
+不要往 `scripts/` 顶层平铺一次性脚本 —— 这正是 curation 要根治的问题。**索引漂移靠测试拦，不靠纪律**：新增/移动脚本后跑
 
 ```bash
 python3 -m pytest scripts/tests/test_scripts_index.py -q

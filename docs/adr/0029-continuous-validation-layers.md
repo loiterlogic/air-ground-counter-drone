@@ -24,7 +24,7 @@ accepted（2026-11-04）
 |---|---|---|---|---|
 | `tests/run_smoke.py` | 离线冒烟 7 组 | 每次提交 | 否 | ~40 s |
 | `tests/run_full_regression.py` | `full` 整链 3 场景 | 定时 | 是 | ~240 s |
-| `tests/run_n3_matrix.py` | 回归矩阵 **4 格**（原 5 格；无目标负例已因无承载者移除，见 (e)） | 里程碑 | 是 | ~520 s |
+| `tests/run_regression_matrix.py` | 回归矩阵 **4 格**（原 5 格；无目标负例已因无承载者移除，见 (e)） | 里程碑 | 是 | ~520 s |
 
 三者**不得互相替代**：headless 回归替代不了 GUI 验收；离线冒烟也证明不了整链能力。
 

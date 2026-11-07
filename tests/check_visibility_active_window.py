@@ -10,7 +10,7 @@
   * `not_applicable.target_truth == false`（目标真值可得）；
   * `longest_outage_s` / `recovery_time_last_s` 为有限非负。
 
-判据依据 [ADR-0022](docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)(d)（E3）。
+判据依据 [ADR-0022](docs/adr/0022-research-propositions-and-decision-rule.md#top)(d)（E3）。
 
 用法：
   python3 tests/check_visibility_active_window.py --report experiments/w7-rl-b/<run_id>/metrics/report.json
@@ -94,7 +94,7 @@ def main():
     overall = bool(results) and all(r['pass'] for r in results)
     out = {'run_id': report.get('run_id'), 'report': args.report,
            'n_episodes_checked': len(results), 'episodes': results, 'overall_pass': overall,
-           'proposition': 'E3 / F-10：可见率分母 = episode active 窗口内拍数（非全日志）；'
+           'proposition': '可见率分母 = episode active 窗口内拍数（非全日志）；'
                           '含最长失联 / 恢复时长 / 有效火控机会。'}
     out_path = args.out or os.path.join(os.path.dirname(args.report), 'e3.json')
     with open(out_path, 'w') as f:

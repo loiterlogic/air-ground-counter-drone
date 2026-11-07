@@ -764,7 +764,7 @@ def main():
     ap.add_argument('--mode', default='headless', choices=['headless', 'gui'])
     ap.add_argument('--gui-render-backend', default='auto',
                     choices=['auto', 'd3d12', 'software'],
-                    help='W8/ADR-0021：GUI 渲染后端；auto=WSL2+D3D12+X11 自动，否则系统默认')
+                    help='ADR-0021：GUI 渲染后端；auto=WSL2+D3D12+X11 自动，否则系统默认')
     ap.add_argument('--timeout', type=float, default=150.0, help='单回合等待终态上限（秒）')
     ap.add_argument('--wall-watchdog-s', type=float, default=None,
                     help='episode 墙钟看门狗预算（秒）；缺省回落到 --timeout')

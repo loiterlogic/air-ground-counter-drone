@@ -124,7 +124,7 @@ def main(argv=None):
     stamp = time.strftime('%Y%m%dT%H%M%S')
     base = os.path.join(args.out_dir, 'node-topology-%s-%s' % (args.run_id, stamp))
     with open(base + '.txt', 'w', encoding='utf-8') as fh:
-        fh.write('# G2 round-9 运行拓扑证据（只读采集）\n')
+        fh.write('# G2 运行拓扑证据（只读采集）\n')
         fh.write('# 采集时刻: %s\n' % started)
         fh.write('# run_id: %s\n' % args.run_id)
         fh.write('# 节点: %s\n' % args.node)

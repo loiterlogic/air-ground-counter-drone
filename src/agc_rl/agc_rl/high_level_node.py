@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""high_level_node —— 臂 B：**高层（拦截点）+ 成熟低层**（[ADR-0022](../../../docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)）。
+"""high_level_node —— 臂 B：**高层（拦截点）+ 成熟低层**（[ADR-0022](../../../docs/adr/0022-research-propositions-and-decision-rule.md#top)）。
 
 角色（P2「RL 职责分层」的**臂 B**）：本节点只出**高层决策**——把目标预测拦截点作为**目标点**
 发布到低层（`ground_baseline` = Navfn 规划 + 自研 LQR，见 [ADR-0002](../../../docs/adr/0002-docs-source-of-truth-and-reference-discipline.md#top)，
@@ -7,7 +7,7 @@
 
 **诚实标注**：本段的高层策略为**规则实现**（目标线性外推 + 提前量），**非**已训练 RL；
 「臂 B」考察的是**职责分层**（高层决策 + 成熟低层），RL 训练属后续。
-P2 v1 以规则高层承载的裁定见 [ADR-0023](docs/adr/0023-w7b-adjudication-record-and-exit.md#top)。
+P2 v1 以规则高层承载的裁定见 [ADR-0023](docs/adr/0023-adjudication-record-and-exit.md#top)。
 
 I/O：订 `/agc/ground/odom`、`/agc/targets`、`/agc/task/state`；发 `PoseStamped`（world）至
 `/agc/ground/goal_hl`（由 `ground_baseline` 的 `goal_topic` 消费；**非**命令者）。

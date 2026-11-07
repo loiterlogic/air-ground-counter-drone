@@ -202,7 +202,7 @@ def case_e_monotonic_seq(bench):
 
 
 def case_f_r006_preserved(bench):
-    """(f) 保持 R-006：valid 行为 + 三态存在 + info↔data 长度一致。"""
+    """(f) 保持既有行为：valid 行为 + 三态存在 + info↔data 长度一致。"""
     sc = (bench or {}).get('scenarios', {})
     cfg = sc.get('r006_config_valid', {})
     air = sc.get('r006_air_silent', {})

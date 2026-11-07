@@ -193,7 +193,7 @@ def main():
     }
     ok = summary['fail'] == 0
 
-    print('third_party_asset_check —— S-12 外部资产来源 / 许可 / 哈希清单核查（只读）')
+    print('third_party_asset_check —— 外部资产来源 / 许可 / 哈希清单核查（只读）')
     print('  root = %s' % args.root)
     print('  manifest = %s' % MANIFEST)
     for c in checks:

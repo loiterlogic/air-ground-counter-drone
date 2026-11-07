@@ -7,7 +7,7 @@
   * `/agc/task/capture_evidence`（标注串）
   * `/agc/task/capture_hit`（命中值恰为 `CAPTURE_NET`）
 
-判据（[ADR-0022](docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)(c)）：
+判据（[ADR-0022](docs/adr/0022-research-propositions-and-decision-rule.md#top)(c)）：
   * **≥1 次完整射击闭环**：出现 `SHOT_FIRED` **且**随后出现 `SHOT_HIT` 或 `SHOT_MISS`（同一 `shot_id`）；
   * 命中时 `/agc/task/capture_hit` 值**恰为** `CAPTURE_NET`，终态 `INTERCEPT_CONFIRMED`；
   * 证据串携带 `shot=` / `flight_s=` / `miss_dist_m=`（逐帧比对可复核）；
@@ -206,7 +206,7 @@ def main():
         checks['terminal_is_intercept_confirmed'] = (result['terminal_state'] == 'INTERCEPT_CONFIRMED')
     result['checks'] = checks
     result['overall_pass'] = all(checks.values())
-    result['proposition'] = ('E2 / F-11：最小动态火控——≥1 次完整射击闭环（SHOT_FIRED→SHOT_HIT|SHOT_MISS，'
+    result['proposition'] = ('最小动态火控——≥1 次完整射击闭环（SHOT_FIRED→SHOT_HIT|SHOT_MISS，'
                              '同一 shot_id）；命中时 capture_hit 恰为 CAPTURE_NET 且终态 INTERCEPT_CONFIRMED；'
                              '证据串携带 shot/flight_s/miss_dist_m。')
 

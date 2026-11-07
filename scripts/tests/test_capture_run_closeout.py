@@ -74,7 +74,7 @@ def _first_lineno(fn, name, *, as_store):
 
 @pytest.mark.parametrize('name', ['stable_detail', 'stable_median', 'prefer_size'])
 def test_used_after_assigned(name):
-    """使用必须晚于赋值——这条直接对应 round-5 的 `UnboundLocalError`。"""
+    """使用必须晚于赋值——这条直接对应一次实测 `UnboundLocalError`。"""
     _tree, fn = _main_fn()
     store = _first_lineno(fn, name, as_store=True)
     load = _first_lineno(fn, name, as_store=False)
@@ -83,7 +83,7 @@ def test_used_after_assigned(name):
     assert store is not None, '%s 在 main() 里从未被赋值，却被使用' % name
     assert store < load, (
         '%s 在 main() 里**先使用（第 %d 行）后赋值（第 %d 行）**——'
-        '真实 T2 收尾时会抛 UnboundLocalError（round-5 已踩过）' % (name, load, store)
+        '真实 T2 收尾时会抛 UnboundLocalError（已踩过）' % (name, load, store)
     )
 
 

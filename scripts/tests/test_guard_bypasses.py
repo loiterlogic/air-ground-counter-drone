@@ -111,16 +111,23 @@ def test_hash_comments_and_inline_comments_are_scanned(ref_discipline, tmp_path)
     assert got is not None
     assert 1 in got, '行首注释未被识别'
     assert 2 in got, '行尾内联注释未被识别'
-    assert 3 not in got, '纯代码行被误判为注释（会误报代码里的字符串常量）'
+    assert 3 not in got, '纯代码行（无注释无字符串）被误判为可扫描行'
 
 
-def test_non_comment_code_lines_are_not_scanned(ref_discipline, tmp_path):
-    """代码行里的 `R-031` 字符串常量不属注释，不得被算进来。"""
+def test_single_line_strings_are_scanned(ref_discipline, tmp_path):
+    """**2026-11-07 口径变更**：单行字符串也算可扫描行。
+
+    旧口径只收多行 STRING，理由是"单行字符串常量是数据标识"。实测该口径漏掉了
+    活跃代码层 127 处命中里的 122 处（`description='…W7-c…'`、`assert` 消息、
+    `'proposition': '…F-04…'`）——闸门一行都拦不住，规则说"只能在代码中引用 ADR"
+    而机器只查注释。故改为**字符串一律扫描**；数据标识豁免由 `DATA_PATH_RE`
+    （`experiments/` 路径行）负责，不在 `_scanned_line_numbers` 层面豁免。
+    """
     probe = tmp_path / 'probe3.py'
     probe.write_text('PATTERN = "R-031"\n', encoding='utf-8')
     got = ref_discipline._scanned_line_numbers(probe)
     assert got is not None
-    assert 1 not in got, '代码行被误判为注释'
+    assert 1 in got, '单行字符串未被识别（旁路：单行 docstring / description 可借此复活）'
 
 
 def test_syntax_error_file_falls_back_to_scanning_all(ref_discipline, tmp_path):

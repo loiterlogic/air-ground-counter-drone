@@ -65,7 +65,7 @@ PHASE_B_CAVEAT = ('口径      阶段 B 拦截达成；具体方式由 reason_co
                   '（CAPTURE_NET 物理捕获 / JAM_* 行为级干扰）。')
 
 # 提示语：**不是展示文案**（不代表观众看到的字），只供代码注释 / 文档 / 回归引用。
-C8_NOTICE = ('C8：TRACKING_SUCCESS 的语义是「抵近并持续跟踪」，'
+C8_NOTICE = ('TRACKING_SUCCESS 的语义是「抵近并持续跟踪」，'
              '阶段 B 的拦截另有终态 INTERCEPT_CONFIRMED。')
 
 
@@ -89,7 +89,7 @@ REASON_ROWS = (
     ('JAM_LOST', '行为级干扰生效：目标失联（阶段 B）'),
     ('JAM_NONE', '未触发干扰'),
     # —— 终态：失败 / 中止 ——
-    ('TIMEOUT', '任务时限（t_max_s，C4：超时一律算失败）内未达成判定条件'),
+    ('TIMEOUT', '任务时限（t_max_s，超时一律算失败）内未达成判定条件'),
     ('abort', '收到外部中止请求'),
     # —— 非任务窗口的原因码：`/agc/ground/goal_info` 与 `/agc/task/dwell_event` 携带 ——
     # （面板只显示 `/agc/task/state` 的 reason_code；这一段保证"看到也能翻译"，不冒充任务原因）
@@ -109,7 +109,7 @@ REASON_ROWS = (
     # —— 终态：基础设施失败（门禁 / 链路，不是任务失败）——
     ('air_hover_timeout', '等待起飞完成超时：空中里程计在时限内未达悬停高度'),
     ('reset_failed', '场景复位确定性失败（重试仍失败）'),
-    ('phase_reset_failed', '空中相位复位失败（C5 门禁）'),
+    ('phase_reset_failed', '空中相位复位失败（相位复位门禁）'),
     ('release_control_failed', '空中控制权交接（release_control）失败'),
     ('clock_not_synced', '仿真时钟未同步（/clock 未就绪）'),
     ('clock_not_progressing', '仿真时钟未推进（冻结时钟）'),
@@ -167,7 +167,7 @@ def is_terminal(name):
 
 
 def display_texts():
-    """**全部**会出现在终端 / 时间线 / 判定说明里的状态文案（供 C8 静态检查）。"""
+    """**全部**会出现在终端 / 时间线 / 判定说明里的状态文案（供终态语义静态检查）。"""
     out = []
     for _n, _name, text, audience in STATE_ROWS:
         out.append(text)
@@ -177,15 +177,15 @@ def display_texts():
 
 
 def assert_display_safe(texts=None):
-    """导入期与回归双用的 C8 守卫；违规抛 `AssertionError`（**不**静默降级）。"""
+    """导入期与回归双用的终态语义守卫；违规抛 `AssertionError`（**不**静默降级）。"""
     texts = list(display_texts() if texts is None else texts)
     for text in texts:
         for bad in FORBIDDEN_ANYWHERE:
-            assert bad not in text, 'C8 违规：展示文案出现 %r —— %s' % (bad, text)
+            assert bad not in text, '终态语义违规：展示文案出现 %r —— %s' % (bad, text)
     tracking = state_by_name(PHASE_A_SUCCESS)
     for bad in FORBIDDEN_IN_TRACKING:
         assert bad not in tracking['text'], (
-            'C8 违规：TRACKING_SUCCESS 文案不得含 %r（实际：%r）' % (bad, tracking['text']))
+            '终态语义违规：TRACKING_SUCCESS 文案不得含 %r（实际：%r）' % (bad, tracking['text']))
     return True
 
 

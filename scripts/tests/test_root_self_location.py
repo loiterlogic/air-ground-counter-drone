@@ -70,14 +70,14 @@ HARD = '/home/chen/AGC'
 ALLOWED = {
     'src/agc_air/launch/air_bringup.launch.py': (
         '契约默认值：`agc_root` 的 launch 默认值，受 scripts/toolchain_root_check.py 断言保护；'
-        'round-6 审查明令不得改（改它等于改契约口径）'),
+        '审查明令不得改（改它等于改契约口径）'),
     'src/agc_task/launch/main.launch.py': (
         '同上：`agc_root` 的 launch 默认值声明 + 两处报错提示文字（不参与路径解析）'),
     'scripts/toolchain_root_check.py': (
         '工具本身要**校验**这个默认值，故必须知道该字面量'),
     'src/agc_task/src/run_logger.cpp': (
         '**契约式缺省**：`experiments_root` / `git_root` 的 `declare_parameter` 默认值。'
-        'round-9 已删 YAML 字面量，若再删这里，`m0_skeleton` / 研究 runner 等不经交付 launch 的'
+        '已删 YAML 字面量，若再删这里，`skeleton` / 研究 runner 等不经交付 launch 的'
         '入口会失去缺省；由 `main.launch.py` 在交付路径统一覆盖。守护见 '
         '`test_cpp_defaults_are_preserved`'),
 }
@@ -174,7 +174,7 @@ def test_yaml_configs_have_no_absolute_root():
         if HARD in text:
             offenders.append(name)
     assert not offenders, (
-        'YAML 里仍有绝对路径字面量 %r —— 运行期会写回该路径（round-9 已清理，勿回退）'
+        'YAML 里仍有绝对路径字面量 %r —— 运行期会写回该路径（已清理，勿回退）'
         % offenders)
 
 

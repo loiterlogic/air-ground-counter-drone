@@ -12,7 +12,7 @@ episode 的 `summary_path` → 读该 run 的 `metrics/summary.json` 的 `comman
   * **无 shield 臂**（false）→ `intervened_ticks` == 0 且 `max_abs_delta_v_mps` / `max_abs_delta_w_radps`
     在 epsilon 量级（恒等透传：effective ≡ raw）。
 
-判据依据 [ADR-0022](docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)(d)（E1）与
+判据依据 [ADR-0022](docs/adr/0022-research-propositions-and-decision-rule.md#top)(d)（E1）与
 （见 ADR-0011）。
 
 用法：
@@ -75,7 +75,7 @@ def main():
     ap.add_argument('--experiments-root', default=os.path.join(ROOT, 'experiments'),
                     help='证据根（未给 --report 时，取该根 %s 下最新 run 的 report.json）' % CAMPAIGN)
     ap.add_argument('--out', default=None, help='e1.json 输出路径（缺省落同目录 metrics/e1.json）')
-    ap.add_argument('--run-id', default=None, help='W7-b run_id（写进证据，缺省取 report.run_id）')
+    ap.add_argument('--run-id', default=None, help='run_id（写进证据，缺省取 report.run_id）')
     args = ap.parse_args()
 
     if not args.report:
@@ -117,7 +117,7 @@ def main():
         'n_episodes_checked': len(results),
         'episodes': results,
         'overall_pass': overall,
-        'proposition': 'E1 / F-06：raw / effective 命令**同拍**记录 + 干预标注；'
+        'proposition': 'raw / effective 命令**同拍**记录 + 干预标注；'
                        '有 shield 臂出现干预、无 shield 臂 effective≡raw。',
     }
     out_path = args.out or os.path.join(os.path.dirname(args.report), 'e1.json')

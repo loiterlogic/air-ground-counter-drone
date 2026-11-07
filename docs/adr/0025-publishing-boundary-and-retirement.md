@@ -61,7 +61,7 @@ accepted（2026-11-02 由 ADR-0081 / 0105 / 0107 合并；结论未变）
 
 - **删除** `docs/plan/PAUSED.md`；**暂停事实不变**，状态改由[当前方向](../plan/README.md#plan-index)单一承载。
 - 引用同步改写：`AGENTS.md`、当前方向、spec 模板、`scripts/research/README.md`，以及 `scripts/adr_index.py` 与 ADR 模板中"暂停记在 plan 的**开关文件**里"的措辞（改为"plan 的**方向索引**"）。
-- **显式澄清**：退役开关文件**不等于**恢复迁移。迁移推进、论文优先与的恢复仍须用户**显式裁定**；当前仍为暂停。
+- **显式澄清**：退役开关文件**不等于**恢复迁移。迁移推进、论文优先与多 worker 的恢复仍须用户**显式裁定**；当前仍为暂停。
 
 ### (g) 作废旧候选清单 A1–E2
 
@@ -116,6 +116,6 @@ accepted（2026-11-02 由 ADR-0081 / 0105 / 0107 合并；结论未变）
 
 ## 参考
 
-- 相关决策：[ADR-0002](0002-docs-source-of-truth-and-reference-discipline.md#top)（文档真源分层与引用纪律）、[ADR-0006](0006-experiment-artifacts-and-evidence-discipline.md#top)（产物与证据纪律）、[ADR-0001](0001-project-positioning-and-execution-scope.md#top)（项目定位）、[ADR-0021](0021-w8-gui-headless-equivalence.md#top)（关闭与平台冻结）、[ADR-0026](0026-leader-worker-collaboration-and-batch-authorization.md#top)（协作机制）
+- 相关决策：[ADR-0002](0002-docs-source-of-truth-and-reference-discipline.md#top)（文档真源分层与引用纪律）、[ADR-0006](0006-experiment-artifacts-and-evidence-discipline.md#top)（产物与证据纪律）、[ADR-0001](0001-project-positioning-and-execution-scope.md#top)（项目定位）、[ADR-0021](0021-gui-headless-equivalence.md#top)（关闭与平台冻结）、[ADR-0026](0026-leader-worker-collaboration-and-batch-authorization.md#top)（协作机制）
 - 归档导航：[`docs/archive/README.md`](../archive/README.md#archive)；技能目录：[`.agents/README.md`](../../.agents/README.md#skills)
 - 入口索引：[`AGENTS.md`](../../AGENTS.md)

@@ -260,7 +260,7 @@ def test_xacro_source_only_touches_visual_structure():
 
 
 def test_highlight_disabled_when_not_controlled():
-    """高亮必须写在 `xacro:if controlled` 之内（不污染 M0/W5 的 passive 路径）。"""
+    """高亮必须写在 `xacro:if controlled` 之内（不污染被动实体的渲染路径）。"""
     with open(XACRO_PATH, encoding='utf-8') as f:
         text = f.read()
     cond = text.index('<xacro:if value="$(arg controlled)">')

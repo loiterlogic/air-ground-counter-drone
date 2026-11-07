@@ -151,7 +151,7 @@ w7b_prereg:
           reasons:
             - "臂信息不等价：A 的 c2 只订 /agc/ground/goal；s08 goal_follow_target=false 且 goal=目标真值 (4.5,3.0)；B 订 /agc/targets（感知）"
             - "primary DV 终态后污染：window_fixed_v1 的 60 s 窗包含终态后停泊；约 97%（A）/100%（B）的机会拍在终态之后"
-          evidence: "docs/adr/0023-w7b-adjudication-record-and-exit.md#top"
+          evidence: "docs/adr/0023-adjudication-record-and-exit.md#top"
       executed_v3:
         run_id: "20261022-w7-rl-b-v3-n20r"
         date: "2026-10-22"

@@ -11,14 +11,14 @@
 |---|---|---|---|
 | [`run_smoke.py`](./run_smoke.py) | **每次提交**（离线冒烟，含 DDS 契约闸门与 toolchain pin 一致性） | 否 | ~40 s |
 | [`run_full_regression.py`](./run_full_regression.py) | **定时**（`full` 整链回归，3 场景） | **是**（独占 GZ/PX4/DDS） | ~240 s |
-| [`run_n3_matrix.py`](./run_n3_matrix.py) | **里程碑**（回归矩阵：四类要求，4 格） | **是** | ~580 s |
+| [`run_regression_matrix.py`](./run_regression_matrix.py) | **里程碑**（回归矩阵：四类要求，4 格） | **是** | ~580 s |
 
 ```bash
 ./run_demo.sh test # 离线冒烟（8 组）
 python3 tests/run_full_regression.py --list # 整链回归：先看要跑什么
 python3 tests/run_full_regression.py # 整链回归（定时任务用这个）
-python3 tests/run_n3_matrix.py --list # 回归矩阵：四类要求
-python3 tests/run_n3_matrix.py # 回归矩阵（4 格；无目标负例与 vision 臂均已无承载者）
+python3 tests/run_regression_matrix.py --list # 回归矩阵：四类要求
+python3 tests/run_regression_matrix.py # 回归矩阵（4 格；无目标负例与 vision 臂均已无承载者）
 ```
 
 **无目标负例已退役**（2026-11-06）：`s17` 原本靠 `air_perception` 的 FOV 收窄制造"看不见"，
@@ -48,18 +48,18 @@ python3 tests/run_all.py --all --timeout 600 # 全跑（带超时）
 <a id="categories"></a>
 ## 三分类：哪些能进默认冒烟，哪些不能
 
-59 个 `check_*.py` 按**运行前提**分三类。口径不是约定俗成，而是**机械可判**、
+60 个 `check_*.py` 按**运行前提**分三类。口径不是约定俗成，而是**机械可判**、
 由 `checklib.check_categories()` 单一实现；`check_doc_counts.py` 判据 e 拿它与本表逐项对账，
 所以"表里写 22、实际 21"会让冒烟变红。
 
 | 类 | 数量 | 判据 | 能否进**默认**冒烟 | 跑法 |
 |---|---|---|---|---|
-| `static` | **4** | 不 import `rclpy`，且不涉及 `experiments/` | **能**（默认 8 组里的静态核查全属此类） | `./run_demo.sh test` |
+| `static` | **5** | 不 import `rclpy`，且不涉及 `experiments/` | **能**（默认 8 组里的静态核查全属此类） | `./run_demo.sh test` |
 | `evidence` | **22** | 不 import `rclpy`，但接受 `--experiments-root` | **不能** | `--with-evidence` 可选组 |
 | `needs_sim` | **33** | `import rclpy`：判定要活着的 ROS 图 / 仿真 | 不能 | `run_all.py --run <name>` |
 
 另有 **2** 个 `docs_*_check.py`（`docs_link_check.py` / `docs_tooling_check.py`）是文档护栏，
-命名上不属于 `check_*.py`，分别进冒烟 `docs` 组与离线单测。合计 **59 + 2 = 61** 个验收脚本。
+命名上不属于 `check_*.py`，分别进冒烟 `docs` 组与离线单测。合计 **60 + 2 = 62** 个验收脚本。
 
 **为什么 `evidence` 不能进默认冒烟**（2026-11-06 实测，不是推测）：
 
@@ -95,6 +95,7 @@ python3 tests/run_evidence_checks.py --list # 单独看这 22 项
 | [`docs_link_check.py`](./docs_link_check.py) | 活跃范围 markdown 的**本地链接可解析、锚点存在**（显式 `<a id>` / 标题 slug / `#L<n>` / `.md:<line>`） | `python3 tests/docs_link_check.py`；`--include GLOB` 追加范围；`--strict-history` 把历史断链也算失败 |
 | [`../scripts/adr_index.py`](../scripts/adr_index.py) | `docs/adr/README.md` 与 `docs/adr/*.md` 的**编号/标题/Status/结论一致** | `python3 scripts/adr_index.py --check` |
 | [`docs_tooling_check.py`](./docs_tooling_check.py) | 上面两个工具**自身的口径**（断链/锚点/代码块排除/历史范围/索引幂等/漂移检测） | `python3 tests/docs_tooling_check.py`；不碰真实仓库，临时目录造最小项目 |
+| [`check_refs_isolation.py`](./check_refs_isolation.py) | **外部参照区**（不入库的 `refs` 目录）不得被本仓任何活文件引用；且三项隔离机制齐备（`COLCON_IGNORE` / `.gitignore` 精确规则 / 链接核查排除项） | `python3 tests/check_refs_isolation.py`；纯静态秒级 |
 | [`check_dds_contract.py`](./check_dds_contract.py) | DDS 契约（含 **case e：活跃代码不得写死 `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`**） | `python3 tests/check_dds_contract.py`；已进默认冒烟组 `dds`，见 [ADR-0028](../docs/adr/0028-dds-discovery-range-and-transport.md#guard) |
 
 `docs_link_check.py` 的排除边界是**刻意的**，不是忽略：

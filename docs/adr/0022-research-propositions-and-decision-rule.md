@@ -1,5 +1,5 @@
 <a id="top"></a>
-#：科研命题、度量口径与判定规则
+# 科研命题、度量口径与判定规则
 
 ## Status
 
@@ -7,7 +7,7 @@ accepted（2026-11-02 由 ADR-0070 / ADR-0074 / ADR-0084 / ADR-0086 / ADR-0088 �
 
 ## 背景
 
-出口是**可信实验平台**，算法 / 网络 / 奖励 / 训练步数 / 论文结论属。若不在实验前把「自变量是什么、因变量怎么量、什么算成立」写死，就会留下三处**隐式 ADR**：无法归因的协同收益、按占位包络训练的捕获奖励、事后拟合的判定规则。本组决策只做科研设计裁定（命题 / 变量 / 对照 / 前置能力 / 判定规则），不定算法与网络。
+出口是**可信实验平台**，算法 / 网络 / 奖励 / 训练步数 / 论文结论属 [ADR-0023](0023-adjudication-record-and-exit.md#top)。若不在实验前把「自变量是什么、因变量怎么量、什么算成立」写死，就会留下三处**隐式 ADR**：无法归因的协同收益、按占位包络训练的捕获奖励、事后拟合的判定规则。本组决策只做科研设计裁定（命题 / 变量 / 对照 / 前置能力 / 判定规则），不定算法与网络。
 
 ## 决策
 
@@ -22,9 +22,9 @@ accepted（2026-11-02 由 ADR-0070 / ADR-0074 / ADR-0084 / ADR-0086 / ADR-0088 �
 
 ### (b) 因变量：**分层多指标**，禁止单一成功率
 
-- **主量**：任务出口（`TRACKING_SUCCESS` / `CAPTURE_NET`）；**超时一律失败**（硬约束）。
+- **主量**：任务出口（`TRACKING_SUCCESS` / `CAPTURE_NET`）；**超时一律失败**（[硬约束 hc-4](0020-package-boundaries-and-runtime-topology.md#hc-4)）。
 - **辅量·捕获机会代理**：进入捕获包络的**停留时长**、**有效火控窗口时长**。
-- **辅量·净空**：最小安全距离、碰撞率、shield **干预量 / 干预时长**（代理率）。
+- **辅量·净空**：最小安全距离、碰撞率、shield **干预量 / 干预时长**（[硬约束 hc-9](0020-package-boundaries-and-runtime-topology.md#hc-9) 代理率）。
 - **infra / 复位失败单列**，不吞入成功率（[ADR-0018](0018-acceptance-and-coverage-matrix.md)）。
 
 **FCO（火控机会）门的定义**：`包络内 ∧ 目标可见`（`run_logger` 的 `evaluateTick`）；**净空是独立指标，不入此门**。这个定义决定了后续所有 FCO 口径的读法—— 包络占用由**地面路径**决定，可见由**观测指向**决定。
@@ -61,7 +61,7 @@ accepted（2026-11-02 由 ADR-0070 / ADR-0074 / ADR-0084 / ADR-0086 / ADR-0088 �
 - 预注册（`research_prereg.yaml`）在**确证 run 之前**写定：预注册文件提交时间**早于** run 目录；承重实验**不得**事后改阈值。
 - 判定由 `scripts/research/w7b_p1_adjudicate.py` / `w7b_p2_adjudicate.py` 按 `decision.<命题>` / `statistics.<命题>` 执行，脚本**不硬编码阈值**。
 - 若需改以任务成功率 / 捕获时长 / 首次火控机会时间为决策终点，须**新预注册版本**（版本号顺延，不得复用已用版本）并重新匹配样本量与 MME；**禁止**事后改 primary。
-- **门禁**：的对照与冻结 **SHALL NOT** 在 P1 现行口径结果落盘前冻结 P1 结论；fixed / active 双口径数值、现行判定与证据 `run_id` 必须一并进入对照报告（[ADR-0021](0021-w8-gui-headless-equivalence.md)）。
+- **门禁**：出口一的对照与冻结 **SHALL NOT** 在 P1 现行口径结果落盘前冻结 P1 结论；fixed / active 双口径数值、现行判定与证据 `run_id` 必须一并进入对照报告（[ADR-0021](0021-gui-headless-equivalence.md)）。
 
 ### (f) 判定规则：三态（CI vs MME），MME 与规划量**分列**
 
@@ -114,7 +114,7 @@ n ≈ ((z_{1−α/2} + z_{1−power}) · σ / (Δ_true − MME))² （双侧 CI 
 
 含「捕获机会 / 命中」的因变量 **SHALL** 先由**最小动态火控闭环**承载，替换闭式占位包络（可插拔抽象的 I/O 契约不变）。网的弹道在本节点逐帧积分（**非** GZ 物理刚体），「与 GZ 交叉核验」= 逐帧与 GZ 目标 / 车真值位姿比对。**替换后先冻结任务难度再训练**。**禁止**以占位包络训练后宣称「移动式主动拦截」。口径细节见 [ADR-0011](0011-interception-and-fire-control.md)。
 
-### (j)入口前置能力（先建、后实验）
+### (j) 入口前置能力（先建、后实验）
 
 - **E1** raw / effective 命令**同拍**记录：同一采样瞬时取安全层输入与输出快照，**如实标注** `header.stamp` 是否被安全层保持；记干预量 / 干预时长 / 实际净空 / 任务结果，并支持 with-shield 与**等预算**对照臂（纯仿真无 shield 臂须明标范围）。
 - **E2** 最小动态火控裁决（见 (i)）。
@@ -150,7 +150,7 @@ n ≈ ((z_{1−α/2} + z_{1−power}) · σ / (Δ_true − MME))² （双侧 CI 
 - **不**把 `window_fixed_v1` 数值当现行 P1 结论（已降为 legacy 描述量）。
 - **不**声称真实检测 / sim-to-real；**不**把 GT 放进普通策略观测。
 - **不**在本段新增「成熟 Nav2 controller 对照臂」。
-- **未实现 / 后续**：P2 消融、多 worker（[ADR-0024](0024-w7c-multi-worker-isolation.md)）、v7 立项与否、论文级统计冻结。
+- **未实现 / 后续**：P2 消融、多 worker（[ADR-0024](0024-multi-worker-isolation.md)）、v7 立项与否、论文级统计冻结。
 
 ## Considered Options
 
@@ -172,7 +172,7 @@ n ≈ ((z_{1−α/2} + z_{1−power}) · σ / (Δ_true − MME))² （双侧 CI 
 
 - **正面**：科研变量、对照、前置与判定**显式可判定**；DV 与「何时终止」解耦，消除饱和与选择效应；`inconclusive` 成为一等结果，避免把证据不足误报为效应不存在；P1 / P2 使用同一套 clean DV，跨命题比较恢复一致。
 - **代价 / 限制**：每 episode 至少观测 60 s，run 墙钟变长；`obs_window_s` 与 `--obs-horizon-s` 必须同值；口径变更使新旧数值不可逐值对照（版本化 + note 标注）；只出证据与裁定、不出论文结论；最小火控 / 归因 / 可见性口径是**新增工程量**（E1–E5），先于任何策略对照；若要做 v7，成本按 N≈39–246 量级。
-- **现行结论位置**：P1 / P2 的判定数值、机制边界与出口闭合见 [ADR-0023](0023-w7b-adjudication-record-and-exit.md)。
+- **现行结论位置**：P1 / P2 的判定数值、机制边界与出口闭合见 [ADR-0023](0023-adjudication-record-and-exit.md)。
 
 ## 参考
 
@@ -180,8 +180,8 @@ n ≈ ((z_{1−α/2} + z_{1−power}) · σ / (Δ_true − MME))² （双侧 CI 
 - episode 窗口统计与有效样本掩码：[ADR-0016](0016-episode-window-and-sample-validity.md)
 - 时间预算口径：[ADR-0017](0017-time-budget-and-clock-sources.md)
 - 验收判定与整链覆盖：[ADR-0018](0018-acceptance-and-coverage-matrix.md)
--冻结与对照：[ADR-0021](0021-w8-gui-headless-equivalence.md)
-- 裁定记录与出口闭合：[ADR-0023](0023-w7b-adjudication-record-and-exit.md)
+-冻结与对照：[ADR-0021](0021-gui-headless-equivalence.md)
+- 裁定记录与出口闭合：[ADR-0023](0023-adjudication-record-and-exit.md)
 - 种子协议：[ADR-0027](0027-uxrce-startup-reproducibility.md)
 - 预注册真源：`src/agc_rl/config/research_prereg.yaml`；判定脚本 `scripts/research/w7b_p1_adjudicate.py` / `w7b_p2_adjudicate.py`
 - 契约：[硬约束](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、[终态语义](0014-task-fsm-and-scenario-transaction.md#terminal-semantics)、[参数入口](0020-package-boundaries-and-runtime-topology.md#params)

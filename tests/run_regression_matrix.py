@@ -47,9 +47,9 @@
 ## 用法
 
 ```bash
-python3 tests/run_n3_matrix.py --list
-python3 tests/run_n3_matrix.py                 # 全部（默认 truth 路径）
-python3 tests/run_n3_matrix.py --only static-normal   # 类别名见 MATRIX
+python3 tests/run_regression_matrix.py --list
+python3 tests/run_regression_matrix.py                 # 全部（默认 truth 路径）
+python3 tests/run_regression_matrix.py --only static-normal   # 类别名见 MATRIX
 ```
 
 退出码：`0` 全类通过；`1` 有失败或证据不足；`2` 用法/环境错误。
@@ -145,7 +145,7 @@ def _assert_negative(rec, summary):
     if term != 'MISSION_FAILED':
         problems.append('终端=%r，期望 MISSION_FAILED' % term)
     if reason != 'TIMEOUT':
-        problems.append('reason=%r，期望 TIMEOUT（C4）' % reason)
+        problems.append('reason=%r，期望 TIMEOUT（超时算失败）' % reason)
     vm = summary.get('visibility_metrics') or {}
     rate = vm.get('visibility_rate')
     if rate is None:
@@ -223,7 +223,7 @@ def run_case(category, scene, expected, desc, kind, seed,
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description='N3 · 回归矩阵')
+    ap = argparse.ArgumentParser(description='回归矩阵')
     ap.add_argument('--only', nargs='+', default=None,
                     help='只跑指定类别：%s' % ' '.join(c for c, *_ in MATRIX))
     ap.add_argument('--scene', nargs='+', default=None, help='只跑指定场景')
@@ -248,7 +248,7 @@ def main(argv=None):
         todo = [m for m in todo if m[1] in args.scene]
 
     if args.list:
-        print('N3 回归矩阵（backend=full, headless, seed=%d, perception=truth 默认）'
+        print('回归矩阵（backend=full, headless, seed=%d, perception=truth 默认）'
               % args.seed)
         for cat, scene, term, desc, kind in todo:
             expect = term if term else '（不要求特定终态：判"感知代价可测 + 证据可区分"）'
@@ -262,7 +262,7 @@ def main(argv=None):
         return '%s%s%s' % (code, text, RESET) if color else text
 
     print('=' * 78)
-    print('N3 回归矩阵 · %d 格 · backend=full · headless · 单格上限 %d s'
+    print('回归矩阵 · %d 格 · backend=full · headless · 单格上限 %d s'
           % (len(todo), args.timeout))
     print('负例按**加严断言**判定（必须证明"看不见"，不是"链路不通"）')
     print('=' * 78, flush=True)

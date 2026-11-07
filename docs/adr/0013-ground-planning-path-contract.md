@@ -74,7 +74,7 @@ L2 距离容差**（`xy_goal_tolerance` / `euclidean_distance`）而非任意浮
 - **地面 = 安全停车**：`ground_baseline` 消费 `/agc/ground/goal_info` 的 `valid=`；`valid=false` 时在 `tick` 顶部
   （`!active_` 检查之后）`publish(0,0); return;`，先于路径跟随 / 重规划。默认 `goal_valid_=true`，无该话题的旧运行
   保持既有行为。
-- **空中 = freeze**：的 standoff 跟踪在目标失效（`ref_max_age_s=0.5` / 低 `confidence`）时冻结位姿 / 悬停，
+- **空中 = freeze**：[硬约束 hc-10](0020-package-boundaries-and-runtime-topology.md#hc-10) 的 standoff 跟踪在目标失效（`ref_max_age_s=0.5` / 低 `confidence`）时冻结位姿 / 悬停，
   保持参考、不追逐旧目标。
 - **不假定两者相同**：地面是"有期限保持最后有效目标后安全停车"，空中是"冻结位姿 / 悬停"。
 

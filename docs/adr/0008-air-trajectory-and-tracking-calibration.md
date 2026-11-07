@@ -13,7 +13,7 @@ accepted（2026-11-02 由 0019 / 0051 合并；口径与容限结论未变，跟
 1. **形状名不副实**：旧项目名为「8 字」的实为 `fixed_horizontal`（**两半圆 + 两直线**，`r=3`、`ω=0.2`、`v=0.6`），
    **并非真八字**；的 `ω=0.1` / `v=0.3` 数字由 `ω·r = 0.1×3.0` 反推而来，描述的正是这一非真八字形态。
    旧项目的距离 / 速度参数**偏离真实工程量级**（standoff `2.0/3.5 m`、目标巡航偏慢），不足以支撑「贴近真实」的仿真。
-2. **验收口径混用**：恒速验收把**参考 / 机体估计 / 世界真值**三个指标混用；高度语义不统一—— 接管高度对齐使
+2. **验收口径混用**：[硬约束 hc-1](0020-package-boundaries-and-runtime-topology.md#hc-1) 的恒速验收把**参考 / 机体估计 / 世界真值**三个指标混用；高度语义不统一—— 接管高度对齐使
    命令 `h` 成为**相对基准**（`z_offset_ = state.pos.z − trajectory_->sample(0.0).pos.z`），而对外公开的
    `base_ref` **未加** `z_offset_`，与生效 `effective` 的高度基准**静默不同**；既有检查只给 warmup 之后的速度误差 P95，
    **不能推出全程最大误差**；「恒速无加减速」若指**零向量加速度**则与曲线运动不相容。
@@ -24,7 +24,7 @@ accepted（2026-11-02 由 0019 / 0051 合并；口径与容限结论未变，跟
 
 - **「8 字」改为真八字（Gerono）**：`x = cx + rx·sinθ`、`y = cy + ry·sinθ·cosθ`（自交成 ∞），`rx=15`、`ry=9`、
   `h=2.5 m`；**全程恒速 `v=2.0 m/s`**（弧长参数化，无加减速）；**删去「角速度 0.1」**。
-- **「恒速」的对象 = 参考沿弧长的切向速度**：`Figure8Trajectory` 输出 `|vel| ≡ speed = 2.0`，由
+- **[硬约束 hc-1](0020-package-boundaries-and-runtime-topology.md#hc-1)「恒速」的对象 = 参考沿弧长的切向速度**：`Figure8Trajectory` 输出 `|vel| ≡ speed = 2.0`，由
   `ParametricTrajectory` 先建 `s(θ)` 梯形积分表、再对给定 `s` 反解 θ 保证 `|dp/dt| ≡ speed`。
   实测参考 `|v|` **P95 = 2.0000**，相对目标 2.0 的 **max 偏差 ≈ 4.4e-16 m/s**（数值恒速成立）。
 - **「无加减速」正名**：指**参考沿弧长的切向速度恒定（无切向加减速）**；**不**声称「零向量加速度」（曲线运动有
@@ -33,7 +33,7 @@ accepted（2026-11-02 由 0019 / 0051 合并；口径与容限结论未变，跟
   数值噪声量级）；实际恒速用**机体（world GT）warmup 之后的速度模稳态误差**（`P95` 与 `max` **分别**报告，
   `c1.body_speed_p95_tol_mps = 0.30 m/s`，**占位待回填**）。**不**以 warmup 后 P95 自证「全程最大误差」——
   evidence 显式区分 `speed_err_full_max` 与 `speed_err_steady_p95`，**max / 持续越限**单独报告。
-- **模式记账**：**基准轨迹试验**（base 模式，无 `tracking_ref` / `target`）单独判；**接管瞬态（warmup）/
+- **模式记账**：**基准轨迹试验**（base 模式，无 `tracking_ref` / `target`）单独判 [硬约束 hc-1](0020-package-boundaries-and-runtime-topology.md#hc-1)；**接管瞬态（warmup）/
   自保（shield 介入）/ 目标跟踪（tracking 覆盖八字）** 分模式记账，**不**纳入基准恒速判据。
 - **作业区与间距**：作业区放大到 **80×80 m**（地面 200×200 不变），`agc_car` / `intruder_uav` spawn 分离 **~30 m**，
   容纳真八字足迹；**standoff 安全间距带 `8/15 m`**（水平），跟踪高度 `2.5 m`，滞回 ~1.0 m，最大水平速度 `2.0 m/s`；
@@ -112,10 +112,10 @@ accepted（2026-11-02 由 0019 / 0051 合并；口径与容限结论未变，跟
 - **正面**：真八字 + 弧长参数化使「恒速」可数值自证；对外 `base_ref` 与 `effective` **同一世界 ENU z 基准**
   （实测基准差 P95 < 1e-7 m），`z_offset` / `height_datum` 在 `tracking_status` **可辨**；同一 run 同一时间轴给出
   5 条曲线与三指标分别的 **P95 / max / 持续越限**；缺失材料作为**未证实**归因**保留**，不冒充复核。
-- **代价 / 限制**：`body_speed_p95_tol_mps` / `height_err_p95_tol_m` 为**占位待回填**（未标定）；台架机体为
+- **代价 / 限制**：`body_speed_p95_tol_mps` / `height_err_p95_tol_m` 为**占位待回填**（未标定：本轮未做真机整链）；台架机体为
   **脚本化**（非整链 / 非 PX4 SITL 闭环，如实 `unsupported`）；同时间对齐容限放宽至 P95 ≤ 0.25 s
   （单进程台架的 GIL / DDS 抖动，实测 P95 0.19 s）；改写触发作业区放大与柱重排的连带改动。
-- **未决 / 后续**：容限的实测回填依赖**真实整链 / 双 PX4** run（本批不可实测 → 占位）；`ε` / `ε′` 首轮实跑后回填；
+- **未决 / 后续**：[硬约束 hc-1](0020-package-boundaries-and-runtime-topology.md#hc-1) 容限的实测回填依赖**真实整链 / 双 PX4** run（本批不可实测 → 占位）；`ε` / `ε′` 首轮实跑后回填；
   如需外推 `stock_rec` 归因须重做并保留原件。
 
 ## 实施回填
@@ -138,7 +138,7 @@ accepted（2026-11-02 由 0019 / 0051 合并；口径与容限结论未变，跟
 
 ## 参考
 
-- 评审：`R-036`、`X-01`（评审快照已于 2026-11-06 退役，见 [ADR-0033](0033-review-snapshot-retirement.md#top)）
+- 评审：**验收口径与世界高度**、**恒速物理表述挑战**（评审快照已于 2026-11-06 退役，见 [ADR-0033](0033-review-snapshot-retirement.md#top)）
 - 契约：[#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、
   [#namespace](0020-package-boundaries-and-runtime-topology.md#namespace)、[#execution-port](0020-package-boundaries-and-runtime-topology.md#execution-port)、
   [#messages](0020-package-boundaries-and-runtime-topology.md#messages)

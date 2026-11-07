@@ -182,10 +182,10 @@ def main():
     path = os.path.join(out_dir, 'safety.json')
     checklib.write_json(path, result)
 
-    print('\n[C2] slowdown_seen=%s stop_seen=%s  v_cruise=%.2f v_cmd_min=%.2f'
+    print('\n[阈值顺序] slowdown_seen=%s stop_seen=%s  v_cruise=%.2f v_cmd_min=%.2f'
           % (result.get('slowdown_seen'), result.get('stop_seen'),
              result.get('v_cruise_max', 0.0), result.get('v_cmd_min', 0.0)))
-    print('[C6] min_dist_to_pole=%.2f m  tail_move=%.2f m' %
+    print('[真实逃逸] min_dist_to_pole=%.2f m  tail_move=%.2f m' %
           (result.get('min_dist_to_pole_m', 0.0), result.get('tail_move_m', 0.0)))
     print('\n%s → %s' % ('PASS' if result['pass'] else 'FAIL', path))
     return 0 if result['pass'] else 1

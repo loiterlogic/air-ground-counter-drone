@@ -126,7 +126,7 @@ def main():
     }
     ok = summary['fail'] == 0
 
-    print('toolchain_root_check —— S-11 工具链根显式注入核查（只读）')
+    print('toolchain_root_check —— 工具链根显式注入核查（只读）')
     print('  agc_root = %s' % args.agc_root)
     for c in checks:
         line = '[%s] %s' % (c['status'], c['check'])

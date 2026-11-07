@@ -12,7 +12,7 @@
  3. **0 样本不得当 0 误差**：采集器在无配对样本时退出码 3，产物标 `NO_SAMPLES`。
  4. **误差口径必须是生效参考**：主指标用 `tracking_ref`（生效参考），标称 8 字只作连续性对照；
  否则量出来的是 standoff 偏置而不是跟踪误差（实测 mean≈8 m / p95≈18 m 就是证据）。
- 5. **不改控制链/ABI**：w6 的修复只动 prewarm 命令，不改任务参数、终态、、安全阈值。
+ 5. **不改控制链/ABI**：本修复只动 prewarm 命令，不改任务参数、终态语义、安全阈值。
 """
 
 import ast
@@ -22,7 +22,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[2]
-W6 = REPO / 'src' / 'agc_task' / 'launch' / 'main.launch.py'
+LAUNCH_MAIN = REPO / 'src' / 'agc_task' / 'launch' / 'main.launch.py'
 PROBE = REPO / 'scripts' / 'tracking' / 'track_err_probe.py'
 
 FROZEN_9 = {
@@ -42,7 +42,7 @@ def _text(p):
 
 def _prewarm_cmd():
     """解析出 prewarm ExecuteProcess 的 cmd 源码片段（解析失败即让测试显式失败）。"""
-    m = re.search(r'prewarm = ExecuteProcess\(\s*cmd=\[(.*?)\]', _text(W6), re.S)
+    m = re.search(r'prewarm = ExecuteProcess\(\s*cmd=\[(.*?)\]', _text(LAUNCH_MAIN), re.S)
     assert m, '未找到 prewarm ExecuteProcess（解析失效会让本测试永远通过）'
     return m.group(1)
 
@@ -50,8 +50,8 @@ def _prewarm_cmd():
 def test_prewarm_has_hard_timeout():
     """prewarm 必须被 `timeout` 包住 —— 单事件依赖的唯一解药。"""
     assert _prewarm_cmd().strip().startswith("'timeout'"), (
-        'prewarm 未加 timeout —— OnProcessExit 可能永不触发（round-5 T-B 失败形态）')
-    m2 = re.search(r'prewarm_timeout_s\s*=\s*(\d+)', _text(W6))
+        'prewarm 未加 timeout —— OnProcessExit 可能永不触发（已踩过的失败形态）')
+    m2 = re.search(r'prewarm_timeout_s\s*=\s*(\d+)', _text(LAUNCH_MAIN))
     assert m2, '缺少 prewarm_timeout_s 常量'
     assert 0 < int(m2.group(1)) < 180, 'prewarm 超时必须 < run_demo 就绪门 180 s'
 
@@ -62,11 +62,11 @@ def test_prewarm_timeout_has_kill_after():
     cmd = _prewarm_cmd()
     assert "'-k'" in cmd, (
         'prewarm 的 timeout 缺少 -k —— 子进程忽略 SIGTERM 时 timeout 自身永不返回，'
-        'OnProcessExit 依旧不触发（round-5 T-B 正是 SIGTERM 10 s 不退）')
-    m = re.search(r'prewarm_kill_after_s\s*=\s*(\d+)', _text(W6))
+        'OnProcessExit 依旧不触发（实测形态：SIGTERM 10 s 不退）')
+    m = re.search(r'prewarm_kill_after_s\s*=\s*(\d+)', _text(LAUNCH_MAIN))
     assert m, '缺少 prewarm_kill_after_s 常量'
     kill_after = int(m.group(1))
-    timeout_s = int(re.search(r'prewarm_timeout_s\s*=\s*(\d+)', _text(W6)).group(1))
+    timeout_s = int(re.search(r'prewarm_timeout_s\s*=\s*(\d+)', _text(LAUNCH_MAIN)).group(1))
     assert 0 < kill_after, 'kill-after 必须为正'
     # 真实上界 = timeout + kill_after，必须仍落在 run_demo 的 180 s 就绪门内
     assert timeout_s + kill_after < 180, (
@@ -76,22 +76,22 @@ def test_prewarm_timeout_has_kill_after():
 
 def test_prewarm_event_handler_still_present():
     """修复后仍必须保留 OnProcessExit → lifecycle_manager 的触发关系。"""
-    text = _text(W6)
+    text = _text(LAUNCH_MAIN)
     assert 'OnProcessExit(' in text
     assert 'target_action=prewarm' in text
     assert 'on_exit=[lifecycle_manager]' in text
 
 
 def test_w6_still_has_lifecycle_manager_with_bond_timeout():
-    """R-034/ADR-0019：bond_timeout 不得被置 0（回归保护）。"""
-    text = _text(W6)
+    """ADR-0019：bond_timeout 不得被置 0（回归保护）。"""
+    text = _text(LAUNCH_MAIN)
     assert "'bond_timeout': 5.0" in text
     assert re.search(r"bond_timeout'?\s*:\s*0(\.0+)?\b", text) is None
 
 
 def test_w6_fix_does_not_touch_task_params():
     """修复只动 prewarm 命令；不得改任务/终态/安全参数（派工单红线）。"""
-    text = _text(W6)
+    text = _text(LAUNCH_MAIN)
     assert 'declare_parameter' not in text, 'w6 是 launch，不该有 declare_parameter'
     # 控制链节点列表不变
     assert ("('px4_adapter', 'takeoff_controller', 'trajectory_tracker', 'standoff_follower')"
@@ -129,7 +129,7 @@ def test_probe_handles_signals():
 
 
 def test_probe_writes_final_before_destroying_node():
-    """顺序关键：**先落最终结果，再 destroy_node**（round-5 反了 → 0 输出）。"""
+    """顺序关键：**先落最终结果，再 destroy_node**（反了会 → 0 输出）。"""
     tail = _text(PROBE).split('# 收尾', 1)
     assert len(tail) == 2, '缺少收尾段'
     seg = tail[1]
@@ -148,7 +148,7 @@ def test_probe_exit_code_3_on_no_samples():
 def test_probe_marks_metric_as_not_a_summary_field():
     text = _text(PROBE)
     assert 'not_a_summary_field' in text
-    assert '不是契约 C1' in text
+    assert '不是契约' in text
 
 
 def test_probe_uses_atomic_write():
@@ -273,6 +273,6 @@ def test_parsers_are_effective():
         '检测逻辑对"timeout 无 -k"的片段应判失败（那正是永不返回的形态）')
 
 
-@pytest.mark.parametrize('path', [W6, PROBE])
+@pytest.mark.parametrize('path', [LAUNCH_MAIN, PROBE])
 def test_files_compile(path):
     compile(_text(path), str(path), 'exec')

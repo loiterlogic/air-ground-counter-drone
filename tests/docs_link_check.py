@@ -107,6 +107,9 @@ EXCLUDED_PARTS = {
     "log",
     "reference",
     "experiments",
+    # refs/：外部参照项目（源码 + 论文 + 解读），整目录不入库且**禁止被本仓引用**。
+    # 它是只进不出的输入区：读它、把结论写进 ADR，但不把它的路径写进 ADR。
+    "refs",
     ".git",
     "__pycache__",
     ".pytest_cache",

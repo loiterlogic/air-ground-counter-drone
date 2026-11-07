@@ -618,9 +618,9 @@ def _air_and_task_actions(ctx, common, air_common, intruder_px4):
     # R6 演示叠加层（viz:=true）**不在此处注册** —— 唯一注册点在
     # `generate_launch_description` 末尾的顶层 `OpaqueFunction(lambda c: _viz_actions(c, sim_share))`。
     # 两处同时注册会使 `backend:=full` 把 static_tf / viz_markers / rviz2 **各起两份**
-    # （lightweight 因提前 return 只命中顶层一处，故该缺陷只在 full 链显形； 实测
+    # （lightweight 因提前 return 只命中顶层一处，故该缺陷只在 full 链显形；实测
     # full+viz 三节点各 2 份、lightweight+viz 各 1 份）。回归见
-    # `scripts/tests/test_w6_viz_registration.py`。
+    # `scripts/tests/test_viz_registration.py`。
 
     return actions
 
@@ -661,7 +661,7 @@ def generate_launch_description():
     ld = LaunchDescription()
     ld.add_action(DeclareLaunchArgument(
         'backend', default_value='lightweight',
-        description='W6 后端：lightweight（轻量栈，无 PX4）| full（双 PX4 整链）'))
+        description='后端：lightweight（轻量栈，无 PX4）| full（双 PX4 整链）'))
     ld.add_action(DeclareLaunchArgument(
         'scene', default_value='s01_static_none_nominal_track',
         description='场景 id（见 config/scenarios.yaml）'))
@@ -676,12 +676,12 @@ def generate_launch_description():
                     '显式 minimal | yard | open_field 则强制该地图'))
     ld.add_action(DeclareLaunchArgument(
         'run_id_override', default_value='',
-        description='ADR-0024：run_logger run_id 覆盖（W7-c worker 唯一性；空=默认生成）'))
+        description='ADR-0024：run_logger run_id 覆盖（多 worker 唯一性；空=默认生成）'))
     # （R5/R6）：命令源单一选择（透传 ground_bringup）——
     # rl | baseline（Navfn + 自研 LQR 离线对照基线）| train（外部适配层作命令源，仅 lightweight）。
     ld.add_action(DeclareLaunchArgument(
         'command_source', default_value='rl',
-        description='命令源（互斥）：rl（RL 主控）| baseline（离线对照基线）| train（W7 外部适配层）'))
+        description='命令源（互斥）：rl（RL 主控）| baseline（离线对照基线）| train（外部适配层）'))
     # （R3）：训练视图——按 seed 随机化出生位；缺省空（不改既有 行为）。
     # 2026-11-04 清退：`spawn_randomize`（训练视图）已删除。
     # 2026-11-04 清退：`shield` 主链开关已删除——**安全层恒定启用**。
@@ -747,7 +747,7 @@ def generate_launch_description():
         description='ADR-0027：intruder PX4 启动延时（s；默认 35 s，与 own 错峰 10 s）'))
     ld.add_action(DeclareLaunchArgument(
         'px4_run_root', default_value='',
-        description='W7-c：PX4 每实例可写运行根（空=既有共享 build 行为）'))
+        description='ADR-0024：PX4 每实例可写运行根（空=既有共享 build 行为）'))
     ld.add_action(DeclareLaunchArgument(
         'agc_root', default_value='/home/chen/AGC',
         description='固定项目根（AGENTS.md；colcon 根即项目根）；工具链在其下 toolchain/'))
@@ -756,7 +756,7 @@ def generate_launch_description():
     # 目标位置始终由真值给出，ADR-0009 (a2)）。summary.json 的对应键保留恒写固定值。
     ld.add_action(DeclareLaunchArgument(
         'px4_sim_model', default_value='gz_agc_x500',
-        description='P1-4 / 2026-11-05：己方 PX4 机型。**默认 gz_agc_x500** = 本仓 `agc_x500`'
+        description='2026-11-05：己方 PX4 机型。**默认 gz_agc_x500** = 本仓 `agc_x500`'
                     '（PX4 官方 x500 + 纯视觉青色高亮球；无 collision，物理/接触/安全层不受影响）'
                     '——因默认 gz_x500 在 50 m 正俯视下仅约 5 px，GUI 里看不见我方机。'
                     '其余可选：gz_x500（PX4 官方原厂，无高亮）；gz_x500_mono_cam（机载前视相机）；'

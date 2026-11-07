@@ -45,15 +45,15 @@
 | [0018](./0018-acceptance-and-coverage-matrix.md) | 验收判定与整链覆盖矩阵 | accepted（2026-11-02 由 ADR-0040 / 0041 / 0046 / 0057 合并；结论未变） | `classify_acceptance_layers(result)` 输出三层布尔： |
 | [0019](./0019-lifecycle-and-startup-robustness.md) | 生命周期可重建与启动健壮性 | accepted（2026-11-02 由 ADR-0049 / ADR-0072 / ADR-0080 合并；结论未变） | 基类提供 `declare_param_idempotent<T>(name, default)`：`has_parameter` 先判，已声明则直接读取。被管空中节点（`px4_adapter / takeoff_controller / trajectory_tracker / standof… |
 | [0020](./0020-package-boundaries-and-runtime-topology.md) | 包边界、语言选型与运行拓扑 | accepted（2026-11-02 由 ADR-0011 / 0059 / 0061 合并；结论未变） | **C++（`ament_cmake`）**：性能 / 实时敏感域—— 空中链路（高频 uORB）、感知融合（高频点云 / 图像）、 地面安全层（硬约束的实时逃逸能力）。理由：低延迟、可控内存、无 GIL、可给实时保证。 **Python（`ament_python`）**：RL 与工具脚本——… |
-| [0021](./0021-w8-gui-headless-equivalence.md) | w8-gui-headless-equivalence | accepted（2026-11-02 由 ADR-0069 / 0096 / 0097 / 0098 / 0099 合并；结论未变—— 等价门仍 `not_evaluable_as_specified`、平台冻结仍 `conditional`、headless 规模统计仍未授权；模式等价设计一节按原文保留 `deferred` 状态说明） | 最小平台产出"语义正确、可复现、可被训练的环境 + 一致的 train / eval 协议"，验收锚 = 同 seed 可复现 / 指标齐全。**RL 算法、网络、奖励、训练步数、论文问题不在入口出口内**（属：先定可证伪命题，并先用规则策略证明任务非平凡且可达）。四件套：obs / action… |
-| [0022](./0022-w7b-research-propositions-and-decision-rule.md) | w7b-research-propositions-and-decision-rule | accepted（2026-11-02 由 ADR-0070 / ADR-0074 / ADR-0084 / ADR-0086 / ADR-0088 合并；结论未变。其中「固定观测窗 + `mean ≥ MDE`」的判定口径已被后续 active-window primary 与三态 CI 规则取代，旧口径作废） | **P1 协同收益（主线）** · **协同程度 α** = {空地协同策略, 非协同（地面单体 / 空中固定航迹）} · 同传感权限 / 速度约束 / 安全层 / 终态 **P2 RL 职责分层（副线）** · **职责分层 β** = {臂 A: c2（RL 直接出 `cmd_vel`）, 臂… |
-| [0023](./0023-w7b-adjudication-record-and-exit.md) | w7b-adjudication-record-and-exit | accepted（2026-11-02 由 0071 / 0073 / 0082 / 0083 / 0085 / 0087 / 0090 / 0093 合并；P1 = `inconclusive`、P2 = `falsified` / 保留 c2、v7 未注册、已闭合，结论未变） | **E1** · raw / effective **同拍**归因 · 同拍配对 + 干预标注；shield=true 时 `intervened=276/439`、干预时长 13.09 s，shield=false 时 `intervened=0` **E2** · **最小动态火控** · 完… |
-| [0024](./0024-w7c-multi-worker-isolation.md) | w7c-multi-worker-isolation | accepted（2026-11-02 由 ADR-0077 / 0095 合并；隔离机制与准入指标已落地，但 A/B 门因 1 次 `INFRA_FAILURE` 未通过，最终结论是**显式接受单 worker**—— 结论未变，见 (f) 末条与「结果」） | 约束 4 封死了"按 domain 隔离"的常规做法；独立 netns 下每 worker 拥有独立 loopback，于是所有 worker 可**统一使用 `ROS_DOMAIN_ID=0`**（规避非 0 域缺陷）、DDS 发现（`LOCALHOST`）天然不出 netns、PX4 MAVL… |
+| [0021](./0021-gui-headless-equivalence.md) | GUI/headless 等价、确定性探针与平台冻结 | accepted（2026-11-02 由 ADR-0069 / 0096 / 0097 / 0098 / 0099 合并；结论未变—— 等价门仍 `not_evaluable_as_specified`、平台冻结仍 `conditional`、headless 规模统计仍未授权；模式等价设计一节按原文保留 `deferred` 状态说明） | 最小平台产出"语义正确、可复现、可被训练的环境 + 一致的 train / eval 协议"，验收锚 = 同 seed 可复现 / 指标齐全。**RL 算法、网络、奖励、训练步数、论文问题不在入口出口内**（属 [ADR-0022](0022-research-propositions-and-d… |
+| [0022](./0022-research-propositions-and-decision-rule.md) | 科研命题、度量口径与判定规则 | accepted（2026-11-02 由 ADR-0070 / ADR-0074 / ADR-0084 / ADR-0086 / ADR-0088 合并；结论未变。其中「固定观测窗 + `mean ≥ MDE`」的判定口径已被后续 active-window primary 与三态 CI 规则取代，旧口径作废） | **P1 协同收益（主线）** · **协同程度 α** = {空地协同策略, 非协同（地面单体 / 空中固定航迹）} · 同传感权限 / 速度约束 / 安全层 / 终态 **P2 RL 职责分层（副线）** · **职责分层 β** = {臂 A: c2（RL 直接出 `cmd_vel`）, 臂… |
+| [0023](./0023-adjudication-record-and-exit.md) | 裁定记录与出口闭合 | accepted（2026-11-02 由 0071 / 0073 / 0082 / 0083 / 0085 / 0087 / 0090 / 0093 合并；P1 = `inconclusive`、P2 = `falsified` / 保留 c2、v7 未注册、已闭合，结论未变） | **E1** · raw / effective **同拍**归因 · 同拍配对 + 干预标注；shield=true 时 `intervened=276/439`、干预时长 13.09 s，shield=false 时 `intervened=0` **E2** · **最小动态火控** · 完… |
+| [0024](./0024-multi-worker-isolation.md) | 多 worker 隔离与扩容准入 | accepted（2026-11-02 由 ADR-0077 / 0095 合并；隔离机制与准入指标已落地，但 A/B 门因 1 次 `INFRA_FAILURE` 未通过，最终结论是**显式接受单 worker**—— 结论未变，见 (f) 末条与「结果」） | 约束 4 封死了"按 domain 隔离"的常规做法；独立 netns 下每 worker 拥有独立 loopback，于是所有 worker 可**统一使用 `ROS_DOMAIN_ID=0`**（规避非 0 域缺陷）、DDS 发现（`LOCALHOST`）天然不出 netns、PX4 MAVL… |
 | [0025](./0025-publishing-boundary-and-retirement.md) | 发布边界与退役清理 | accepted（2026-11-02 由 ADR-0081 / 0105 / 0107 合并；结论未变） | `.gitignore` 增精确规则： |
 | [0026](./0026-leader-worker-collaboration-and-batch-authorization.md) | 协作机制：双模型分工与批次授权 | accepted（2026-11-02 由 ADR-0102 / 0104 合并；结论未变） | Leader · 不固定（会话内可切） · 讨论、诊断、裁定、派工、独立验收 · `worker` 创建，`send_message` 复用 Worker · 钉死：workbuddy / `deepseek-v4.1-flash` / `max` · 实施、构建、实验、如实回报 · `send_… |
 | [0027](./0027-uxrce-startup-reproducibility.md) | uXRCE 启动可复现性：预热、错峰与种子协议 | accepted（2026-11-02 由 ADR-0075 / 0094 / 0100 / 0101 合并；结论未变） | 本篇只覆盖**启动可复现性**：进程清场、PX4 启动错峰、可选 warmup、空中就绪门、seed 派生与注入。 它**不**改变估计 odom 契约、**不**替代正式测量门、**不**宣称整链确定性。per-instance seed 派生 只适用于full 组合；standalone `a… |
 | [0028](./0028-dds-discovery-range-and-transport.md) | DDS 发现范围与传输：按 `lo` 能力探测，禁止写死 `LOCALHOST` | accepted（2026-11-04） | DDS 发现范围与传输的**唯一决定点**是 `scripts/demo/dds_transport.py`。 禁止在任何其它位置写死 `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`。 |
-| [0029](./0029-continuous-validation-layers.md) | 持续验证：三层回归入口与"负例加严"判定 | accepted（2026-11-04） | `tests/run_smoke.py` · 离线冒烟 7 组 · 每次提交 · 否 · ~40 s `tests/run_full_regression.py` · `full` 整链 3 场景 · 定时 · 是 · ~240 s `tests/run_n3_matrix.py` · 回归矩阵… |
+| [0029](./0029-continuous-validation-layers.md) | 持续验证：三层回归入口与"负例加严"判定 | accepted（2026-11-04） | `tests/run_smoke.py` · 离线冒烟 7 组 · 每次提交 · 否 · ~40 s `tests/run_full_regression.py` · `full` 整链 3 场景 · 定时 · 是 · ~240 s `tests/run_regression_matrix.py`… |
 | [0030](./0030-nadir-camera-capability.md) | 机载正下视（nadir）相机能力 | accepted（2026-11-04） | 新增机型取值 `gz_agc_x500_nadir`（复用**已有** launch 参数 `px4_sim_model`，**不新增 launch 参数**）。 默认 `gz_x500` 时：不加相机、不注入任何新环境变量、rcS 走原路径 —— 与改动前完全一致。 |
 | [0031](./0031-target-motion-and-speed-regime.md) | 目标无人机运动规则与三主体速度体制 | accepted（2026-11-04） | 本篇同时结档两条 plan：**目标无人机运动规则** 与 **速度调研与运行节奏优化** （两者按 [任务计划规则](../plan/README.md#plan-index) 结档即删，结论只存在于本篇）。 它们共用 `intruder_driver` 与 `scenarios.yaml` 的… |
 | [0032](./0032-pending-directions.md) | 待立项的后续方向（占位登记） | proposed（2026-11-06；未立项、无实施） | 以下 4 项**均未立项**，不得据本篇推定已实现、已批准或已有排期： |
@@ -149,26 +149,26 @@
 | 0011 | [0020](./0020-package-boundaries-and-runtime-topology.md) |
 | 0059 | [0020](./0020-package-boundaries-and-runtime-topology.md) |
 | 0061 | [0020](./0020-package-boundaries-and-runtime-topology.md) |
-| 0069 | [0021](./0021-w8-gui-headless-equivalence.md) |
-| 0096 | [0021](./0021-w8-gui-headless-equivalence.md) |
-| 0097 | [0021](./0021-w8-gui-headless-equivalence.md) |
-| 0098 | [0021](./0021-w8-gui-headless-equivalence.md) |
-| 0099 | [0021](./0021-w8-gui-headless-equivalence.md) |
-| 0070 | [0022](./0022-w7b-research-propositions-and-decision-rule.md) |
-| 0074 | [0022](./0022-w7b-research-propositions-and-decision-rule.md) |
-| 0084 | [0022](./0022-w7b-research-propositions-and-decision-rule.md) |
-| 0086 | [0022](./0022-w7b-research-propositions-and-decision-rule.md) |
-| 0088 | [0022](./0022-w7b-research-propositions-and-decision-rule.md) |
-| 0071 | [0023](./0023-w7b-adjudication-record-and-exit.md) |
-| 0073 | [0023](./0023-w7b-adjudication-record-and-exit.md) |
-| 0082 | [0023](./0023-w7b-adjudication-record-and-exit.md) |
-| 0083 | [0023](./0023-w7b-adjudication-record-and-exit.md) |
-| 0085 | [0023](./0023-w7b-adjudication-record-and-exit.md) |
-| 0087 | [0023](./0023-w7b-adjudication-record-and-exit.md) |
-| 0090 | [0023](./0023-w7b-adjudication-record-and-exit.md) |
-| 0093 | [0023](./0023-w7b-adjudication-record-and-exit.md) |
-| 0077 | [0024](./0024-w7c-multi-worker-isolation.md) |
-| 0095 | [0024](./0024-w7c-multi-worker-isolation.md) |
+| 0069 | [0021](./0021-gui-headless-equivalence.md) |
+| 0096 | [0021](./0021-gui-headless-equivalence.md) |
+| 0097 | [0021](./0021-gui-headless-equivalence.md) |
+| 0098 | [0021](./0021-gui-headless-equivalence.md) |
+| 0099 | [0021](./0021-gui-headless-equivalence.md) |
+| 0070 | [0022](./0022-research-propositions-and-decision-rule.md) |
+| 0074 | [0022](./0022-research-propositions-and-decision-rule.md) |
+| 0084 | [0022](./0022-research-propositions-and-decision-rule.md) |
+| 0086 | [0022](./0022-research-propositions-and-decision-rule.md) |
+| 0088 | [0022](./0022-research-propositions-and-decision-rule.md) |
+| 0071 | [0023](./0023-adjudication-record-and-exit.md) |
+| 0073 | [0023](./0023-adjudication-record-and-exit.md) |
+| 0082 | [0023](./0023-adjudication-record-and-exit.md) |
+| 0083 | [0023](./0023-adjudication-record-and-exit.md) |
+| 0085 | [0023](./0023-adjudication-record-and-exit.md) |
+| 0087 | [0023](./0023-adjudication-record-and-exit.md) |
+| 0090 | [0023](./0023-adjudication-record-and-exit.md) |
+| 0093 | [0023](./0023-adjudication-record-and-exit.md) |
+| 0077 | [0024](./0024-multi-worker-isolation.md) |
+| 0095 | [0024](./0024-multi-worker-isolation.md) |
 | 0081 | [0025](./0025-publishing-boundary-and-retirement.md) |
 | 0105 | [0025](./0025-publishing-boundary-and-retirement.md) |
 | 0107 | [0025](./0025-publishing-boundary-and-retirement.md) |

@@ -17,7 +17,7 @@ accepted（2026-11-06，来源：用户裁定——"docs/reviews删掉，写在p
 | `agc-review-2026-10-14/10-风险.md` | 373 | 41 项风险（`R-0NN` 编号） |
 | `agc-review-2026-10-14/20-结构.md` | 228 | 12 项结构意见（`S-NN` 编号） |
 | `agc-review-2026-10-14/30-未来.md` | 110 | 17 项条件化未来意见（`F-NN` 编号） |
-| `agc-review-2026-10-25/W8测量规格裁定.md` | 142 | W8-E1 测量规格重算裁定 |
+| `agc-review-2026-10-25/W8测量规格裁定.md` | 142 | 测量规格重算裁定 |
 
 这些内容**已被下游吸收**：41 项风险里有结论的都进了对应 ADR（`ADR-0008` / `0009` / `0010` /
 `0013` / `0016` 等的「参考」节引用 `R-0NN`），12 项结构意见进了 `ADR-0002` / `0003` / `0006`，
@@ -45,11 +45,11 @@ accepted（2026-11-06，来源：用户裁定——"docs/reviews删掉，写在p
 
 | 位置 | 改动 |
 |---|---|
-| 5 篇 ADR 的「参考」节（0002 / 0006 / 0008 / 0009 / 0016） | 删掉指向 `../reviews/...` 的链接，**保留评审项编号文本**（`R-0NN` / `S-NN` / `F-NN` 是 ADR 正文的历史记录，按 ADR-0002「不改写历史结论」保留），并在该行补一句"评审快照已于 2026-11-06 退役，见 [ADR-0033](0033-review-snapshot-retirement.md#top)" |
+| 5 篇 ADR 的「参考」节（0002 / 0006 / 0008 / 0009 / 0016） | 删掉指向 `../reviews/...` 的链接，并把编号换成**该评审项的标题**（如「运行身份与复现」「决策有效性与引用」），保留"当时依据哪条评审意见"这一历史事实，同时让读者不查表即可读懂；再补一句"评审快照已于 2026-11-06 退役，见 [ADR-0033](0033-review-snapshot-retirement.md#top)" |
 | `docs/conventions/目录与命名规范.md` | 删掉产物分类表的「评审快照」行与目录树里的 `reviews/`，在退役说明里指向本篇 |
 | `docs/conventions/引用与注释纪律.md` | 历史证据清单去掉 `docs/reviews/`，补一句退役事实 |
 | `docs/conventions/路线分支治理.md` | 5.3 保留项表格里 `docs/reviews/` 从"仍提及"清单移除 |
-| `scripts/research/w7b_p1_adjudicate.py`、`w7b_p2_adjudicate.py` | `[F-13](../../docs/reviews/...md#f-13)` 改为纯文本 `F-13`（**只改链接，不改判定逻辑与文本含义**） |
+| `scripts/research/w7b_p1_adjudicate.py`、`w7b_p2_adjudicate.py` | 评审链接 `[...](../../docs/reviews/...md#f-13)` 改为纯文本 `统计冻结`（**只改链接与表述，不改判定逻辑与文本含义**） |
 | `tests/docs_link_check.py` | `ACTIVE_GLOBS` 去掉 `docs/reviews/**/*.md`，`HISTORICAL_PREFIXES` 去掉 `docs/reviews/` |
 | `scripts/tests/test_reference_discipline.py` | `EXCLUDED_MARKERS` 去掉 `/reviews/`，`FORBIDDEN` 去掉 `docs/reviews/` 规则 |
 
@@ -63,12 +63,16 @@ accepted（2026-11-06，来源：用户裁定——"docs/reviews删掉，写在p
 - 该闸门进 `tests/run_smoke.py` 的 `offline` 组（已有），删除后**必须仍然绿**——
   这是"删目录不产生断链"的机器判据。
 
-### (d) 保留：ADR「参考」节里的评审项编号文本
+### (d) ADR「参考」节的评审项：**编号已删，改为标题**
 
-`R-029`、`S-10`、`F-13` 这类编号**留在 ADR 正文里**，理由：
-它们是"当时依据哪条评审意见做的决定"这一历史事实，删除即伪造记录
-（[ADR-0002](0002-docs-source-of-truth-and-reference-discipline.md#top)）。
-但**不得**再出现在代码/配置里（[引用与注释纪律](../conventions/引用与注释纪律.md#rule) 的硬规则不变）。
+**2026-11-07 修订**：原口径是"编号留在 ADR 正文里"（理由是"删除即伪造记录"）。该口径已废止——
+编号本身**不可解析**：工作区无任何释义表，评审快照已删，读者看到一串「R-xx」无从知道它是什么。
+
+现行做法：**删编号、保留标题**（如「运行身份与复现」）。这既保住"当时依据哪条评审意见"这一历史事实，
+又不需要任何查表。标题从已退役快照取回（`git show d793126:docs/reviews/...`），不是新造。
+
+**编号全仓零容忍**：`R-` / `S-` / `F-` / `X-` 编号在活跃区一律不得出现，见
+[引用与注释纪律](../conventions/引用与注释纪律.md#rule)。
 
 ## 不做什么（边界）
 
@@ -98,6 +102,6 @@ accepted（2026-11-06，来源：用户裁定——"docs/reviews删掉，写在p
 
 - 相关决策：[ADR-0002](0002-docs-source-of-truth-and-reference-discipline.md#top)（真源分层与引用纪律）、
   [ADR-0025](0025-publishing-boundary-and-retirement.md#top)（发布边界与退役清理）、
-  [ADR-0032](0032-pending-directions.md#top)（未立项方向登记，吸收了评审的 F-01…F-17）
+  [ADR-0032](0032-pending-directions.md#top)（未立项方向登记，吸收了评审的 17 项未来意见）
 - 台账：[路线分支治理 5.2.3](../conventions/路线分支治理.md#current)
 - 产物分类：[目录与命名规范](../conventions/目录与命名规范.md#10-产物分类与生命周期)

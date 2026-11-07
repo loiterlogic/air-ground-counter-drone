@@ -178,7 +178,7 @@ def test_top_level_readme_table_exactly_matches():
 # --------------------------------------------------------------------------------------
 
 def test_research_dir_exists_with_readme():
-    assert RESEARCH.is_dir(), 'scripts/research/ 不存在（P0-4 要建这个目录）'
+    assert RESEARCH.is_dir(), 'scripts/research/ 不存在（脚本整理要建这个目录）'
     assert RESEARCH_README.is_file(), 'scripts/research/README.md 不存在'
 
 
@@ -222,7 +222,7 @@ def test_research_readme_lists_every_script_with_purpose():
 
 def test_archive_dir_has_readme():
     assert ARCHIVE.is_dir(), 'scripts/archive/ 不存在'
-    assert ARCHIVE_README.is_file(), 'scripts/archive/README.md 不存在（P0-4 要建导航）'
+    assert ARCHIVE_README.is_file(), 'scripts/archive/README.md 不存在（脚本整理要建导航）'
 
 
 def test_archive_readme_documents_every_script():
@@ -236,14 +236,14 @@ def test_archive_readme_documents_every_script():
 
 
 def test_archive_migrated_entries_are_documented_and_present():
-    """P0-4 迁入 archive 的 3 个脚本：既在目录里，也在迁移表里，且没被改名。"""
+    """迁入 archive 的 3 个脚本：既在目录里，也在迁移表里，且没被改名。"""
     actual = _scripts_in(ARCHIVE)
     documented = _documented_names(ARCHIVE_README)
     missing_from_disk = ARCHIVE_MIGRATED - actual
     missing_from_index = ARCHIVE_MIGRATED - documented
-    assert not missing_from_disk, 'P0-4 迁入 archive 的脚本不见了：\n%s' % _fmt(missing_from_disk)
+    assert not missing_from_disk, '迁入 archive 的脚本不见了：\n%s' % _fmt(missing_from_disk)
     assert not missing_from_index, (
-        'archive/README.md 缺 P0-4 迁移登记：\n%s' % _fmt(missing_from_index))
+        'archive/README.md 缺迁移登记：\n%s' % _fmt(missing_from_index))
 
 
 def test_no_script_was_deleted_by_curation():
@@ -257,7 +257,7 @@ def test_no_script_was_deleted_by_curation():
              + len([p for p in ARCHIVE.iterdir()
                     if p.is_file() and p.suffix in EXEC_SUFFIXES]))
     assert total >= baseline, (
-        '执行脚本总数 %d < 迁移前基线 %d —— 脚本被删了？P0-4 禁止删除任何脚本'
+        '执行脚本总数 %d < 迁移前基线 %d —— 脚本被删了？脚本整理禁止删除任何脚本'
         % (total, baseline))
 
 

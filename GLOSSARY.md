@@ -4,7 +4,7 @@
 
 ## 语言
 
-> **阅读提示**：带「研究期术语」标注的条目属于/研究阶段的度量口径，**当前收尾阶段非必读**，只在追溯研究结论时查；未标注的条目仍是现行项目的共同语言。
+> **阅读提示**：带「研究期术语」标注的条目属于研究期（[ADR-0021](docs/adr/0021-gui-headless-equivalence.md#top) 等）的度量口径，**当前收尾阶段非必读**，只在追溯研究结论时查；未标注的条目仍是现行项目的共同语言。
 > 术语只定义"是什么"；约束类信息（坐标系、唯一执行口、硬约束、终态语义）**只在** [契约真源](docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints)，本表不复述。
 
 **AGC**:
@@ -32,17 +32,17 @@ _Avoid_: 执行入口（与"Runbook"混淆）
 _Avoid_: 保护层、shield（指标口径另见契约真源）、避障（会被误读为局部避障）
 
 **职责分层（Role Stratification）**:
-P2 的架构自变量：高层只出**决策目标**（拦截点 / 火控窗口 / 局部偏移），由成熟低层控制器执行；与"训练 RL"不同——P2 v1 的对照臂以**规则高层**承载（[ADR-0023](docs/adr/0023-w7b-adjudication-record-and-exit.md#top)）。
+P2 的架构自变量：高层只出**决策目标**（拦截点 / 火控窗口 / 局部偏移），由成熟低层控制器执行；与"训练 RL"不同——P2 v1 的对照臂以**规则高层**承载（[ADR-0023](docs/adr/0023-adjudication-record-and-exit.md#top)）。
 _研究期术语，当前阶段非必读。_
 _Avoid_: 高层 RL（未经训练时）、端到端（含义相反）
 
 **有效火控机会（Fire-Control Opportunity, FCO）**:
-目标**同时**满足「可见（感知新鲜）+ 在网发射可及集内」的拍；其占比是 P1/P2 的主 DV。P1 v1 用 `window_fixed_v1`（自首个 active 拍起 60 s，**含终态后停泊**）；P2 v3 用 **active-window FCO**（仅 `GROUND_APPROACH → 终态`，[ADR-0023](docs/adr/0023-w7b-adjudication-record-and-exit.md#top)）。
+目标**同时**满足「可见（感知新鲜）+ 在网发射可及集内」的拍；其占比是 P1/P2 的主 DV。P1 v1 用 `window_fixed_v1`（自首个 active 拍起 60 s，**含终态后停泊**）；P2 v3 用 **active-window FCO**（仅 `GROUND_APPROACH → 终态`，[ADR-0023](docs/adr/0023-adjudication-record-and-exit.md#top)）。
 _研究期术语，当前阶段非必读。_
 _Avoid_: 开火率、命中率（不同量）
 
 **oracle 目标臂（Oracle-Goal Arm）**:
-任务目标直接取**目标真值坐标**（而非感知输出）的对照臂；须显式标注，不能与感知驱动臂混读为同一自变量（[ADR-0023](docs/adr/0023-w7b-adjudication-record-and-exit.md#top)）。
+任务目标直接取**目标真值坐标**（而非感知输出）的对照臂；须显式标注，不能与感知驱动臂混读为同一自变量（[ADR-0023](docs/adr/0023-adjudication-record-and-exit.md#top)）。
 _研究期术语，当前阶段非必读。_
 _Avoid_: 真值臂（未标注时）、感知臂（含义相反）
 
@@ -79,7 +79,7 @@ _Avoid_: 主动目标、自主目标
 _Avoid_: 武器、装备
 
 **捕获网面（Capture Net）**:
-车载**网发射器 / 发射的网**的几何载体（原为固定直径 2 m 圆面；[ADR-0011](docs/adr/0011-interception-and-fire-control.md#top) 起改为**发射式网**）；车体模型层只提供几何与位姿，捕获裁决属。
+车载**网发射器 / 发射的网**的几何载体（原为固定直径 2 m 圆面；[ADR-0011](docs/adr/0011-interception-and-fire-control.md#top) 起改为**发射式网**）；车体模型层只提供几何与位姿，捕获裁决属 [ADR-0011](docs/adr/0011-interception-and-fire-control.md#top)。
 _Avoid_: 网兜、拦截网
 
 **发射式网捕获（Launched-Net Capture）**:
@@ -91,7 +91,7 @@ _Avoid_: 固定网面、穿越判据
 _Avoid_: 出生间距（旧 `2.4 m` 口径）
 
 **干扰载荷（Jammer Payload）**:
-车载**行为级电子干扰**发射器：以对目标行为的干预体现（EMI 不建模）；行为与接口属。
+车载**行为级电子干扰**发射器：以对目标行为的干预体现（EMI 不建模）；行为与接口属 [ADR-0015](docs/adr/0015-jam-authorization-and-confirmation.md#top)。
 _Avoid_: 电磁武器、EMI 设备
 
 **Runbook（步骤文档）**:

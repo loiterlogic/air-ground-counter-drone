@@ -18,7 +18,7 @@
 
 运行：
  source /opt/ros/jazzy/setup.bash && source install/setup.bash
-  python3 -m pytest scripts/tests/test_w6_viz_registration.py -q
+  python3 -m pytest scripts/tests/test_viz_registration.py -q
 """
 
 import importlib.util
@@ -30,7 +30,7 @@ import pytest
 # 项目根**自定位**（2026-10-31 ，裁定 A）：本文件在 `<ROOT>/scripts/tests/`，上溯三级即根。
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 LAUNCH_DIR = os.path.join(ROOT, 'src', 'agc_task', 'launch')
-W6 = os.path.join(LAUNCH_DIR, 'main.launch.py')
+LAUNCH_MAIN = os.path.join(LAUNCH_DIR, 'main.launch.py')
 
 # 被守护的三个节点（`package/executable` → 期望份数）
 VIZ_NODES = (
@@ -51,7 +51,7 @@ os.environ.setdefault('GZ_SIM_SYSTEM_PLUGIN_PATH', os.path.join(ROOT, 'install',
 
 
 def _load_w6():
-    spec = importlib.util.spec_from_file_location('w6_launch_under_test', W6)
+    spec = importlib.util.spec_from_file_location('launch_main_under_test', LAUNCH_MAIN)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod

@@ -102,7 +102,7 @@ def test_guard_is_in_default_smoke(check):
 
 
 def test_full_regression_entry_is_real(check):
-    """N3 整链回归入口不得是空壳：必须有场景、有 report 判据、有 INFRA 分类。"""
+    """整链回归入口不得是空壳：必须有场景、有 report 判据、有 INFRA 分类。"""
     path = ROOT / 'tests' / 'run_full_regression.py'
     src = path.read_text(encoding='utf-8')
     assert 'SCENES' in src and src.count("'s") >= 3, '场景表为空或不足 3 个'
@@ -119,9 +119,9 @@ def test_full_regression_entry_is_real(check):
 
 
 def test_n3_matrix_entry_is_real():
-    """N3 回归矩阵入口必须覆盖四类要求，且负例断言不得是只看终态。"""
+    """回归矩阵入口必须覆盖四类要求，且负例断言不得是只看终态。"""
     import importlib.util
-    path = ROOT / 'tests' / 'run_n3_matrix.py'
+    path = ROOT / 'tests' / 'run_regression_matrix.py'
     spec = importlib.util.spec_from_file_location('n3m', str(path))
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
@@ -129,7 +129,7 @@ def test_n3_matrix_entry_is_real():
     cats = [c for c, *_ in m.MATRIX]
     # 正向三格必须一直在（它们有有效承载者）。
     for must in ('static-normal', 'dynamic-normal-linear', 'loss-reacquire'):
-        assert must in cats, '缺少类别 %s（N3 四类要求）' % must
+        assert must in cats, '缺少类别 %s（回归矩阵四类要求）' % must
     # 负例格**当前无承载者**，必须**不在**矩阵里；若被加回，须同时恢复
     # `scenario_carriers.yaml` 的 no_target 承载者与 scenarios.yaml 的 supported 标注。
     assert 'no-target-negative' not in cats, (
@@ -193,11 +193,11 @@ def test_vision_localization_path_is_retired():
 
     # 矩阵：vision 臂必须已删除（没有"感知代价臂"了）
     import importlib.util
-    spec = importlib.util.spec_from_file_location('n3m_retired', str(ROOT / 'tests' / 'run_n3_matrix.py'))
+    spec = importlib.util.spec_from_file_location('n3m_retired', str(ROOT / 'tests' / 'run_regression_matrix.py'))
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
     kinds = [k for *_x, k in m.MATRIX]
-    assert 'vision' not in kinds, 'N3 矩阵里仍有 vision 臂（该路径已退役）'
+    assert 'vision' not in kinds, '回归矩阵里仍有 vision 臂（该路径已退役）'
 
 
 def test_episode_runner_records_perception_path():

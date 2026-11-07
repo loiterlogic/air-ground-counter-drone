@@ -113,7 +113,7 @@ class Probe(Node):
         self.have_gt = True
 
     def set_pose(self, x, y, z, yaw, timeout=6.0):
-        """把 `agc_car` 传送至指定位姿（开阔区移入，使真实停车可观测；与 R-009 同法）。"""
+        """把 `agc_car` 传送至指定位姿（开阔区移入，使真实停车可观测；与失效停车用例同法）。"""
         if not self._pose_cli.wait_for_service(timeout_sec=timeout):
             return False
         req = SetEntityPose.Request()

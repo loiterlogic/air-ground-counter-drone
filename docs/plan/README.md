@@ -65,7 +65,7 @@
 - **先学后做**：查参照的优先顺序见 [AGENTS.md](../../AGENTS.md)（项目内同版本可运行实现 → 社区同类 → 外部搜索）。
 - **未决事项不得静默假设**：要么挂到对应任务，要么进 ADR。
 - **不弱化**：契约红线、独立验收、失败证据留痕（[协作协议](../../.coordination/README.md#protocol)）。
-- **失败如实登记**：`TIMEOUT` 就是失败（契约）；不得用"接近成功"等措辞。
+- **失败如实登记**：`TIMEOUT` 就是失败（[硬约束 hc-4](../adr/0020-package-boundaries-and-runtime-topology.md#hc-4)）；不得用"接近成功"等措辞。
 
 <a id="assets"></a>
 ## 5. 展示资产不放在本目录

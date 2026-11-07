@@ -103,7 +103,7 @@ def case_g_no_abi_change():
 
 
 def case_h_config_carriers():
-    """air.yaml 承载 R-033 新参数（反应时间 / 最大速度 / 可达性余量）+ 原障碍表保留。"""
+    """air.yaml 承载 ADR-0010 参数（反应时间 / 最大速度 / 可达性余量）+ 原障碍表保留。"""
     y = _read(os.path.join(ROOT, 'src', 'agc_air', 'config', 'air.yaml')) or ''
     res = {
         'has_reaction_time': bool(re.search(r'^\s*reaction_time_s:', y, re.M)),

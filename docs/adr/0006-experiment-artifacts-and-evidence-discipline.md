@@ -189,7 +189,7 @@ campaign 汇总报告 `report.{json,md}` 落 campaign run 的 **`metrics/`**（�
 
 ## 参考
 
-- 评审：`S-07`、`S-08`、`R-029`、`R-030`（评审快照已于 2026-11-06 退役，见 [ADR-0033](0033-review-snapshot-retirement.md#top)）
+- 评审：**运行产物规范**、**证据保存**、**运行身份与复现**、**文档与产物矛盾**（评审快照已于 2026-11-06 退役，见 [ADR-0033](0033-review-snapshot-retirement.md#top)）
 - 契约：[#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、[#params](0020-package-boundaries-and-runtime-topology.md#params)
 - 相关决策：[ADR-0016](0016-episode-window-and-sample-validity.md#top)（episode 窗口与有效样本掩码）、
   [ADR-0018](0018-acceptance-and-coverage-matrix.md#top)（验收判定与覆盖矩阵）、

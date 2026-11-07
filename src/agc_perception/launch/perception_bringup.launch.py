@@ -62,7 +62,7 @@ def _reject_non_minimal_fallback(context, *args, **kwargs):
     if name != 'minimal' and using_fallback:
         raise RuntimeError(
             'perception_bringup: world_map=%s 但 map_file/obstacles_file 指向包内回退副本'
-            '（仅与 minimal 的几何文件一致）→ 拒绝运行。非 minimal 地图须由上层按几何真源派生注入'
+            '（仅与 minimal 的几何文件一致）→ 拒绝运行。非 minimal 地图须由上层按单一几何来源派生注入'
             '（见 composition.write_derived_*）。' % name)
     return []
 
@@ -88,16 +88,16 @@ def generate_launch_description():
         DeclareLaunchArgument('target_source', default_value='gt_adapter',
                               description='契约 /agc/target/source：gt_adapter（air_fusion 已退役）'),
         DeclareLaunchArgument('obstacles_file', default_value=default_obstacles_file,
-                              description='R-026 障碍真值文件（缺省 = 包内默认；none 场景传空障碍文件）'),
+                              description='障碍真值文件（缺省 = 包内默认；none 场景传空障碍文件）'),
         DeclareLaunchArgument('map_file', default_value=default_map_file,
-                              description='地图几何文件（缺省 = 包内回退副本；由上层按真源派生注入）'),
+                              description='地图几何文件（缺省 = 包内回退副本；由上层按单一几何来源派生注入）'),
         # 地图名。**回退副本只支持 minimal**——standalone 启动若声明非 minimal 地图
         # （且未显式给派生文件），必须显式报错（比静默用错几何好）。
         DeclareLaunchArgument('world_map', default_value='minimal',
-                              description='P1-1 地图名（minimal | yard | open_field）；'
+                              description='地图名（minimal | yard | open_field）；'
                                           '回退副本仅支持 minimal，其余须由上层派生注入'),
         DeclareLaunchArgument('scenario_version', default_value='',
-                              description='R-040 场景 / 源版本（由上层按场景轴选择；折入地图内容身份 hash）'),
+                              description='场景 / 源版本（由上层按场景轴选择；折入地图内容身份 hash）'),
     ]
 
     common = [params_file, {'use_sim_time': use_sim_time}]

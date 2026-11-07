@@ -119,7 +119,7 @@ accepted（2026-11-02 由 ADR-0021 / 0025 / 0042 / 0048 / 0050 合并；结论�
 - **顶高来源**：`world_map.obstacle_z_top(ob)` = 单图元 `z + size[2]/2`、复合体取**全部 part 的最大值**
   （与 `height_survey` 同口径）。真源本就含 `z` / `size`，本项是**派生链补一列**，
   **不新增 schema 键、不新增视觉能力**。
-- **平行数组变五个**：`obstacle_{names,x,y,safety_radius,z_top}` 五者等长，在启动期**拒绝**
+- **平行数组变五个**：`obstacle_{names,x,y,safety_radius,z_top}` 五者等长，启动期**拒绝**
   不一致。`obstacle_z_top` **整体缺省 = 顶高未知 ⇒ 门控不生效**（保守退化为无限高圆柱，旧行为逐值
   不变）；**逐项**坏值（0 / 负 / NaN / ±Inf）一律拒绝—— 缺省**不取 0**，否则所有障碍会在正常巡航
   高度下静默失效。

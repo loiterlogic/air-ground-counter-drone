@@ -66,7 +66,7 @@ DT = 0.05
 
 
 def _tl_qos():
-    """对齐 scenario_reset / episode 发布端：depth=1 + RELIABLE + TRANSIENT_LOCAL（R-015 / R-022）。"""
+    """对齐 scenario_reset / episode 发布端：depth=1 + RELIABLE + TRANSIENT_LOCAL（ADR-0014 / ADR-0016）。"""
     return QoSProfile(depth=1, reliability=ReliabilityPolicy.RELIABLE,
                       durability=DurabilityPolicy.TRANSIENT_LOCAL)
 

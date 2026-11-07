@@ -11,7 +11,7 @@
  * **外部截断**（墙钟看门狗 / 训练 horizon / 无终态）→ `truncated=True`（须 bootstrap）；
  * `INFRA_FAILURE` → `terminated=True` 且 `info.classification='infra'`（**不吞**入成功率，ADR-0018）。
 
-架构（与 [ADR-0021](../../docs/adr/0021-w8-gui-headless-equivalence.md#top) 决定一致）：
+架构（与 [ADR-0021](../../docs/adr/0021-gui-headless-equivalence.md#top) 决定一致）：
  * 环境 = **外部命令源**：本适配层独占发布 `/agc/ground/cmd_vel_raw`；由 `main.launch.py`
  `command_source:=train` 保证图内**不**另起 rl / baseline 发布者（安全层仍是唯一 shield）。
  * 链路与 `rl` 同构：`适配层 → cmd_vel_raw → collision_monitor → cmd_vel → 中继 → GZ`。

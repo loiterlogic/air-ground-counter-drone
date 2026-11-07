@@ -12,7 +12,7 @@
 # 它**不进** `command_source` 互斥域，也不改变唯一执行口。质量门（从未收到/空/单点/帧不一致/过期）
 # 与失效零速由消费侧执行（ADR-0013）。
 #
-# **启动边界（ADR-0013，源码推导， 须以行为证据闭合）**：
+# **启动边界（ADR-0013，源码推导，须以行为证据闭合）**：
 # 本安全层的 `process` 只由 `cmd_vel_in`（`/agc/ground/cmd_vel_raw`）回调触发；
 # 感知源失源导致的清零发生在 `process` **内部**。因此**命令源完全缺失**（启动后从未发过
 # cmd_vel_raw）时，本节点**不会主动发布零速，一个速度消息都不发**。
@@ -212,7 +212,7 @@ collision_monitor:
       topic: "/agc/ground/scan_filtered"
       enabled: True
 
-# ·：自体过滤节点参数（节点名 = scan_self_filter，由 ground_bringup 单一注入）
+# 自体过滤节点参数（节点名 = scan_self_filter，由 ground_bringup 单一注入）
 # 几何/直连占位全局规划器（ADR-0013 当前占位阶段）。
 # **只发路径，不发速度**：因此不是第二命令者，也不进 `command_source` 互斥域。
 # **不是** Navfn / planner_server / costmap：路径是"当前车位 → goal"的直线，只在

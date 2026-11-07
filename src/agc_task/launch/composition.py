@@ -88,7 +88,7 @@ def world_map_module(sim_share=None):
 
 
 def new_run_token():
-    """S-07（ADR-0006）：每次调用生成唯一 token（时刻 + 进程 + 随机），供临时文件命名避免并发 / 重复覆盖。"""
+    """ADR-0006：每次调用生成唯一 token（时刻 + 进程 + 随机），供临时文件命名避免并发 / 重复覆盖。"""
     return '%s-%s-%d-%04d' % (time.strftime('%Y%m%d'), time.strftime('%H%M%S'),
                               os.getpid(), random.randint(0, 9999))
 
@@ -104,7 +104,7 @@ def geometry_path(sim_share, world_map=DEFAULT_WORLD_MAP):
 
 
 def load_geometry(sim_share, world_map=DEFAULT_WORLD_MAP):
-    """读**单一几何来源**（ADR-0007）；P1-1 起按 `world_map` 选文件。"""
+    """读**单一几何来源**（ADR-0007）；按 `world_map` 选文件。"""
     _, path = geometry_path(sim_share, world_map)
     with open(path) as f:
         return yaml.safe_load(f)
@@ -1012,7 +1012,7 @@ def vision_plane_block(plane=None, perception_path='truth', detector_backend=Non
 
  历史：`perception_path=vision` 时本块记录 `datum` / `world_enu_plane_z` / `source`，
  供审查复核视觉投影用的世界 ENU 平面。视觉路径已整体退役，因此本函数**保留字段形状、
- 值恒为 applied=false**：
+ 值恒为 `applied=false`：
 
  * 为什么保留而不删：`manifest` 是对外产物 schema，历史 run 都带 `perception_path` /
  `vision_plane` 两个键；删键会让新旧 run 不可直接对比。保留后审查看到的仍是

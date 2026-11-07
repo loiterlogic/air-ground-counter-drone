@@ -87,7 +87,7 @@ accepted（2026-11-02 由 0002 / 0066 合并；结论未变）
 
 ## 参考
 
-- 评审：`S-10`（评审快照已于 2026-11-06 退役，见 [ADR-0033](0033-review-snapshot-retirement.md#top)）
+- 评审：**决策有效性与引用**（评审快照已于 2026-11-06 退役，见 [ADR-0033](0033-review-snapshot-retirement.md#top)）
 - 相关决策：[ADR-0001](0001-project-positioning-and-execution-scope.md#top)（项目定位与执行范围）、
   [ADR-0006](0006-experiment-artifacts-and-evidence-discipline.md#top)（产物落点与证据纪律）、
   [ADR-0025](0025-publishing-boundary-and-retirement.md#top)（发布边界与退役清理）、

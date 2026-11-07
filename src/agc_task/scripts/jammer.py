@@ -163,14 +163,14 @@ class Jammer(Node):
         self.last_env_rx_ = time.monotonic()
 
     def _envelope_ok(self):
-        """R-017：授权判据——包络为真**且**在 `envelope_max_age_s` 内新鲜。"""
+        """ADR-0015：授权判据——包络为真**且**在 `envelope_max_age_s` 内新鲜。"""
         return (
             self.envelope_in_ and
             self.last_env_rx_ is not None and
             (time.monotonic() - self.last_env_rx_) <= self.envelope_max_age_s_)
 
     def _on_status(self, m: VehicleStatus):
-        """R-018：真实 nav 状态反馈。ACK = 窗口内首次收到状态流（**不**构成确认）。"""
+        """ADR-0015：真实 nav 状态反馈。ACK = 窗口内首次收到状态流（**不**构成确认）。"""
         self.ever_status_ = True
         self.nav_state_ = int(m.nav_state)
         self.last_status_rx_ = time.monotonic()

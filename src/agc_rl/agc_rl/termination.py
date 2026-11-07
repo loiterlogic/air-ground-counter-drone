@@ -40,7 +40,7 @@ SUCCESS_TERMINALS = {'TRACKING_SUCCESS', 'INTERCEPT_CONFIRMED'}
 TIME_BUDGETS = {
     'mission_sim_budget': {
         'clock': 'ros_sim', 'owner': 'task_manager', 'param': 't_max_s',
-        'note': 'C4 任务超时（仿真时钟 now-start_time）；由 task_manager 拥有，非 runner 墙钟',
+        'note': '任务超时（仿真时钟 now-start_time）；由 task_manager 拥有，非 runner 墙钟',
     },
     'episode_wall_watchdog': {
         'clock': 'wall_monotonic', 'owner': 'episode_runner', 'param': 'wall_watchdog_s',

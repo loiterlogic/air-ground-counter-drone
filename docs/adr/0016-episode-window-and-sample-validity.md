@@ -182,7 +182,7 @@ accepted（2026-11-02 由 0036 / 0038 / 0043 / 0078 合并；结论未变，其�
 
 ## 参考
 
-- 评审风险：`R-021`、`R-023`、`R-028`（评审快照已于 2026-11-06 退役，见 [ADR-0033](0033-review-snapshot-retirement.md#top)）
+- 评审风险：**捕获跨回合污染**、**连续跟踪判据**、**统计窗口与异步快照**（评审快照已于 2026-11-06 退役，见 [ADR-0033](0033-review-snapshot-retirement.md#top)）
 - 契约：[#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、[#terminal-semantics](0014-task-fsm-and-scenario-transaction.md#terminal-semantics)、
   [#params](0020-package-boundaries-and-runtime-topology.md#params)、[#execution-port](0020-package-boundaries-and-runtime-topology.md#execution-port)、
   [#messages](0020-package-boundaries-and-runtime-topology.md#messages)

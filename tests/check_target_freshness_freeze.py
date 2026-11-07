@@ -105,7 +105,7 @@ def case_g_no_abi_change():
 
 
 def case_h_config_carriers():
-    """air.yaml 承载 R-032 新参数（confidence_min / target_max_age_s / offset 寿命与幅值）。"""
+    """air.yaml 承载 ADR-0017 参数（confidence_min / target_max_age_s / offset 寿命与幅值）。"""
     y = _read(os.path.join(ROOT, 'src', 'agc_air', 'config', 'air.yaml')) or ''
     res = {
         'has_confidence_min': bool(re.search(r'^\s*confidence_min:', y, re.M)),

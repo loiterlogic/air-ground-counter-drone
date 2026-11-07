@@ -112,7 +112,7 @@ d_min ≤ 0.5 · diameter − aim_margin
 - **不**用墙钟（`steady_clock`）做超时兜底（GUI / headless 速率不同会改变结局）。
 - **不**在节点层缓存过期目标位姿继续判命中；**不**把 `SHOT_ABORTED` 并入 `SHOT_MISS`（复位 / 时钟回退不是物理失手，混用会污染命中率与时序统计）。
 - **不**在本篇范围内实现机动目标的自适应提前量（1.5 s 窗口的滞后是已知限制）。
-- **未实现 / 后续**：非协同臂包络命中提升属臂行为调参而非链路修复；小批整链诊断与闭合另立记录。
+- **未实现 / 后续**：非协同臂包络命中提升属臂行为调参而非链路修复；小批整链诊断与出口闭合见 [ADR-0023](0023-adjudication-record-and-exit.md#top)。
 
 ## Considered Options
 
@@ -141,6 +141,6 @@ d_min ≤ 0.5 · diameter − aim_margin
 - 干扰授权与确认：[ADR-0015](0015-jam-authorization-and-confirmation.md)
 - episode 身份与事件隔离：[ADR-0016](0016-episode-window-and-sample-validity.md)
 - 整链覆盖与因果记录：[ADR-0018](0018-acceptance-and-coverage-matrix.md)
--裁定记录（含 miss 实测与决策门）：[ADR-0023](0023-w7b-adjudication-record-and-exit.md)
+-裁定记录（含 miss 实测与决策门）：[ADR-0023](0023-adjudication-record-and-exit.md)
 - 安全阈值与失效停车：[ADR-0010](0010-safety-thresholds-and-failsafe.md)
 - 契约：[终态语义](0014-task-fsm-and-scenario-transaction.md#terminal-semantics)、[参数入口](0020-package-boundaries-and-runtime-topology.md#params)、[硬约束](0020-package-boundaries-and-runtime-topology.md#hard-constraints)

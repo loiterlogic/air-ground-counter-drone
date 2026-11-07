@@ -610,7 +610,7 @@ def test_mermaid_one_two_three_edges_match_declaration_table():
 
 
 def test_doc_does_not_overpromise():
-    """文档不得再有 round-1 的过度承诺措辞（浏览器缩放/DPI 仍会影响观感）。"""
+    """文档不得再有过度承诺措辞（浏览器缩放/DPI 仍会影响观感）。"""
     with open(STRUCTURE_DOC, encoding='utf-8') as f:
         text = f.read()
     for banned in ('无缩放损失', '机械证明「线段不穿框', '所以概览不可能与清单不一致'):

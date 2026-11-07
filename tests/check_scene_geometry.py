@@ -219,7 +219,7 @@ def _obb_clearance(px, py, ob, world_map_mod):
 
 
 def _footprint_extent(ob, world_map_mod):
-    """实体**水平外接圆**半径（C7 两实体外伸之和口径；复合体覆盖全部 part）。"""
+    """实体**水平外接圆**半径（出生净空：两实体外伸之和口径；复合体覆盖全部 part）。"""
     return world_map_mod.obstacle_footprint_radius(ob)
 
 

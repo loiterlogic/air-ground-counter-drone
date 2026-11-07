@@ -148,7 +148,7 @@ def test_c8_tracking_success_has_no_intercept_wording():
     tracking = status_map.state_by_name('TRACKING_SUCCESS')
     for bad in status_map.FORBIDDEN_IN_TRACKING:
         assert bad not in tracking['text'], (
-            'C8 违规：TRACKING_SUCCESS 文案含 %r（实际 %r）' % (bad, tracking['text']))
+            '终态语义违规：TRACKING_SUCCESS 文案含 %r（实际 %r）' % (bad, tracking['text']))
     # 语义必须是"跟踪"，且与阶段 B 的拦截**分开**
     assert '跟踪' in tracking['text']
     assert status_map.state_by_name('INTERCEPT_CONFIRMED')['text'] != tracking['text']
@@ -157,7 +157,7 @@ def test_c8_tracking_success_has_no_intercept_wording():
 def test_c8_all_display_texts_are_clean():
     for text in status_map.display_texts():
         for bad in status_map.FORBIDDEN_ANYWHERE:
-            assert bad not in text, 'C8 违规：展示文案含 %r —— %r' % (bad, text)
+            assert bad not in text, '终态语义违规：展示文案含 %r —— %r' % (bad, text)
 
 
 def test_c8_guard_actually_fires():
@@ -188,17 +188,17 @@ def test_c8_wording_table_matches_plan_document():
     assert os.path.exists(path), '找不到语义定义文档：%s' % path
     doc = open(path, encoding='utf-8').read()
     for _n, name, text, _audience in status_map.STATE_ROWS:
-        assert '`%s`' % name in doc or name in doc, 'P1-3 文档缺状态 %s' % name
-        assert text in doc, 'P1-3 文档与代码文案不一致：%r 不在文档里' % text
+        assert '`%s`' % name in doc or name in doc, '文档缺状态 %s' % name
+        assert text in doc, '文档与代码文案不一致：%r 不在文档里' % text
 
 
 def test_no_intercept_completion_anywhere_in_demo_layer():
-    """展示层代码里**不得**出现"拦截完成"（C8 的唯一例外是守卫自己的禁词表）。"""
+    """展示层代码里**不得**出现"拦截完成"（终态语义的唯一例外是守卫自己的禁词表）。"""
     for name in P13_MODULES:
         if name == 'status_map.py':
             continue
         code = _code_only(_read(name))
-        assert '拦截完成' not in code, '%s 出现 C8 禁词"拦截完成"' % name
+        assert '拦截完成' not in code, '%s 出现终态语义禁词"拦截完成"' % name
 
 
 # --------------------------------------------------------------------------------------
@@ -512,7 +512,7 @@ def test_start_wires_all_three_presentation_artifacts():
 
 
 def test_terminal_set_is_single_sourced():
-    """`TERMINALS` 只能来自 `status_map`（P1-3 收敛了 start.py 里的第二份副本）。"""
+    """`TERMINALS` 只能来自 `status_map`（已收敛 start.py 里的第二份副本）。"""
     text = _read('start.py')
     assert 'TERMINALS = status_map.TERMINAL_NAMES' in text
     assert not re.search(r'^TERMINALS\s*=\s*\{', text, re.M)

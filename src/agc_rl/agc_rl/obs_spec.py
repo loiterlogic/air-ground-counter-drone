@@ -22,7 +22,7 @@ import os
 from agc_rl import interface
 
 # 当前默认观测版本（checkpoint 元数据据此区分）。
-# ：升级到 v2（新增目标 bearing / 相对速度 / 观测年龄）；
+# 升级到 v2（新增目标 bearing / 相对速度 / 观测年龄；[ADR-0022](../../docs/adr/0022-research-propositions-and-decision-rule.md#top)）：
 # v1 定义**永久保留**、可回放（旧权重不静默失效）。
 OBS_VERSION = 2
 ACTION_KIND = 'discrete'
@@ -101,7 +101,7 @@ _BUILDERS = {1: _build_v1, 2: _build_v2}
 
 
 def register(version, builder):
-    """登记新版本构造器（W7-b 扩展维度时调用；本段不新增版本）。"""
+    """登记新版本构造器（扩展观测维度时调用；本段不新增版本）。"""
     _BUILDERS[int(version)] = builder
 
 

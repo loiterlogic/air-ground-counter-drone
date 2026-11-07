@@ -81,7 +81,7 @@ from std_msgs.msg import String
 from trajectory_msgs.msg import MultiDOFJointTrajectory
 
 NOT_SUMMARY_FIELD = True
-DISCLAIMER = ('派生指标：参考与 odom 的水平位置差。不是契约 C1 的跟踪误差口径，'
+DISCLAIMER = ('派生指标：参考与 odom 的水平位置差。不是契约硬约束（八字节径）的跟踪误差口径，'
               '也不替代任何既有验收')
 
 
@@ -309,7 +309,7 @@ def _write(out_dir, doc, samples, final):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description='空中跟踪误差取证（P1-4 baseline closure）')
+    ap = argparse.ArgumentParser(description='空中跟踪误差取证（空中基线闭合）')
     ap.add_argument('--ref-topic', default='/agc/air/ref')
     ap.add_argument('--tracking-topic', default='/agc/air/tracking_ref')
     ap.add_argument('--odom-topic', default='/agc/air/odom')

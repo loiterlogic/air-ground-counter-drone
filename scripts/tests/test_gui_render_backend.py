@@ -1,4 +1,4 @@
-"""W8 / ADR-0021：GUI 渲染后端选择单测（不启动 ROS / gz）。"""
+"""ADR-0021：GUI 渲染后端选择单测（不启动 ROS / gz）。"""
 import os
 import sys
 

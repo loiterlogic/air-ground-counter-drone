@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """obs 版本化（v2 可区分 + v1 可回放）验收。
 
-判据（[ADR-0022](docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)(d)）：
+判据（[ADR-0022](docs/adr/0022-research-propositions-and-decision-rule.md#top)(d)）：
   * **v1 可回放**：`obs_spec.build_obs_vector(1, ...)` 与冻结接口 `interface.build_observation(...)`
     **逐位一致**（旧权重不静默失效）；
   * **v2 维度** = v1 + 4（目标 bearing sin/cos / 相对速度 / 观测年龄）；
@@ -78,7 +78,7 @@ def main():
                    'meta_fingerprints': {
                        'v1': obs_spec.checkpoint_fingerprint(meta1),
                        'v2': obs_spec.checkpoint_fingerprint(meta2)}},
-        'proposition': 'E4 / F-04：obs_version 版本化——v2 可区分（v1+4 维），v1 逐位可回放。',
+        'proposition': 'obs_version 版本化——v2 可区分（v1+4 维），v1 逐位可回放。',
     }
     checklib.write_json(os.path.join(out_dir, 'metrics', 'e4.json'), result)
     for k, v in checks.items():

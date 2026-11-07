@@ -1,5 +1,5 @@
 <a id="top"></a>
-#：GUI/headless 等价、确定性探针与平台冻结
+# GUI/headless 等价、确定性探针与平台冻结
 
 ## Status
 
@@ -12,18 +12,19 @@ accepted（2026-11-02 由 ADR-0069 / 0096 / 0097 / 0098 / 0099 合并；结论�
 ## 决策
 
 <a id="decision"></a>
-### (a)入口出口：第一出口是可信实验平台，不是算法成果
+### (a) 入口出口：第一出口是可信实验平台，不是算法成果
 
-最小平台产出"语义正确、可复现、可被训练的环境 + 一致的 train / eval 协议"，验收锚 = 同 seed 可复现 / 指标齐全。**RL 算法、网络、奖励、训练步数、论文问题不在入口出口内**（属：先定可证伪命题，并先用规则策略证明任务非平凡且可达）。四件套：obs / action 版本化（`obs_version` + 归一化 + checkpoint 元数据 + 旧版本回放）、train / eval 终止与预算（复用三类时间预算口径，超时一律失败、infra 单列不吞）、种子分解（spawn / sensor / channel / target / policy / physics 分离 + 派生规则）、单 worker 可重放（多 worker 隔离属）。
+最小平台产出"语义正确、可复现、可被训练的环境 + 一致的 train / eval 协议"，验收锚 = 同 seed 可复现 / 指标齐全。**RL 算法、网络、奖励、训练步数、论文问题不在入口出口内**（属 [ADR-0022](0022-research-propositions-and-decision-rule.md#top)：先定可证伪命题，并先用规则策略证明任务非平凡且可达）。四件套：obs / action 版本化（`obs_version` + 归一化 + checkpoint 元数据 + 旧版本回放）、train / eval 终止与预算（复用三类时间预算口径，超时一律失败、infra 单列不吞）、种子分解（spawn / sensor / channel / target / policy / physics 分离 + 派生规则）、单 worker 可重放（多 worker 隔离属 [ADR-0024](0024-multi-worker-isolation.md#top)）。
 
 训练环境 = 现-full +++拓扑，**不建**独立简化训练环境（headless / 降配只作为同一栈的参数化"训练视图"，差异写入 spec）—— 最致命的一类风险正是 train / eval 语义分叉。每条前置依赖**须**指向 `run_id` + 验收命题，**不**以"代码 / ADR 已记录"为满足。并行 / 向量化不在入口范围；包边界不动，仅在真实异步裁决（火控发射 / 命中）或多 worker 资源管理出现时按职责增包。
 
-### (b)出口分层：两个互不替代的出口
+### (b) 出口分层：两个互不替代的出口
 
-- **-E1 平台行为对照与冻结**：GUI / headless 模式等价（前置）→ 新旧行为对照（同场景、同 seed、–容差、终态语义一致）→ 平台冻结。
-- **-E2 修复后科研确证**：在修复后平台上按**新预注册**重新检验 P1 / P2，遵循三态语义与 MME 治理。
+- **出口一：平台行为对照与冻结**：GUI / headless 模式等价（前置）→ 新旧行为对照（同场景、同 seed、
+  [硬约束](../adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints) 的容差、终态语义一致）→ 平台冻结。
+- **出口二：修复后科研确证**：在修复后平台上按**新预注册**重新检验 P1 / P2，遵循三态语义与 MME 治理。
 
-本组只覆盖 **-E1**；-E2 未进入。历史 pre-fix 结论原样保留并标 `pre-fix`：P1 v5 = `inconclusive`、P2 v3 = `falsified` / 保留 c2、P2 v2 = `confounded`——**不改写任何 verdict**。
+本组只覆盖**出口一**；出口二未进入。历史 pre-fix 结论原样保留并标 `pre-fix`：P1 v5 = `inconclusive`、P2 v3 = `falsified` / 保留 c2、P2 v2 = `confounded`——**不改写任何 verdict**。
 
 ### (c) 模式等价：预声明设计、判定规则与执行闸门
 
@@ -90,9 +91,9 @@ accepted（2026-11-02 由 ADR-0069 / 0096 / 0097 / 0098 / 0099 合并；结论�
 <a id="next"></a>
 ### (j) 出口状态与 P3 待办
 
-gate 仍为 **`not_evaluable_as_specified`**；headless 规模统计**未授权**；-E2 未进入；仍 `deferred`。P3 需：实现并验证上述记录器；预声明新 seed 网格及 seed 内执行重复如何建模；选择等价界限、缺测规则及适用的多指标推断方法；重新规划 n 与成本，明确解决旧设计中容差 / n 上限 / 公式的冲突。旧 n 公式与 pilot 差值门**不因本组获得新的有效性**。本组不冻结 plan v2、不启动新 pilot / 正式等价、不授权在线 RL。
+gate 仍为 **`not_evaluable_as_specified`**；headless 规模统计**未授权**；出口二未进入；仍 `deferred`。P3 需：实现并验证上述记录器；预声明新 seed 网格及 seed 内执行重复如何建模；选择等价界限、缺测规则及适用的多指标推断方法；重新规划 n 与成本，明确解决旧设计中容差 / n 上限 / 公式的冲突。旧 n 公式与 pilot 差值门**不因本组获得新的有效性**。本组不冻结 plan v2、不启动新 pilot / 正式等价、不授权在线 RL。
 
-### (k)-E1b：历史证据对照与条件平台冻结（旧环境不可重建）
+### (k) 历史证据对照与条件平台冻结（旧环境不可重建）
 
 不执行 live 新旧对照，只对照**可比行为事实**、明确列出**不可比项**，对新平台做 **conditional freeze**。
 
@@ -115,7 +116,7 @@ gate 仍为 **`not_evaluable_as_specified`**；headless 规模统计**未授权*
 
 ## 不做什么（边界）
 
-- 不授权 headless 规模统计；不进入-E2；不注册 v7；不进入在线 RL；保持 `deferred`。
+- 不授权 headless 规模统计；不进入出口二；不注册 v7；不进入在线 RL；保持 `deferred`。
 - 不把 `not_evaluable_as_specified` 记为平台 fail 或跳过；不用"不显著"代替"等价"。
 - 不在正式结果后回填 / 放宽 δ、n 或窗口长度；不删除缺测回合再宣称等价；不重建历史新指标。
 - 不冒充新旧等价通过；不复活 MAVROS；不复制旧树代码 / 目录 / 命名；不把历史固定样例当总体成功率。
@@ -132,12 +133,12 @@ gate 仍为 **`not_evaluable_as_specified`**；headless 规模统计**未授权*
 
 ## Consequences
 
-- **正面**：的两个问题不再混用证据；等价判定从"单次对比"升级为预声明等价检验；headless 规模统计有明确授权条件；infra 不再被误读为模式效应；平台冻结有明确的可比 / 不可比清单，避免用异构物理 / 终态差异伪造"迁移等价"。
+- **正面**：本篇的两个问题不再混用证据；等价判定从"单次对比"升级为预声明等价检验；headless 规模统计有明确授权条件；infra 不再被误读为模式效应；平台冻结有明确的可比 / 不可比清单，避免用异构物理 / 终态差异伪造"迁移等价"。
 - **代价 / 限制**：pilot 至少 20 次整链 run，正式等价可能需要更多；GUI 墙钟与环境噪声可能使等价不可判定，需回退到 GUI 验证并记录成本；原始 live 对照目标未达成，若后续需要真实新旧数值对照须重建旧环境或取得可信旧产物。
-- **风险**：conditional freeze 容易被误读成"已通过"—— 相关记录必须显式写 `not_established`。
+- **风险**：conditional freeze 容易被误读成"本平台已通过"—— 相关记录必须显式写 `not_established`。
 
 ## 参考
 
 - 契约：[#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、[#terminal-semantics](0014-task-fsm-and-scenario-transaction.md#terminal-semantics)、[#execution-port](0020-package-boundaries-and-runtime-topology.md#execution-port)
-- 相关决策：[ADR-0024](0024-w7c-multi-worker-isolation.md#top)（单 worker 与扩容准入）、[ADR-0022](0022-w7b-research-propositions-and-decision-rule.md#top)（三态判据与 MME 治理）、[ADR-0023](0023-w7b-adjudication-record-and-exit.md#top)（pre-fix verdict）、[ADR-0027](0027-uxrce-startup-reproducibility.md#top)（启动协议与错峰）、[ADR-0006](0006-experiment-artifacts-and-evidence-discipline.md#top)（产物与证据纪律）、[ADR-0018](0018-acceptance-and-coverage-matrix.md#top)（GUI 验收范围）、[ADR-0025](0025-publishing-boundary-and-retirement.md#top)（旧树退役）
+- 相关决策：[ADR-0024](0024-multi-worker-isolation.md#top)（单 worker 与扩容准入）、[ADR-0022](0022-research-propositions-and-decision-rule.md#top)（三态判据与 MME 治理）、[ADR-0023](0023-adjudication-record-and-exit.md#top)（pre-fix verdict）、[ADR-0027](0027-uxrce-startup-reproducibility.md#top)（启动协议与错峰）、[ADR-0006](0006-experiment-artifacts-and-evidence-discipline.md#top)（产物与证据纪律）、[ADR-0018](0018-acceptance-and-coverage-matrix.md#top)（GUI 验收范围）、[ADR-0025](0025-publishing-boundary-and-retirement.md#top)（旧树退役）
 - 计划与规格：`src/agc_rl/config/gui_headless_plan.yaml`、`gui_headless_gpu_plan.yaml`、`docs/archive/specs/w8-parity-freeze/spec.md`、`docs/archive/specs/w8-measurement-p2/spec.md`

@@ -8,7 +8,7 @@ w8_gui_headless_plan:
   campaign: w8-parity
   reference:
     w7c_plan: "src/agc_rl/config/multi_worker_admission.yaml"
-    adr_0095: "docs/adr/0024-w7c-multi-worker-isolation.md#top"
+    adr_0095: "docs/adr/0024-multi-worker-isolation.md#top"
     adr_0057: "docs/adr/0018-acceptance-and-coverage-matrix.md#top"
 
   pilot:
