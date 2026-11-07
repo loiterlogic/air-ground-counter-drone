@@ -199,8 +199,10 @@ def test_target_motion_override_keeps_declared_axis_in_sync():
  闸门：覆盖必须走 `apply_target_motion_override`（同步 sc / axes / entries 三处），
  且调用点在 `load_scene` 之后、两个 backend 分支之前（对 full / lightweight 都生效）。
     """
+    # 实现已按内聚性拆到 `scene_loader.py`；`composition.py` 只剩门面（再导出）。
+    # 断言必须指向**实现所在**，否则闸门会因为"函数搬了家"而误报。
     comp = (ROOT / 'src' / 'agc_task' / 'launch' /
-            'composition.py').read_text(encoding='utf-8', errors='replace')
+            'scene_loader.py').read_text(encoding='utf-8', errors='replace')
     w6 = (ROOT / 'src' / 'agc_task' / 'launch' /
           'main.launch.py').read_text(encoding='utf-8', errors='replace')
     assert 'def apply_target_motion_override(' in comp, \
