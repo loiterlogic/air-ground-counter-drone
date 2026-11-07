@@ -7,7 +7,7 @@
 // * **不经 ros_gz_bridge**：本机桥(1.0.24) 的 `Pose_V→TFMessage` 不写 frame 名，
 // 无法作为带名真值使用；故以专用节点经 gz-transport 直读（原逐实体 PosePublisher
 // 桥已在 退役）。
-// * **不发 ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#namespace 禁裸 base_link）。
+// * **不发 TF**：真值为私有数据，不进协同层帧树（ADR-0020 的 #namespace 禁裸 base_link）。
 // * **限频发布**：动态真值话题按仿真步进（~250 Hz）产生，须限频（默认 30 Hz）以避免
 // 灌满链路（旧树实测：真值链路 250 Hz 会拖垮同机 PX4 EKF）。
 //

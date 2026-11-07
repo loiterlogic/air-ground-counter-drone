@@ -46,7 +46,7 @@ gt_adapter:
     diff_window_s: 0.15
     # ---- 2026-11-03：真值链路的不确定性模型 ----
     # 缺省全 0 = **理想基线**，行为与旧版等价（节点启动时会打 WARN 提示不得据此宣称鲁棒性）。
-    # 说明见 docs/adr/0009-perception-truth-derived-and-vision-path.md#top（2026-11-04 已回填）。
+    # 说明见 ADR-0009 的 #top（2026-11-04 已回填）。
     sigma_xy_m: 0.3                  # 位置噪声（m）；只进协方差与融合权重 [nominal 档]
     sigma_z_m: 0.3
     latency_s: 0.2                   # 交付延迟（s）；改交付时刻，不改源采样时刻 [nominal 档]

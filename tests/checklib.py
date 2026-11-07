@@ -209,7 +209,7 @@ def dump(res, out_dir, filename='check.json', infra=False, notes=None,
 
     为什么不各自保留：同名的 `dump()` 曾有 4 种签名（`out_dir` / `run_dir` / `args` /
     `filename`），"改一处目录结构"要动几十个文件，漏一个就静默分叉——这正是本仓
-    [ADR-0006](../../docs/adr/0006-experiment-artifacts-and-evidence-discipline.md#top)
+    [ADR-0006](../docs/adr/0006-experiment-artifacts-and-evidence-discipline.md#top)
     要求"证据落盘只有一个实现"的原因。
     """
     path = write_json(os.path.join(out_dir, filename), res)

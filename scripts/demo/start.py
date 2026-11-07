@@ -118,7 +118,7 @@ def launch_argv(*, backend, scene, world_map, headless, extra=(), px4_run_root=N
  demo 传入本 run 的 `<run_dir>/px4`，让 own / intruder 各占独立 `-w` 目录；缺省 `None`
  时**不传**该参数，保持既有命令行逐字不变（`scripts/episode_runner.py` 等调用方不受影响）。
 
-    `gui_render_backend`：GUI 渲染后端（[ADR-0021(d)](../../docs/adr/0021-gui-headless-equivalence.md#d)），
+    `gui_render_backend`：GUI 渲染后端（[ADR-0021](../../docs/adr/0021-gui-headless-equivalence.md#top)(d)），
  透传 `main.launch.py` 的同名参数。2026-11-05 前此处**写死 `auto`**，导致 `run_demo.sh`
  **无任何途径**切换后端——既不能做渲染对照，出问题也不能回退 software 让演示可见。
     """

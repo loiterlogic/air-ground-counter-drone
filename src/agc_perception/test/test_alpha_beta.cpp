@@ -72,7 +72,7 @@ double sigmaVelocity(double sigma_p, bool filtered, unsigned seed = 12345)
 TEST(AlphaBeta, GainFormulaMatchesKalata)
 {
   struct Case {double sigma_p; double alpha; double beta;};
-  // 期望值由 Λ 公式独立算出（σ_w=0.5, Δt=0.1）：见 docs/adr/0009 的档位表。
+  // 期望值由 Λ 公式独立算出（σ_w=0.5, Δt=0.1）：见 ADR-0009 的档位表。
   const Case cases[] = {
     {0.25, 0.181, 0.018},
     {0.50, 0.132, 0.009},

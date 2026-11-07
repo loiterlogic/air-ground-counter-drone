@@ -1,7 +1,7 @@
 // agc_control/param_reader.hpp —— 插件读取参数的**最小接口**
 //
 // 插件不绑定具体节点类型（`rclcpp::Node` 与 `rclcpp_lifecycle::LifecycleNode` 在 Jazzy
-// 互不继承），只依赖本接口；由消费者提供实现。参数一律由 launch ../../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params），
+// 互不继承），只依赖本接口；由消费者提供实现。参数一律由 launch 单一设置（ADR-0020 的 #params），
 // 故 `getX(name, default)` 在缺省时**声明**该参数并返回默认值。
 
 #pragma once

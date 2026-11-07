@@ -28,7 +28,7 @@ public:
     in_topic_ = declare_parameter<std::string>("in_topic", "/agc/ground/cmd_vel");
     out_topic_ = declare_parameter<std::string>("out_topic", "/model/agc_car/cmd_vel");
     watchdog_s_ = declare_parameter<double>("watchdog_s", 0.3);
-    // —— 新增（默认保守值；由 launch/config ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params）——
+    // —— 新增（默认保守值；由 launch/config 单一注入，ADR-0020 的 #params）——
     expected_frame_id_ = declare_parameter<std::string>("expected_frame_id", "car/base_link");
     max_sample_age_s_ = declare_parameter<double>("max_sample_age_s", 0.5);
     frame_id_tolerance_ = declare_parameter<double>("frame_id_tolerance", 0.05);
@@ -46,7 +46,7 @@ public:
 private:
   void on_command(const geometry_msgs::msg::TwistStamped & m)
   {
-    // (b-1) frame_id 必须为期望车体系（默认 ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#namespace）；错帧判为链路异常。
+    // (b-1) frame_id 必须为期望车体系（默认 car/base_link，ADR-0020 的 #namespace）；错帧判为链路异常。
     if (m.header.frame_id != expected_frame_id_) {
       RCLCPP_WARN_THROTTLE(
         get_logger(), throttle_clock_, 1000, "reject: unexpected frame_id='%s'",

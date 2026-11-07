@@ -1,5 +1,5 @@
 # 最小闭环参数（由 skeleton.launch.py 单一注入；节点不得覆写）
-# ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params——launch 是参数唯一设置者。
+# ADR-0020 的 #params——launch 是参数唯一设置者。
 #
 # 注：ground_odom_adapter 自 起由 agc_perception 的 perception_bringup 提供
 # （位姿来源改为真值旁路 /agc/gt/agc_car），其参数在 agc_perception/config/perception.yaml。

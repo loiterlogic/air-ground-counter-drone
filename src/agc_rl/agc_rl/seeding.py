@@ -17,7 +17,7 @@
 **配对比较**；`policy` 流随 attempt 变化（智能体侧的探索随机）。
 
 不可复现边界（成文）：外生流（spawn / 噪声序列）**逐位可复现**；但**物理步进调度**（实时异步
-墙钟调度，见 [ADR-0021](../../docs/adr/0021-gui-headless-equivalence.md#top)(b)）**不承诺** bitwise
+墙钟调度，见 [ADR-0021](../../../docs/adr/0021-gui-headless-equivalence.md#top)(b)）**不承诺** bitwise
 一致——轨迹在时间维度上的分叉属**已知边界**，由 runner 记录。
 """
 

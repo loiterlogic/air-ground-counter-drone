@@ -296,7 +296,7 @@ protected:
   }
 
 private:
-  /// /agc/air/odom 的 twist 为**机体系 FLU**（nav_msgs 约定，见 ）→ 还原世界 ENU 速度
+  /// /agc/air/odom 的 twist 为**机体系 FLU**（nav_msgs 约定）→ 还原世界 ENU 速度
   static agc_air::Vector3 worldVelFromOdom(const nav_msgs::msg::Odometry & o)
   {
     const agc_air::Quaternion q(o.pose.pose.orientation.w, o.pose.pose.orientation.x,

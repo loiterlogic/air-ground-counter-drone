@@ -6,7 +6,7 @@
  * 频率：`/agc/ground/odom` 30、`/agc/map` 2、`/agc/targets` 10、`/agc/obstacles` 10、
  `/agc/ground/cmd_vel` 20、`/agc/ground/cmd_vel_raw` 20（±容差）；
  * 帧名：含 Header 的协同话题 `frame_id=world`（`cmd_vel`/`cmd_vel_raw` 为车体系）；
- * 终态：**不得**为 `TRACKING_SUCCESS`../docs/adr/0014-task-fsm-and-scenario-transaction.md#terminal-semantics； 不裁定成功）。
+ * 终态：**不得**为 `TRACKING_SUCCESS`（../docs/adr/0014-task-fsm-and-scenario-transaction.md#terminal-semantics； 不裁定成功）。
 结果落 `experiments/w5-ground-nav-safety/<run_id>/metrics/fullchain.json`（ADR-0006）。
 
 用法：

@@ -9,7 +9,7 @@
 #
 # 约定：
 # * `obstacles_file` 为 **agc_perception/config 下的文件名**，由上层 launch 解析为绝对路径
-# 经 perception_bringup ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params）。
+# 经 perception_bringup 单一注入（ADR-0020 的 #params）。
 # * `world_obstacles` 传给 world_bringup：`static` 用含 pole_* 的世界，`none` 用去除 pole_* 的世界。
 # * `perception` 轴已于 2026-11-06 退役（用户裁定「彻底删」）：`sensors_file` 通道变体在
 # `air_fusion` 退役后无消费者，四档运行期行为完全相同。场景定义不得再声明该轴；

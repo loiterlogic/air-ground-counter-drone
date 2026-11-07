@@ -10,7 +10,7 @@
 // 门禁不过 ──> INFRA_FAILURE
 //
 // 契约：先 reset 后校验 odom（#lessons 竞态修复）； 超时算失败； 相位复位（agc/air/reset_phase，
-// 仅 air_present=true 的整链模式下强制，见 ）； 终态"抵近并持续跟踪"且 SUCCESS 不得称"拦截完成"。
+// 仅 air_present=true 的整链模式下强制，见 ADR-0019）； 终态"抵近并持续跟踪"且 SUCCESS 不得称"拦截完成"。
 // /agc/task/start 为非阻塞异步事务（多线程执行器 + 独立服务回调组）；门禁数据须为**复位完成后
 // 收到的新鲜样本**（epoch + 年龄上限），时钟门为**进展校验**；各门证据时刻随应答回传。
 // episode 隔离——新 episode 清 capture_reason_ / jam_reason_；capture 结算改订配套事件
@@ -125,7 +125,7 @@ public:
     reset_phase_service_ = declare_parameter<std::string>("reset_phase_service", "/agc/air/reset_phase");
     // （步 1·甲-1）：空中控制权交接——本节点为唯一任务协调者，在**起飞完成（悬停）**后显式触发
     // `/agc/air/release_control`（Trigger），把 setpoint 权威从 takeoff_controller 交给 trajectory_tracker。
-    // 触发时机见文件头（提前 release 会让飞机永不 arm）。话题 / ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params）。
+    // 触发时机见文件头（提前 release 会让飞机永不 arm）。话题 / 门限均单一注入（ADR-0020 的 #params）。
     release_service_ = declare_parameter<std::string>("release_service", "/agc/air/release_control");
     air_odom_topic_ = declare_parameter<std::string>("air_odom_topic", "/agc/air/odom");
     // 悬停判据 = `/agc/air/odom` 世界 ENU z 相对**起飞前基准（本 run 最小 z，即地面高度）**的爬升量（m）。
@@ -266,7 +266,7 @@ public:
 
     // start/abort 服务放入**独立互斥回调组**。服务回调会阻塞等待 reset/reset_phase
     // （spin_until_future_complete）；订阅留在默认组并交由多线程执行器在其它线程处理，
-    // 故事务期间 odom_valid / 地面 odom / cmd_vel ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#lessons）。
+    // 故事务期间 odom_valid / 地面 odom / cmd_vel 仍持续更新（ADR-0020 的 #lessons）。
     srv_cb_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
     start_srv_ = create_service<Trigger>(
       "/agc/task/start",
@@ -342,7 +342,7 @@ private:
   {
     // optional（required=false）不阻塞等待服务出现。 起本节点运行在多线程执行器上，
     // start/abort 服务回调位于独立回调组；订阅在默认组由其它线程处理，故事务期间
-    // odom_valid / 地面 odom / cmd_vel ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#lessons：阻塞服务回调不得冻结本地缓存）。
+    // odom_valid / 地面 odom / cmd_vel 仍持续更新（ADR-0020 的 #lessons：阻塞服务回调不得冻结本地缓存）。
     if (!cli->service_is_ready()) {
       if (required) {
         if (!cli->wait_for_service(std::chrono::seconds(2))) {
@@ -394,7 +394,7 @@ private:
       RCLCPP_WARN(get_logger(), "start 拒绝：active 重入（state=%s），不尝试 reset", nameOf(state_));
       return;
     }
-    // 1) 先 ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#lessons 竞态修复：reset 在前，不得先校验 odom，否则自伤 ODOM_INVALID）
+    // 1) 先 reset（ADR-0020 的 #lessons 竞态修复：reset 在前，不得先校验 odom，否则自伤 ODOM_INVALID）
     // 复位失败最多重试 3 次（口径，ADR-0012）；重试不占 episode 预算（episode 计时自 start 成功起）
     // reset 前记录 epoch（避免 reset 后 epoch 投递竞态）。
     const int ep_before_reset = current_epoch_;
@@ -975,7 +975,7 @@ int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
   // 多线程执行器。start/abort 服务回调（阻塞等待 reset/reset_phase 客户端）在独立
-  // 回调组，节点自身订阅在默认组 → ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#lessons）。
+  // 回调组，节点自身订阅在默认组 → 另一个线程在事务期间持续更新门禁缓存（ADR-0020 的 #lessons）。
   auto node = std::make_shared<TaskManager>();
   rclcpp::executors::MultiThreadedExecutor executor;
   executor.add_node(node);

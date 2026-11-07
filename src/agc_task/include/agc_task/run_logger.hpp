@@ -6,7 +6,7 @@
 //
 // 拆分纪律：**不复制状态**：成员只有一份、在本头文件里；两个 .cpp 都只是它的成员函数定义。
 //
-// 判据见 `docs/adr/0006-experiment-artifacts-and-evidence-discipline.md#top`。
+// 判据见 `ADR-0006 的 #top`。
 
 #ifndef AGC_TASK_RUN_LOGGER_HPP_
 #define AGC_TASK_RUN_LOGGER_HPP_

@@ -7,9 +7,9 @@
 映射（对齐 Gymnasium v0.26+ 语义）：
  * **任务终态**（任意 `TERMINALS`）→ MDP **terminated**（含超时失败，契约 超时一律失败）；
  * **外部截断**（墙钟看门狗耗尽 / 训练 horizon / 无终态）→ **truncated**（非任务终态，须 bootstrap）；
- * `INFRA_FAILURE` → 单列 `infra`，**不**吞入成功率（[ADR-0018](../../docs/adr/0018-acceptance-and-coverage-matrix.md#top)）。
+ * `INFRA_FAILURE` → 单列 `infra`，**不**吞入成功率（[ADR-0018](../../../docs/adr/0018-acceptance-and-coverage-matrix.md#top)）。
 
-预算口径**复用** [ADR-0017](../../docs/adr/0017-time-budget-and-clock-sources.md#top) 三类
+预算口径**复用** [ADR-0017](../../../docs/adr/0017-time-budget-and-clock-sources.md#top) 三类
 （`mission_sim_budget` / `episode_wall_watchdog` / `process_wall_duration`），**不产生第三套**。
 
 约束类信息（超时失败 / infra 单列 / 缺失掩码）配置文件为契约

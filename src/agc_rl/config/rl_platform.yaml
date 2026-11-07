@@ -1,4 +1,4 @@
-# agc_rl · ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params；。
+# agc_rl · 平台参数——**配置文件**（ADR-0020 的 #params）。
 #
 # 由 训练 / 评估 runner（`scripts/w7_episode_runner.py`）与 env 适配层（`agc_rl/env.py`）读取；
 # **不**由 ROS 节点覆写。共享的 obs / 控制 / 寿命参数（`num_sectors` / `lidar_max_range` /
@@ -12,7 +12,7 @@ w7:
   control_dt_s: 0.1
   # 训练 horizon（step 数；0 = 不设，交由任务预算 / 墙钟看门狗）→ truncated 语义。
   max_steps: 0
-  # episode 墙钟看门狗（秒；[ADR-0017](../../docs/adr/0017-time-budget-and-clock-sources.md#top) 的
+  # episode 墙钟看门狗（秒；[ADR-0017](../../../docs/adr/0017-time-budget-and-clock-sources.md#top) 的
   # `episode_wall_watchdog` 口径；超时判 infra、**不算成功**）。
   wall_watchdog_s: 150.0
   # 训练视图（R3 噪声流）：观测噪声 σ（0 = 关；由 `sensor` 流驱动）。

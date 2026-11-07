@@ -1,4 +1,4 @@
-# agc_ground 参数——由 ground_bringup.launch.py ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params）
+# agc_ground 参数——由 ground_bringup.launch.py 单一注入，节点不得覆写（ADR-0020 的 #params）
 #
 # 安全层：Nav2 collision_monitor（直接复用 Nav2 组件，ADR-0004 / ADR-0003）。
 # 链路：RL/占位策略 → /agc/ground/cmd_vel_raw → collision_monitor → /agc/ground/cmd_vel
@@ -63,7 +63,7 @@
 # ③ 薄障碍（细柱/薄板）→ 受**束间距**限制（距离 D 处相邻束间距 ≈ 0.01745·D m；三档 min_points=2）；
 # ④ 自体遮挡 / 自滤（scan_self_filter）后仅未被车体遮挡方向可见。
 # **收窄声明**：把「立柱 world 达标」**限定**为「在 z≈0.48 处有足够水平截面且进入光束」的障碍族；
-# **明确不得外推**为任意障碍（含低/悬空/薄障碍）的通用安全保证。口径详见 docs/adr/0009-perception-truth-derived-and-vision-path.md。
+# **明确不得外推**为任意障碍（含低/悬空/薄障碍）的通用安全保证。口径详见 ADR-0009。
 #
 # 载荷外伸 / 碰撞口径一致化：捕获网面 @ z=1.60、干扰载荷 @ z=0.30、**均无 collision**
 # → **不**进本安全层视野、**不**参与真实物理接触（物理接触验证 unsupported）；外伸 1.0 m 仅作
@@ -73,7 +73,7 @@
 # source_timeout **不再沿用** Nav2 官方示例（5.0 s，未经本车标定）——原值失源盲行可达 1.5×5.0=7.5 m，
 # 与 4 m 安全档严重不匹配。改由**本车实测**动力学与链路推导（详见 collision_monitor 段内注释）；
 # 失源后总停距 < 碰撞档 2.0 m，窗口 T 与 `agc_perception/config/perception.yaml` 的
-# `source_timeout_s: 0.3` **同口径**（标定依据落 docs/adr/0021）。
+# `source_timeout_s: 0.3` **同口径**（标定依据落 ADR-0021）。
 
 collision_monitor:
   ros__parameters:
@@ -100,7 +100,7 @@ collision_monitor:
     stop_pub_timeout: 1.0e9
     # 注：stop_pub_timeout 置极大 → 安全层**持续发布**（含零速），使唯一执行口始终有实时命令；
     # 同时满足 门禁的 cmd_vel 回环确认（否则 idle 时 collision_monitor 停发零速导致门禁死锁）。
-    # 契约要求 /agc/ground/cmd_vel 为 ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#namespace）
+    # 契约要求 /agc/ground/cmd_vel 为 TwistStamped（ADR-0020 的 #namespace）
     enable_stamped_cmd_vel: True
     polygons: ["SlowSafety", "StopCollision", "StopEmergency"]
     # ——安全档（扫掠 4.0 m，slowdown）——

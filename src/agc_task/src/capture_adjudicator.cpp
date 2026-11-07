@@ -37,7 +37,7 @@
 // /agc/task/fire_control（std_msgs/String，火控事件：
 // SHOT_FIRED|SHOT_HIT|SHOT_MISS|SHOT_ABORTED shot=<id> …；中止事件附加 reason=<...> t=<sim>）
 // /agc/task/capture_evidence（std_msgs/String，标注：命中/失手/越界/不可达，限频跳变）
-// 参数（launch/config ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params）：net_v0_mps / net_angle_deg / net_g /
+// 参数（launch/config 单一注入，节点不得覆写；ADR-0020 的 #params）：net_v0_mps / net_angle_deg / net_g /
 // net_diameter_m / net_drag / launcher_height_m / net_t_exp_s / fire_cooldown_s /
 // net_flight_timeout_s / model_id / applicable_min_alt_m / applicable_max_alt_m / jam_* + 话题名。
 

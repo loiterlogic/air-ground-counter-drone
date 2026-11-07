@@ -1,6 +1,6 @@
 // agc_cmd_deadman —— GZ 侧末端失效停车守门人（ADR-0010）
 //
-// ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#execution-port：唯一 ROS 命令者是地面执行中继 ground_drive_relay；本插件**不是** ROS 命令者。
+// ADR-0020 的 #execution-port：唯一 ROS 命令者是地面执行中继 ground_drive_relay；本插件**不是** ROS 命令者。
 //
 // 职责：作为 GZ DiffDrive 命令口（DiffDrive 默认订阅 gz 话题 /model/<model>/cmd_vel）的
 // **唯一写入者**，把「意图」与「执行」分离：
@@ -15,7 +15,7 @@
 // 进程内（与物理引擎同生命周期），即使 ROS 侧全部死亡亦生效——这是唯一可靠落点。
 //
 // 超时用 std::chrono::steady_clock（与仿真暂停 / ROS 时钟冻结解耦）。timeout 由 SDF <timeout> 注入，
-// 其值源自 src/agc_sim/config/car.yaml → world_bringup 的 xacro ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params）。
+// 其值源自 src/agc_sim/config/car.yaml → world_bringup 的 xacro arg（参数配置文件，ADR-0020 的 #params）。
 //
 // gz 订阅回调在 transport 线程执行，PreUpdate 在仿真线程执行 → 共享状态以互斥量保护。
 

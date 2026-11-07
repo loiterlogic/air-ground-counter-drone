@@ -10,7 +10,7 @@
  * ：配置文件按**地图**分文件——`world_map` ∈ `minimal`（config/world_geometry.yaml）|
  `yard` / `open_field`（config/maps/*.yaml）；`world_obstacles` 的 `static|none`
  语义**不变**（`none` 仍强制无任何障碍，用于轴对照）；
- * 全部经 launch ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params），节点不得覆写。
+ * 全部经 launch 单一设置（../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params），节点不得覆写。
 """
 
 import math

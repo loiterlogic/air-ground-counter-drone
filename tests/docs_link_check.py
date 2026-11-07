@@ -43,8 +43,10 @@
 from __future__ import annotations
 
 import argparse
+import io
 import re
 import sys
+import tokenize
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -123,6 +125,40 @@ INLINE_CODE_RE = re.compile(r"(`+)(?:(?!\1).)*\1")
 LINK_RE = re.compile(r"!?\[(?:[^\[\]]|\[[^\]]*\])*\]\(\s*(<[^>]*>|[^)\s]+)(?:\s+[\"'(][^)]*)?\s*\)")
 SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
 LINE_ANCHOR_RE = re.compile(r"^L(\d+)(?:-L?(\d+))?$")
+
+# --------------------------------------------------------------------------------------
+# 代码/配置里的 ADR 引用（判据 c）
+#
+# 为什么需要：`docs_link_check` 原先只扫 `.md`。2026-11-06 那次「契约文档拆到 ADR」
+# 的批量改写，用正则把路径**连同它前面的名词**一起替换掉了，留下
+# `setpoint 世界系为 <一段 ADR 路径>）` 这类读不通的注释，
+# 以及指向不存在文件的 `0021-mission-fco-fixed-budget.md`。
+# 链接检查没扫代码，所以这批损坏一路绿灯进了主干。
+#
+# 判据（全部机械可判）：
+#   ① **注释里不得出现裸路径**。规范只允许两种引用形式：`ADR-NNNN` 与
+#      markdown 链接 `[ADR-NNNN](path#anchor)`（见 docs/conventions/引用与注释纪律.md）。
+#      裸路径既不合规，又正是"名词被路径替换吞掉"的载体——直接禁掉，不给它复发空间。
+#   ② 出现 ADR 路径时（链接形式或代码串里的依赖/数据路径），
+#      目标文件必须存在；带锚点时锚点必须存在。
+#   ③ 出现 `ADR-NNNN` 时，该编号必须有对应篇目（防编号指向已删篇目）。
+# 只扫活跃区；`docs/archive/` 与 `scripts/research/` 是历史证据，按 ADR-0002 不改写。
+# --------------------------------------------------------------------------------------
+
+CODE_SCAN_GLOBS = (
+    "src/**/*.py", "src/**/*.cpp", "src/**/*.hpp", "src/**/*.h",
+    "src/**/*.yaml", "src/**/*.yml", "src/**/*.launch.py", "src/**/*.md",
+    "scripts/**/*.py", "scripts/**/*.sh", "scripts/**/*.md",
+    "tests/**/*.py",
+)
+CODE_EXCLUDED_PREFIXES = (
+    "scripts/research/",
+    "scripts/archive/",
+    "src/agc_sim/materials/",
+)
+CODE_ADR_PATH_RE = re.compile(r"((?:\.\./)*docs/adr/\d{4}-[a-z0-9-]+\.md)(#[a-z0-9-]+)?")
+CODE_ADR_ID_RE = re.compile(r"ADR-(\d{4})")
+
 # 仓库内 ``<file>.md:<line>`` / ``<file>.md:<from>-<to>`` 行号引用惯例
 PATH_LINE_SUFFIX_RE = re.compile(r"^(?P<path>.*?\.md):(?P<a>\d+)(?:-(?P<b>\d+))?$")
 
@@ -144,6 +180,9 @@ class Stats:
     evidence: int = 0
     checked_anchors: int = 0
     skipped_templates: int = 0
+    code_files: int = 0
+    code_adr_refs: int = 0
+    code_adr_checked_anchors: int = 0
     broken_active: list[Broken] = field(default_factory=list)
     broken_historical: list[Broken] = field(default_factory=list)
     local_only_present: list[Broken] = field(default_factory=list)  # 指向本机保留路径，本地可解析
@@ -280,6 +319,127 @@ def check_anchor(doc: Doc, anchor: str, source_rel: str, line: int, target: str)
     return f"锚点不存在：#{anchor}"
 
 
+def iter_code_files(root: Path) -> list[Path]:
+    """活跃区代码 / 配置文件（判据 c 的扫描面），去重排序。"""
+    found: dict[str, Path] = {}
+    for pattern in CODE_SCAN_GLOBS:
+        for path in root.glob(pattern):
+            if not path.is_file():
+                continue
+            if _is_excluded(path, root):
+                continue
+            rel = path.relative_to(root).as_posix()
+            if any(rel.startswith(prefix) for prefix in CODE_EXCLUDED_PREFIXES):
+                continue
+            found[rel] = path
+    return [found[key] for key in sorted(found)]
+
+
+def _python_comment_spans(text: str) -> dict[int, int] | None:
+    """`{行号: 注释起始列}`（只含真正的 `COMMENT` token）。
+
+    为什么不用"剥字符串再找 `#`"的土办法：Python 的 docstring 是 `STRING` token，
+    里面完全可能出现 `#`（如引用式链接定义 `[#hard-constraints]: ...`），
+    土办法会把它误判成注释，逼着人为了过闸门去改正常的文档串——闸门不该制造这种噪声。
+    """
+    spans: dict[int, int] = {}
+    try:
+        for tok in tokenize.generate_tokens(io.StringIO(text).readline):
+            if tok.type == tokenize.COMMENT:
+                spans[tok.start[0]] = tok.start[1]
+    except (tokenize.TokenError, IndentationError, SyntaxError):
+        return None
+    return spans
+
+
+def _comment_text(raw: str, style: str, py_col: int | None = None) -> str | None:
+    """取一行里**注释部分**的文本；该行没有注释则返回 None。
+
+    只判注释、不判代码：ADR 路径作为**字符串数据**（配置值、依赖路径）是合法用法，
+    作为注释里的**引用**则必须遵守「只允许 ADR-NNNN 或 markdown 链接」的规范。
+    """
+    if style == "py":
+        return raw[py_col:] if py_col is not None else None
+    if style == "cpp":
+        stripped = re.sub(r'"(?:\\.|[^"\\])*"', '""', raw)
+        i = stripped.find("//")
+        return raw[i:] if i >= 0 else None
+    # YAML / shell：`#` 在行首或前面是空白时才算注释
+    for i, ch in enumerate(raw):
+        if ch == "#" and (i == 0 or raw[i - 1] in " \t"):
+            return raw[i:]
+    return None
+
+
+def run_code_adr_refs(root: Path, stats: Stats, doc_for) -> None:
+    """判据 c：代码/配置里的 ADR 引用——注释禁裸路径，路径须可解析，编号须有篇目。
+
+    为什么单列一条判据而不是并进 markdown 扫描：markdown 的链接语法是 `](path)`，
+    代码注释里的引用形态完全不同（裸路径 / 反引号 / 纯 `ADR-NNNN`），
+    用同一套 LINK_RE 一条都抓不到——这正是那批损坏一路绿灯的原因。
+    """
+    for path in iter_code_files(root):
+        rel = path.relative_to(root).as_posix()
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        stats.code_files += 1
+        style = "cpp" if path.suffix in (".cpp", ".hpp", ".h") else (
+            "hash" if path.suffix in (".yaml", ".yml", ".sh") else "py")
+        py_spans = _python_comment_spans(text) if style == "py" else None
+        for lineno, raw in enumerate(text.splitlines(), start=1):
+            py_col = py_spans.get(lineno) if py_spans else None
+            comment = _comment_text(raw, style, py_col)
+
+            # ① 注释里出现裸路径 = 违规（规范只允许 ADR-NNNN / markdown 链接）
+            #    链接有两种写法：行内 `[x](path)` 与引用定义 `[x]: path`，两者都合规。
+            if comment is not None and "docs/adr/" in comment and "](" not in comment:
+                if not re.match(r"^\s*\[[^\]]+\]:\s*\S+", comment):
+                    broken = Broken(rel, lineno, "docs/adr/…", "", False)
+                    broken.reason = "注释里出现裸路径（只允许 `ADR-NNNN` 或 markdown 链接）"
+                    stats.broken_active.append(broken)
+
+            # ② 路径须可解析（链接形式与代码串里的路径都查）
+            for match in CODE_ADR_PATH_RE.finditer(raw):
+                target = match.group(1) + (match.group(2) or "")
+                stats.code_adr_refs += 1
+                broken = Broken(rel, lineno, target, "", False)
+                resolved = (path.parent / match.group(1)).resolve()
+                if not resolved.is_file():
+                    # 代码里的 ADR 路径有两种口径：相对本文件的 `../../docs/…`，
+                    # 与相对**仓库根**的 `docs/…`（配置/文档串里更常见）。两种都要认。
+                    alt = (root / match.group(1)).resolve()
+                    if alt.is_file():
+                        resolved = alt
+                try:
+                    resolved.relative_to(root)
+                except ValueError:
+                    broken.reason = "指向项目外的 ADR 路径"
+                    stats.broken_active.append(broken)
+                    continue
+                if not resolved.is_file():
+                    broken.reason = "ADR 文件不存在"
+                    stats.broken_active.append(broken)
+                    continue
+                anchor = (match.group(2) or "").lstrip("#")
+                if not anchor:
+                    continue
+                stats.code_adr_checked_anchors += 1
+                problem = check_anchor(doc_for(resolved), anchor, rel, lineno, target)
+                if problem:
+                    broken.reason = problem
+                    stats.broken_active.append(broken)
+
+            # ③ `ADR-NNNN` 必须有对应篇目
+            for match in CODE_ADR_ID_RE.finditer(raw):
+                num = match.group(1)
+                if not list((root / "docs" / "adr").glob(f"{num}-*.md")):
+                    broken = Broken(rel, lineno, f"ADR-{num}", "", False)
+                    broken.reason = f"ADR-{num} 无对应篇目（docs/adr/{num}-*.md 不存在）"
+                    stats.broken_active.append(broken)
+
+
 def run(root: Path, strict_history: bool, extra_globs: list[str] | None = None) -> Stats:
     stats = Stats()
     docs: dict[Path, Doc] = {}
@@ -388,6 +548,8 @@ def run(root: Path, strict_history: bool, extra_globs: list[str] | None = None) 
                     broken.reason = problem
                     (stats.broken_historical if historical else stats.broken_active).append(broken)
 
+    run_code_adr_refs(root, stats, doc_for)
+
     if strict_history:
         stats.broken_active.extend(stats.broken_historical)
         stats.broken_historical = []
@@ -424,6 +586,8 @@ def main(argv: list[str] | None = None) -> int:
     if not args.quiet:
         print(f"扫描文件：{stats.files}")
         print(f"本地链接：{stats.links}（锚点校验 {stats.checked_anchors}；外部 {stats.external}；证据绝对路径 {stats.evidence}；模板占位跳过 {stats.skipped_templates}）")
+        print(f"代码/配置 ADR 引用：{stats.code_adr_refs} 条 / {stats.code_files} 文件"
+              f"（锚点校验 {stats.code_adr_checked_anchors}）")
 
     if stats.broken_active:
         print(f"\n活跃范围断链：{len(stats.broken_active)}")

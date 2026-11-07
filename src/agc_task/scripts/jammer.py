@@ -108,7 +108,7 @@ class Jammer(Node):
             self.declare_parameter('envelope_max_age_s', 0.5).value)
         # 目标 sys id：入侵者 PX4 实例 1 → MAV_SYS_ID = 2
         self.target_system_ = int(self.declare_parameter('target_system', 2).value)
-        # ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params 单一注入，节点不得覆写）
+        # 真实行为确认（ADR-0020 的 #params 单一注入，节点不得覆写）
         self.vehicle_status_topic_ = self.declare_parameter(
             'vehicle_status_topic', f'/{self.ns_}/fmu/out/vehicle_status').value
         self.confirm_topic_ = self.declare_parameter(

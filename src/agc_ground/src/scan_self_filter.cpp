@@ -9,7 +9,7 @@
 // xy 面重合、轴对齐 → 逐束 `point = (r·cosθ, r·sinθ)` 判断，**无需 TF**。
 //
 // 输入 `/agc/ground/scan`（桥出）→ 输出 `/agc/ground/scan_filtered`（同类型、同 header 时序/frame），
-// 安全层（collision_monitor）与 costmap obstacle_layer ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params 单一注入）。
+// 安全层（collision_monitor）与 costmap obstacle_layer 消费自滤后的扫描（ADR-0020 的 #params 单一注入）。
 //
 // 语言：C++（与 agc_ground 其余节点一致，ADR-0020）。节点**不写文件**。
 //

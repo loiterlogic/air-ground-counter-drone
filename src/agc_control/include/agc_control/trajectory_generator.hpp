@@ -22,7 +22,7 @@ public:
 
   virtual ~TrajectoryGenerator() = default;
 
-  /// 读取插件参数（参数由 launch ../../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params）。
+  /// 读取插件参数（参数由 launch 单一设置，ADR-0020 的 #params）。
   virtual void configure(ParamReader & params) = 0;
 
   /// 相位复位：`t=0` 对应该起始态。后续 sample 以本次 reset 为基准。

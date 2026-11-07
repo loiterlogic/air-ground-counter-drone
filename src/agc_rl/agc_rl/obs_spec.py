@@ -7,7 +7,7 @@
  **新版本号**（旧版本 `v1` 的定义**永久保留**，不原地改）；
  * obs **维度扩展**（目标方位 / 相对速度 / 观测年龄）依 的策略职责裁定 —— 本模块只落**机制**、
  **留位**（`register` 可追加新版本），**不**在本段定扩展维度；
- * 动作语义**沿用** [ADR-0004](../../docs/adr/0004-ground-control-rl-primary-and-nav2-safety.md#top)
+ * 动作语义**沿用** [ADR-0004](../../../docs/adr/0004-ground-control-rl-primary-and-nav2-safety.md#top)
  已修约定（符号 / 量纲），**不**回退。
 
 `v1` = 冻结的观测（`agc_rl.interface.build_observation`）——本模块**引用**该配置文件构造，**不**复制其定义。
@@ -22,14 +22,14 @@ import os
 from agc_rl import interface
 
 # 当前默认观测版本（checkpoint 元数据据此区分）。
-# 升级到 v2（新增目标 bearing / 相对速度 / 观测年龄；[ADR-0022](../../docs/adr/0022-research-propositions-and-decision-rule.md#top)）：
+# 升级到 v2（新增目标 bearing / 相对速度 / 观测年龄；[ADR-0022](../../../docs/adr/0022-research-propositions-and-decision-rule.md#top)）：
 # v1 定义**永久保留**、可回放（旧权重不静默失效）。
 OBS_VERSION = 2
 ACTION_KIND = 'discrete'
 
 
 class ActionSpaceDescriptor:
-    """离散动作空间描述（沿用 [ADR-0004](../../docs/adr/0004-ground-control-rl-primary-and-nav2-safety.md#top)）。"""
+    """离散动作空间描述（沿用 [ADR-0004](../../../docs/adr/0004-ground-control-rl-primary-and-nav2-safety.md#top)）。"""
 
     def __init__(self, n_actions=interface.N_ACTIONS, names=None):
         self.kind = ACTION_KIND

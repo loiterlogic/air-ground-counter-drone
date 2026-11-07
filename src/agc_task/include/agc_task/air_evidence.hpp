@@ -5,8 +5,8 @@
 // 故这里把**成员一起搬进本类**，`RunLogger` 只持有一个 `AirEvidence` 实例并通过
 // `air_.onOdom()` / `air_.json()` 调用——**不复制状态**（复制会造出第二份，两处必然漂移）。
 //
-// 判据 / 口径见 `docs/adr/0006-experiment-artifacts-and-evidence-discipline.md#top`
-// 与 `docs/adr/0016-episode-window-and-sample-validity.md#top`；本文件只实现，
+// 判据 / 口径见 `ADR-0006 的 #top`
+// 与 `ADR-0016 的 #top`；本文件只实现，
 // 不复述契约条文。
 //
 // 本单元**不**依赖 `RunLogger` 的其它状态：构造时由调用方一次性注入三个话题名与

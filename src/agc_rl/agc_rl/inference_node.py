@@ -16,7 +16,7 @@
  这是**确定性占位消费者**：路径**不进入** obs（`interface.py` 的 obs/action 空间与冻结口径不变），
   因此"能沿路径走"**不等于**"训练 RL 已具备路径跟踪能力"（ADR-0013(b)）。
   路径任一质量门不过 → **清缓存 + 持续零速**，**不得**静默退回 goal-only（ADR-0013(e)）。
-- 语言：Python（RL 域，[ADR-0020](../../docs/adr/0020-package-boundaries-and-runtime-topology.md#top)）。
+- 语言：Python（RL 域，[ADR-0020](../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#top)）。
 
 RL 节点**不写文件**：run 级日志 / 产物归 `agc_run_logger` 与 `experiments/`。
 """

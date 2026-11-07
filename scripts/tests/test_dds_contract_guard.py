@@ -10,7 +10,7 @@
  2. **合法的讲解/断言语境**不误报（反引号文档引用、`'…' in sh` 断言）；
  3. 豁免范围不被悄悄扩大。
 
-见 [ADR-0028](../docs/adr/0028-dds-discovery-range-and-transport.md#guard)。
+见 [ADR-0028](../../docs/adr/0028-dds-discovery-range-and-transport.md#guard)。
 """
 
 import importlib.util

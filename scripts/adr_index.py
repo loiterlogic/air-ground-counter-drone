@@ -15,7 +15,7 @@ ADR 是"只追加、不重写"的决策记录，手写索引必然漂移。索�
 
 用法
 ----
-    python3 scripts/adr_index.py            # 生成/覆盖 docs/adr/README.md
+    python3 scripts/adr_index.py            # 生成/覆盖 ADR 索引（docs/adr 下的 README）
     python3 scripts/adr_index.py --check    # 只校验，索引与 ADR 不一致 -> 退出码 1
     python3 scripts/adr_index.py --stdout   # 打印到标准输出，不写文件
 
