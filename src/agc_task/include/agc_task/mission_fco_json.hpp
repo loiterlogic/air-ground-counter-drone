@@ -3,7 +3,7 @@
 // 从 `run_logger.cpp` 拆出（原文件 1,664 行）。本单元只做**序列化**：
 // 输入是 `MissionFcoFixedBudget` 的配置与记录，输出是 summary / ledger 里的 JSON 片段。
 // **不持有状态**——没有成员、没有缓存，纯函数（`mission_fco_fixed_budget.hpp` 仍是
-// 积分器与记录的唯一真源，本文件不复制任何字段语义）。
+// 积分器与记录的唯一出处，本文件不复制任何字段语义）。
 //
 // 口径与判据见 `docs/adr/0021-mission-fco-fixed-budget.md#top`；本文件只实现，不复述条文。
 

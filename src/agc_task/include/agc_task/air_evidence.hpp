@@ -3,7 +3,7 @@
 // 从 `run_logger.cpp` 拆出（原文件 1,664 行，本单元约 250 行）。
 // 拆分纪律（plan 的已知坑）：`trackingErrorJson()` 与 `finalize()` 曾共享 16 个成员，
 // 故这里把**成员一起搬进本类**，`RunLogger` 只持有一个 `AirEvidence` 实例并通过
-// `air_.onOdom()` / `air_.json()` 调用——**不复制状态**（复制即成第二真源）。
+// `air_.onOdom()` / `air_.json()` 调用——**不复制状态**（复制会造出第二份，两处必然漂移）。
 //
 // 判据 / 口径见 `docs/adr/0006-experiment-artifacts-and-evidence-discipline.md#top`
 // 与 `docs/adr/0016-episode-window-and-sample-validity.md#top`；本文件只实现，
