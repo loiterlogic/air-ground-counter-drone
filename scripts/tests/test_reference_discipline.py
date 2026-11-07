@@ -27,7 +27,7 @@ EXCLUDED_PARTS = {
     '__pycache__', '.pytest_cache', 'node_modules',
 }
 EXCLUDED_MARKERS = (
-    '/archive/', '/reviews/', '/temp/', '.coordination', 'scripts/research/',
+    '/archive/', '/temp/', '.coordination', 'scripts/research/',
     'docs/adr/', 'tests/w6_r0', 'tests/w5_r0', 'tests/w7', 'tests/w8',
     'scripts/tests/test_reference_discipline.py',
     # 反例本体：本文件必须**写出**被禁止的形态（如 R-031）才能测"闸门能否拦住它"。
@@ -37,7 +37,7 @@ EXCLUDED_MARKERS = (
     'docs/plan/README.md',
 )
 
-# 目录名**事实陈述**白名单：规范文档必须能描述目录结构（如「产物落 docs/reviews/」），
+# 目录名**事实陈述**白名单：规范文档必须能描述目录结构（如「产物落 scripts/archive/」），
 # 这不是"引用已退役的过程目录陈述当前行为"，而是目录分类表本身的内容。
 # 判定：整行不含 `](`（不是链接）且只出现目录名作为**名词**。
 DIRNAME_FACT_FILES = frozenset({
@@ -58,11 +58,11 @@ FORBIDDEN = (
     (r'\bround-\d+|\bround\s*\d+', '实验轮次'),
     (r'\.coordination/', '协作台账路径'),
     (r'docs/plan/', '临时计划路径'),
-    (r'docs/reviews/', '评审快照路径'),
     (r'\bspecs/', '历史规格路径'),
     (r'\bP\d+-\d|\bF\d+-\d|\bN3\b|\bM0\b', '过程批次号'),
-    # 现行 ADR 编号为 0001–0032；旧体系从 0033 起算（原规则从 0032 起，误伤现行 0032）。
-    (r'ADR-0(?:0(?:3[3-9]|[4-9]\d)|[1-9]\d\d)', '旧体系 ADR 编号'),
+    # 现行 ADR 编号为 0001–0033；旧体系从 0034 起算。**新增 ADR 时必须同步上调**，
+    # 否则新编号会被误判成旧体系（此前上限 0032 就误伤过 0032 本身）。
+    (r'ADR-0(?:0(?:3[4-9]|[4-9]\d)|[1-9]\d\d)', '旧体系 ADR 编号'),
     (r'真源', '「真源」'),
 )
 

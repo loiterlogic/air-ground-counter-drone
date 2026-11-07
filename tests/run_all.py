@@ -16,9 +16,18 @@ from pathlib import Path
 
 TESTS = Path(__file__).resolve().parent
 
+# 不是核查、不得进 runner 的文件：
+# * `checklib.py` —— 共用纯函数库，没有 `__main__`，跑起来什么都不做却退 0（假 PASS）；
+# * `run_*.py` —— 入口本身（跑全量 / 整链 / 矩阵），被 `--all` 收录会递归重跑全套；
+# * `docs_*_check.py` —— **是**核查（文档护栏），保留。
+NOT_CHECKS = frozenset({"checklib.py", "run_all.py"})
+
 
 def discover() -> list[str]:
-    return sorted(p.name for p in TESTS.glob("*.py") if p.name != "run_all.py")
+    return sorted(
+        p.name for p in TESTS.glob("*.py")
+        if p.name not in NOT_CHECKS and not p.name.startswith("run_")
+    )
 
 
 def main() -> int:

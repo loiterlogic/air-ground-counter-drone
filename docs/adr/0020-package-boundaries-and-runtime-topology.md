@@ -70,6 +70,13 @@ include directory … which doesn't exist" 警告），而全仓**无** `find_pa
 `assertions` / `build_manifest` / `write_temp_params` / `write_manifest`），入口**不复述**解析逻辑；
 约束类信息只引用不复述。
 
+**2026-11-06 收口**：`_compose` 曾内联 533 行（含 `yaml.safe_load` 读 `air.yaml`、空中参数合并、
+PX4 可写运行根播种、命令拼装），与本条"入口不复述解析逻辑"**不符**。已把参数拼装全部交回本模块
+（`merge_air_params` / `write_air_params` / `px4_paths` / `require_toolchain` / `px4_cmd` /
+`seed_px4_run_root` / `spawn_args`），入口只剩 `_resolve` → `_compose_lightweight` / `_compose_full`
+→ `_air_and_task_actions` 的**编排**（`_compose` 6 行，最大函数 144 行）。这是**对齐既有决策**，
+不是新决策；两个 backend 的起法行为不变（实测同达 `TRACKING_SUCCESS`、manifest 字段集合同为 14 键）。
+
 `BACKENDS` 能力表为每 backend 声明 `air_link` / `px4` / `target_source` / `required_nodes`（完整展开
 节点）/ `supported_axes`；`not_carried` 状态由能力表**派生**（`entry.requires_air_link and not
 BACKENDS[backend].air_link`），**不再**逐文件硬编码「轻量栈无空中链路」。

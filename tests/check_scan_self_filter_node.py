@@ -20,6 +20,8 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 
 from sensor_msgs.msg import LaserScan
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 
 
 def qos_sensor():
@@ -114,8 +116,7 @@ def main():
                            args.run_id, 'metrics')
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, 'scan_self_filter.json')
-    with open(path, 'w') as fh:
-        json.dump(result, fh, indent=2)
+    checklib.write_json(path, result)
 
     for c in checks:
         print('beam %3d %-8s value=%s expect=%s %s'

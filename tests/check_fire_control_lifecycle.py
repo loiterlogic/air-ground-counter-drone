@@ -45,6 +45,8 @@ from nav_msgs.msg import Odometry  # noqa: E402
 from std_msgs.msg import Int32, String  # noqa: E402
 
 from agc_msgs.msg import AgcTaskState, TargetTrack, TargetTrackArray  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 
 ROOT = '/home/chen/AGC'
 EXE = os.path.join(ROOT, 'install/agc_task/lib/agc_task/capture_adjudicator')

@@ -5,7 +5,7 @@
 
 成熟做法对齐：numpy 文档的 `SeedSequence.spawn` 思路——由**主种子**经层级派生出**统计独立**
 的子流。本模块为保证**跨进程 / 跨平台确定**（避免 Python `hash()` 的进程随机化），改用
-`hashlib.sha256` 做层级派生；RNG 取 stdlib `random.Random`（无第三方依赖，spec R2/R3 选择）。
+`hashlib.sha256` 做层级派生；RNG 取 stdlib `random.Random`（无第三方依赖）。
 
 三级语义：
  * **scene** —— 场景级（同 `master_seed` + `scene_id`）→ `scene_seed`；
@@ -18,7 +18,7 @@
 
 不可复现边界（成文）：外生流（spawn / 噪声序列）**逐位可复现**；但**物理步进调度**（实时异步
 墙钟调度，见 [ADR-0021](../../docs/adr/0021-w8-gui-headless-equivalence.md#top)(b)）**不承诺** bitwise
-一致——轨迹在时间维度上的分叉属**已知边界**，由 runner 记录（spec R3）。
+一致——轨迹在时间维度上的分叉属**已知边界**，由 runner 记录。
 """
 
 import hashlib

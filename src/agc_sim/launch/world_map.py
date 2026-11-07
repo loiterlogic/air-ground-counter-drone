@@ -42,10 +42,10 @@ WORLD_MAPS = tuple(MAP_GEOMETRY_FILES)
 # 外接圆半径缺省值（历史 pole 标定值；ADR-0007）。
 DEFAULT_SAFETY_RADIUS = 2.0
 
-# 支持的单图元形状（ 起含 sphere；ADR-0007 / 本单 schema 扩展）。
+# 支持的单图元形状（起含 sphere；ADR-0007 / 本单 schema 扩展）。
 SHAPES = ('box', 'cylinder', 'sphere')
 
-# 材质档（ 视觉保真；2026-10-29）：**可选**字段 `finish`，缺省不写 = 旧行为（无 PBR 块）。
+# 材质档（视觉保真；2026-10-29）：**可选**字段 `finish`，缺省不写 = 旧行为（无 PBR 块）。
 # 语义 = 真实材料类别的**标量 PBR 近似**（metalness / roughness）。依据：本机 sdformat 1.11
 # `material.sdf` 的 `<pbr><metal><metalness>|<roughness>` 是**标量**字段（无需贴图）
 # —— 本项目不引入外部资产（world_geometry.yaml 纪律），故只能走标量 PBR。

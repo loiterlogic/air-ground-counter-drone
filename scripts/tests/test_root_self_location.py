@@ -20,7 +20,7 @@
  → **必须自定位**（`__file__` / `BASH_SOURCE`），**不得**出现字面量根；
 - **允许保留**（白名单，每条写理由）：
  1. **契约默认值**：`agc_root` 的 launch 默认值 —— 受 `scripts/toolchain_root_check.py` 保护，
- 改它等于改契约口径（ 审查明令**不得改**）；
+ 改它等于改契约口径（审查明令**不得改**）；
  2. **注释 / 文档串 / 报错提示**：不参与路径解析，只给人看；
  3. **历史/开发工具**（`scripts/research/**`、`scripts/archive/**`、`docs/**`、`ADR-0026）：
  不在交付/验证路径上，忠实登记为"不可移植"，不在本单范围。
@@ -161,7 +161,7 @@ def test_allowed_entries_have_reason():
 def test_yaml_configs_have_no_absolute_root():
     """`src/**/config/*.yaml` 里不得再有绝对路径字面量（已删 16 处）。
 
- YAML 字面量会在**运行期**决定写盘位置（ 实测：克隆 run 的 summary 写回原仓库），
+ YAML 字面量会在**运行期**决定写盘位置（实测：克隆 run 的 summary 写回原仓库），
  且它比 C++ 默认值更"隐蔽"——launch 不显式传参时它就生效。
     """
     config_dir = os.path.join(ROOT, 'src', 'agc_task', 'config')

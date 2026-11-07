@@ -20,12 +20,8 @@
 """
 
 import os
-import shutil
 import sys
-import tempfile
 from pathlib import Path
-
-import yaml
 
 from ament_index_python.packages import get_package_prefix, get_package_share_directory
 
@@ -50,8 +46,6 @@ if _LAUNCH_DIR not in sys.path:
     sys.path.insert(0, _LAUNCH_DIR)
 from composition import (  # noqa: E402
     BACKENDS,
-    apply_air_geometry,
-    apply_flight_altitude_air,
     apply_flight_altitude_params,
     apply_spawn_layout,
     apply_target_motion_override,
@@ -61,26 +55,44 @@ from composition import (  # noqa: E402
     derive_px4_sim_seed,
     load_scene,
     load_spawn_layout,
-    new_run_token,
+    merge_air_params,
     own_uav_pose_string,
     parse_own_pose,
+    px4_cmd,
+    px4_paths,
+    require_toolchain,
+    seed_px4_run_root,
+    spawn_args,
     spawn_layout_sha256,
+    write_air_params,
     write_manifest,
     write_temp_params,
 )
 
 
 def _compose(context, *args, **kwargs):
+    """顶层组装：解析输入 → 按 backend 分派（两个 backend 的**参数拼装**都在 `composition`）。"""
+    ctx = _resolve(context)
+    if ctx['backend'] == 'lightweight':
+        return _compose_lightweight(ctx)
+    return _compose_full(ctx, Path(LaunchConfiguration('agc_root').perform(context)))
+
+
+def _resolve(context):
     task_share = get_package_share_directory('agc_task')
     perc_share = get_package_share_directory('agc_perception')
     sim_share = get_package_share_directory('agc_sim')
+    # backend:=full 才用，但在这里**统一解析**：两个 backend 的 ctx 形状一致，
+    # 避免下游 `ctx['air_share']` 在 lightweight 下 KeyError（shape 不一致是最难查的坑）。
+    air_share = get_package_share_directory('agc_air')
+    ground_share = get_package_share_directory('agc_ground')
     use_sim_time = LaunchConfiguration('use_sim_time')
     gz_args = LaunchConfiguration('gz_args')
     gui_render_backend = LaunchConfiguration('gui_render_backend')
 
     backend = LaunchConfiguration('backend').perform(context)
     # （R5/R6）：命令源单一选择由本入口透传至 ground_bringup——
-    # rl（RL 主控，默认）| baseline（Navfn + 自研 LQR 离线对照基线）| train（ 外部训练/评估适配层作命令源）。
+    # rl（RL 主控，默认）| baseline（Navfn + 自研 LQR 离线对照基线）| train（外部训练/评估适配层作命令源）。
     command_source = LaunchConfiguration('command_source').perform(context)
     # （P1，ADR-0022）：`target_source` **覆盖**——P1 的自变量 α（协同程度）：
     # 缺省（空）= 用 backend 能力表值（**2026-11-04 起两 backend 都恒为 gt_adapter**）；
@@ -143,189 +155,137 @@ def _compose(context, *args, **kwargs):
              layout['target']['x'], layout['target']['y'], own_pose,
              effective_own['source']))
 
-    def _spawn_args(effective):
-        """世界 spawn 的 launch 参数 —— **取自 `apply_spawn_layout()` 的返回值**。
 
- 这样"世界 spawn == 复位位置"对**每个场景**都成立（场景覆盖出生位时，两侧一起变），
- 而不是只对默认场景成立。`car_z` 用**轮触地**口径（模型几何属性，与复位口径不同）。
-        """
-        car, tgt = effective['car'], effective['target']
-        return {
-            'car_x': str(car['x']), 'car_y': str(car['y']),
-            'car_z': str(car['world_z']), 'car_yaw': str(car['yaw']),
-            'target_x': str(tgt['x']), 'target_y': str(tgt['y']),
-            'target_z': str(tgt['z']), 'target_yaw': str(tgt['yaw']),
-        }
+    return {
+        'task_share': task_share, 'sim_share': sim_share, 'perc_share': perc_share,
+        'air_share': air_share, 'ground_share': ground_share,
+        'use_sim_time': use_sim_time, 'gz_args': gz_args,
+        'gui_render_backend': gui_render_backend,
+        'backend': backend, 'command_source': command_source,
+        'target_source': target_source, 'spawn_randomize': spawn_randomize,
+        'goal_follow_target': goal_follow_target, 'scene': scene, 'seed': seed,
+        'world_map': world_map, 'px4_sim_model': px4_sim_model,
+        'info': info, 'layout': layout, 'layout_sha256': layout_sha256,
+        'own_pose': own_pose, 'effective_own': effective_own, 'context': context,
+    }
 
-    # ---------------- backend:=lightweight ----------------
-    if backend == 'lightweight':
-        merged = compose_params(info['base'], info['sc'], backend, seed,
-                                geometry=info['geometry'], spawn_randomize=spawn_randomize, goal_follow_target=goal_follow_target)
-        # ADR-0007：高度随地图派生注入（任务侧）。必须在 compose_params 之后、
-        # assertions 之前——与 apply_air_geometry 的时序纪律同款。
-        apply_flight_altitude_params(merged, info)
-        # F1：出生位注入（场景覆盖优先；否则用布局配置文件），返回值即世界 spawn 的唯一来源。
-        effective_spawn = apply_spawn_layout(merged, layout, info['sc'])
-        spawn_args = _spawn_args(effective_spawn)
-        tmp = write_temp_params(merged, backend, scene, seed)
-        asserts = assertions(scene, merged, info, sim_share=sim_share, layout=layout,
-                             effective_spawn=effective_spawn, effective_own=effective_own)
-        manifest_path = write_manifest(
-            build_manifest(backend, info, merged, asserts, sim_share=sim_share,
-                           layout=layout, layout_sha256=layout_sha256, own_pose=own_pose,
-                           effective_spawn=effective_spawn, effective_own=effective_own),
-            backend, scene, seed)
-        return [
-            IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(
-                    os.path.join(task_share, 'launch', 'skeleton.launch.py')),
-                launch_arguments=dict({
-                    'params_file': tmp,
-                    'gz_args': gz_args,
-                    'use_sim_time': use_sim_time,
-                    'world_obstacles': info['world_obstacles'],
-                    'world_map': info['world_map'],
-                    # `sensors_file` 已于 2026-11-06 随 `perception` 轴退役，不再透传。
-                    # 障碍先验 / 地图几何由**配置文件派生**（不再读 agc_perception 包内副本）
-                    'obstacles_file': info['obstacles_file'],
-                    'map_file': info['derived_map_file'],
-                    # （ADR-0006）：世界模型文件（run_logger 记 sha256）单一注入
-                    'world_file': info['world_file'],
-                    'scene_manifest_file': manifest_path,
-                    # （T1/E1）：安全层开关透传（缺省 true；false = 无 shield 对照臂，纯仿真）
-                    # （P1）：观测来源——**用已解析的 `target_source`**（含 backend 能力表回退），
-                    # **不**直接透传 `LaunchConfiguration('target_source')`：后者在未显式给出时为
-                    # **空串**，会**覆盖** perception_bringup 的默认值 → gt_adapter 不发布
-                    # 「不发布 /agc/targets」→ 任务无目标 → TIMEOUT（实测轻量栈回归）。
-                    'target_source': target_source,
-                }, **spawn_args).items(),
-            ),
-            # 拦截裁决（地面侧，无需 PX4）：发射式网捕获裁决器 + 行为级干扰注入
-            Node(package='agc_task', executable='capture_adjudicator',
-                 name='capture_adjudicator',
-                 parameters=[tmp, {'use_sim_time': use_sim_time}], output='screen'),
-            Node(package='agc_task', executable='jammer', name='jammer',
-                 parameters=[tmp, {'use_sim_time': use_sim_time}], output='screen'),
-        ]
 
-    # ---------------- backend:=full ----------------
-    air_share = get_package_share_directory('agc_air')
-    ground_share = get_package_share_directory('agc_ground')
-    # 项目根**显式注入**（launch 参数 agc_root，默认固定根 /home/chen/AGC），
-    # 不再由包 share 目录深度上溯推断；ROS 资产仍经 ament index（get_package_share_directory）。
-    agc_root = Path(LaunchConfiguration('agc_root').perform(context))
+def _compose_lightweight(ctx):
+    """backend:=lightweight 的 actions —— 参数拼装全部经 `composition`，本函数只组装 actions。"""
+    info, backend = ctx['info'], ctx['backend']
+    task_share, sim_share = ctx['task_share'], ctx['sim_share']
+    scene, seed = ctx['scene'], ctx['seed']
+    merged = compose_params(info['base'], info['sc'], backend, seed,
+                            geometry=info['geometry'],
+                            spawn_randomize=ctx['spawn_randomize'],
+                            goal_follow_target=ctx['goal_follow_target'])
+    # ADR-0007：高度随地图派生注入（任务侧）。必须在 compose_params 之后、
+    # assertions 之前——与 apply_air_geometry 的时序纪律同款。
+    apply_flight_altitude_params(merged, info)
+    # F1：出生位注入（场景覆盖优先；否则用布局配置文件），返回值即世界 spawn 的唯一来源。
+    effective_spawn = apply_spawn_layout(merged, ctx['layout'], info['sc'])
+    world_spawn_args = spawn_args(effective_spawn)
+    tmp = write_temp_params(merged, backend, scene, seed)
+    asserts = assertions(scene, merged, info, sim_share=sim_share, layout=ctx['layout'],
+                         effective_spawn=effective_spawn, effective_own=ctx['effective_own'])
+    manifest_path = write_manifest(
+        build_manifest(backend, info, merged, asserts, sim_share=sim_share,
+                       layout=ctx['layout'], layout_sha256=ctx['layout_sha256'],
+                       own_pose=ctx['own_pose'], effective_spawn=effective_spawn,
+                       effective_own=ctx['effective_own']),
+        backend, scene, seed)
+    return [
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                os.path.join(task_share, 'launch', 'skeleton.launch.py')),
+            launch_arguments=dict({
+                'params_file': tmp,
+                'gz_args': ctx['gz_args'],
+                'use_sim_time': ctx['use_sim_time'],
+                'world_obstacles': info['world_obstacles'],
+                'world_map': info['world_map'],
+                # `sensors_file` 已于 2026-11-06 随 `perception` 轴退役，不再透传。
+                # 障碍先验 / 地图几何由**配置文件派生**（不再读 agc_perception 包内副本）
+                'obstacles_file': info['obstacles_file'],
+                'map_file': info['derived_map_file'],
+                # （ADR-0006）：世界模型文件（run_logger 记 sha256）单一注入
+                'world_file': info['world_file'],
+                'scene_manifest_file': manifest_path,
+                # ：安全层开关透传（缺省 true；false = 无 shield 对照臂，纯仿真）
+                # （P1）：观测来源——**用已解析的 `target_source`**（含 backend 能力表回退），
+                # **不**直接透传 `LaunchConfiguration('target_source')`：后者在未显式给出时为
+                # **空串**，会**覆盖** perception_bringup 的默认值 → gt_adapter 不发布
+                # 「不发布 /agc/targets」→ 任务无目标 → TIMEOUT（实测轻量栈回归）。
+                'target_source': ctx['target_source'],
+            }, **world_spawn_args).items(),
+        ),
+        # 拦截裁决（地面侧，无需 PX4）：发射式网捕获裁决器 + 行为级干扰注入
+        Node(package='agc_task', executable='capture_adjudicator',
+             name='capture_adjudicator',
+             parameters=[tmp, {'use_sim_time': ctx['use_sim_time']}], output='screen'),
+        Node(package='agc_task', executable='jammer', name='jammer',
+             parameters=[tmp, {'use_sim_time': ctx['use_sim_time']}], output='screen'),
+    ]
 
-    # F1：己方机 spawn 位**已在上方按出生布局配置文件解析**（`own_pose` = 覆盖值或布局派生值）。
-    # 该坐标透传给 scenario_reset 做出生净空校验——与 PX4_GZ_MODEL_POSE / origin_pose
-    # 是**同一个字符串**，故"起飞参考"与"净空校验坐标"不可能不一致。
-    # 用 `effective_own`（已解析且已校验）而不是再 `float` 一次：两处解析口径必须同一。
-    own_uav_x, own_uav_y = effective_own['x'], effective_own['y']
-    agent0_port = LaunchConfiguration('agent0_port').perform(context)
-    agent1_port = LaunchConfiguration('agent1_port').perform(context)
-    # ADR-0027（uXRCE 预热，可选）：own agent 的**首个** DDS participant 在发现图繁忙时可达
-    # 1.5–4.9 s（> PX4 1 s 预算）。sacrificial SIH warmup 可让 agent 先付掉首次创建成本；
-    # 但 A/B（A4 no-warmup 5/5 vs warmup 5/5）显示：**own 25 s 错峰后 warmup 不再必要**，
-    # 故默认关闭；保留开关供极端负载 / 回退使用。warmup 自身允许 create entities failed。
-    warmup_enable = LaunchConfiguration('px4_warmup').perform(context) == 'true'
-    warmup_delay_s = float(LaunchConfiguration('px4_warmup_delay_s').perform(context))
-    warmup_timeout_s = float(LaunchConfiguration('px4_warmup_timeout_s').perform(context))
-    own_px4_delay_s = float(LaunchConfiguration('own_px4_delay_s').perform(context))
-    intruder_px4_delay_s = float(LaunchConfiguration('intruder_px4_delay_s').perform(context))
 
+def _full_params(ctx, agc_root):
+    """backend:=full 的参数与证据准备（**不组装 actions**）；返回 dict 供 action 组装使用。"""
+    info, backend = ctx['info'], ctx['backend']
+    sim_share, scene, seed = ctx['sim_share'], ctx['scene'], ctx['seed']
+    own_uav_x, own_uav_y = ctx['effective_own']['x'], ctx['effective_own']['y']
     merged = compose_params(info['base'], info['sc'], backend, seed, (own_uav_x, own_uav_y),
-                            geometry=info['geometry'], spawn_randomize=spawn_randomize, goal_follow_target=goal_follow_target)
+                            geometry=info['geometry'],
+                            spawn_randomize=ctx['spawn_randomize'],
+                            goal_follow_target=ctx['goal_follow_target'])
     # ADR-0007：高度随地图派生注入（任务侧：巡航高度 / 网弹道 / 起飞完成判据）。
     # 时序纪律：compose_params 之后、apply_spawn_layout / assertions 之前。
     apply_flight_altitude_params(merged, info)
     # F1：出生位注入（场景覆盖优先；否则用布局配置文件），返回值即世界 spawn 的唯一来源。
-    effective_spawn = apply_spawn_layout(merged, layout, info['sc'])
-    spawn_args = _spawn_args(effective_spawn)
+    effective_spawn = apply_spawn_layout(merged, ctx['layout'], info['sc'])
+    world_spawn_args = spawn_args(effective_spawn)
     tmp = write_temp_params(merged, backend, scene, seed)
 
-    # 空中链路节点参数 = air.yaml 基参 + scenarios.yaml 场景覆盖**合并后注入**
-    air_base = yaml.safe_load(open(os.path.join(air_share, 'config', 'air.yaml')))
-    air_merged = {n: dict(sec.get('ros__parameters', {})) for n, sec in air_base.items()}
-    for n, over in (info['sc'].get('params') or {}).items():
-        if n in air_merged:
-            air_merged[n].update(over)
-    # 静态障碍几何由**配置文件**注入空中安全列表（obstacle_names/x/y；半径 / margin 仍来自 air.yaml）。
-    apply_air_geometry(air_merged, info['geometry'], sim_share=sim_share)
-    # ADR-0007：高度随地图派生注入（空中侧：跟踪高度 / 起飞高度）——与 apply_air_geometry
-    # 同款同位置，保证"配置文件 → 空中参数"只有一条派生链。
-    apply_flight_altitude_air(air_merged, info['geometry'])
-    air_doc = {n: {'ros__parameters': p} for n, p in air_merged.items()}
-    air_tmp = os.path.join(tempfile.gettempdir(),
-                           'w6_%s_air_%s_%d_%s.yaml' % (backend, scene, seed, new_run_token()))
-    with open(air_tmp, 'w') as f:
-        yaml.safe_dump(air_doc, f, allow_unicode=True, sort_keys=True)
+    # 空中链路节点参数 = air.yaml 基参 + 场景覆盖 + 几何/高度派生（**唯一**合并入口在 composition）。
+    air_merged = merge_air_params(ctx['air_share'], info['sc'].get('params'),
+                                  info['geometry'], sim_share=sim_share)
+    air_tmp = write_air_params(air_merged, backend, scene, seed)
 
     # + 断言（含空中安全列表 == 配置文件）在 air 合并后做；不符即拒绝运行。
     # F1：同时断言「复位位置 == 世界 spawn」（两侧同源于 effective_spawn）。
-    asserts = assertions(scene, merged, info, air_merged, sim_share=sim_share, layout=layout,
-                         effective_spawn=effective_spawn, effective_own=effective_own)
+    asserts = assertions(scene, merged, info, air_merged, sim_share=sim_share,
+                         layout=ctx['layout'], effective_spawn=effective_spawn,
+                         effective_own=ctx['effective_own'])
     manifest_path = write_manifest(
         build_manifest(backend, info, merged, asserts, sim_share=sim_share,
-                       layout=layout, layout_sha256=layout_sha256, own_pose=own_pose,
-                       effective_spawn=effective_spawn, effective_own=effective_own,
-                       air_merged=air_merged,
+                       layout=ctx['layout'], layout_sha256=ctx['layout_sha256'],
+                       own_pose=ctx['own_pose'], effective_spawn=effective_spawn,
+                       effective_own=ctx['effective_own'], air_merged=air_merged,
                        cli_observe_yaw_mode='',
                        # 视觉定位路径已于 2026-11-04 退役：manifest 不再带路径/平面/后端字段
                        perception_path='truth',
                        vision_plane=None,
                        detector_backend=None),
         backend, scene, seed)
+    return {'merged': merged, 'tmp': tmp, 'air_merged': air_merged,
+            'air_tmp': air_tmp, 'manifest_path': manifest_path,
+            'world_spawn_args': world_spawn_args, 'effective_spawn': effective_spawn}
 
-    px4_dir = str(agc_root / 'toolchain' / 'PX4-Autopilot')
-    px4_build = os.path.join(px4_dir, 'build', 'px4_sitl_default')
-    px4_bin = os.path.join(px4_build, 'bin', 'px4')
-    # （ADR-0024）：opt-in 每实例 PX4 可写运行根。空 = 既有共享 build（默认行为逐字不变）。
-    # 非空时每实例独立 `-w` 目录 + worker 私有 `etc`（rcS 末段 source 本实例的 px4-rc.params）。
-    px4_run_root = LaunchConfiguration('px4_run_root').perform(context).strip()
-    px4_root = Path(px4_run_root).resolve() if px4_run_root else None
-    if px4_root is not None:
-        # PX4 v1.15.4 显式 `-w` 时不自动追加实例号 → 每个实例目录显式给出。
-        if not (px4_root / 'etc').exists():
-            shutil.copytree(Path(px4_build) / 'etc', px4_root / 'etc')
-        # **必须播种参数初态**（2026-11-03 实测）：`-w` 指向空目录时 PX4 以**出厂默认**起，
-        # `rcS` 的 `AUTOCNF` 分支会重写 CAL_*，但 accel/gyro 校准值仍缺失 →
-        # `Preflight Fail: Accel 0 uncalibrated` + `Gyro 0 uncalibrated` +
-        # `barometer 0 missing` + `Compass Sensor 0 missing`（实测 4 条）。
-        # 播种共享 build 的 `parameters.bson`（含 SITL 传感器校准真值）后同一命令
-        # **0 条 Preflight Fail**。共享 build 只读，绝不回写（ADR-0024 (d)）。
-        for _inst in (0, 1, 3):
-            inst_dir = px4_root / ('instance_%d' % _inst)
-            inst_dir.mkdir(parents=True, exist_ok=True)
-            for _name in ('parameters.bson', 'parameters_backup.bson'):
-                src = Path(px4_build) / _name
-                dst = inst_dir / _name
-                # 只在缺省时播种：同一 run 内 PX4 自己写回的参数不得被 launch 覆盖。
-                if src.is_file() and not dst.exists():
-                    shutil.copy2(src, dst)
 
-    def _px4_cmd(instance=None):
-        """PX4 启动命令；空 root 时与原命令逐字一致（默认路径不变）。"""
-        if px4_root is None:
-            if instance is None:
-                return [px4_bin, '-d', '-s', 'etc/init.d-posix/rcS']
-            return [px4_bin, '-i', str(instance), '-d', '-s', 'etc/init.d-posix/rcS']
-        cmd = [px4_bin]
-        if instance is not None:
-            cmd += ['-i', str(instance)]
-        # `-w` = 可写运行目录（dataman / parameters*.bson / log / eeprom 均落此）；
-        # 末尾 positional data_path = 私有 etc 绝对路径（PX4 在 cwd 建 `etc -> data_path` 符号链接，
-        # 使相对的 `-s etc/init.d-posix/rcS` 解析到本实例私有 etc）。
-        cmd += ['-w', str(px4_root / ('instance_%d' % (instance or 0)))]
-        cmd += ['-d', '-s', 'etc/init.d-posix/rcS', str(px4_root / 'etc')]
-        return cmd
-
-    agent_bin = str(agc_root / 'toolchain' / 'bin' / 'MicroXRCEAgent')
+def _px4_env(ctx, agc_root):
+    """PX4 工具链路径 / 可写运行根 / 机型 env / warmup 开关（**不组装 actions**）。"""
+    px4_dir, px4_build, px4_bin = px4_paths(agc_root)
     # 启动前校验工具链二进制存在（缺失即拒启动，清晰报错）。
-    _required = [agc_root / 'toolchain' / 'bin' / 'MicroXRCEAgent', Path(px4_bin)]
-    _missing = [str(p) for p in _required if not p.exists()]
+    _missing = require_toolchain(agc_root, px4_bin)
     if _missing:
         raise RuntimeError(
             '工具链缺失，拒绝启动：%s\n请确认 agc_root 指向固定项目根（默认 /home/chen/AGC）；'
             '亦可用 agc_root:=<path> 覆盖' % ', '.join(_missing))
+    # （ADR-0024）：opt-in 每实例 PX4 可写运行根。空 = 既有共享 build（默认行为逐字不变）。
+    # 非空时每实例独立 `-w` 目录 + worker 私有 `etc`（rcS 末段 source 本实例的 px4-rc.params）。
+    px4_run_root = LaunchConfiguration('px4_run_root').perform(ctx['context']).strip()
+    px4_root = Path(px4_run_root).resolve() if px4_run_root else None
+    # 播种参数初态（ADR-0024：共享 build 只读，绝不回写）。
+    seed_px4_run_root(px4_root, px4_build)
     gz_models = os.path.join(px4_dir, 'Tools', 'simulation', 'gz', 'models')
     gz_worlds = os.path.join(px4_dir, 'Tools', 'simulation', 'gz', 'worlds')
 
@@ -344,7 +304,7 @@ def _compose(context, *args, **kwargs):
     # = x500 + 纯视觉青色高亮球。`gz_x500` 仍可显式选用（此时不加路径、不注入 AUTOSTART，
     # rcS 走原「按名反查 4001_gz_x500」路径，行为与改动前逐字一致）。
     nadir_sim_model = 'gz_agc_x500_nadir'
-    nadir_enabled = (px4_sim_model == nadir_sim_model)
+    nadir_enabled = (ctx['px4_sim_model'] == nadir_sim_model)
     # 2026-11-05（用户裁定）：己方机 **GUI 辨识高亮**机型 `gz_agc_x500`。
     # 与 nadir 同一解析机制（本仓 models 资源路径 + PX4_SYS_AUTOSTART=4001 让 rcS 仍 source
     # 官方 `4001_gz_x500`，旋翼/参数集逐字不变），差别只在模型名指向本仓
@@ -352,18 +312,63 @@ def _compose(context, *args, **kwargs):
     # 接触 / 安全层）。实体名随之变为 `agc_x500_0`（GZBridge.cpp 的 `<model_sim>_<instance>`）。
     # 实测依据：默认 `gz_x500` 在 50 m 正俯视下仅约 5 px（85 m 时 3 px），用户"看不见我方机"。
     highlight_sim_model = 'gz_agc_x500'
-    own_repo_model = nadir_enabled or (px4_sim_model == highlight_sim_model)
+    own_repo_model = nadir_enabled or (ctx['px4_sim_model'] == highlight_sim_model)
     own_px4_env_extra = {}
     if own_repo_model:
         own_px4_env_extra['GZ_SIM_RESOURCE_PATH'] = (
-            gz_models + ':' + gz_worlds + ':' + os.path.join(sim_share, 'models'))
+            gz_models + ':' + gz_worlds + ':' + os.path.join(ctx['sim_share'], 'models'))
         own_px4_env_extra['PX4_SYS_AUTOSTART'] = '4001'
+
+    # ADR-0027（uXRCE 预热，可选）：own agent 的**首个** DDS participant 在发现图繁忙时可达
+    # 1.5–4.9 s（> PX4 1 s 预算）。sacrificial SIH warmup 可让 agent 先付掉首次创建成本；
+    # 但 A/B（A4 no-warmup 5/5 vs warmup 5/5）显示：**own 25 s 错峰后 warmup 不再必要**，
+    # 故默认关闭；保留开关供极端负载 / 回退使用。warmup 自身允许 create entities failed。
+    c = ctx['context']
+    warmup_enable = LaunchConfiguration('px4_warmup').perform(c) == 'true'
+    warmup_delay_s = float(LaunchConfiguration('px4_warmup_delay_s').perform(c))
+    warmup_timeout_s = float(LaunchConfiguration('px4_warmup_timeout_s').perform(c))
+    own_px4_delay_s = float(LaunchConfiguration('own_px4_delay_s').perform(c))
+    intruder_px4_delay_s = float(LaunchConfiguration('intruder_px4_delay_s').perform(c))
+    return {
+        'px4_dir': px4_dir, 'px4_build': px4_build, 'px4_bin': px4_bin, 'px4_root': px4_root,
+        'gz_models': gz_models, 'gz_worlds': gz_worlds,
+        'own_px4_env_extra': own_px4_env_extra,
+        'warmup_enable': warmup_enable, 'warmup_delay_s': warmup_delay_s,
+        'warmup_timeout_s': warmup_timeout_s, 'own_px4_delay_s': own_px4_delay_s,
+        'intruder_px4_delay_s': intruder_px4_delay_s,
+        'agent0_port': LaunchConfiguration('agent0_port').perform(c),
+        'agent1_port': LaunchConfiguration('agent1_port').perform(c),
+        'agent_bin': str(Path(agc_root) / 'toolchain' / 'bin' / 'MicroXRCEAgent'),
+    }
+
+
+def _compose_full(ctx, agc_root):
+    """backend:=full 的 actions —— 参数拼装经 composition，PX4 env 经 `_px4_env`，本函数只组装。"""
+    info = ctx['info']
+    sim_share, perc_share, ground_share = ctx['sim_share'], ctx['perc_share'], ctx['ground_share']
+    seed = ctx['seed']
+    use_sim_time = ctx['use_sim_time']
+
+    p = _full_params(ctx, agc_root)
+    tmp, air_tmp = p['tmp'], p['air_tmp']
+    manifest_path = p['manifest_path']
+    world_spawn_args = p['world_spawn_args']
+
+    e = _px4_env(ctx, agc_root)
+    px4_build, px4_root = e['px4_build'], e['px4_root']
+    gz_models, gz_worlds = e['gz_models'], e['gz_worlds']
+    own_px4_env_extra = e['own_px4_env_extra']
+    agent_bin, agent0_port, agent1_port = e['agent_bin'], e['agent0_port'], e['agent1_port']
+    own_px4_delay_s, intruder_px4_delay_s = e['own_px4_delay_s'], e['intruder_px4_delay_s']
+
+    def _px4_cmd(instance=None):
+        return px4_cmd(e['px4_bin'], px4_build, px4_root, instance)
 
     common = [tmp, {'use_sim_time': use_sim_time,
                     'scene_manifest_file': manifest_path, 'params_file': tmp}]
     # `origin_pose`：己方 PX4 局部系原点（世界 ENU）= 己方机 spawn 位姿（同一 launch 参数）；
     # px4_adapter（局部→世界）与 OffboardInterface（世界→局部 setpoint）共用该值。
-    air_common = [air_tmp, {'use_sim_time': use_sim_time, 'origin_pose': own_pose}]
+    air_common = [air_tmp, {'use_sim_time': use_sim_time, 'origin_pose': ctx['own_pose']}]
 
     # 入侵者 PX4（实例 1）：attach 已生 `intruder_uav`。其进程 start 事件驱动 `intruder_driver`
     # （见下方 RegisterEventHandler）——不再用绝对时间盲计时。
@@ -384,9 +389,9 @@ def _compose(context, *args, **kwargs):
     # ADR-0027：sacrificial SIH warmup——只创建 participant，不参与任务。
     # `timeout` 保证它在 own PX4 启动前后被收回；warmup 自身失败不影响 own PX4。
     warmup_action = None
-    if warmup_enable:
-        warmup_action = TimerAction(period=warmup_delay_s, actions=[ExecuteProcess(
-            cmd=['timeout', ('%.1f' % warmup_timeout_s)] + _px4_cmd(3),
+    if e['warmup_enable']:
+        warmup_action = TimerAction(period=e['warmup_delay_s'], actions=[ExecuteProcess(
+            cmd=['timeout', ('%.1f' % e['warmup_timeout_s'])] + _px4_cmd(3),
             cwd=px4_build,
             additional_env={
                 'GZ_SIM_RESOURCE_PATH': gz_models + ':' + gz_worlds,
@@ -410,15 +415,15 @@ def _compose(context, *args, **kwargs):
             PythonLaunchDescriptionSource(
                 os.path.join(sim_share, 'launch', 'world_bringup.launch.py')),
             launch_arguments=dict({
-                'gz_args': gz_args, 'use_sim_time': use_sim_time,
+                'gz_args': ctx['gz_args'], 'use_sim_time': use_sim_time,
                 'target_controlled': 'true',
                 # / ADR-0021：GUI 渲染后端由单一 launch 参数下发（auto | d3d12 | software）。
-                'gui_render_backend': gui_render_backend,
+                'gui_render_backend': ctx['gui_render_backend'],
                 # 按障碍轴选择世界（none 生成不含任何障碍的世界）
                 'world_obstacles': info['world_obstacles'],
                 # 按地图选择配置文件（minimal | yard | open_field）
                 'world_map': info['world_map'],
-            }, **spawn_args).items()),
+            }, **world_spawn_args).items()),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 os.path.join(perc_share, 'launch', 'perception_bringup.launch.py')),
@@ -427,7 +432,7 @@ def _compose(context, *args, **kwargs):
                 # 2026-11-04：`target_source` 恒为 gt_adapter（air_fusion 退役）；仍保留透传口，
                 # 因为 gt_adapter 用该参数决定自己是否发布 `/agc/targets`。
                 # 2026-11-06：`sensors_file` / `perception` 轴已退役，不再透传。
-                'target_source': target_source,
+                'target_source': ctx['target_source'],
                 # 障碍先验 / 地图几何由**配置文件派生**（不再读 agc_perception 包内副本）
                 'obstacles_file': info['obstacles_file'],
                 'map_file': info['derived_map_file'],
@@ -438,8 +443,8 @@ def _compose(context, *args, **kwargs):
             PythonLaunchDescriptionSource(
                 os.path.join(ground_share, 'launch', 'ground_bringup.launch.py')),
             launch_arguments={'use_sim_time': use_sim_time,
-                              'command_source': command_source,
-                              # （T1/E1）：安全层开关透传（缺省 true；false = 无 shield 对照臂）
+                              'command_source': ctx['command_source'],
+                              # ：安全层开关透传（缺省 true；false = 无 shield 对照臂）
                               }.items()),
         # 两个 uXRCE-DDS Agent（实例各一，端口独立）
         ExecuteProcess(cmd=[agent_bin, 'udp4', '-p', agent0_port], output='screen'),
@@ -459,7 +464,7 @@ def _compose(context, *args, **kwargs):
                 # 入侵者（实例 1，attach）仍固定 gz_x500——它不参与视觉链路。
                 # ADR-0030：gz_agc_x500_nadir 时另注入 PX4_SYS_AUTOSTART=4001 + 本仓 models 资源路径
                 # （见上方 own_px4_env_extra；默认臂该 dict 为空 → env 与改动前逐字相同）。
-                'PX4_SIM_MODEL': px4_sim_model, 'PX4_GZ_MODEL_POSE': own_pose,
+                'PX4_SIM_MODEL': ctx['px4_sim_model'], 'PX4_GZ_MODEL_POSE': ctx['own_pose'],
                 # 己方实例绑 agent0 端口（显式，与入侵者的 agent1 端口对称，配置文件）
                 'PX4_UXRCE_DDS_PORT': agent0_port,
                 'AGC_PX4_SIM_SEED': str(derive_px4_sim_seed(seed, 0)),
@@ -470,6 +475,19 @@ def _compose(context, *args, **kwargs):
         TimerAction(period=intruder_px4_delay_s, actions=[intruder_px4]),
     ]
 
+    actions.extend(_air_and_task_actions(ctx, common, air_common, intruder_px4))
+    return actions
+
+
+def _air_and_task_actions(ctx, common, air_common, intruder_px4):
+    """空中链路节点 + lifecycle manager + 任务层 + 入侵者驱动 + 起飞守卫（**顺序即语义**）。
+
+    顺序敏感：lifecycle prewarm 必须在 manager 之前、intruder_driver 由 intruder_px4 的
+    start 事件驱动、target_takeoff_guard 必须在最后。改动顺序会改变启动时序语义。
+    """
+    info = ctx['info']
+    actions = []
+
     # 空中链路节点 + lifecycle（复用 Nav2 lifecycle_manager）
     for exe in ('px4_adapter', 'takeoff_controller', 'trajectory_tracker', 'standoff_follower'):
         actions.append(Node(package='agc_air', executable=exe, name=exe,
@@ -478,7 +496,8 @@ def _compose(context, *args, **kwargs):
         name='lifecycle_manager_air',
         # （ADR-0019）：bond_timeout **不**无条件置 0——被管空中节点已实现 Nav2 bond
         # （topic=bond、id=节点名），故启用 bond 失联检测（被管节点死亡 → manager "IS DOWN" 硬复位）。
-        parameters=[{'autostart': True, 'bond_timeout': 5.0, 'use_sim_time': use_sim_time,
+        parameters=[{'autostart': True, 'bond_timeout': 5.0,
+                     'use_sim_time': ctx['use_sim_time'],
                      'node_names': ['px4_adapter', 'takeoff_controller',
                                     'trajectory_tracker', 'standoff_follower']}],
         output='screen')
@@ -521,17 +540,17 @@ def _compose(context, *args, **kwargs):
     for exe in ('scenario_reset', 'task_manager', 'run_logger', 'capture_adjudicator', 'jammer'):
         # run_logger 另注入世界模型文件路径（记 sha256 作工具链 / 世界身份）
         extra = ([{'world_file': info['world_file']}] if exe == 'run_logger' else [])
-        # （T1/E1）：安全层开关（字符串承载→节点内解析）
+        # ：安全层开关（字符串承载→节点内解析）
         if exe == 'run_logger':
             extra = extra + [{'shield_layer_enabled': True}]
             # （裁定 α+，2026-10-31）：**写盘根显式派生自 agc_root**。
             # 原来这两个键在 `base.yaml` 里写死 `/home/chen/AGC/...`，而 `run_logger.cpp` 的
             # C++ 节点默认声明也是同一字面量 → 克隆到别处跑时评测产物**写回原仓库**
-            # （ 实测：summary 落 /home/chen/AGC/experiments/w6-task-eval/，克隆侧
+            # （实测：summary 落 /home/chen/AGC/experiments/w6-task-eval/，克隆侧
             # terminal_explanation 报"未取得本轮 summary"）。
             # launch 参数在 yaml 之后生效 → 这里的值**覆盖** yaml 与 C++ 默认值。
             # `git_root` 也必须传：漏了它，summary 里的 git 身份仍读主仓。
-            _agc_root = LaunchConfiguration('agc_root').perform(context)
+            _agc_root = LaunchConfiguration('agc_root').perform(ctx['context'])
             extra = extra + [{
                 'experiments_root': os.path.join(_agc_root, 'experiments'),
                 'git_root': _agc_root,
@@ -551,7 +570,7 @@ def _compose(context, *args, **kwargs):
             # ADR-0024： 并行时 run_logger 的默认 run_id 只到秒 + 随机后缀，
             # 同秒启动的两个 worker 会撞同一 run 目录（实测 20261025...-091552-6372）。
             # episode_runner 在 worker 模式下注入含 worker id 的唯一 override。
-            _rid = LaunchConfiguration('run_id_override').perform(context)
+            _rid = LaunchConfiguration('run_id_override').perform(ctx['context'])
             if _rid:
                 extra = extra + [{'run_id_override': _rid}]
         params = common + extra
@@ -592,7 +611,7 @@ def _compose(context, *args, **kwargs):
             # 将来若再调 PX4 错峰（own_px4_delay_s / intruder_px4_delay_s），本值须同步复核。
             'startup_timeout_s': 150.0,
             'rate_hz': 10.0,
-            'use_sim_time': use_sim_time,
+            'use_sim_time': ctx['use_sim_time'],
         }],
         output='screen'))
 
@@ -602,8 +621,8 @@ def _compose(context, *args, **kwargs):
     # （lightweight 因提前 return 只命中顶层一处，故该缺陷只在 full 链显形； 实测
     # full+viz 三节点各 2 份、lightweight+viz 各 1 份）。回归见
     # `scripts/tests/test_w6_viz_registration.py`。
-    return actions
 
+    return actions
 
 def _viz_actions(context, sim_share):
     """R6（2026-10-30）演示叠加层：**GUI 纯场景 + RViz 语义层**（用户裁定）。
@@ -659,12 +678,12 @@ def generate_launch_description():
         'run_id_override', default_value='',
         description='ADR-0024：run_logger run_id 覆盖（W7-c worker 唯一性；空=默认生成）'))
     # （R5/R6）：命令源单一选择（透传 ground_bringup）——
-    # rl | baseline（Navfn + 自研 LQR 离线对照基线）| train（ 外部适配层作命令源，仅 lightweight）。
+    # rl | baseline（Navfn + 自研 LQR 离线对照基线）| train（外部适配层作命令源，仅 lightweight）。
     ld.add_action(DeclareLaunchArgument(
         'command_source', default_value='rl',
         description='命令源（互斥）：rl（RL 主控）| baseline（离线对照基线）| train（W7 外部适配层）'))
     # （R3）：训练视图——按 seed 随机化出生位；缺省空（不改既有 行为）。
-    # 2026-11-04 清退：`spawn_randomize`（ 训练视图）已删除。
+    # 2026-11-04 清退：`spawn_randomize`（训练视图）已删除。
     # 2026-11-04 清退：`shield` 主链开关已删除——**安全层恒定启用**。
     # 无 shield 消融臂属 研究（ADR-0023 已结档），须在 `scripts/research/` 里自带参数，
     # 不得在主链开"关安全层"的口子（演示/验收永远不该关）。

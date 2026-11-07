@@ -7,6 +7,7 @@
 overall_pass = (a)∧…∧(i)。
 """
 
+import functools
 import argparse
 import glob
 import json
@@ -17,6 +18,9 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+dump = functools.partial(checklib.dump, filename='r034/check.json', mirror=['metrics/r034.json'], width=28)
+
 
 ROOT = '/home/chen/AGC'
 
@@ -178,22 +182,6 @@ def case_l_scope_note(bench):
     res['pass'] = bool(res['mentions_not_full_chain'] and res['mentions_logic_bench'] and
                        res['unsupported_is_list'])
     return res
-
-
-def dump(res, run_dir):
-    os.makedirs(os.path.join(run_dir, 'metrics'), exist_ok=True)
-    os.makedirs(os.path.join(run_dir, 'r034'), exist_ok=True)
-    with open(os.path.join(run_dir, 'r034', 'check.json'), 'w', encoding='utf-8') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    with open(os.path.join(run_dir, 'metrics', 'r034.json'), 'w', encoding='utf-8') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    for name, t in res.get('tests', {}).items():
-        print('%-28s %s' % (name, 'PASS' if t.get('pass') else 'FAIL'))
-    if 'error' in res:
-        print('error:', res['error'])
-    print('\n%s -> %s' % ('PASS' if res.get('overall_pass') else 'FAIL',
-                          os.path.join(run_dir, 'r034', 'check.json')))
-    return 0 if res.get('overall_pass') else 1
 
 
 def main():

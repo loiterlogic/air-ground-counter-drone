@@ -10,6 +10,9 @@
 # ===== 归档旧树（只读，不纳入版本控制）=====
 /reference/
 
+# ===== 外部参照项目（只读下载，不入版本控制；COLCON_IGNORE 已阻断 colcon 递归扫描）=====
+/refs/
+
 # ===== 实验产物：仅本地保留，不入版本库（ADR-0025）=====
 /experiments/
 /experiments/_archive/

@@ -11,7 +11,7 @@
 // 输入 `/agc/ground/scan`（桥出）→ 输出 `/agc/ground/scan_filtered`（同类型、同 header 时序/frame），
 // 安全层（collision_monitor）与 costmap obstacle_layer ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params 单一注入）。
 //
-// 语言：C++（与 agc_ground 其余节点一致，ADR-0020）。节点**不写文件**（spec R13）。
+// 语言：C++（与 agc_ground 其余节点一致，ADR-0020）。节点**不写文件**。
 //
 // 参数（由 config/ground.yaml 单一注入，节点不得覆写）：
 // in_topic / out_topic、footprint_half_length_m(0.5037)、footprint_half_width_m(0.28545)、

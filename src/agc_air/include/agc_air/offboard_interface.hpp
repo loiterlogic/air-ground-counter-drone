@@ -59,7 +59,7 @@ public:
 
   /// 世界系（ENU）加速度 → PX4：offboard_control_mode（position + acceleration）
   void publishControlMode();
-  /// 世界系（ENU）setpoint；位置项含 `0.5·a·dt²` 前馈（spec R5）
+  /// 世界系（ENU）setpoint；位置项含 `0.5·a·dt²` 前馈
   void publishSetpoint(const Vector3 & pos_enu, const Vector3 & vel_enu, const Vector3 & acc_cmd_enu,
     double yaw_enu);
   /// 直接把 offboard setpoint 落为 PX4 NED 形式（内部使用，亦可复用于 NaN 通道）
@@ -69,7 +69,7 @@ public:
   void sendArm(bool arm);
   void sendOffboardMode();
 
-  /// setpoint 发布者计数（图 API 内省）——：**仅作告警**（含静默 publisher / DDS 发现延迟），
+  /// setpoint 发布者计数（图 API 内省）——**仅作告警**（含静默 publisher / DDS 发现延迟），
   /// **不**单独决定控制权威（权威由 `trajectory_tracker` 的显式控制许可判定，见 ADR-0010）。
   std::size_t countSetpointPublishers() const;
 
@@ -88,7 +88,7 @@ private:
 
   rclcpp_lifecycle::LifecycleNode & node_;
   OffboardParams params_;
-  /// 局部原点（世界 ENU，）：PX4 的 setpoint 在**局部 NED**（相对 EKF 原点），
+  /// 局部原点（世界 ENU）：PX4 的 setpoint 在**局部 NED**（相对 EKF 原点），
   /// 本接口对外为世界 ENU，故发布前减去该原点；由 `origin_pose` 参数（launch 以 spawn 位姿注入）确定。
   Vector3 origin_enu_{Vector3::Zero()};
 

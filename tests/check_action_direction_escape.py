@@ -34,6 +34,24 @@ from nav_msgs.msg import Odometry
 from ros_gz_interfaces.srv import SetEntityPose
 
 from agc_rl import interface
+import functools  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+
+def _metrics_dir(args):
+    d = os.path.join(args.experiments_root, 'w5-ground-nav-safety', args.run_id, 'metrics')
+    os.makedirs(d, exist_ok=True)
+    return d
+
+dump = functools.partial(
+    checklib.dump, filename='r011.json', quiet_on_error=True,
+    notes=lambda res: [
+        ('calibration:', json.dumps(res.get('calibration'), ensure_ascii=False)),
+        ('direction_pass=%s c6_pass=%s'
+         % (res.get('direction_pass'), res.get('c6_pass')), ''),
+    ])
 
 RAW = '/agc/ground/cmd_vel_raw'
 OUT = '/agc/ground/cmd_vel'
@@ -212,7 +230,7 @@ def main():
         res['collision_monitor_state_msg'] = amsg
         if not active:
             res['error'] = 'infra: %s' % amsg
-            return dump(res, args, infra=True)
+            return dump(res, _metrics_dir(args), infra=True)
 
         for name, action in RUNS:
             res['runs'][name] = run_one(n, name, action, control)
@@ -245,26 +263,10 @@ def main():
         res['direction_pass'] = all(r['direction_ok'] for r in res['runs'].values())
         res['c6_pass'] = bool(res['calibration']['config_max_offset_reachable'])
         res['overall_pass'] = bool(res['direction_pass'] and res['c6_pass'])
-        return dump(res, args)
+        return dump(res, _metrics_dir(args))
     finally:
         n.destroy_node()
         rclpy.shutdown()
-
-
-def dump(res, args, infra=False):
-    out_dir = os.path.join(args.experiments_root, 'w5-ground-nav-safety', args.run_id, 'metrics')
-    os.makedirs(out_dir, exist_ok=True)
-    path = os.path.join(out_dir, 'r011.json')
-    with open(path, 'w') as fh:
-        json.dump(res, fh, indent=2, ensure_ascii=False)
-    if 'error' in res:
-        print('error:', res['error'])
-        print('-> %s' % path)
-        return 2 if infra else 1
-    print('calibration:', json.dumps(res.get('calibration'), ensure_ascii=False))
-    print('direction_pass=%s c6_pass=%s' % (res.get('direction_pass'), res.get('c6_pass')))
-    print('\n%s -> %s' % ('PASS' if res.get('overall_pass') else 'FAIL', path))
-    return 0 if res.get('overall_pass') else 1
 
 
 if __name__ == '__main__':

@@ -31,6 +31,17 @@ from lifecycle_msgs.srv import GetState
 from nav_msgs.msg import Odometry
 from ros_gz_interfaces.srv import SetEntityPose
 from sensor_msgs.msg import LaserScan
+import functools  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+def _metrics_dir(args):
+    d = os.path.join(args.experiments_root, 'w5-ground-nav-safety', args.run_id, 'metrics')
+    os.makedirs(d, exist_ok=True)
+    return d
+
+dump = functools.partial(checklib.dump, filename='r007.json', width=20, detail='inline', omit=())
+
 
 POLE = (0.0, -6.0)
 POLE_HALF = 0.15
@@ -224,7 +235,7 @@ def main():
     if not active:
         res['overall_pass'] = False
         res['error'] = amsg
-        _dump(res, args)
+        dump(res, _metrics_dir(args))
         return 1
 
     # ---- CAL：min_points 标定（立柱 0.30 m / 薄柱 0.08 m 各距离命中束数）----
@@ -327,23 +338,8 @@ def main():
     }
 
     res['overall_pass'] = all(t.get('pass') for t in res['tests'].values())
-    rc = _dump(res, args)
+    rc = dump(res, _metrics_dir(args))
     return rc
-
-
-def _dump(res, args):
-    out_dir = os.path.join(args.experiments_root, 'w5-ground-nav-safety',
-                           args.run_id, 'metrics')
-    os.makedirs(out_dir, exist_ok=True)
-    path = os.path.join(out_dir, 'r007.json')
-    with open(path, 'w') as fh:
-        json.dump(res, fh, indent=2)
-    for name, t in res['tests'].items():
-        print('%-20s %s  %s' % (name, 'PASS' if t['pass'] else 'FAIL',
-                               {k: v for k, v in t.items() if k != 'pass'}))
-    print('calibration:', res.get('calibration'))
-    print('\n%s -> %s' % ('PASS' if res.get('overall_pass') else 'FAIL', path))
-    return 0 if res.get('overall_pass') else 1
 
 
 if __name__ == '__main__':

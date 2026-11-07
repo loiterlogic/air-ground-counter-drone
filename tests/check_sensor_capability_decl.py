@@ -7,6 +7,7 @@
 overall_pass = (a)∧…∧(j)。
 """
 
+import functools
 import argparse
 import difflib
 import glob
@@ -18,6 +19,9 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+dump = functools.partial(checklib.dump, filename='r037/check.json', mirror=['metrics/r037.json'], width=28)
+
 
 ROOT = '/home/chen/AGC'
 XACRO = 'src/agc_sim/models/agc_car/agc_car.sdf.xacro'
@@ -207,7 +211,7 @@ def case_h_abi_single_commander_section():
                 t = _read(os.path.join(root, fn)) or ''
                 if 'create_publisher<geometry_msgs::msg::Twist>' in t:
                     hits.append(fn)
-    sec = subprocess.run(['grep', '-rnE', '§[0-9]', 'docs/', '.trae/specs/'],
+    sec = subprocess.run(['grep', '-rnE', '§[0-9]', 'docs/'],
                          cwd=ROOT, capture_output=True, text=True)
     res = {
         'agc_msgs_porcelain': p.stdout.strip(), 'abi_clean': abi_clean,
@@ -256,22 +260,6 @@ def case_j_scripts_hygiene():
     res['pass'] = bool(res['bench_no_rm_rf'] and res['sh_no_rm_rf'] and
                        res['sh_uses_pgrep_pathkills'] and not bare)
     return res
-
-
-def dump(res, run_dir):
-    os.makedirs(os.path.join(run_dir, 'metrics'), exist_ok=True)
-    os.makedirs(os.path.join(run_dir, 'r037'), exist_ok=True)
-    with open(os.path.join(run_dir, 'r037', 'check.json'), 'w', encoding='utf-8') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    with open(os.path.join(run_dir, 'metrics', 'r037.json'), 'w', encoding='utf-8') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    for name, t in res.get('tests', {}).items():
-        print('%-28s %s' % (name, 'PASS' if t.get('pass') else 'FAIL'))
-    if 'error' in res:
-        print('error:', res['error'])
-    print('\n%s -> %s' % ('PASS' if res.get('overall_pass') else 'FAIL',
-                          os.path.join(run_dir, 'r037', 'check.json')))
-    return 0 if res.get('overall_pass') else 1
 
 
 def main():

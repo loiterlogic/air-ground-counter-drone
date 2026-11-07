@@ -1,12 +1,12 @@
-# agc_rl · ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params；spec R6）。
+# agc_rl · ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params；。
 #
 # 由 训练 / 评估 runner（`scripts/w7_episode_runner.py`）与 env 适配层（`agc_rl/env.py`）读取；
 # **不**由 ROS 节点覆写。共享的 obs / 控制 / 寿命参数（`num_sectors` / `lidar_max_range` /
 # `pose_norm_m` / `track_norm_m` / `control.*` / `input_timeout.*`）**不**在此重复——以
 # `config/rl.yaml`（agent 与 env **共用**）为配置文件，避免两处取值漂移。
 w7:
-  # 观测版本（spec R2 / T4 E4）：checkpoint 元数据据此区分；旧版本永久保留、可回放。
-  # v2：v1 + 目标 bearing(sin/cos) / 相对速度 / 观测年龄（F-04）；v1 仍可回放。
+  # 观测版本（T4 E4）：checkpoint 元数据据此区分；旧版本永久保留、可回放。
+  # v2：v1 + 目标 bearing(sin/cos) / 相对速度 / 观测年龄；v1 仍可回放。
   obs_version: 2
   # 步进模型（R1/R3）：每 step 推进的**仿真秒**（异步实时，复用现栈）。
   control_dt_s: 0.1

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """obs 版本化（v2 可区分 + v1 可回放）验收。
 
-判据（[ADR-0022](docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)(d) / [F-04]）：
+判据（[ADR-0022](docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)(d)）：
   * **v1 可回放**：`obs_spec.build_obs_vector(1, ...)` 与冻结接口 `interface.build_observation(...)`
     **逐位一致**（旧权重不静默失效）；
   * **v2 维度** = v1 + 4（目标 bearing sin/cos / 相对速度 / 观测年龄）；
@@ -11,8 +11,10 @@
 
 用法：
   python3 tests/check_obs_versioning.py
+  python3 tests/check_obs_versioning.py --experiments-root /tmp/evidence
 """
 
+import argparse
 import json
 import os
 import sys
@@ -21,11 +23,19 @@ ROOT = '/home/chen/AGC'
 sys.path.insert(0, os.path.join(ROOT, 'src', 'agc_rl'))
 
 from agc_rl import interface, obs_spec  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 
 
 def main():
-    out_dir = os.path.join(ROOT, 'experiments', 'w7-rl-b',
-                           os.environ.get('W7B_E4_RUN_ID', 'e4-obs-versioning'))
+    ap = argparse.ArgumentParser(description='obs 版本化验收')
+    ap.add_argument('--experiments-root', default=os.path.join(ROOT, 'experiments'),
+                    help='证据根（本核查在此落盘 e4.json）')
+    ap.add_argument('--run-id', default=os.environ.get('W7B_E4_RUN_ID', 'e4-obs-versioning'),
+                    help='run 目录名（默认 e4-obs-versioning）')
+    args = ap.parse_args()
+
+    out_dir = os.path.join(args.experiments_root, 'w7-rl-b', args.run_id)
     os.makedirs(os.path.join(out_dir, 'metrics'), exist_ok=True)
 
     ns = 12
@@ -70,8 +80,7 @@ def main():
                        'v2': obs_spec.checkpoint_fingerprint(meta2)}},
         'proposition': 'E4 / F-04：obs_version 版本化——v2 可区分（v1+4 维），v1 逐位可回放。',
     }
-    with open(os.path.join(out_dir, 'metrics', 'e4.json'), 'w') as f:
-        json.dump(result, f, indent=2, ensure_ascii=False)
+    checklib.write_json(os.path.join(out_dir, 'metrics', 'e4.json'), result)
     for k, v in checks.items():
         print('  %-46s %s' % (k, 'PASS' if v else 'FAIL'))
     print('\n%s -> %s' % ('PASS' if result['overall_pass'] else 'FAIL',

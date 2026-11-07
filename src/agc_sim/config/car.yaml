@@ -1,4 +1,4 @@
-# agc_car 参数（ 保形换装后）
+# agc_car 参数（保形换装后）
 #
 # 本文件是地面平台模型与 spawn 位的**唯一参数来源**；由 world_bringup.launch.py 读取，
 # 经 launch 单一设置注入 ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params）。
@@ -25,7 +25,7 @@ agc_sim:
       # 顶速上限（决定 v_car_max，供 标定，ADR-0010）
       max_linear_velocity: 1.5
       max_angular_velocity: 2.0
-      # 末端失效停车守门人（，ADR-0010）：GZ 侧插件的意图失效超时（s）。
+      # 末端失效停车守门人（ADR-0010）：GZ 侧插件的意图失效超时（s）。
       # 与 ground.yaml 的中继 watchdog_s（0.3）同量级；经 world_bringup 单一注入 ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params）。
       cmd_deadman_timeout_s: 0.3
       body_length: 1.0074

@@ -34,7 +34,7 @@ import common
 
 # `gui_renderer_evidence.py` 在 `scripts/`（顶层长期工具），本模块在 `scripts/demo/`。
 # runner 通过 `sys.path.insert(0, scripts/)` 导入它；这里同样显式补路径，**不**假设
-# 调用方已经设置好 PYTHONPATH（ 实测：漏了这一步 → renderer 证据恒 missing）。
+# 调用方已经设置好 PYTHONPATH（实测：漏了这一步 → renderer 证据恒 missing）。
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 RVIZ_EXE = 'rviz2'
@@ -45,7 +45,7 @@ MISSING, OK, NA = 'missing', 'ok', 'not_applicable'
 
 # 叠加层的 TF 是 **map→world** 恒等变换（`main.launch.py::_viz_actions`，RViz Fixed Frame=map 的前提）。
 # world_bringup 另有 2 个 car 相关 static_tf（car/base_link→car/lidar_link 等），**必须排除**，
-# 否则"单份"判据会被正常进程污染（ 实测：按可执行名计数得 3，实为 1 个叠加 + 2 个自带）。
+# 否则"单份"判据会被正常进程污染（实测：按可执行名计数得 3，实为 1 个叠加 + 2 个自带）。
 WORLD_TF_FRAMES = ('map world', 'map->world')
 
 

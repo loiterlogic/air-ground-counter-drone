@@ -4,7 +4,7 @@
 `reset() -> (obs, info)`；`step(action) -> (obs, reward, terminated, truncated, info)`。
 
 `terminated / truncated / info` 由**单一判定来源**生成 —— `agc_rl.termination`
-（**与评估 adapter `scripts/episode_runner.py` 共用**，spec R1 判据：评估摘要与训练 adapter
+（**与评估 adapter `scripts/episode_runner.py` 共用**，判据是：评估摘要与训练 adapter
 的 end / reason 一致）：
 
  * **任务终态**（`/agc/task/state` ∈ `TERMINALS`）→ `terminated=True`（**含超时失败**，契约 ）；
@@ -63,7 +63,7 @@ _ENV_DEFAULTS = {
     'clock_topic': '/clock', 'gt_car_topic': '/agc/gt/agc_car',
     'cmd_raw_topic': '/agc/ground/cmd_vel_raw', 'start_service': '/agc/task/start',
     'num_sectors': 12, 'lidar_max_range': 10.0, 'pose_norm_m': 10.0, 'track_norm_m': 5.0,
-    # （T4/E4）：v2 obs 的追加归一（目标相对速度 / 观测年龄）
+    # ：v2 obs 的追加归一（目标相对速度 / 观测年龄）
     'targets_topic': '/agc/targets', 'rel_speed_norm_mps': 2.0, 'obs_age_norm_s': 0.5,
     'input_timeout': {'odom_s': 0.5, 'scan_s': 0.5, 'goal_s': 2.0, 'task_auth_s': 2.0},
 }
@@ -72,7 +72,7 @@ _W7_DEFAULTS = {'obs_version': 2, 'control_dt_s': 0.1, 'max_steps': 0,
 
 
 def _load_share_yaml():
-    """读 `agc_rl` share 的 `config/rl.yaml` + `config/rl_platform.yaml`（**单一来源**，spec R6）。
+    """读 `agc_rl` share 的 `config/rl.yaml` + `config/rl_platform.yaml`（**单一来源**，。
 
  返回 `(rl_ros_parameters | None, w7 | None)`；未安装 / 缺失 → `(None, None)`（回落内置默认）。
     """
@@ -110,7 +110,7 @@ class _EnvNode(Node):
         self.create_subscription(PoseStamped, cfg['goal_topic'], self._on_goal, 20)
         self.create_subscription(AgcTaskState, cfg['state_topic'], self._on_state, 20)
         self.create_subscription(Clock, cfg['clock_topic'], self._on_clock, 10)
-        # （T4/E4，F-04）：目标轨（bearing / 相对速度 / 观测年龄）——v2 obs 用
+        # ：目标轨（bearing / 相对速度 / 观测年龄）——v2 obs 用
         self.create_subscription(TargetTrackArray, cfg['targets_topic'], self._on_target, 20)
         self.gt_sub = None
         if cfg.get('gt_car_topic'):
@@ -200,7 +200,7 @@ class GroundAgcEnv:
     metadata = {'render_modes': [], 'spec_version': 1}
 
     def __init__(self, scene, seed_plan=None, obs_version=None, **overrides):
-        # 配置文件：`rl.yaml`（obs/控制/寿命，与 agent 共用）+ `rl_platform.yaml`（ 平台参数）。
+        # 配置文件：`rl.yaml`（obs/控制/寿命，与 agent 共用）+ `rl_platform.yaml`（平台参数）。
         rl_p, w7_p = _load_share_yaml()
         cfg = dict(_ENV_DEFAULTS)
         w7cfg = dict(_W7_DEFAULTS)
@@ -271,7 +271,7 @@ class GroundAgcEnv:
         dist = math.hypot(dx, dy)
         extra = {}
         if int(self.obs_version) >= 2:
-            # （T4/E4，F-04）：目标 bearing（车体系）/ 相对速度 / 观测年龄
+            # ：目标 bearing（车体系）/ 相对速度 / 观测年龄
             if n.tgt is not None:
                 dx_t = n.tgt[0] - n.x
                 dy_t = n.tgt[1] - n.y
@@ -348,7 +348,7 @@ class GroundAgcEnv:
     def step(self, action):
         """发布动作 → 推进 `control_dt_s`（仿真时钟）→ 取下一观测与终止判定。
 
- `terminated` = 任务终态（含超时失败，）；`truncated` = **外部截断**（墙钟看门狗 / 训练
+ `terminated` = 任务终态（含超时失败）；`truncated` = **外部截断**（墙钟看门狗 / 训练
  horizon / 输入失效）；回合**进行中**时两者皆 False，`info.outcome=None`（不误判为结束）。
         """
         n = self._node
@@ -357,7 +357,7 @@ class GroundAgcEnv:
         wd = float(self.cfg['wall_watchdog_s'])
 
         if not self._fresh_inputs(n):
-            # 输入失效 → 零速（ 语义），并如实标注（外部截断，非任务终态）
+            # 输入失效 → 零速（语义），并如实标注（外部截断，非任务终态）
             n.set_cmd(0.0, 0.0)
             obs, dist = self._build_obs(n)
             cls = {'outcome_class': 'input_invalid', 'classification': 'infra',

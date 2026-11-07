@@ -17,6 +17,7 @@ episode 的 `summary_path` → 读该 run 的 `metrics/summary.json` 的 `comman
 
 用法：
   python3 tests/check_rl_command_attribution.py --report experiments/w7-rl-b/<run_id>/metrics/report.json
+  python3 tests/check_rl_command_attribution.py --experiments-root <root>   # 取该根下最新 run
 """
 
 import argparse
@@ -24,7 +25,11 @@ import json
 import os
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
 ROOT = '/home/chen/AGC'
+CAMPAIGN = 'w7-rl-b'
 EPS = 1e-6
 
 
@@ -66,10 +71,22 @@ def check_one(ep, expect_shield):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--report', required=True, help='campaign report.json 路径')
+    ap.add_argument('--report', default=None, help='campaign report.json 路径（缺省取证据根下最新 run）')
+    ap.add_argument('--experiments-root', default=os.path.join(ROOT, 'experiments'),
+                    help='证据根（未给 --report 时，取该根 %s 下最新 run 的 report.json）' % CAMPAIGN)
     ap.add_argument('--out', default=None, help='e1.json 输出路径（缺省落同目录 metrics/e1.json）')
     ap.add_argument('--run-id', default=None, help='W7-b run_id（写进证据，缺省取 report.run_id）')
     args = ap.parse_args()
+
+    if not args.report:
+        args.report = checklib.latest_report(args.experiments_root, CAMPAIGN)
+        if not args.report:
+            print('FAIL：%s 下找不到 <run>/metrics/report.json（证据根 %s）'
+                  % (CAMPAIGN, args.experiments_root), file=sys.stderr)
+            return 1
+    if not os.path.isfile(args.report):
+        print('FAIL：report.json 不存在：%s' % args.report, file=sys.stderr)
+        return 1
 
     with open(args.report) as f:
         report = json.load(f)

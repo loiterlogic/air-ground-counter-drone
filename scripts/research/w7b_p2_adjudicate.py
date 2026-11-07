@@ -4,7 +4,7 @@
 输入：`experiments/<campaign>/<run_id>/metrics/arms.json`（`w7b_arms_runner.py` 产物）。
 规则真源：`src/agc_rl/config/research_prereg.yaml` 的 `statistics.p2` / `decision.p2`
 （**单一来源**——阈值 / 样本量 / 显著性**不**在本脚本硬编码；本脚本只读取并执行，
-[F-13](../../docs/reviews/agc-review-2026-10-14/30-未来.md#f-13)）。
+F-13）。
 
 判定（预注册 **v3** 口径，[ADR-0023](../docs/adr/0023-w7b-adjudication-record-and-exit.md#top)）：
   * 自变量 β = 命令源：臂 A `p2_c2_low_level`（直接出 `cmd_vel`） vs

@@ -208,10 +208,20 @@ def test_target_motion_override_keeps_declared_axis_in_sync():
     for key in ("info['axes']['target_motion']", "info['entries']['target_motion']",
                 "info['sc'].setdefault('params'"):
         assert key in comp, 'apply_target_motion_override 未同步 %s' % key
-    # 调用点必须在 load_scene 之后、backend 分支之前，且不在 full 分支里再写第二份。
+    # 调用点必须在 load_scene 之后、backend 分派之前，且不在任何分支里再写第二份。
+    # 分派标记随重构变化（曾为内联 `if backend == 'lightweight':`，现为 `_resolve` 之后
+    # 调 `_compose_lightweight` / `_compose_full`），故按**行为**定位：取「第一个引用
+    # backend 分支函数」的位置；一个都找不到则判闸门失效（不静默放过）。
     pos_scene = w6.find('info = load_scene(')
     pos_call = w6.find('apply_target_motion_override(')
-    pos_branch = w6.find("if backend == 'lightweight':")
+    # 取**函数定义**位置（不是调用点）：调用点在 `_compose` 分派里，位于文件更前面，
+    # 用它会把"定义先后"误当成"分支先后"。
+    branch_marks = [w6.find(m) for m in ("if backend == 'lightweight':",
+                                          'def _compose_lightweight(',
+                                          'def _compose_full(')]
+    branch_marks = [p for p in branch_marks if p >= 0]
+    assert branch_marks, '找不到 backend 分派点 → 本闸门已失效（结构变了，须同步更新）'
+    pos_branch = min(branch_marks)
     assert pos_scene < pos_call < pos_branch, \
         ('apply_target_motion_override 调用位置不对：须在 load_scene 之后、'
          '两个 backend 分支之前（否则 lightweight 或断言链会漏掉）')

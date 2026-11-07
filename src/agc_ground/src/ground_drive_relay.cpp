@@ -126,7 +126,7 @@ private:
   }
 
   std::string in_topic_, out_topic_, expected_frame_id_;
-  // 节流日志用**稳定钟**：不随 ROS 时钟冻结/回拨而失效（ 场景下仍能给出告警）。
+  // 节流日志用**稳定钟**：不随 ROS 时钟冻结/回拨而失效（场景下仍能给出告警）。
   rclcpp::Clock throttle_clock_{RCL_STEADY_TIME};
   double watchdog_s_{0.3};
   double max_sample_age_s_{0.5};

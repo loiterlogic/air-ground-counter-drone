@@ -2,7 +2,7 @@
 """地面全链回归。
 
 在顶层 launch（`agc_task skeleton.launch.py`，GUI 或 `-s` 无头）运行中执行，校验：
- * 门控：`/agc/task/start` 成功 → `GROUND_APPROACH`（ 门控不退化）；
+ * 门控：`/agc/task/start` 成功 → `GROUND_APPROACH`（门控不退化）；
  * 频率：`/agc/ground/odom` 30、`/agc/map` 2、`/agc/targets` 10、`/agc/obstacles` 10、
  `/agc/ground/cmd_vel` 20、`/agc/ground/cmd_vel_raw` 20（±容差）；
  * 帧名：含 Header 的协同话题 `frame_id=world`（`cmd_vel`/`cmd_vel_raw` 为车体系）；
@@ -29,6 +29,8 @@ from agc_msgs.msg import AgcTaskState, ObstacleTrackArray, TargetTrackArray
 from geometry_msgs.msg import TwistStamped
 from nav_msgs.msg import OccupancyGrid, Odometry
 from std_srvs.srv import Trigger
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 
 # (topic, type, 期望 Hz, lenient, 期望 frame)
 TOPICS = [
@@ -165,8 +167,7 @@ def main():
     out_dir = os.path.join(args.experiments_root, 'w5-ground-nav-safety', run_id, 'metrics')
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, 'fullchain.json')
-    with open(path, 'w') as fh:
-        json.dump(payload, fh, indent=2)
+    checklib.write_json(path, payload)
     print('\n%s → %s' % ('PASS' if all_ok else 'FAIL', path))
     return 0 if all_ok else 1
 

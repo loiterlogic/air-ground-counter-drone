@@ -1,4 +1,4 @@
-// epoch_seconds.hpp —— summary.json 中 UNIX 时间戳字段的格式化（ P0 / T2）
+// epoch_seconds.hpp —— summary.json 中 UNIX 时间戳字段的格式化（P0 / T2）
 //
 // 背景：`run_logger` 原先直接 `<< double`（默认 6 位有效数字），实测
 // `wall_start_unix_s` 被写成 `1.79291e+09`，时间分辨率退化到约 2 分钟。

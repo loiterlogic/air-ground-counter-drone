@@ -7,6 +7,7 @@
 本 check **不**重建 / 伪造旧原件：Case g 断言旧丢失路径不存在，Case h 断言 Runbook `#status` 未被凭推断改写。
 """
 
+import functools
 import argparse
 import glob
 import json
@@ -16,6 +17,9 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+dump = functools.partial(checklib.dump, filename='metrics/r030.json', width=48, detail='lines')
+
 
 ROOT = '/home/chen/AGC'
 
@@ -136,22 +140,6 @@ def case_h_runbook_untouched():
     res['has_new_ref'] = '20261016-r030' in t
     res['pass'] = bool(not res['has_old_ref'] and not res['has_new_ref'])
     return res
-
-
-def dump(res, out_dir):
-    os.makedirs(os.path.join(out_dir, 'metrics'), exist_ok=True)
-    path = os.path.join(out_dir, 'metrics', 'r030.json')
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    for name, t in res.get('tests', {}).items():
-        print('%-48s %s' % (name, 'PASS' if t.get('pass') else 'FAIL'))
-        for k, v in t.items():
-            if k != 'pass':
-                print('      %s = %s' % (k, v))
-    if 'error' in res:
-        print('error:', res['error'])
-    print('\n%s -> %s' % ('PASS' if res.get('overall_pass') else 'FAIL', path))
-    return 0 if res.get('overall_pass') else 1
 
 
 def main():

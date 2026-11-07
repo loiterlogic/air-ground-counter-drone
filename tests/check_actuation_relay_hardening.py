@@ -49,6 +49,12 @@ from geometry_msgs.msg import PoseStamped, Twist, TwistStamped
 from lifecycle_msgs.srv import GetState
 from nav_msgs.msg import Odometry
 from ros_gz_interfaces.srv import SetEntityPose
+import functools  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+dump = functools.partial(checklib.dump, width=34, detail='inline')
+
 
 RAW_TOPIC = '/agc/ground/cmd_vel_raw'
 CMD_TOPIC = '/agc/ground/cmd_vel'
@@ -603,31 +609,6 @@ def run_sim(args):
 
     res['overall_pass'] = all(t.get('pass') for t in res['tests'].values())
     return dump(res, out_dir, 'r009.json')
-
-
-def dump(res, out_dir, filename, infra=False):
-    path = os.path.join(out_dir, filename)
-    with open(path, 'w') as fh:
-        json.dump(res, fh, indent=2, ensure_ascii=False)
-    for name, t in res.get('tests', {}).items():
-        print('%-34s %s  %s' % (name, 'PASS' if t.get('pass') else 'FAIL',
-                                {k: v for k, v in t.items() if k != 'pass'}))
-    if 'facts' in res:
-        print('facts:', res['facts'])
-    if 'evidence' in res:
-        ev = res['evidence']
-        print('evidence: has_timeout_token=%s has_deadman_token=%s' % (
-            ev.get('has_timeout_token'), ev.get('has_deadman_token')))
-    if 'evidence_static' in res:
-        ev = res['evidence_static']
-        print('evidence_static: has_timeout_token=%s has_deadman_token=%s' % (
-            ev.get('has_timeout_token'), ev.get('has_deadman_token')))
-    if 'error' in res:
-        print('error:', res['error'])
-        return 2 if infra else 1
-    ok = bool(res.get('overall_pass'))
-    print('\n%s -> %s' % ('PASS' if ok else 'FAIL', path))
-    return 0 if ok else 1
 
 
 def main():

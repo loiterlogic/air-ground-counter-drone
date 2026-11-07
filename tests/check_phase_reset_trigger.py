@@ -30,6 +30,8 @@ from nav_msgs.msg import Odometry
 from std_msgs.msg import String
 from std_srvs.srv import Trigger
 from trajectory_msgs.msg import MultiDOFJointTrajectory
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 
 
 def _pos(msg):
@@ -162,8 +164,7 @@ def main():
     out_dir = os.path.join(args.experiments_root, 'w6-task-eval', run_id, 'metrics')
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, 'c5.json')
-    with open(path, 'w') as fh:
-        json.dump(payload, fh, indent=2, ensure_ascii=False)
+    checklib.write_json(path, payload)
     print('\n%s → %s' % ('PASS' if all_ok else 'FAIL', path))
     return 0 if all_ok else 1
 

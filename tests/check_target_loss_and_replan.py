@@ -13,6 +13,7 @@
   ⑤ 口径 ADR / 契约边界 / 脚本卫生 / 范围标注。
 """
 
+import functools
 import argparse
 import glob
 import json
@@ -23,6 +24,9 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+dump = functools.partial(checklib.dump, filename='r041/check.json', mirror=['metrics/r041.json'], width=34)
+
 
 ROOT = '/home/chen/AGC'
 
@@ -174,7 +178,7 @@ def case_f_abi_single_commander_section():
                 if 'create_publisher<px4_msgs::msg::TrajectorySetpoint>' in t:
                     hits.append(fn)
     sec = []
-    for base in (os.path.join(ROOT, 'docs'), os.path.join(ROOT, '.trae', 'specs')):
+    for base in (os.path.join(ROOT, 'docs'),):
         for root, _dirs, files in os.walk(base):
             for fn in files:
                 if not fn.endswith('.md'):
@@ -219,22 +223,6 @@ def case_h_scope_note(bench):
     }
     res['pass'] = all(res.values())
     return res
-
-
-def dump(res, run_dir):
-    os.makedirs(os.path.join(run_dir, 'metrics'), exist_ok=True)
-    os.makedirs(os.path.join(run_dir, 'r041'), exist_ok=True)
-    with open(os.path.join(run_dir, 'r041', 'check.json'), 'w', encoding='utf-8') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    with open(os.path.join(run_dir, 'metrics', 'r041.json'), 'w', encoding='utf-8') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    for name, t in res.get('tests', {}).items():
-        print('%-34s %s' % (name, 'PASS' if t.get('pass') else 'FAIL'))
-    if 'error' in res:
-        print('error:', res['error'])
-    print('\n%s -> %s' % ('PASS' if res.get('overall_pass') else 'FAIL',
-                          os.path.join(run_dir, 'r041', 'check.json')))
-    return 0 if res.get('overall_pass') else 1
 
 
 def main():

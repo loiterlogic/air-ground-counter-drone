@@ -1,6 +1,6 @@
 """`main.launch.py` 演示叠加层（viz）注册次数的回归测试（T0：不启任何进程）。
 
-**守护的缺陷**（ 实测， 修复）：
+**守护的缺陷**（实测， 修复）：
 `_compose()` 末尾曾有 `actions.extend(_viz_actions(context, sim_share))`，
 而 `generate_launch_description()` 末尾另有一个顶层
 `OpaqueFunction(lambda c: _viz_actions(c, sim_share))` → `backend:=full` 时

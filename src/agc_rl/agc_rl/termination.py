@@ -1,10 +1,10 @@
 """episode 结束判定**单一来源**。
 
 本模块是 的 episode 终止 / 预算语义**配置文件**：**训练 adapter 与评估 adapter
-（`scripts/episode_runner.py`）共用本模块**，不得各自另立判定（spec R1 判据：
+（`scripts/episode_runner.py`）共用本模块**，不得各自另立判定（判据：
 "同一 episode 的评估摘要与训练 adapter 的 end / reason 一致"）。
 
-映射（对齐 Gymnasium v0.26+ 语义，见 spec R1）：
+映射（对齐 Gymnasium v0.26+ 语义）：
  * **任务终态**（任意 `TERMINALS`）→ MDP **terminated**（含超时失败，契约 超时一律失败）；
  * **外部截断**（墙钟看门狗耗尽 / 训练 horizon / 无终态）→ **truncated**（非任务终态，须 bootstrap）；
  * `INFRA_FAILURE` → 单列 `infra`，**不**吞入成功率（[ADR-0018](../../docs/adr/0018-acceptance-and-coverage-matrix.md#top)）。

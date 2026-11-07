@@ -21,6 +21,12 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
+import functools  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+dump = functools.partial(checklib.dump, filename='metrics/r026.json', width=56, detail='lines')
+
 
 ROOT = '/home/chen/AGC'
 
@@ -232,22 +238,6 @@ def case_f_adr():
         res['no_section_ref'] = False
     res['pass'] = bool(res['exists'] and res.get('status_accepted') and res.get('no_section_ref'))
     return res
-
-
-def dump(res, out_dir):
-    os.makedirs(os.path.join(out_dir, 'metrics'), exist_ok=True)
-    path = os.path.join(out_dir, 'metrics', 'r026.json')
-    with open(path, 'w') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    for name, t in res.get('tests', {}).items():
-        print('%-56s %s' % (name, 'PASS' if t.get('pass') else 'FAIL'))
-        for k, v in t.items():
-            if k != 'pass':
-                print('      %s = %s' % (k, v))
-    if 'error' in res:
-        print('error:', res['error'])
-    print('\n%s -> %s' % ('PASS' if res.get('overall_pass') else 'FAIL', path))
-    return 0 if res.get('overall_pass') else 1
 
 
 def main():

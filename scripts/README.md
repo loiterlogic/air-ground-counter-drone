@@ -5,12 +5,13 @@
 > **本索引由 [`scripts/tests/test_scripts_index.py`](tests/test_scripts_index.py) 自动核对**：顶层实际文件集合、本表、[research/README](research/README.md#research) 与 [archive/README](archive/README.md#archive) 任一处漂移即测试失败。
 
 <a id="top-tools"></a>
-## 长期工具（顶层 10 个）
+## 长期工具（顶层 11 个）
 
 | 文件 | 用途 |
 |---|---|
 | [`episode_runner.py`](episode_runner.py) | 批量跑 episode、三层验收判定、唯一 run 关联、完整性硬门 |
 | [`evidence_archive.py`](evidence_archive.py) | 证据不可变归档 + intake manifest（ADR-0006） |
+| [`reclaim_evidence.py`](reclaim_evidence.py) | `experiments/` + `log/` 保留策略执行器（**dry-run 默认**，`--apply` 才删；ADR-0006） |
 | [`dep_audit.py`](dep_audit.py) | 包依赖审计 |
 | [`toolchain_pin_check.py`](toolchain_pin_check.py) | 工具链 pin 清单核对（只读、退出码语义，ADR-0005） |
 | [`toolchain_root_check.py`](toolchain_root_check.py) | 工具链根注入 / preflight 校验（ADR-0005） |

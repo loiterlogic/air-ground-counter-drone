@@ -3,7 +3,7 @@
 
 输入：`experiments/<campaign>/<run_id>/metrics/arms.json`（`w7b_arms_runner.py` 产物）。
 规则真源：`src/agc_rl/config/research_prereg.yaml`（**单一来源**——阈值 / 样本量 / 显著性**不**在本脚本硬编码；
-本脚本只**读取**并执行，防事后改阈值，[F-13](../../docs/reviews/agc-review-2026-10-14/30-未来.md#f-13)）。
+本脚本只**读取**并执行，防事后改阈值，F-13）。
 
 判定（预注册 **v4** 口径，ADR-0022）：
   * DV primary = `fire_control_opportunity_rate_active`（**active 窗口**：GROUND_APPROACH→终态；

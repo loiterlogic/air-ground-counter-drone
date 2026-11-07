@@ -6,6 +6,7 @@
 输出 `.../<run_id>/metrics/r033.json`；overall_pass = (a)∧…∧(i)。
 """
 
+import functools
 import argparse
 import glob
 import json
@@ -16,6 +17,9 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+dump = functools.partial(checklib.dump, filename='metrics/r033.json', width=28, detail='lines')
+
 
 ROOT = '/home/chen/AGC'
 
@@ -128,22 +132,6 @@ def case_i_scope_2d_static_note(bench):
     res['pass'] = bool(res['mentions_2d'] and res['mentions_limited_model'] and
                        res['dynamic_obstacle_unsupported'] and res['not_full_chain'])
     return res
-
-
-def dump(res, run_dir):
-    os.makedirs(os.path.join(run_dir, 'metrics'), exist_ok=True)
-    path = os.path.join(run_dir, 'metrics', 'r033.json')
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    for name, t in res.get('tests', {}).items():
-        print('%-28s %s' % (name, 'PASS' if t.get('pass') else 'FAIL'))
-        for k, v in t.items():
-            if k != 'pass':
-                print('      %s = %s' % (k, v))
-    if 'error' in res:
-        print('error:', res['error'])
-    print('\n%s -> %s' % ('PASS' if res.get('overall_pass') else 'FAIL', path))
-    return 0 if res.get('overall_pass') else 1
 
 
 def main():

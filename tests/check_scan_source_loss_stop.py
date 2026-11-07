@@ -40,6 +40,17 @@ from lifecycle_msgs.srv import GetState
 from nav_msgs.msg import Odometry
 from ros_gz_interfaces.srv import SetEntityPose
 from sensor_msgs.msg import LaserScan
+import functools  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+def _metrics_dir(args):
+    d = os.path.join(args.experiments_root, 'w5-ground-nav-safety', args.run_id, 'metrics')
+    os.makedirs(d, exist_ok=True)
+    return d
+
+dump = functools.partial(checklib.dump, filename='r008.json', width=22, detail='inline', omit=('pids',))
+
 
 POLE = (0.0, -6.0)
 POLE_HALF = 0.15
@@ -225,7 +236,7 @@ def main():
     if not active:
         res['overall_pass'] = False
         res['error'] = amsg
-        _dump(res, args)
+        dump(res, _metrics_dir(args))
         return 1
 
     if n.scan_f is not None:
@@ -376,25 +387,7 @@ def main():
         n.spin_for(1.0)
 
     res['overall_pass'] = all(t.get('pass') for t in res['tests'].values())
-    return _dump(res, args)
-
-
-def _dump(res, args):
-    out_dir = os.path.join(args.experiments_root, 'w5-ground-nav-safety',
-                           args.run_id, 'metrics')
-    os.makedirs(out_dir, exist_ok=True)
-    path = os.path.join(out_dir, 'r008.json')
-    with open(path, 'w') as fh:
-        json.dump(res, fh, indent=2, ensure_ascii=False)
-    for name, t in res['tests'].items():
-        print('%-22s %s  %s' % (name, 'PASS' if t.get('pass') else 'FAIL',
-                                {k: v for k, v in t.items() if k not in ('pass', 'pids')}))
-    print('latency:', res.get('latency'))
-    print('scan_meta:', res.get('scan_meta'))
-    print('source_timeout_param:', res.get('source_timeout_param'))
-    print('scan_source_timeout_param:', res.get('scan_source_timeout_param'))
-    print('\n%s -> %s' % ('PASS' if res.get('overall_pass') else 'FAIL', path))
-    return 0 if res.get('overall_pass') else 1
+    return dump(res, _metrics_dir(args))
 
 
 if __name__ == '__main__':

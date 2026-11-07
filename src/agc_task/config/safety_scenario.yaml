@@ -1,8 +1,8 @@
 # 脚本级最小场景参数（R9）——由 safety_scenario.launch.py ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params）
 #
 # 场景：车正对立柱 pole_1（world (0,-6)）前方 5 m、朝 -y 直行 → 由 RL 主控驱动，
-# 安全层（collision_monitor）应在安全/碰撞/紧急档依次降速 / 停车，车真实停住（ 顺序 +）。
-# 复用 的门控（/agc/task/start、/agc/task/state）与 /agc/scenario/reset；**不**自建 业务场景。
+# 安全层（collision_monitor）应在安全/碰撞/紧急档依次降速 / 停车，车真实停住（顺序 +）。
+# 复用 的门控（agc/task/start、/agc/task/state）与 /agc/scenario/reset；**不**自建 业务场景。
 
 task_manager:
   ros__parameters:
@@ -27,7 +27,7 @@ scenario_reset:
     car_y: -1.0
     car_z: 0.010
     car_yaw: -1.5707963267948966
-    # 目标机远离作业点（ 出生间距 ≥2.4m）
+    # 目标机远离作业点（出生间距 ≥2.4m）
     target_x: 20.0
     target_y: 20.0
     target_z: 2.0

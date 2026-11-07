@@ -25,6 +25,8 @@ from rclpy.node import Node
 
 from agc_msgs.msg import AgcTaskState
 from std_srvs.srv import Trigger
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 
 TERMINAL = {
     AgcTaskState.TRACKING_SUCCESS,
@@ -156,8 +158,7 @@ def main():
     out_dir = os.path.join(args.experiments_root, 'w6-task-eval', run_id, 'metrics')
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, 'fsm.json')
-    with open(path, 'w') as fh:
-        json.dump(payload, fh, indent=2, ensure_ascii=False)
+    checklib.write_json(path, payload)
     print('\n%s → %s' % ('PASS' if all_ok else 'FAIL', path))
     return 0 if all_ok else 1
 

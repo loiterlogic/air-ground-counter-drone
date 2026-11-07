@@ -27,6 +27,8 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import String
 from px4_msgs.msg import VehicleStatus
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 
 
 def _qos():
@@ -119,8 +121,7 @@ def main():
     out_dir = os.path.join(args.experiments_root, 'w6-task-eval', run_id, 'metrics')
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, 'full_%s.json' % expected)
-    with open(path, 'w') as f:
-        json.dump(payload, f, indent=2, ensure_ascii=False)
+    checklib.write_json(path, payload)
     print('\n%s → %s' % ('PASS' if all_ok else 'FAIL', path))
     return 0 if all_ok else 1
 

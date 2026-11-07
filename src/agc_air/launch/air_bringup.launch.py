@@ -3,11 +3,11 @@
 
 一条 `ros2 launch` 起：agc_world（唯一 gz server，经 agc_sim/world_bringup）+ uXRCE-DDS Agent
 + PX4 SITL（`PX4_GZ_STANDALONE=1`、`PX4_GZ_WORLD=agc_world`、`PX4_SIM_MODEL=gz_x500`（launch 参数
-`px4_sim_model` 可换 `gz_x500_mono_cam` 挂机载相机，），
+`px4_sim_model` 可换 `gz_x500_mono_cam` 挂机载相机），
 由 PX4 自身 gz_bridge 向 `/world/agc_world/create` spawn 机型）+ 空中链路节点。
 
 参数配置文件：`config/air.yaml`（契约 [参数入口]）。链路连接层（agent 地址 / 端口 / PX4 目录）
-集中在此文件与 launch 参数 —— 实机替换只动这一处（spec R11，薄抽象）。
+集中在此文件与 launch 参数 —— 实机替换只动这一处（薄抽象）。
 """
 
 import os
@@ -71,7 +71,7 @@ def _generate(context, *args, **kwargs):
     print('[air_bringup] world_map=%s geometry=%s obstacles=%d'
           % (map_name, geom_path, len(geometry['obstacles'])))
 
-    # ---- 链路连接层（唯一可替换处，spec R11）----
+    # ---- 链路连接层（唯一可替换处，----
     px4_dir = str(agc_root / 'toolchain' / 'PX4-Autopilot')
     px4_build = os.path.join(px4_dir, 'build', 'px4_sitl_default')
     px4_bin = os.path.join(px4_build, 'bin', 'px4')

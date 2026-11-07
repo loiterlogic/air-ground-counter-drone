@@ -34,6 +34,8 @@ from nav_msgs.msg import Odometry
 from px4_msgs.msg import VehicleOdometry
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 
 ROOT = '/home/chen/AGC'
 CAMPAIGN = 'w7-rl'
@@ -142,19 +144,18 @@ def main():
     try:
         res['numbers']['git_commit'] = subprocess.run(
             ['git', 'rev-parse', 'HEAD'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
-        with open(os.path.join(run_dir, 'config', 'run_identity.json'), 'w', encoding='utf-8') as f:
-            json.dump({'campaign': CAMPAIGN, 'run_id': args.run_id,
-                       'git_commit': res['numbers']['git_commit'],
-                       'probe': 'tests/check_rl_time_space_frames.py',
-                       'node_params': {'odom_in_topic': TOPIC_IN, 'origin_pose': ORIGIN,
-                                       'bond_heartbeat_period': 0.0},
-                       'check_vectors': {'pos_ned': list(POS_NED), 'q_xyzw': list(Q_XYZW),
-                                         'vel_ned': list(VEL_NED), 'ang_frd': list(ANG_FRD),
-                                         'expect_pose_enu': list(EXP_POSE)},
-                       'env': {'ROS_DOMAIN_ID': os.environ.get('ROS_DOMAIN_ID'),
-                               'ROS_AUTOMATIC_DISCOVERY_RANGE':
-                                   os.environ.get('ROS_AUTOMATIC_DISCOVERY_RANGE')}},
-                      f, indent=2, ensure_ascii=False)
+        checklib.write_json(os.path.join(run_dir, 'config', 'run_identity.json'),
+                           {'campaign': CAMPAIGN, 'run_id': args.run_id,
+                            'git_commit': res['numbers']['git_commit'],
+                            'probe': 'tests/check_rl_time_space_frames.py',
+                            'node_params': {'odom_in_topic': TOPIC_IN, 'origin_pose': ORIGIN,
+                                            'bond_heartbeat_period': 0.0},
+                            'check_vectors': {'pos_ned': list(POS_NED), 'q_xyzw': list(Q_XYZW),
+                                              'vel_ned': list(VEL_NED), 'ang_frd': list(ANG_FRD),
+                                              'expect_pose_enu': list(EXP_POSE)},
+                            'env': {'ROS_DOMAIN_ID': os.environ.get('ROS_DOMAIN_ID'),
+                                    'ROS_AUTOMATIC_DISCOVERY_RANGE':
+                                        os.environ.get('ROS_AUTOMATIC_DISCOVERY_RANGE')}})
 
         logf = open(log_path, 'w', encoding='utf-8')
         proc = subprocess.Popen(
@@ -291,12 +292,9 @@ def main():
         print('%-26s %s' % (name, 'PASS' if res['tests'][name].get('pass') else 'FAIL'))
     if 'error' in res:
         print('error:', res['error'])
-    with open(os.path.join(run_dir, 'd1', 'bench.json'), 'w', encoding='utf-8') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    with open(os.path.join(run_dir, 'd1', 'check.json'), 'w', encoding='utf-8') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    with open(os.path.join(run_dir, 'metrics', 'd1.json'), 'w', encoding='utf-8') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
+    checklib.write_json(os.path.join(run_dir, 'd1', 'bench.json'), res)
+    checklib.write_json(os.path.join(run_dir, 'd1', 'check.json'), res)
+    checklib.write_json(os.path.join(run_dir, 'metrics', 'd1.json'), res)
     with open(os.path.join(run_dir, 'd1', 'curves.csv'), 'w', newline='', encoding='utf-8') as f:
         w = csv.writer(f)
         w.writerow(['t_s', 'stamp_ns', 'pose_x', 'pose_y', 'pose_z',

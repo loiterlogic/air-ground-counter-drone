@@ -171,7 +171,7 @@ TEST_F(VerticalGateTest, RejectsInvalidZTopValues)
   }
 }
 
-// ④ 顶高数组长度与其余四个不一致 → 拒绝启动（ 五数组等长）
+// ④ 顶高数组长度与其余四个不一致 → 拒绝启动（五数组等长）
 TEST_F(VerticalGateTest, RejectsMismatchedZTopLength)
 {
   node_->declare_parameter("safety.obstacle_names", std::vector<std::string>{"a", "b"});

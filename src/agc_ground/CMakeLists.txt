@@ -24,7 +24,7 @@ find_package(nav2_core REQUIRED)
 find_package(nav2_costmap_2d REQUIRED)
 find_package(nav2_util REQUIRED)
 
-# 命令源为 agc_rl 的推理节点（Python）；原 ground_policy_placeholder 已退役（spec R7）。
+# 命令源为 agc_rl 的推理节点（Python）；原 ground_policy_placeholder 已退役。
 add_executable(ground_drive_relay src/ground_drive_relay.cpp)
 ament_target_dependencies(ground_drive_relay rclcpp geometry_msgs)
 
@@ -39,7 +39,7 @@ ament_target_dependencies(ground_baseline
   rclcpp rclcpp_lifecycle geometry_msgs nav_msgs agc_msgs
   agc_control pluginlib tf2_ros nav2_core nav2_costmap_2d nav2_util)
 
-# （T1/E1）：无 shield 对照臂的恒等透传（纯仿真；ADR-0022）
+# ：无 shield 对照臂的恒等透传（纯仿真；ADR-0022）
 add_executable(cmd_vel_passthrough src/cmd_vel_passthrough.cpp)
 ament_target_dependencies(cmd_vel_passthrough rclcpp geometry_msgs)
 

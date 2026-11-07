@@ -25,7 +25,7 @@ add_executable(scenario_reset src/scenario_reset.cpp)
 ament_target_dependencies(scenario_reset
   rclcpp geometry_msgs nav_msgs std_msgs std_srvs agc_msgs ros_gz_interfaces)
 
-add_executable(run_logger src/run_logger.cpp)
+add_executable(run_logger src/run_logger.cpp src/run_logger_summary.cpp)
 ament_target_dependencies(run_logger
   rclcpp geometry_msgs nav_msgs sensor_msgs nav2_msgs trajectory_msgs std_msgs agc_msgs
   ros_gz_interfaces)

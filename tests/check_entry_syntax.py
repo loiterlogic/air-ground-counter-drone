@@ -29,6 +29,8 @@ import os
 import re
 import subprocess
 import sys
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 
 ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 

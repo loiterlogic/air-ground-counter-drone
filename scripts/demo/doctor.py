@@ -24,7 +24,7 @@ import dds_transport
 
 OK, FAIL, WARN, SKIP = 'OK', 'FAIL', 'WARN', 'SKIP'
 
-# ROS 环境与工作区（ plan 的 8 包口径 = 实际 colcon 包集合）。
+# ROS 环境与工作区（plan 的 8 包口径 = 实际 colcon 包集合）。
 ROS_SETUP = '/opt/ros/jazzy/setup.bash'
 WORKSPACE_PACKAGES = (
     'agc_sim', 'agc_perception', 'agc_ground', 'agc_air',

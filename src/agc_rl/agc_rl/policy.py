@@ -1,7 +1,7 @@
 """RL 策略加载与推理。
 
 策略**可加载**：由 config 的 `policy_path` 指向一个 JSON 参数文件（最简确定性策略 / 预置权重）。
-改 `policy_path` → 载入不同参数 → 行为变化可复现（spec R6 判据）。
+改 `policy_path` → 载入不同参数 → 行为变化可复现。
 
 本模块只做"obs → action"的决策；action → `cmd_vel` 的映射在 `interface.action_to_twist`。
 策略以规则门控（对齐旧树 `ground_env.py` 的 DQN + shield 口径的行为事实）决定左右/加速：

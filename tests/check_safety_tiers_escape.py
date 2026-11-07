@@ -29,6 +29,8 @@ from agc_msgs.msg import AgcTaskState
 from geometry_msgs.msg import TwistStamped
 from nav_msgs.msg import Odometry
 from std_srvs.srv import Trigger
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 
 POLE = (0.0, -6.0)          # pole_1（world），见 src/agc_sim/worlds/agc_world.sdf
 GROUND_APPROACH = 3         # AgcTaskState.GROUND_APPROACH
@@ -145,7 +147,7 @@ def main():
                 stop_run = 0.0
             prev_t = t
         min_dist = min(dist)
-        # 车在**末段静止窗口**内的实测位移（：真实停住）——自末尾向前取连续 v≈0 的区间
+        # 车在**末段静止窗口**内的实测位移（真实停住）——自末尾向前取连续 v≈0 的区间
         i0 = len(samples)
         while i0 > 0 and samples[i0 - 1][1] < 0.02:
             i0 -= 1
@@ -178,8 +180,7 @@ def main():
     out_dir = os.path.join(args.experiments_root, 'w5-ground-nav-safety', run_id, 'metrics')
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, 'safety.json')
-    with open(path, 'w') as fh:
-        json.dump(result, fh, indent=2)
+    checklib.write_json(path, result)
 
     print('\n[C2] slowdown_seen=%s stop_seen=%s  v_cruise=%.2f v_cmd_min=%.2f'
           % (result.get('slowdown_seen'), result.get('stop_seen'),

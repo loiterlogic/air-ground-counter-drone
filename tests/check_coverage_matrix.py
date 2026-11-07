@@ -16,6 +16,7 @@
 `overall_pass` = (a) ∧ (c) ∧ (d) ∧ (b') ∧ (e)（(e) 为红线回归，并入以保 ABI 不变）。
 """
 
+import functools
 import argparse
 import ast
 import json
@@ -27,6 +28,9 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+dump = functools.partial(checklib.dump, filename='metrics/r025.json', width=56, detail='lines')
+
 
 ROOT = '/home/chen/AGC'
 SELF = Path(__file__).resolve()
@@ -386,21 +390,6 @@ def write_matrix_md(matrix, path):
         md.append('')
     with open(path, 'w') as f:
         f.write('\n'.join(md) + '\n')
-
-
-def dump(res, out_dir):
-    path = os.path.join(out_dir, 'metrics', 'r025.json')
-    with open(path, 'w') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    for name, t in res.get('tests', {}).items():
-        print('%-56s %s' % (name, 'PASS' if t.get('pass') else 'FAIL'))
-        for k, v in t.items():
-            if k != 'pass':
-                print('      %s = %s' % (k, v))
-    if 'error' in res:
-        print('error:', res['error'])
-    print('\n%s -> %s' % ('PASS' if res.get('overall_pass') else 'FAIL', path))
-    return 0 if res.get('overall_pass') else 1
 
 
 def main():

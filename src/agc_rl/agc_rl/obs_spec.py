@@ -2,7 +2,7 @@
 
 引入 `obs_version`、归一化统计与 checkpoint 元数据；**旧版本可回放**。
 
-原则（spec R2）：
+原则：
  * **不**静默改冻结接口（契约 [#messages](../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#messages)）；观测语义变更须
  **新版本号**（旧版本 `v1` 的定义**永久保留**，不原地改）；
  * obs **维度扩展**（目标方位 / 相对速度 / 观测年龄）依 的策略职责裁定 —— 本模块只落**机制**、
@@ -22,7 +22,7 @@ import os
 from agc_rl import interface
 
 # 当前默认观测版本（checkpoint 元数据据此区分）。
-# （T4/E4，F-04 / ADR-0022）：升级到 v2（新增目标 bearing / 相对速度 / 观测年龄）；
+# ：升级到 v2（新增目标 bearing / 相对速度 / 观测年龄）；
 # v1 定义**永久保留**、可回放（旧权重不静默失效）。
 OBS_VERSION = 2
 ACTION_KIND = 'discrete'
@@ -76,7 +76,7 @@ def _build_v1(num_sectors, **kw):
               'lidar_max_range': kw.get('lidar_max_range', 10.0)})
 
 
-# v2 追加字段（ T4/E4，F-04）：目标方位（sin/cos 避免 ±π 跳变）+ 相对速度 + 观测年龄。
+# v2 追加字段：目标方位（sin/cos 避免 ±π 跳变）+ 相对速度 + 观测年龄。
 EXTRA_FIELDS_V2 = ['target_bearing_sin', 'target_bearing_cos',
                    'target_rel_speed_over_norm', 'target_obs_age_over_norm']
 
@@ -117,7 +117,7 @@ def build_obs_vector(obs_version, sectors, pose_x, pose_y, dist_to_goal, last_ac
     """按 `obs_version` 构造观测向量。
 
  v1 直接**引用** `agc_rl.interface.build_observation`（冻结配置文件）；v2 在 v1 基础上追加
- **目标 bearing（sin/cos）/ 相对速度 / 观测年龄**（ T4/E4，F-04）。旧版本分支始终保留，
+ **目标 bearing（sin/cos）/ 相对速度 / 观测年龄**。旧版本分支始终保留，
  故"换版本不使旧权重静默失效"。
 
  v2 额外输入（`kw`，缺省 0 = 未知，保守）：
@@ -183,7 +183,7 @@ class CheckpointMeta:
     """checkpoint 元数据：观测版本 / 动作空间 / 归一化统计 / 参数来源（含哈希）/ 代码指纹。
 
  训练侧保存权重时随附本元数据；加载时经 `check_compatible` 判定语义是否一致——
- 版本不同 → **不**静默失效，而是给出**可区分**的加载决定（spec R2 判据）。
+ 版本不同 → **不**静默失效，而是给出**可区分**的加载决定。
     """
 
     def __init__(self, obs_version, action_space, norm_stats=None, num_sectors=12,

@@ -46,7 +46,7 @@ inline Vector3 frdToFlu(const Vector3 & frd)
 /// **字段序**：PX4 uORB / px4_msgs 的 `q` 为 Hamilton **[w,x,y,z]**（`VehicleOdometry.q[0]=w`，
 /// ekf2 工具链即按 `q[0]→qw` 解析；见 `msg/VehicleOdometry.msg`「First value NaN if invalid」）。
 /// **不得**按 ROS `geometry_msgs` 的 [x,y,z,w] 解析——否则得到与真值差约 60° 的错误姿态
-/// （ 取证：raw q=[0.877,0.004,0.002,0.480] 正确→ENU yaw 32.7°，按 [x,y,z,w]→89.5°）。
+/// （取证：raw q=[0.877,0.004,0.002,0.480] 正确→ENU yaw 32.7°，按 [x,y,z,w]→89.5°）。
 inline Quaternion px4AttitudeToEnu(const std::array<float, 4> & q_wxyz)
 {
   const Quaternion q_px4(static_cast<double>(q_wxyz[0]), static_cast<double>(q_wxyz[1]),

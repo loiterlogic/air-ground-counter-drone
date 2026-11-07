@@ -14,9 +14,9 @@
 
 node 场景子测（PASS 判据见各 test 的 `pass` 字段）：
   U1 `interface` 单元：NaN → 扇区按遮挡（0.0）；`+inf` → 无遮挡（1.0）；all-NaN → `scan_has_valid_reading` 假。
-  N0 **从未收到 scan** → 零速。 N1 正常链路 → 非零且输出 ~20 Hz。
-  N2 **全 NaN scan** → 零速（不当作无遮挡）。 停 task/state → 超授权寿命后零速。
-  N4 停 odom → 超寿命后零速。 N5 停 goal → 超寿命后零速。
+  ① 从未收到 scan → 零速；② 正常链路 → 非零且输出 ~20 Hz；
+  ③ 全 NaN scan → 零速（不当作无遮挡）；④ 停 task/state → 超授权寿命后零速；
+  ⑤ 停 odom → 超寿命后零速；⑥ 停 goal → 超寿命后零速。
 
 sim 场景子测：
   S1 正常：`cmd_vel_raw` 非零（RL 为主控在驱动）。
@@ -47,6 +47,12 @@ from ros_gz_interfaces.srv import SetEntityPose
 from std_srvs.srv import Trigger
 
 from agc_rl import interface
+import functools  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+dump = functools.partial(checklib.dump, width=34, detail='inline')
+
 
 RAW = '/agc/ground/cmd_vel_raw'
 ODOM = '/agc/ground/odom'
@@ -243,7 +249,7 @@ def start_node(args, out_dir):
 
 
 # =====================================================================================
-# 场景 node（U1 + N0–N5；独立进程，不依赖 GZ）
+# 场景 node（U1 + 上述六项；独立进程，不依赖 GZ）
 # =====================================================================================
 def run_node(args):
     out_dir = metrics_dir(args)
@@ -261,7 +267,7 @@ def run_node(args):
 
         res['tests']['U1_interface_nan_vs_inf'] = test_interface()
 
-        # ---- N0 从未收到 scan → 零速 ----
+        # ---- ① 从未收到 scan → 零速 ----
         p.clear()
         p.pump(1.5, scan=None)
         v = p.tail_max(1.0)
@@ -269,7 +275,7 @@ def run_node(args):
             'cmd': '只发 odom/goal/state(GROUND_APPROACH)，**不发 scan**',
             'max_v_recent': round(v, 4), 'pass': bool(v < ZERO_V)}
 
-        # ---- N1 正常链路 → 非零且 ~20 Hz ----
+        # ---- ② 正常链路 → 非零且 ~20 Hz ----
         p.clear()
         p.pump(1.2)
         rate = p.tail_rate(1.0)
@@ -279,7 +285,7 @@ def run_node(args):
             'max_v': round(v1, 3), 'rate_hz': round(rate, 2),
             'pass': bool(v1 > MOVE_V and 14.0 <= rate <= 26.0)}
 
-        # ---- N2 全 NaN scan → 零速 ----
+        # ---- ③ 全 NaN scan → 零速 ----
         p.clear()
         p.pump(1.2, scan='nan')
         v2 = p.tail_max(1.0)
@@ -298,7 +304,7 @@ def run_node(args):
             'settle_s': round(args.auth_settle, 2),
             'max_v_recent': round(v3, 4), 'pass': bool(v3 < ZERO_V)}
 
-        # ---- N4 停 odom → 零速 ----
+        # ---- ⑤ 停 odom → 零速 ----
         p.clear()
         p.pump(1.2)
         p.clear()
@@ -308,7 +314,7 @@ def run_node(args):
             'cmd': '停 /agc/ground/odom', 'settle_s': round(args.fast_settle, 2),
             'max_v_recent': round(v4, 4), 'pass': bool(v4 < ZERO_V)}
 
-        # ---- N5 停 goal → 零速 ----
+        # ---- ⑥ 停 goal → 零速 ----
         p.clear()
         p.pump(1.2)
         p.clear()
@@ -445,21 +451,6 @@ def metrics_dir(args):
     d = os.path.join(args.experiments_root, 'w5-ground-nav-safety', args.run_id, 'metrics')
     os.makedirs(d, exist_ok=True)
     return d
-
-
-def dump(res, out_dir, filename, infra=False):
-    path = os.path.join(out_dir, filename)
-    with open(path, 'w') as fh:
-        json.dump(res, fh, indent=2, ensure_ascii=False)
-    for name, t in res.get('tests', {}).items():
-        print('%-34s %s  %s' % (name, 'PASS' if t.get('pass') else 'FAIL',
-                                {k: v for k, v in t.items() if k != 'pass'}))
-    if 'error' in res:
-        print('error:', res['error'])
-        return 2 if infra else 1
-    ok = bool(res.get('overall_pass'))
-    print('\n%s -> %s' % ('PASS' if ok else 'FAIL', path))
-    return 0 if ok else 1
 
 
 def main():

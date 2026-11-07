@@ -1,11 +1,11 @@
-// cmd_vel_passthrough —— （T1 / E1）「无 shield 对照臂」的恒等透传（**纯仿真**）。
+// cmd_vel_passthrough —— 「无 shield 对照臂」的恒等透传（**纯仿真**）。
 //
 // 用途：对照臂 `shield:=false`（[ADR-0022](../../../docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)(d)(f)）
 // ——把安全层**输入** `/agc/ground/cmd_vel_raw` **原样**转发到唯一执行口 `/agc/ground/cmd_vel`
 // （**保持** header.stamp / frame_id），使「无安全层修正」臂与「有安全层」臂在**同一命令链结构**下可比。
 //
 // 范围声明（**不得外推**）：本节点仅用于**可控仿真研究对照**，**不**用于实际部署；
-// 该臂无安全层，碰撞风险由仿真承担。属 F-06「with-shield / 等预算对照臂」的**无 shield 一支**。
+// 该臂无安全层，碰撞风险由仿真承担。属「with-shield / 等预算对照臂」的**无 shield 一支**。
 //
 // 唯一执行口纪律：本节点是 `/agc/ground/cmd_vel` 的发布者（有 shield 时该角色属 `collision_monitor`）；
 // ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#execution-port）。

@@ -25,7 +25,7 @@ headless（`gz sim -s`）**不启动渲染客户端**，根本不会生成画面
 > ⚠ **不要**用 `--gui-config` 取交付图：gz-gui 在加载它之后**还会再加载**
 > `~/.gz/sim/<ver>/gui.config` 并**覆盖** `camera_pose` → 视角被换成 3/4 斜视，
 > 取到的图**不代表用户所见**（实测 skyband 0.2848 vs 俯视 0.06）。
-> 该机制已在本轮移除（ 审查裁定 ②），`run_demo.sh` 也不再支持。
+> 该机制已在本轮移除（审查裁定），`run_demo.sh` 也不再支持。
 
 ## 与 结论的关系（必须写清，不得改写历史）
 
@@ -139,7 +139,7 @@ def snap(out_path, timeout_ms=15000, retries=1, wait_s=6.0, check_service=True):
         os.remove(out_abs)          # 防止把旧文件当本次结果
     if check_service:
         # ⚠ 每次 snap 都做一次 `gz service -l`（全量服务查询）实测要 1–2 s，
-        # 会把 1 Hz 节拍拖成 4–6 s（ 实测：8 帧 / 34 s）。批量录制时首帧后跳过。
+        # 会把 1 Hz 节拍拖成 4–6 s（实测：8 帧 / 34 s）。批量录制时首帧后跳过。
         present, detail = service_present()
         if not present:
             return False, '取帧服务不可用：%s' % detail

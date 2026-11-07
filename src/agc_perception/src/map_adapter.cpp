@@ -1,4 +1,4 @@
-// map_adapter —— 场景地图适配器（，spec R7； 修订 2026-10-15）
+// map_adapter —— 场景地图适配器（修订 2026-10-15）
 //
 // 发布 /agc/map（nav_msgs/OccupancyGrid，world 系，latched）：三态栅格
 // 0 = free / 100 = occupied / -1 = unknown（对齐 Nav2 占据栅格约定）。
@@ -6,10 +6,10 @@
 // 与 /agc/map/valid（Bool，latched）。
 //
 // 地图内容身份与单调更新序号（评审风险 ；见 ADR-0007）：
-// * **内容身份 hash**（/agc/map/version_hash 的内容）= FNV-1a(frame_id, 障碍源版本, 场景版本,
+// * **内容身份 hash**（agc/map/version_hash 的内容）= FNV-1a(frame_id, 障碍源版本, 场景版本,
 // resolution, width, height, origin_x, origin_y, data) —— **不只** data 字节串：相同 data 在
 // 不同几何 / 源版本下身份**不同**（消除「同 data 可代表不同地图」）。
-// * **单调更新序号** update_seq_（/agc/map/update_seq）：初始 0，**仅**在实质重建（栅格内容或身份
+// * **单调更新序号** update_seq_（agc/map/update_seq）：初始 0，**仅**在实质重建（栅格内容或身份
 // 改变）时 +1；与内容 hash **分别**可查询（诊断，非 ABI）。
 // * **等价判定**按**真实 raster**：把候选有效障碍集合**实际栅格化**，与当前栅格**逐字节比较**；
 // 相等即内容等价（不重建、不发布、序号不变），不同即采用 + 序号递增。真实 raster 相等是
@@ -25,7 +25,7 @@
 // 故 live_ 恒为空（见下方构造函数）。保留成员是为了将来有障碍观测源时可直接接上；
 // 届时须按 docs/conventions/路线分支治理.md 2.2 节四项重新立项。
 // （历史：曾由 obstacles_source==air_fusion 时订阅 /agc/obstacles 更新；每条 track 记
-// 2026-11-04：air_fusion 已退役 → 该分支**当前不可达**（/agc/obstacles 无发布者）。
+// 2026-11-04：air_fusion 已退役 → 该分支**当前不可达**（agc/obstacles 无发布者）。
 // 代码保留是为了将来有障碍观测源时可直接接上；届时须按路线分支治理 2.2 节重新立项。
 // last_seen_s = Header.stamp（最后真实观测时刻）。动态轨按「最后观测年龄 > dynamic_max_age_s_」
 // 过期 -> 其覆盖格标记 unknown（而非自由），并从 live_ 移除（不即时遗忘、也不永久驻留）。

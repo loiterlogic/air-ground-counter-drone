@@ -6,7 +6,7 @@
 `summary.json`）。汇总每回合 `metrics/summary.json` 为 campaign 报告（含 两指标），
 落 `experiments/<campaign>/<run_id>/`（ADR-0006）。
 
-`task_manager` 只做单 episode；批量由本 runner 驱动（spec R12）。
+`task_manager` 只做单 episode；批量由本 runner 驱动。
 
 区分三类时间口径（互不冒充）—— mission_sim_budget（task_manager 的仿真时钟
 超时）/ episode_wall_watchdog（本 runner 墙钟看门狗，超时判 infra、不算成功）/
@@ -49,7 +49,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'de
 import dds_transport as demo_dds  # noqa: E402
 
 # （R1）：episode 结束判定 / 预算口径的**配置文件** = `agc_rl.termination`
-# （训练 adapter 与评估 adapter 共用同一判定，spec R1 判据：摘要与 adapter end/reason 一致）。
+# （训练 adapter 与评估 adapter 共用同一判定，判据：摘要与 adapter end/reason 一致）。
 from agc_rl.termination import (  # noqa: E402
     TERMINALS,
     TIME_BUDGETS,
@@ -145,7 +145,7 @@ def build_coverage(mode, episodes, backend=None):
         'real_terminal': {'value': terminals,
                           'evidence': '每 episode terminal_state（/agc/task/state 观测）'},
         # （ADR-0009）：观测偏航模式必须进产物——`track` 与 oracle `target` / 默认 `velocity`
-        # 是**不同的验收臂**，不记录就无法事后区分跑的是哪一臂（ 实测曾漏记）。
+        # 是**不同的验收臂**，不记录就无法事后区分跑的是哪一臂（实测曾漏记）。
         'observe_yaw_mode': {
             'value': sorted({e.get('observe_yaw_mode') or 'velocity'
                              for e in episodes}) or ['velocity'],

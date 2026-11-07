@@ -56,7 +56,7 @@ def make(frames, out_path, fps, width, colors, max_bytes, source_fps, stride=Non
 
  `stride` 可直接给抽帧倍数（体积超限时按 1→2→3→4 降级）：
  **抽帧后每帧时长同比拉长，总时长保持不变**——这样"800 px + 10–15 s"两个硬指标
- 不会被"降帧率"顺手破坏（ 实测踩过：降 fps 到 1.5 仍 3.86 MB 且宽度被迫降到 640）。
+ 不会被"降帧率"顺手破坏（实测踩过：降 fps 到 1.5 仍 3.86 MB 且宽度被迫降到 640）。
     """
     if stride is None:
         stride = max(1, int(round(source_fps / float(fps))))
@@ -95,7 +95,7 @@ def main(argv=None):
         print('[gif] 帧数不足（%d）：%s' % (len(frames), args.frames), file=sys.stderr)
         return 2
 
-    # 时长硬门：源帧跨度可能超过上限（ 实测 22 帧 × 0.8 s = 17.6 s），
+    # 时长硬门：源帧跨度可能超过上限（实测 22 帧 × 0.8 s = 17.6 s），
     # 此时**截取前一段**而不是靠抽帧（抽帧会同比拉长每帧时长，总时长不变）。
     # 每帧时长 = 1/source_fps；要落进 [min,max]，帧数取 max_duration 向下取整，
     # 但**不得低于** min_duration（否则把"截取"做成了"截断到不合格"）。

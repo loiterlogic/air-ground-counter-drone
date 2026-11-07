@@ -2,7 +2,7 @@
 
 **为什么存在**： 的根因不是"脚本太多"，而是**索引与实际不一致**——
 `scripts/` 顶层曾有 32 个脚本，而 `scripts/README.md` 只登记 8 个，多出的 24 个
-既无索引也无归属。靠纪律不可持续，故用测试拦（ 脚本系统瘦身，其结论已并入本测试）。
+既无索引也无归属。靠纪律不可持续，故用测试拦（脚本系统瘦身，其结论已并入本测试）。
 
 **核对的是三方，不是镜像**：
 
@@ -49,6 +49,7 @@ TOP_LEVEL = frozenset({
     'evidence_archive.py',      # 证据不可变归档
     'gui_renderer_evidence.py',  # GUI 渲染后端证据（库，无 __main__；episode_runner 导入）
     'lock_px4_failsafe_params.sh',  # PX4 失效安全参数锁定
+    'reclaim_evidence.py',          # experiments/ + log/ 保留策略执行器（dry-run 默认，ADR-0006）
     'third_party_asset_check.py',   # 第三方资产 provenance
     'toolchain_pin_check.py',       # 工具链 pin 核对
     'toolchain_root_check.py',      # 工具链根注入校验

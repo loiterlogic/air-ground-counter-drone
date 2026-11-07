@@ -47,6 +47,8 @@ DELETED_PATHS = (
     'src/agc_perception/config/perception_sensors_dropout.yaml',
     'src/agc_perception/config/perception_sensors_fov.yaml',
     'src/agc_perception/config/perception_sensors_no_target.yaml',
+    # 5.2.3 批次：评审快照目录（ADR-0033）
+    'docs/reviews',
 )
 
 # 这些文件仍在，但其中不得再出现已退役标识的**代码形态**。
@@ -77,6 +79,26 @@ def test_deleted_retired_paths_do_not_exist():
         '已退役对象又在活跃层出现（违反防复活闸门）：\n  - %s\n'
         '若确需恢复：须按 2.2 节四项重新立项（含用户明确允许 + 退役条件），'
         '并从 5.2 台账移除本条。' % '\n  - '.join(revived))
+
+
+def test_retired_review_dir_whitelist_not_revived():
+    """5.2.3：`docs/reviews/` 退役后，**不得**用"加白名单"的方式让它复活。
+
+    退役的目的之一是缩小例外面：删目录之前，链接检查与引用纪律各有一处
+    `docs/reviews/` 白名单；删之后这两处必须消失。把它们加回来 = 复活。
+    """
+    offenders = []
+    for rel, token in (
+        ('tests/docs_link_check.py', 'docs/reviews'),
+        ('scripts/tests/test_reference_discipline.py', 'docs/reviews'),
+    ):
+        text = _text(ROOT / rel)
+        # ADR-0033 的取回说明只出现在 ADR 里；工具文件出现该 token 即白名单回潮
+        if token in text:
+            offenders.append(rel)
+    assert not offenders, (
+        '已退役的 `docs/reviews/` 又被工具加了白名单：%s\n'
+        '删除目录的目的就是缩小例外面；若确需恢复，须按 2.2 节四项重新立项。' % ', '.join(offenders))
 
 
 def test_no_retired_symbols_in_alive_files():

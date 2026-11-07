@@ -7,7 +7,7 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 find_package(ament_cmake REQUIRED)
-# GZ 侧末端失效停车守门人（，ADR-0010）：gz-sim System 插件，直连 gz-transport
+# GZ 侧末端失效停车守门人（ADR-0010）：gz-sim System 插件，直连 gz-transport
 find_package(gz-sim8 REQUIRED)
 find_package(gz-plugin2 REQUIRED)
 find_package(gz-transport13 REQUIRED)

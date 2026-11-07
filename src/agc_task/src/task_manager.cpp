@@ -1,6 +1,6 @@
-// task_manager —— 完整任务状态机（spec R1 / R2 / R3）
+// task_manager —— 完整任务状态机
 //
-// 态图（spec R1）：
+// 态图：
 // IDLE ──(/agc/task/start：reset→reset_phase→门禁)──> AIR_SEARCH ──(目标新鲜且 confidence≥min)──>
 // TARGET_ACQUIRED ──(地面主控在追)──> GROUND_APPROACH
 // ├─(抵近持续达阈值, )──> TRACKING_SUCCESS
@@ -9,13 +9,13 @@
 // └─(外部 abort)──> ABORTED
 // 门禁不过 ──> INFRA_FAILURE
 //
-// 契约：先 reset 后校验 odom（#lessons 竞态修复）； 超时算失败； 相位复位（/agc/air/reset_phase，
+// 契约：先 reset 后校验 odom（#lessons 竞态修复）； 超时算失败； 相位复位（agc/air/reset_phase，
 // 仅 air_present=true 的整链模式下强制，见 ）； 终态"抵近并持续跟踪"且 SUCCESS 不得称"拦截完成"。
 // /agc/task/start 为非阻塞异步事务（多线程执行器 + 独立服务回调组）；门禁数据须为**复位完成后
 // 收到的新鲜样本**（epoch + 年龄上限），时钟门为**进展校验**；各门证据时刻随应答回传。
 // episode 隔离——新 episode 清 capture_reason_ / jam_reason_；capture 结算改订配套事件
 // /agc/task/capture_event（解析 ep，仅本 episode 匹配才接受）；jam 仍订 /agc/task/jam_confirm
-// （ 值 JAM_*），以「start 后到达 + 到达时刻」为门槛；「先命中者胜」按事件到达时刻定序。
+// （值 JAM_*），以「start 后到达 + 到达时刻」为门槛；「先命中者胜」按事件到达时刻定序。
 // 命令幂等与终态锁存——start 仅在 IDLE / 任一终态接受，active 重入直接拒绝（不尝试 reset、
 // 不 fail）；abort 仅在 active 接受，终态锁存（latched_state_ + latched_epoch_）后迟到的 abort
 // 不覆写；进入终态的各路径统一走 enterTerminal 关联 episode。start 事务的调用结果分三类
@@ -23,7 +23,7 @@
 // **非确定性超时/取消**（未收到应答）→ 仅回 success=false，**不改** state_（不误置）。新 episode
 // 由显式 start 创建并发布 /agc/task/episode（std_msgs/Int32），供 配套事件关联。
 // 连续跟踪 dwell 逐拍判据——任何不满足「目标新鲜 + 同 target_id + 车地面 odom 有效未超龄 + 包络内」
-// 的拍（含目标数组为空）一律中断清零，成功仍为「连续 t_dwell 有效」（ 不降级）；新增
+// 的拍（含目标数组为空）一律中断清零，成功仍为「连续 t_dwell 有效」（不降级）；新增
 // car_odom_max_age_s 寿命门与 /agc/task/dwell_event（std_msgs，非命令者）记录分段有效时长。
 // 目标失效策略 =「保留有期限的最后有效目标」(bounded hold-last-valid，ADR-0013)。goal_follow_target 下
 // 目标失效时**不**反射固定点、**不**刷新时间戳；窗口内（goal_hold_valid_s）保持最后有效目标的**原位置 +
@@ -81,7 +81,7 @@ public:
     // capture 场景置 false 时，里程碑只记指标（tracking_milestone_met_ = true）并发布事件，
     // **不**进入终态，让 `capture_adjudicator` 仍有机会判定 `INTERCEPT_CONFIRMED`。
     tracking_milestone_is_terminal_ = declare_parameter<bool>("tracking_milestone_is_terminal", true);
-    // 目标发布口径：false=固定 goal（/ 兼容）；true=跟随目标当前 XY（移动式拦截，ADR-0001）
+    // 目标发布口径：false=固定 goal（兼容）；true=跟随目标当前 XY（移动式拦截，ADR-0001）
     goal_follow_target_ = declare_parameter<bool>("goal_follow_target", false);
     // 目标失效策略 =「保留有期限的最后有效目标」(bounded hold-last-valid)。
     // 目标不再新鲜时，在 goal_hold_valid_s_ 窗口内保持**最后一次有效目标的原位置与源时刻**
@@ -136,7 +136,7 @@ public:
     air_hover_timeout_s_ = declare_parameter<double>("air_hover_timeout_s", 45.0);
     // 运行模式：显式声明本次运行是否包含空中域，取代"服务缺席即推定无空中域"。
     // true = 整链（含空中域）：相位复位为硬门禁，服务未发现/超时/失败一律拒绝 start；
-    // false = 纯地面运行（ / / 轻量 ）：无相位可复位，该项不适用。由 launch 单一设置。
+    // false = 纯地面运行（轻量后端）：无相位可复位，该项不适用。由 launch 单一设置。
     air_present_ = declare_parameter<bool>("air_present", true);
     ground_controller_name_ =
       declare_parameter<std::string>("ground_controller_name", "agc_rl");
@@ -155,7 +155,7 @@ public:
       target_topic, 10,
       [this](agc_msgs::msg::TargetTrackArray::SharedPtr m) {
         // 空数组 = **本拍无新观测**（感知侧门控 / 丢包），**不是**目标消失（ADR-0009）。
-        // 2026-11-03（N4）修正，与 `standoff_follower` / `trajectory_tracker` 同款：
+        // 2026-11-03 修正，与 `standoff_follower` / `trajectory_tracker` 同款：
         // 旧实现清 `have_target_` 会让 `targetFresh` 立刻返回 false，
         // 于是 `AIR_SEARCH` 永远等不到 fresh → 状态机**卡在 AIR_SEARCH 直到 TIMEOUT**。
         // 实测（stress 档 drop=0.3）：全程只有 `start OK -> AIR_SEARCH`，再无任何状态迁移。
@@ -250,7 +250,7 @@ public:
       episode_topic, rclcpp::QoS(1).transient_local());
     // dwell 分段事件发布（std_msgs/String，depth 10，非命令者）
     dwell_pub_ = create_publisher<std_msgs::msg::String>(dwell_event_topic, 10);
-    // 复位记账（ / R7）：重试次数与最终失败，供 run_logger 计算 reset_failure_rate
+    // 复位记账（R7）：重试次数与最终失败，供 run_logger 计算 reset_failure_rate
     const auto retries_topic = declare_parameter<std::string>("reset_retries_topic", "/agc/task/reset_retries");
     const auto failed_topic = declare_parameter<std::string>("reset_failed_topic", "/agc/task/reset_failed");
     reset_retries_pub_ = create_publisher<std_msgs::msg::Int32>(
@@ -395,7 +395,7 @@ private:
       return;
     }
     // 1) 先 ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#lessons 竞态修复：reset 在前，不得先校验 odom，否则自伤 ODOM_INVALID）
-    // 复位失败最多重试 3 次（ 口径，ADR-0012）；重试不占 episode 预算（episode 计时自 start 成功起）
+    // 复位失败最多重试 3 次（口径，ADR-0012）；重试不占 episode 预算（episode 计时自 start 成功起）
     // reset 前记录 epoch（避免 reset 后 epoch 投递竞态）。
     const int ep_before_reset = current_epoch_;
     CallOutcome reset_outcome = CallOutcome::Failed;
@@ -425,7 +425,7 @@ private:
     }
     reset_failed_ = false;
     publishResetStats();
-    // 复位完成的 epoch：门禁新鲜度以"复位之后收到的数据"为基准（；#lessons 禁读阻塞前缓存）
+    // 复位完成的 epoch：门禁新鲜度以"复位之后收到的数据"为基准（禁读阻塞前缓存）
     reset_done_time_ = now();
     // episode 身份——有界等待 reset 使 epoch 递增（≤0.5s，每 5ms 探测；超时以 current_epoch_ 兜底），
     // 再记录本 episode epoch 并发布 /agc/task/episode（transient_local，供 配套事件关联）。
@@ -508,7 +508,7 @@ private:
       return;
     }
 
-    // 4) 空中控制权交接（ 步 1·甲-1）：门禁通过后，整链模式**等「起飞完成（悬停）」**再显式触发
+    // 4) 空中控制权交接（步 1·甲-1）：门禁通过后，整链模式**等「起飞完成（悬停）」**再显式触发
     // release_control（takeoff_controller → trajectory_tracker）。轻量栈无空中域，整段跳过。
     // 三分：Failed→INFRA_FAILURE；Indeterminate→不改状态、只回失败（不误置）。
     if (air_present_) {
@@ -647,7 +647,7 @@ private:
   {
     publishState();
     prev_clock_ = now();
-    // 诊断（N4 出口判据 4「失败模式可解释」）：每秒打印目标门的**各分项**，使
+    // 诊断（「失败模式可解释」）：每秒打印目标门的**各分项**，使
     // "卡在 AIR_SEARCH 却不知道是哪一项不过"不再靠猜。
     // 分项：have_target / age / age<=max / conf / conf>=min / 空数组拍数。
     if (isActive(state_)) {
@@ -727,7 +727,7 @@ private:
         if (have_jam) {enterTerminal(AgcTaskState::INTERCEPT_CONFIRMED, jam_reason_); break;}
         // dwell 逐拍显式判据——任何不满足「目标新鲜 + 同 target_id + 车地面 odom 有效未超龄 +
         // 包络内」的拍（含目标数组为空 / have_target_==false）一律中断清零；不得把失联段累计进
-        // dwell；成功仍为「连续 t_dwell 有效」（ 不降级为累计接近时长）。
+        // dwell；成功仍为「连续 t_dwell 有效」（不降级为累计接近时长）。
         // 本拍合法性
         const double car_age = (have_car_ && last_car_odom_rx_.nanoseconds() != 0)
                                ? (t - last_car_odom_rx_).seconds()

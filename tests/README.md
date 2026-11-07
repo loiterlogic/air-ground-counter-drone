@@ -14,7 +14,7 @@
 | [`run_n3_matrix.py`](./run_n3_matrix.py) | **里程碑**（回归矩阵：四类要求，4 格） | **是** | ~580 s |
 
 ```bash
-./run_demo.sh test # 离线冒烟（6 组）
+./run_demo.sh test # 离线冒烟（8 组）
 python3 tests/run_full_regression.py --list # 整链回归：先看要跑什么
 python3 tests/run_full_regression.py # 整链回归（定时任务用这个）
 python3 tests/run_n3_matrix.py --list # 回归矩阵：四类要求
@@ -44,6 +44,47 @@ python3 tests/run_all.py # 列出全部核查
 python3 tests/run_all.py --run check_lifecycle_resource_state.py
 python3 tests/run_all.py --all --timeout 600 # 全跑（带超时）
 ```
+
+<a id="categories"></a>
+## 三分类：哪些能进默认冒烟，哪些不能
+
+59 个 `check_*.py` 按**运行前提**分三类。口径不是约定俗成，而是**机械可判**、
+由 `checklib.check_categories()` 单一实现；`check_doc_counts.py` 判据 e 拿它与本表逐项对账，
+所以"表里写 22、实际 21"会让冒烟变红。
+
+| 类 | 数量 | 判据 | 能否进**默认**冒烟 | 跑法 |
+|---|---|---|---|---|
+| `static` | **4** | 不 import `rclpy`，且不涉及 `experiments/` | **能**（默认 8 组里的静态核查全属此类） | `./run_demo.sh test` |
+| `evidence` | **22** | 不 import `rclpy`，但接受 `--experiments-root` | **不能** | `--with-evidence` 可选组 |
+| `needs_sim` | **33** | `import rclpy`：判定要活着的 ROS 图 / 仿真 | 不能 | `run_all.py --run <name>` |
+
+另有 **2** 个 `docs_*_check.py`（`docs_link_check.py` / `docs_tooling_check.py`）是文档护栏，
+命名上不属于 `check_*.py`，分别进冒烟 `docs` 组与离线单测。合计 **59 + 2 = 61** 个验收脚本。
+
+**为什么 `evidence` 不能进默认冒烟**（2026-11-06 实测，不是推测）：
+
+用空证据根 `--experiments-root /tmp/emptyexp` 跑这 22 个，**21 个 FAIL**（唯一 PASS 的是
+`check_obs_versioning`，见下）。默认冒烟承诺两件事——"**只读**"与"**无产物也全绿**"——
+而证据核查两条都破：它们读 `experiments/` 的历史 run，并把本次结果写成新的证据目录。
+硬塞进去的结果是门槛天天红、然后被人忽略，比没有门槛更糟。
+
+**唯一的例外**：`check_obs_versioning.py` 判的是"obs v1 逐位可回放 / v2 维度正确"，
+**纯内存计算**，不读任何历史证据——它在空证据根下**如实 PASS**（只把 `e4.json` 写进去）。
+这属于"如实通过"而不是"静默跳过"：它把自己那 11 条断言逐条打印出来。分类仍归 `evidence`
+是因为它**写**证据目录（破坏"只读"），而不是因为它**读**证据。
+
+```bash
+python3 tests/run_smoke.py --list # 8 组（默认）
+python3 tests/run_smoke.py --list --with-evidence # 9 组（多出 evidence）
+python3 tests/run_smoke.py --with-evidence # 跑 8+1 组
+python3 tests/run_smoke.py --with-evidence --experiments-root /tmp/emptyexp # 如实 FAIL（rc=1）
+python3 tests/run_evidence_checks.py --list # 单独看这 22 项
+```
+
+证据根默认 `<repo>/experiments`；`--experiments-root` 只改**读/写的位置**，
+不改任何核查的判定逻辑。没给 `--report` 的那几项（`check_rl_command_attribution` /
+`check_visibility_active_window`）取该根下**最新 run** 的 `report.json`——
+"取最新"是显式规则（`checklib.latest_report`），不是随便挑一个。
 
 ## 文档护栏（起）
 

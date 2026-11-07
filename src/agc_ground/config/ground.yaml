@@ -84,7 +84,7 @@ collision_monitor:
     state_topic: "collision_monitor_state"
     transform_tolerance: 0.3
     # ——失源失效停车窗口（2026-10-15，评审风险）——
-    # semantic：观察源 scan（/agc/ground/scan_filtered）超过 source_timeout 未更新 → 源失效；
+    # semantic：观察源 scan（agc/ground/scan_filtered）超过 source_timeout 未更新 → 源失效；
     # 本机 Jazzy `nav2_collision_monitor` 的 `Source::getData` 对失效源「return false → 封锁机器人」
     # （非静默透传原命令）——见 source.hpp 注释与 故障注入实测（r008.json）。
     # 判据：失源后**总停距 = 失源盲行 d_blind + 制动距离 s_brake** 必须 ≤ 碰撞档 2.0 m（安全层自身包络）；

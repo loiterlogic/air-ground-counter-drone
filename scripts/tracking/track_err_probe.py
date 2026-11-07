@@ -15,7 +15,7 @@
 **标称 8 字 base_ref**——机体在 standoff 接管后**本来就不在 8 字上**，故量出来的是
 "standoff 偏离"（实测 mean≈8 m / p95≈18 m），**不是跟踪误差**，判别力很低。
 
-`trajectory_tracker.cpp` ⑨ 的生效参考裁定是（ / ）：
+`trajectory_tracker.cpp` ⑨ 的生效参考裁定是（见 ADR-0008）：
 
 | `source` | 生效参考 | 对应话题 |
 |---|---|---|
@@ -36,7 +36,7 @@ err_base = || base_ref  - odom ||   ← 保留，仅作与历史取证的连续�
 > **口径声明**：两者都是**派生指标**，不是契约 的跟踪误差口径，也不替代任何既有验收。
 > 产物里每个文件都带 `not_a_summary_field: true`。
 
-## 三条设计约束（ 的失败教训）
+## 三条设计约束（的失败教训）
 
  的采集器失败于"**等循环结束才写唯一结果**"：被 `run_demo` 回收时 SIGTERM
 打断在 `spin_once` 里，JSON 从未落盘。本工具因此：
@@ -44,7 +44,7 @@ err_base = || base_ref  - odom ||   ← 保留，仅作与历史取证的连续�
 1. **边采边写**：每 `--flush-period`（默认 2 s）把 json / samples / txt **三者都原子落盘**，
  **任何时刻**都有可用结果（含被 SIGKILL 的情形——最多丢最后一个 flush 周期）；
 2. **中断安全**：注册 SIGINT/SIGTERM handler → 置标志 → 主循环优雅收尾并写最终结果；
- 且**先写最终结果、再 destroy_node**（ 顺序反了）；
+ 且**先写最终结果、再 destroy_node**（顺序反了）；
 3. **测量窗口与 run 存活解耦**：默认 `--start-on-first-odom`，窗口从**首个 odom 消息**起算
    （两臂同口径），并由 `--duration` 给上界；真实运行里由 harness 在 run 结束后 SIGTERM 收尾，
    故窗口实际 = 任务期，不会因"起早了空转 / 起晚了丢样本"而两臂不等长。

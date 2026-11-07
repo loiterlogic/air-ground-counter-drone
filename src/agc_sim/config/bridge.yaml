@@ -1,7 +1,7 @@
 # ros_gz_bridge 声明式桥配置（-min 最小集）
 #
 # 由 world_bringup.launch.py 经 ros_gz_bridge 的 parameter_bridge 以 config_file 加载。
-# QoS 与类型映射的标定说明见 src/agc_sim/README.md（ 吸收点：sensor QoS / 类型映射，对齐 Nav2）。
+# QoS 与类型映射的标定说明见 src/agc_sim/README.md（吸收点：sensor QoS / 类型映射，对齐 Nav2）。
 
 # 仿真时钟（GZ→ROS）
 - ros_topic_name: "/clock"
@@ -65,7 +65,7 @@
 # 与 contact sensor（取作用域名）**不同**——两者都把实测值写在这里，避免下次再猜。
 # 也**不是** `/world/agc_world/model/.../sensor/imager/image` 形式的作用域名（实测无该话题）。
 #
-# ⚠ **只出现话题名 ≠ 有相机**（ 实测）：`gz topic -l` 会列出**只有订阅者**的话题，
+# ⚠ **只出现话题名 ≠ 有相机**（实测）：`gz topic -l` 会列出**只有订阅者**的话题，
 # 而本文件正是以订阅方式桥接 /camera——用缺省 `gz_x500`（无相机）时话题名照样出现，但没有帧。
 # 判「相机是否真的在发布」必须用 `gz topic -f -t /camera`，或 ROS 侧真实的帧频率 / 像素证据；
 # 不得只看 `gz topic -l` 或 `ros2 topic list`。
@@ -98,7 +98,7 @@
 # 若不显式写该元素，gz-sensors 会按 `<topic>_info` 派生 → `/agc/air/nadir_info`（**与本桥不符**）。
 # 两者都必须与 SDF 逐字一致；`scripts/tests/test_nadir_camera_contract.py` 静态守护这一点。
 #
-# ⚠ **话题存在 ≠ 有帧**（ 实测，见 experiments/p1-4//evidence/camera-ownership-finding.md）：
+# ⚠ **话题存在 ≠ 有帧**（实测，见 experiments/p1-4//evidence/camera-ownership-finding.md）：
 # `gz topic -l` 会列出**只有订阅者**的话题，而本文件正是以订阅方式桥接——默认臂（无相机）里
 # `/agc/air/nadir*` 照样会出现在 `gz topic -l` / `ros2 topic list`，但**一帧都没有**。
 # 判「相机是否真的在发布」必须用 `ros2 topic hz`（≥10 Hz）、累计帧数（≥30）、
@@ -118,7 +118,7 @@
   qos_profile: SENSOR_DATA
 
 # 地面车速度命令（ROS→GZ；由 的执行中继发布）
-# （ADR-0010）：ROS 侧话题名**不变**（/model/agc_car/cmd_vel，中继与验收脚本照旧），
+# （ADR-0010）：ROS 侧话题名**不变**（model/agc_car/cmd_vel，中继与验收脚本照旧），
 # 但 gz 侧改桥到「意图」话题 /agc/sim/cmd_intent；GZ 侧的 agc_cmd_deadman 插件订阅该意图，
 # fresh→转发、stale→归零，再写 DiffDrive 默认订阅的 gz 话题 /model/agc_car/cmd_vel。
 # 即：DiffDrive 命令口（gz /model/agc_car/cmd_vel）的唯一写入者是插件（本桥不再直写）。
@@ -128,7 +128,7 @@
   gz_type_name: "gz.msgs.Twist"
   direction: ROS_TO_GZ
 
-# 目标无人机速度命令桥**已退役**（ 前置 P，见 .trae/ADR-0025 前置 P）：
+# 目标无人机速度命令桥**已退役**（见 ADR-0025）：
 # `intruder_uav` 改由**第二 PX4 SITL 实例**经 uXRCE / `px4_msgs` 驱动
 # （`agc_task/intruder_driver`），不复用 gz VelocityControl 通道。
 

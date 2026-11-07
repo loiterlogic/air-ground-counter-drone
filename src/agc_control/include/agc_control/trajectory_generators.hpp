@@ -1,6 +1,6 @@
 // agc_control/trajectory_generators.hpp —— 轨迹生成器插件（pluginlib 具体实现）
 //
-// 插件清单（spec R3）：linear / circular / helical / figure8 / hover / step。
+// 插件清单：linear / circular / helical / figure8 / hover / step。
 // 其中 **figure8 为真八字（Gerono）**：x = cx + rx·sinθ、y = cy + ry·sinθ·cosθ，
 // rx=15 / ry=9 / h=2.5 m，**全程恒速 v=2.0 ../../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints 、ADR-0008）。
 // 周期轨迹（circular/helical/figure8）统一走弧长参数化：θ(t) 由 s(t)=v·t 反解，保证 |dp/dt| ≡ v。

@@ -1,4 +1,4 @@
-// scenario_reset —— 最小场景复位（ 加厚）
+// scenario_reset —— 最小场景复位（加厚）
 //
 // * 服务 /agc/scenario/reset（std_srvs/Trigger）：经 GZ set_pose 把车 / 目标置回 spawn；
 // 受运行期门控（仅**非 active** 态可复位——IDLE + 全终态，含 ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#lessons）。
@@ -8,7 +8,7 @@
 // - 事务：写车 → 读回（XY 欧氏距 ≤ 容差，有界等待）→ 写目标 → 读回；任一步失败 → **回滚**已写实体到
 // 「写入前」位姿；回滚再失败 → 持久标记 env_needs_rebuild_ 且 reason 后缀 env_rebuild_needed。
 // **绝不留「车已移动、目标未复位」中间态。**
-// - car_start（/agc/scenario/car_start）**仅在完整成功后**发布。
+// - car_start（agc/scenario/car_start）**仅在完整成功后**发布。
 // - 每次成功复位 reset_epoch_++ 并发布 /agc/scenario/reset_epoch（Int32，transient_local）；应答含 epoch=N。
 // * 启动初始复位**走同一门控**（不 bypass），保留 4 s 延迟等 gz / 桥就绪。
 //
@@ -150,7 +150,7 @@ public:
       std::bind(&ScenarioReset::onReset, this, std::placeholders::_1, std::placeholders::_2),
       rclcpp::ServicesQoS(), txn_cb_group_);
 
-    // 启动初始复位（延迟等待 gz / 桥就绪）；**经同一门控**（ / tasks 3.4：不 bypass）。
+    // 启动初始复位（延迟等待 gz / 桥就绪）；**经同一门控**（tasks 3.4：不 bypass）。
     startup_timer_ = create_wall_timer(
       std::chrono::seconds(4), [this]() {
         startup_timer_->cancel();
@@ -367,7 +367,7 @@ private:
     // (2) 撤销运动许可 + 停止执行（有界观察车静止，非致命）。
     waitForQuiescence();
 
-    // (3) 候选生成 + 统一净空校验（ / ADR-0012）。
+    // (3) 候选生成 + 统一净空校验（ADR-0012）。
     double cx, cy, tx, ty;
     std::string reason;
     if (!selectCandidate(cx, cy, tx, ty, reason)) {

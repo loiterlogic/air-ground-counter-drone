@@ -1,4 +1,4 @@
-// takeoff_controller —— 起飞 / 悬停 / Offboard 接管 + 控制权交接（spec R4）
+// takeoff_controller —— 起飞 / 悬停 / Offboard 接管 + 控制权交接
 //
 // 契约 [唯一执行口]（空中控制权）：起飞阶段归本节点；`/agc/air/release_control` 后交轨迹跟踪器。
 // 流程对齐旧 `drone_launch_controller` 的**行为事实**（先持续发 setpoint 流，再解锁、切 Offboard、爬升），

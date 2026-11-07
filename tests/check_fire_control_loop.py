@@ -7,7 +7,7 @@
   * `/agc/task/capture_evidence`（标注串）
   * `/agc/task/capture_hit`（命中值恰为 `CAPTURE_NET`）
 
-判据（[ADR-0022](docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)(c) / [F-11]）：
+判据（[ADR-0022](docs/adr/0022-w7b-research-propositions-and-decision-rule.md#top)(c)）：
   * **≥1 次完整射击闭环**：出现 `SHOT_FIRED` **且**随后出现 `SHOT_HIT` 或 `SHOT_MISS`（同一 `shot_id`）；
   * 命中时 `/agc/task/capture_hit` 值**恰为** `CAPTURE_NET`，终态 `INTERCEPT_CONFIRMED`；
   * 证据串携带 `shot=` / `flight_s=` / `miss_dist_m=`（逐帧比对可复核）；
@@ -37,6 +37,8 @@ from agc_msgs.msg import AgcTaskState
 
 sys.path.insert(0, '/home/chen/AGC/scripts')
 from episode_runner import TERMINALS, _reap_process_group  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 
 ROOT = '/home/chen/AGC'
 LAUNCH = 'main.launch.py'
@@ -208,8 +210,7 @@ def main():
                              '同一 shot_id）；命中时 capture_hit 恰为 CAPTURE_NET 且终态 INTERCEPT_CONFIRMED；'
                              '证据串携带 shot/flight_s/miss_dist_m。')
 
-    with open(os.path.join(out_dir, 'metrics', 'e2.json'), 'w') as f:
-        json.dump(result, f, indent=2, ensure_ascii=False)
+    checklib.write_json(os.path.join(out_dir, 'metrics', 'e2.json'), result)
 
     print('run_id=%s mode=%s terminal=%s(%s) fired=%d hit=%d miss=%d closed=%s' % (
         run_id, args.mode, result['terminal_state'], result['reason_code'],

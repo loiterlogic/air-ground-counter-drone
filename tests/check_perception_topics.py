@@ -27,6 +27,9 @@ from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry, OccupancyGrid
 from std_msgs.msg import String
 from agc_msgs.msg import TargetTrackArray
+import sys  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 
 # (topic, type, expected_hz, lenient) lenient=True 表示非 交付物（仅观测）
 TOPICS = [
@@ -97,9 +100,8 @@ def main():
     out_dir = os.path.join(args.experiments_root, 'w4-perception', run_id, 'metrics')
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, 'frequency.json')
-    with open(path, 'w') as f:
-        json.dump({'run_id': run_id, 'duration_s': round(dur, 2), 'tol': args.tol,
-                   'results': results, 'pass': all_ok}, f, indent=2)
+    checklib.write_json(path, {'run_id': run_id, 'duration_s': round(dur, 2), 'tol': args.tol,
+                               'results': results, 'pass': all_ok})
     print(f"\n{'PASS' if all_ok else 'FAIL'} → {path}")
     return 0 if all_ok else 1
 

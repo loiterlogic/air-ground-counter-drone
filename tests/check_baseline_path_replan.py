@@ -45,6 +45,17 @@ from lifecycle_msgs.srv import GetState
 from nav_msgs.msg import Odometry, Path
 from rcl_interfaces.msg import Log
 from std_srvs.srv import Trigger
+import functools  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+def _metrics_dir(args):
+    d = os.path.join(args.experiments_root, 'w5-ground-nav-safety', args.run_id, 'metrics')
+    os.makedirs(d, exist_ok=True)
+    return d
+
+dump = functools.partial(checklib.dump, filename='r012.json', width=26, detail='inline')
+
 
 RAW = '/agc/ground/cmd_vel_raw'
 OUT = '/agc/ground/cmd_vel'
@@ -239,7 +250,7 @@ def main():
         if not active:
             res['overall_pass'] = False
             res['error'] = 'collision_monitor 未 active（infra）'
-            return dump(res, args, infra=True)
+            return dump(res, _metrics_dir(args), infra=True)
 
         ok, msg = n.start_task()
         res['start_ok'] = bool(ok)
@@ -249,7 +260,7 @@ def main():
         if not reached:
             res['overall_pass'] = False
             res['error'] = 'task 未进入 GROUND_APPROACH'
-            return dump(res, args, infra=True)
+            return dump(res, _metrics_dir(args), infra=True)
 
         # 冻结 task_manager：其最后一条 /agc/task/state 保持 GROUND_APPROACH；改由本脚本发 goal
         frozen = pgrep('[t]ask_manager')
@@ -387,7 +398,7 @@ def main():
         res['path_events'] = [{'t': round(p[0], 2), 'n': p[1],
                                'end': [round(p[2], 3), round(p[3], 3)]} for p in n.paths]
         res['overall_pass'] = all(t.get('pass') for t in res['tests'].values())
-        return dump(res, args)
+        return dump(res, _metrics_dir(args))
     finally:
         for p in frozen:
             try:
@@ -396,24 +407,6 @@ def main():
                 pass
         n.destroy_node()
         rclpy.shutdown()
-
-
-def dump(res, args, infra=False):
-    out_dir = os.path.join(args.experiments_root, 'w5-ground-nav-safety',
-                           args.run_id, 'metrics')
-    os.makedirs(out_dir, exist_ok=True)
-    path = os.path.join(out_dir, 'r012.json')
-    with open(path, 'w') as fh:
-        json.dump(res, fh, indent=2, ensure_ascii=False)
-    for name, t in res.get('tests', {}).items():
-        print('%-26s %s  %s' % (name, 'PASS' if t.get('pass') else 'FAIL',
-                                {k: v for k, v in t.items() if k != 'pass'}))
-    if 'error' in res:
-        print('error:', res['error'])
-    print('\n%s -> %s' % ('PASS' if res.get('overall_pass') else 'FAIL', path))
-    if infra:
-        return 2
-    return 0 if res.get('overall_pass') else 1
 
 
 if __name__ == '__main__':

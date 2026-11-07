@@ -25,6 +25,8 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 
 from px4_msgs.msg import VehicleOdometry, VehicleStatus, TrajectorySetpoint
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 
 
 def _qos():
@@ -120,8 +122,7 @@ def main():
     out_dir = os.path.join(args.experiments_root, 'w6-task-eval', run_id, 'metrics')
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, 'intruder_%s.json' % expect)
-    with open(path, 'w') as fh:
-        json.dump(payload, fh, indent=2, ensure_ascii=False)
+    checklib.write_json(path, payload)
     print('\n%s → %s' % ('PASS' if ok else 'FAIL', path))
     return 0 if ok else 1
 

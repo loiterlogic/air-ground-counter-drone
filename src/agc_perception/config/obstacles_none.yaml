@@ -1,4 +1,4 @@
-# 空障碍真值（ 承载 `obstacle=none`； 半径路径由配置文件 `obstacle=none` 派生）
+# 空障碍真值（承载 `obstacle=none`； 半径路径由配置文件 `obstacle=none` 派生）
 #
 # 配置文件（ADR-0007）= 所选地图文件（清单 `agc_sim/launch/world_map.py`）。本文件是
 # **standalone 回退副本**（`obstacle=none` 时的空静态先验），与配置文件在 none 轴下一致（空集）。

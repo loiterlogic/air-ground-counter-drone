@@ -1,4 +1,4 @@
-# agc_ground 分层 costmap 参数（ · R3）——由 ground_bringup.launch.py 单一注入
+# agc_ground 分层 costmap 参数——由 ground_bringup.launch.py 单一注入
 #
 # 用途：**离线对照基线**（R8 的 Nav2 planner/controller）**自持**
 # （`ground_baseline` 内建 `Costmap2DROS`，节点名 `costmap`）；

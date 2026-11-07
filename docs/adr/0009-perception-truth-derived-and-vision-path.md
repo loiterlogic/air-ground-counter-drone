@@ -326,8 +326,7 @@ accepted（2026-11-02 由 0020 / 0052 / 0053 / 0103 / 0110 合并；2026-11-03 �
 
 ## 参考
 
-- 评审：[10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-037)（传感器 / 车体能力）、
-  [10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-038)（数值模型与配置边界）；契约：
+- 评审：`R-037`（传感器 / 车体能力）、`R-038`（数值模型与配置边界）——评审快照已于 2026-11-06 退役，见 [ADR-0033](0033-review-snapshot-retirement.md#top)；契约：
   [#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、[#execution-port](0020-package-boundaries-and-runtime-topology.md#execution-port)、
   [#params](0020-package-boundaries-and-runtime-topology.md#params)、[#messages](0020-package-boundaries-and-runtime-topology.md#messages)
 - 相关决策：[ADR-0010](0010-safety-thresholds-and-failsafe.md#top)（安全阈值与接触真值）、

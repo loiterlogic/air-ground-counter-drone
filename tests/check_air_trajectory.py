@@ -19,6 +19,9 @@ import time
 import rclpy
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
+import sys  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 
 TARGET_SPEED = 2.0   # 真八字恒速 v = 2.0 m/s（契约 #hc-1；ADR-0008）
 

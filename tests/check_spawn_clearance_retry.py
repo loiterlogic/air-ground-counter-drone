@@ -3,7 +3,7 @@
 
 在链路就绪、状态 IDLE（可复位）时，连续调用 `/agc/scenario/reset` 两次，比较
 `/agc/scenario/car_start` —— 由 `scenario_reset` 以 `spawn_seed` 生成的 spawn：
- * randomize=true 时同 seed 两次生成应一致（可复现，）；
+ * randomize=true 时同 seed 两次生成应一致（可复现）；
  * randomize=false 且 spawn 过近（< 下限）时 reset 应被拒（success=false）。
 
 用法（launch 就绪后）：python3 tests/check_spawn_clearance_retry.py --run-id ... --expect-random
@@ -21,6 +21,8 @@ from rclpy.node import Node
 
 from geometry_msgs.msg import PoseStamped
 from std_srvs.srv import Trigger
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 
 
 class R6Checker(Node):
@@ -90,8 +92,7 @@ def main():
     out_dir = os.path.join(args.experiments_root, 'w6-task-eval', run_id, 'metrics')
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, 'r6.json')
-    with open(path, 'w') as fh:
-        json.dump(payload, fh, indent=2, ensure_ascii=False)
+    checklib.write_json(path, payload)
     print('\n%s → %s' % ('PASS' if all_ok else 'FAIL', path))
     return 0 if all_ok else 1
 

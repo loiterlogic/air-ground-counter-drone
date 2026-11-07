@@ -41,3 +41,19 @@ ignore = [
 # 且大量 `import` 是为 `--help` 之外的可选依赖探测而保留。
 "tests/**" = ["F401"]
 "scripts/tests/**" = ["F401"]
+
+[tool.pytest.ini_options]
+# 为什么钉 testpaths：仓库根直接跑 `pytest` 会递归进 `toolchain/PX4-Autopilot`
+# （外部仓库、不入库），实测 31 个 collection error 全部来自它——
+# 新人第一步就撞一个与本项目代码无关的红。
+# 这里只列**本项目自己的**测试：验收核查（tests/）、离线单测（scripts/tests/）、
+# 包内单测（src/*/test/）。仿真/SITL 类核查仍按需手动跑（见 tests/README.md#top）。
+testpaths = [
+    "tests",
+    "scripts/tests",
+    "src/agc_task/test",
+    "src/agc_rl/test",
+]
+# 验收核查按退出码语义设计，不是 pytest 用例；`tests/` 下只收 pytest 风格文件。
+python_files = ["test_*.py"]
+

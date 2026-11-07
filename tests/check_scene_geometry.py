@@ -12,7 +12,7 @@ yard / open_field）；**(i)-(m)** 是跨图 / 一次性断言。
  `minimal` 另外要求 `pole_1`/`pole_2` 逐值不变（历史基线）与 `none` 世界无障碍；
  (c) `agc_perception/config/{obstacles,map}.yaml`（standalone 回退副本）与 **minimal** 配置文件一致
  （不漂移）——非 minimal 无回退副本，standalone 路径必须显式拒绝（见 (j)）；
- (d) `agc_air/config/air.yaml` 已**无**任何硬编码障碍几何 **与半径列表**（：定长列表已消除）；
+ (d) `agc_air/config/air.yaml` 已**无**任何硬编码障碍几何 **与半径列表**（定长列表已消除）；
  (e) `agc_task/config/base.yaml` 已去硬编码几何（派生入口），且 `composition` 派生注入 == 配置文件；
  (f) `geometry_sha256` 稳定且**按图区分**；manifest `geometry` 块（含 `map` / `shape` /
  `safety_radius`）== 配置文件；
@@ -46,6 +46,8 @@ import tempfile
 import xml.etree.ElementTree as ET
 
 import yaml
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 
 # 项目根**自定位**（2026-10-31 ，裁定 A）：本文件在 `<ROOT>/tests/`，上溯两级即根。
 # 原来写死 `/home/chen/AGC`，使冒烟 `geometry` 组在别处 clone 时检的是**原仓库**。
@@ -260,7 +262,7 @@ def _point_in_poly(px, py, poly):
 def _union_coverage_pct(obstacles, wa, world_map_mod, res=0.2):
     """障碍水平投影的**并集**面积占作业区比例（%）。
 
- 口径成文（ 2026-10-29）：**同一实体多图元相互堆叠只计一次**，故用并集而非图元和。
+ 口径成文（2026-10-29）：**同一实体多图元相互堆叠只计一次**，故用并集而非图元和。
  旧记录 `yard 覆盖 7.36%` 既非并集（4.64%）亦非图元和（6.85%）→ 不可复现，已作废。
     """
     cells = set()
@@ -349,7 +351,7 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
             for pt in parts:
                 world_map_mod.obstacle_shape(pt)
                 world_map_mod.obstacle_size(pt, pt)
-                # 材质档（ 视觉保真）：非法 finish → RuntimeError → schema 不合法
+                # 材质档（视觉保真）：非法 finish → RuntimeError → schema 不合法
                 world_map_mod.part_finish(pt)
             world_map_mod.obstacle_finish(o)
         except RuntimeError:
@@ -410,7 +412,7 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
                     comp_ok = False
                     comp_detail['%s/%s' % (mid, pid)] = 'visual != collision'
 
-    # ---- 材质档 → `<material><pbr>` 逐 link 核对（ 视觉保真；2026-10-29）----
+    # ---- 材质档 → `<material><pbr>` 逐 link 核对（视觉保真；2026-10-29）----
     # 只核对**障碍模型**：地面 / 道路（`ground_plane` / `road_*` / `apron_*`）不在配置文件内，
     # 它们的 PBR 在 base world 里，属世界视觉层，不参与本条判定。
     src_by_id = {o['id']: o for o in obstacles}
@@ -1006,8 +1008,7 @@ def main():
 
     if args.out:
         os.makedirs(os.path.dirname(args.out), exist_ok=True)
-        with open(args.out, 'w', encoding='utf-8') as f:
-            json.dump(res, f, indent=2, ensure_ascii=False)
+        checklib.write_json(args.out, res)
         print('-> %s' % args.out)
     return 0 if res.get('overall_pass') else 1
 

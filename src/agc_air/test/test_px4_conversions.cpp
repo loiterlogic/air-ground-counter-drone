@@ -116,7 +116,7 @@ TEST(Px4Conversions, VelocityFrameConversionAtNinetyDegreeHeading)
 {
   // 90° 航向：NED 偏航 0（朝北）的单位四元数 → ENU 下机头即 +y（北）。字段序 [w,x,y,z]。
   const auto q = agc_air::px4AttitudeToEnu({1.0f, 0.0f, 0.0f, 0.0f});
-  // 世界 ENU 向北 1 m/s → 机体系前向 x = 1（：twist 在 child frame）
+  // 世界 ENU 向北 1 m/s → 机体系前向 x = 1（twist 在 child frame）
   const Vector3 north_body = agc_air::enuToBodyFlu(q, Vector3(0.0, 1.0, 0.0));
   EXPECT_NEAR(north_body.x(), 1.0, 1e-9);
   EXPECT_NEAR(north_body.y(), 0.0, 1e-9);

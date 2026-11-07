@@ -1,4 +1,4 @@
-// dynamic_fire_control.hpp —— 最小动态火控状态机（ T2/E2；ADR-0011；ADR-0011）
+// dynamic_fire_control.hpp —— 最小动态火控状态机（ADR-0011）
 //
 // 纯标准库实现（可单测；不依赖 ROS / GZ / PX4）。节点 capture_adjudicator.cpp 只做 I/O 与事件发布，
 // 状态机与弹道在本头文件内，便于确定性 gtest 以显式 t_s 驱动。
@@ -49,7 +49,7 @@ struct FireParams
   TargetMotionFilter::Params target_filter{};
 };
 
-// 裁决结果：命中 + 交战门 + 火控事件（ T2 扩展）。
+// 裁决结果：命中 + 交战门 + 火控事件（T2 扩展）。
 enum class CaptureStatus
 {
   kHit,                    // 本拍判定命中

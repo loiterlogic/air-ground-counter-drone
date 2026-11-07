@@ -31,6 +31,13 @@ from pathlib import Path
 import yaml
 
 from ament_index_python.packages import get_package_share_directory
+import functools  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+dump = functools.partial(checklib.dump, filename='metrics/r014.json', width=24,
+                            detail='inline', detail_keys=('success', 'reason'))
+
 
 SERVICE = '/agc/scenario/reset'
 
@@ -244,19 +251,6 @@ def main():
 
     res['overall_pass'] = all(t.get('pass') for t in res['tests'].values())
     return dump(res, out_dir)
-
-
-def dump(res, out_dir):
-    path = os.path.join(out_dir, 'metrics', 'r014.json')
-    with open(path, 'w') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    for name, t in res.get('tests', {}).items():
-        print('%-24s %s  success=%s reason=%s' % (
-            name, 'PASS' if t.get('pass') else 'FAIL', t.get('success'), t.get('reason')))
-    if 'error' in res:
-        print('error:', res['error'])
-    print('\n%s -> %s' % ('PASS' if res.get('overall_pass') else 'FAIL', path))
-    return 0 if res.get('overall_pass') else 1
 
 
 if __name__ == '__main__':

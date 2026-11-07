@@ -17,7 +17,7 @@ task_manager:
     state_topic: "/agc/task/state"
     # 运行模式： 无空中链路 → 显式声明无空中域，相位复位门禁不适用
     air_present: false
-    # 地面命令源名（：rl 主控 = agc_rl | 离线基线 = agc_ground）；随 command_source 切换
+    # 地面命令源名（rl 主控 = agc_rl | 离线基线 = agc_ground）；随 command_source 切换
     ground_controller_name: "agc_rl"
 
 scenario_reset:

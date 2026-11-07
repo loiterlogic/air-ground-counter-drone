@@ -6,7 +6,7 @@
 > 用法：查历史决策先扫本表 → 只打开命中的 1–2 篇；**不要**靠 `grep` 全目录。
 > 全量决策仍以各 ADR 正文为准；本表只是索引。状态说明见 [目录与命名规范](../conventions/目录与命名规范.md#10-产物分类与生命周期)。
 > **旧编号体系已退役**：各篇正文里「由 ADR-00xx 合并」的编号属 2026-11-02 重写前的旧体系，
-> 对应文件已删除；现行有效编号只有本表 0001–0032（见 [引用与注释纪律](../conventions/引用与注释纪律.md#rule)）。
+> 对应文件已删除；现行有效编号只有本表 0001–0033（见 [引用与注释纪律](../conventions/引用与注释纪律.md#rule)）。
 
 ## 怎么用
 
@@ -19,7 +19,7 @@
 
 ## 统计
 
-- 合计 **32** 篇：`accepted` 31 篇、`deferred` 0 篇、其它 1 篇
+- 合计 **33** 篇：`accepted` 32 篇、`deferred` 0 篇、其它 1 篇
 
 ## 索引表
 
@@ -30,7 +30,7 @@
 | [0003](./0003-nav2-paradigm-absorption.md) | Nav2 范式吸收：模式全覆盖、按命令源裁剪 | accepted（2026-11-02 由 ADR-0003 / 0008 / 0060 合并；结论未变） | **地面域**真跑 Nav2 本体组件；**空中域不引入 Nav2 运行时进程**，但重写时全面采纳其架构范式（costmap 分层语义、lifecycle 节点、planner / controller server 抽象、行为树），并保留 / 优化 LQR 与自研避障。唯一执行口 `/agc/… |
 | [0004](./0004-ground-control-rl-primary-and-nav2-safety.md) | 地面控制栈：RL 主控、Nav2 安全层与共享控制库 | accepted（2026-11-02 由 0004 / 0018 / 0026 合并；分层口径、`agc_control` 归属与标定值均未变） | **RL 主控**：RL 直接输出 `cmd_vel`，经 Nav2 `collision_monitor`（按多边形区域缩放 / 急停）收敛到唯一执行口 `/agc/ground/cmd_vel`。链路顺序固定为 `RL → cmd_vel_raw → collision_monitor → 唯… |
 | [0005](./0005-px4-toolchain-and-link.md) | PX4 工具链：uXRCE-DDS 链路、本体依赖与 pin 清单 | accepted（2026-11-02 由 0005 / 0012 / 0065 / 0067 / 0068 合并；链路协议、本体形态与 pin 纪律结论未变，agent 版本适用值统一为 v2.4.3） | 空中链路以 Micro-XRCE-DDS Agent + `px4_msgs`（`release/1.15`，与固件 v1.15.4 同版）直连 PX4 uORB，弃用 MAVROS / MAVLink 中间层。节点需自行处理 uORB 语义：微秒时间戳、NED/FRD 与 ENU 的换算、QoS… |
-| [0006](./0006-experiment-artifacts-and-evidence-discipline.md) | 实验产物与证据纪律 | accepted（2026-11-02 由 0007 / 0044 / 0045 / 0063 / 0064 合并；结论未变，其中一次真实证据丢失事故的 登记与重做义务一并保留） | 所有实验产物只落一个根，按 campaign → run 两层组织： |
+| [0006](./0006-experiment-artifacts-and-evidence-discipline.md) | 实验产物与证据纪律 | accepted（2026-11-02 由 0007 / 0044 / 0045 / 0063 / 0064 合并；结论未变，其中一次真实证据丢失事故的 登记与重做义务一并保留；2026-11-06 增补 (h) 产物保留策略与回收，用户裁定日期 2026-11-06、 `demo/` 定位口径 2026-11-07） | 所有实验产物只落一个根，按 campaign → run 两层组织： |
 | [0007](./0007-scene-geometry-single-source-and-layout.md) | 场景几何单一真源、布局范式与物理驱动 | accepted（2026-11-02 由 ADR-0010 / 0055 / 0062 / 0106 / 0112 合并；结论未变） | `agc_car` 重设为差速两驱动轮 + 2 caster，挂 `gz::sim::systems::DiffDrive`；`wheel_separation` / `wheel_radius` / `max_wheel_torque` / `max_wheel_accel` 落 `agc_si… |
 | [0008](./0008-air-trajectory-and-tracking-calibration.md) | 空中轨迹与跟踪参数标定 | accepted（2026-11-02 由 0019 / 0051 合并；口径与容限结论未变，跟踪容限仍是**占位待回填**，如实标注） | **「8 字」改为真八字（Gerono）**：`x = cx + rx·sinθ`、`y = cy + ry·sinθ·cosθ`（自交成 ∞），`rx=15`、`ry=9`、 `h=2.5 m`；**全程恒速 `v=2.0 m/s`**（弧长参数化，无加减速）；**删去「角速度 0.1」**。… |
 | [0009](./0009-perception-truth-derived-and-vision-path.md) | 感知口径：真值派生与能力边界（视觉路径已退役） | accepted（2026-11-02 由 0020 / 0052 / 0053 / 0103 / 0110 合并；2026-11-03 新增 (a2) 真值目标指示的不确定性模型与置信度/精度解耦；**2026-11-04 视觉定位路径整体删除**，本 ADR 由"真值派生 / 视觉并行"改为"只有真值派生一条路径"。能力边界的「不做 / 不承诺」部分一并收窄登记） | `air_perception` 以**世界真值**为输入、以**通道模型**产出观测：丢包 / 突发丢失 / 几何门控（量程 + FOV）/ 遮挡 / 高斯噪声与偏置，并给出**已标定** `confidence` 与观测序号 `obs_seq`。 ⚠ **2026-11-04 起该输出无消费者… |
@@ -57,6 +57,7 @@
 | [0030](./0030-nadir-camera-capability.md) | 机载正下视（nadir）相机能力 | accepted（2026-11-04） | 新增机型取值 `gz_agc_x500_nadir`（复用**已有** launch 参数 `px4_sim_model`，**不新增 launch 参数**）。 默认 `gz_x500` 时：不加相机、不注入任何新环境变量、rcS 走原路径 —— 与改动前完全一致。 |
 | [0031](./0031-target-motion-and-speed-regime.md) | 目标无人机运动规则与三主体速度体制 | accepted（2026-11-04） | 本篇同时结档两条 plan：**目标无人机运动规则** 与 **速度调研与运行节奏优化** （两者按 [任务计划规则](../plan/README.md#plan-index) 结档即删，结论只存在于本篇）。 它们共用 `intruder_driver` 与 `scenarios.yaml` 的… |
 | [0032](./0032-pending-directions.md) | 待立项的后续方向（占位登记） | proposed（2026-11-06；未立项、无实施） | 以下 4 项**均未立项**，不得据本篇推定已实现、已批准或已有排期： |
+| [0033](./0033-review-snapshot-retirement.md) | 评审快照目录退役（`docs/reviews/`） | accepted（2026-11-06，来源：用户裁定——"docs/reviews删掉，写在plan，然后执行"） | `git rm -r docs/reviews/`，**不留转发文件、不留软链、不迁 `docs/archive/`**。 取回方式写在本篇：`git show d793126:docs/reviews/<路径>`，或 `git log --all -- docs/reviews/`。该目录最后一… |
 
 ## 合并映射（2026-11-02，112 → 27）
 

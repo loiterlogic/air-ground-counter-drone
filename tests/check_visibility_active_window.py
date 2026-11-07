@@ -4,7 +4,7 @@
 读 campaign 报告里各 episode 的 `summary.json`，核查 `visibility_metrics`：
   * 存在且 `definition_version == "window_active_v1"`；
   * **分母 = 窗口内拍数**：`visibility_metrics.ticks_total == episode_window_metrics.ticks_total`
-    （修正 F-10 所指「未按任务窗口切分」的分母失真）；
+    （修正「未按任务窗口切分」的分母失真）；
   * `ticks_visible ≤ ticks_total`，`visibility_rate ∈ [0,1]`；
   * `ticks_fire_control_opportunity ≤ ticks_visible`；
   * `not_applicable.target_truth == false`（目标真值可得）；
@@ -14,12 +14,19 @@
 
 用法：
   python3 tests/check_visibility_active_window.py --report experiments/w7-rl-b/<run_id>/metrics/report.json
+  python3 tests/check_visibility_active_window.py --experiments-root <root>   # 取该根下最新 run
 """
 
 import argparse
 import json
 import os
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+ROOT = '/home/chen/AGC'
+CAMPAIGN = 'w7-rl-b'
 
 
 def check_one(ep):
@@ -60,9 +67,22 @@ def check_one(ep):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--report', required=True)
+    ap.add_argument('--report', default=None, help='campaign report.json 路径（缺省取证据根下最新 run）')
+    ap.add_argument('--experiments-root', default=os.path.join(ROOT, 'experiments'),
+                    help='证据根（未给 --report 时，取该根 %s 下最新 run 的 report.json）' % CAMPAIGN)
     ap.add_argument('--out', default=None)
     args = ap.parse_args()
+
+    if not args.report:
+        args.report = checklib.latest_report(args.experiments_root, CAMPAIGN)
+        if not args.report:
+            print('FAIL：%s 下找不到 <run>/metrics/report.json（证据根 %s）'
+                  % (CAMPAIGN, args.experiments_root), file=sys.stderr)
+            return 1
+    if not os.path.isfile(args.report):
+        print('FAIL：report.json 不存在：%s' % args.report, file=sys.stderr)
+        return 1
+
     with open(args.report) as f:
         report = json.load(f)
     eps = [e for e in report.get('episodes', []) if e.get('summary_present')]

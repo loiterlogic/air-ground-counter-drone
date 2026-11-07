@@ -1,7 +1,7 @@
 // agc_control/trajectory_generators.cpp —— 轨迹生成器插件实现
 //
 // 恒速保证：周期轨迹按弧长参数化——先建 s(θ) 表（梯形积分），再对给定 s 反解 θ，
-// 使 |dp/dt| ≡ speed（：真八字全程恒速、无加减速）。
+// 使 |dp/dt| ≡ speed（真八字全程恒速、无加减速）。
 
 #include "agc_control/trajectory_generators.hpp"
 
@@ -50,7 +50,7 @@ void ParametricTrajectory::configure(ParamReader & p)
 
 void ParametricTrajectory::reset(const State & /*initial*/, double /*yaw*/)
 {
-  // 周期轨迹固定在世界中（不随起点平移）：t=0 对应 θ=0（ 相位复位）
+  // 周期轨迹固定在世界中（不随起点平移）：t=0 对应 θ=0（相位复位）
   start_offset_.setZero();
 }
 

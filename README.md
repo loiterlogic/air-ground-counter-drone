@@ -158,7 +158,7 @@ PX4 SITL + uXRCE-DDS Agent /agc/ground/cmd_vel（唯一执行口）
 索引一致（ADR + 脚本）/ `scripts/tests` 全部离线单测 / DDS 契约 / 工具链 pin。
 实测 **27 s** 全绿（2026-11-06，本机）。
 
-> 它**不是**"57 个核查全绿"—— 那些大多要拉起完整 SITL，语义是验收不是冒烟。
+> 它**不是**"全部核查全绿"—— 那些大多要拉起完整 SITL，语义是验收不是冒烟。
 > 详见 [tests/README](tests/README.md) 与 [`tests/run_smoke.py`](tests/run_smoke.py)。
 
 ## 常见问题

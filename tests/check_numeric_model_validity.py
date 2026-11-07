@@ -10,6 +10,7 @@ overall_pass = (a)∧…∧(j)。
 ⚠ ground 适用性对拍为**独立解析分析**（命令映射可达性；**非**整链仿真、**非**复制被测 DARE 逻辑）。
 """
 
+import functools
 import argparse
 import glob
 import json
@@ -24,6 +25,9 @@ ROOT = '/home/chen/AGC'
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+dump = functools.partial(checklib.dump, filename='r038/check.json', mirror=['metrics/r038.json'], width=30)
+
 
 
 _read = checklib.read_text
@@ -251,7 +255,7 @@ def case_h_abi_single_commander_section():
                 if 'create_publisher<px4_msgs::msg::TrajectorySetpoint>' in t:
                     hits.append(fn)
     # 跨文档禁章节号引用（应使用稳定锚点）。代码块 / 行内代码里的示例不算——
-    # 规则文件自己的反例不该把本项判红。`.trae/specs` 已随 ADR-0025 退役，不再扫描。
+    # 规则文件自己的反例不该把本项判红。历史规格已随 ADR-0025 退役删除，不再扫描。
     sec = ['%s:%d' % (h[0], h[1]) for h in checklib.section_number_hits(ROOT)]
     res = {'agc_msgs_porcelain': p.stdout.strip(), 'abi_clean': abi_clean,
            'setpoint_publisher_files': hits,
@@ -309,22 +313,6 @@ def case_k_scope_note(bench):
     }
     res['pass'] = all(res.values())
     return res
-
-
-def dump(res, run_dir):
-    os.makedirs(os.path.join(run_dir, 'metrics'), exist_ok=True)
-    os.makedirs(os.path.join(run_dir, 'r038'), exist_ok=True)
-    with open(os.path.join(run_dir, 'r038', 'check.json'), 'w', encoding='utf-8') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    with open(os.path.join(run_dir, 'metrics', 'r038.json'), 'w', encoding='utf-8') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    for name, t in res.get('tests', {}).items():
-        print('%-30s %s' % (name, 'PASS' if t.get('pass') else 'FAIL'))
-    if 'error' in res:
-        print('error:', res['error'])
-    print('\n%s -> %s' % ('PASS' if res.get('overall_pass') else 'FAIL',
-                          os.path.join(run_dir, 'r038', 'check.json')))
-    return 0 if res.get('overall_pass') else 1
 
 
 def main():

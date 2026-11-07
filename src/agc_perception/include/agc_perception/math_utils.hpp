@@ -1,4 +1,4 @@
-// agc_perception 内部数学工具（ 共享）
+// agc_perception 内部数学工具（共享）
 //
 // 仅服务于本包内节点（gt_bypass / ground_odom_adapter / gt_adapter / map_adapter），
 // 不导出为公共接口。四元数 / 偏航 / 角度归一等纯函数。

@@ -1,4 +1,4 @@
-// agc_cmd_deadman —— GZ 侧末端失效停车守门人（，ADR-0010）
+// agc_cmd_deadman —— GZ 侧末端失效停车守门人（ADR-0010）
 //
 // ../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#execution-port：唯一 ROS 命令者是地面执行中继 ground_drive_relay；本插件**不是** ROS 命令者。
 //

@@ -1,4 +1,4 @@
-// agc_air/safety_shield.hpp —— 机载安全层（spec R7 + 联合安全屏障）
+// agc_air/safety_shield.hpp —— 机载安全层（+ 联合安全屏障）
 //
 // 职责（不引入 Nav2 运行时进程；ADR-0003 空中域保留 LQR + 自研避障）：
 // ① **联合约束复检**：静态障碍约束 **与** 目标间距约束**同时**满足（不允许后投影重新落入前约束）；
@@ -36,7 +36,7 @@ struct StaticObstacle
   double y{0.0};
   double safety_radius{2.0};
   /// 顶面高度（世界 ENU，m）。`+inf` = **未知**，等价于"无限高圆柱"（门控永不生效）。
-  /// 未注入时用 `+inf` 而非 0：缺省 0 会让所有障碍在正常巡航高度下静默失效（ 同类病灶）。
+  /// 未注入时用 `+inf` 而非 0：缺省 0 会让所有障碍在正常巡航高度下静默失效（同类病灶）。
   double z_top{std::numeric_limits<double>::infinity()};
 };
 
@@ -82,7 +82,7 @@ public:
   void configure_parameters(rclcpp::node_interfaces::NodeParametersInterface::SharedPtr params,
     const std::string & ns);
 
-  /// 对期望参考施加安全修正（ 联合复检 + 显式不可行）：
+  /// 对期望参考施加安全修正（联合复检 + 显式不可行）：
   /// - `desired`：期望参考（世界系 ENU）
   /// - `current_pos`：机体**当前位置**（世界系 ENU；供扫掠复检与 hold / 逃逸）
   /// - `current_vel`：机体**当前速度**（世界系 ENU）——垂直门控只用其 **z 分量**做下降前视
@@ -91,7 +91,7 @@ public:
   /// 注：本层是**参考滤波器**，其输出由 LQR 跟踪，故机体实际位置相对参考存在跟踪滞后。
   /// `obstacle_margin` / `target_margin` 即为该滞后（跟踪误差）预留的余量；**另加**反应时间
   /// （`reaction_time_s × max_speed_mps`）与可达性余量（`reachability_margin`）——三者**分别**
-  /// 由配置项承载（：跟踪误差 / 反应时间 / 可达性）。修正后参考边界 = 真实安全半径 + 余量，
+  /// 由配置项承载（跟踪误差 / 反应时间 / 可达性）。修正后参考边界 = 真实安全半径 + 余量，
   /// 使**机体实际**不侵入真实安全半径（对齐契约 与 自保）。
   SafetyResult apply(const agc_control::Reference & desired,
     const agc_control::Vector3 & current_pos,

@@ -60,6 +60,12 @@ from ament_index_python.packages import get_package_share_directory
 
 from px4_msgs.msg import TrajectorySetpoint, VehicleCommand, VehicleOdometry, VehicleStatus
 from std_msgs.msg import Int32, String
+import functools  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+dump = functools.partial(checklib.dump, filename='metrics/r016.json', width=22, detail='lines')
+
 
 NS = 'px4_1'
 EPOCH_TOPIC = '/agc/scenario/reset_epoch'
@@ -429,21 +435,6 @@ def case_d(node, share, out_dir):
     finally:
         _stop_driver(proc, log)
     return res
-
-
-def dump(res, out_dir):
-    path = os.path.join(out_dir, 'metrics', 'r016.json')
-    with open(path, 'w') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    for name, t in res.get('tests', {}).items():
-        print('%-22s %s' % (name, 'PASS' if t.get('pass') else 'FAIL'))
-        for k, v in t.items():
-            if k != 'pass':
-                print('      %s = %s' % (k, v))
-    if 'error' in res:
-        print('error:', res['error'])
-    print('\n%s -> %s' % ('PASS' if res.get('overall_pass') else 'FAIL', path))
-    return 0 if res.get('overall_pass') else 1
 
 
 def main():

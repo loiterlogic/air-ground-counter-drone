@@ -60,7 +60,6 @@ ACTIVE_GLOBS = (
     "docs/adr/*.md",
     "docs/conventions/*.md",
     "docs/plan/*.md",
-    "docs/reviews/**/*.md",
     "docs/toolchain/**/*.md",
     "src/**/README.md",
     "scripts/README.md",
@@ -71,7 +70,7 @@ ACTIVE_GLOBS = (
     # 归档只剩 Runbook 与 ROS1 基线（规格与过程台账已于 2026-11-03 删除）
     "docs/archive/**/*.md",
     # 项目级技能：技能资源本身也是文档，其相对链接必须可解析
-    # （ 修正：只检查"别人指向技能"会漏掉技能内部的断链）
+    # （修正：只检查"别人指向技能"会漏掉技能内部的断链）
     ".agents/**/*.md",
     # 递归索引 README（docs 各子目录 + scripts/archive），
     # 供 的 scripts/README 与目录自动核对复用。
@@ -88,7 +87,6 @@ LOCAL_ONLY_PREFIXES = (
     "experiments/",          # 实验产物与证据（ADR-0025 / ADR-0006）
     "reference/",            # 旧树归档（只读）
     "toolchain/",            # 外部工具链（仅 README 入库）
-    ".trae/",                # 已退役；残留即异常，但语义仍是"本机"
     # 协作台账逐轮过程物（2026-11-06 起不入库，见 .gitignore）：
     # `CURRENT.md` 会链到具体轮次做"当前在办"的证据，本地完整检出里有效，
     # 公开 clone 里没有——与 experiments/ 同口径，既不判链也不声称可导航。
@@ -99,9 +97,6 @@ LOCAL_ONLY_PREFIXES = (
 # 历史范围：断链只列名，不计入失败。
 HISTORICAL_PREFIXES = (
     "docs/archive/",
-    # 评审快照与协作台账同属过程证据：按 ADR-0002 / 铁律「历史证据不改写」，
-    # 其中的链接指向当时存在的文件，约束条文迁移后必然失效——只报告，不改写、不计失败。
-    "docs/reviews/",
     ".coordination/",
 )
 

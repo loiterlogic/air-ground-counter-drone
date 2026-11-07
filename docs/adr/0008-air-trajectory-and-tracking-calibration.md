@@ -138,8 +138,7 @@ accepted（2026-11-02 由 0019 / 0051 合并；口径与容限结论未变，跟
 
 ## 参考
 
-- 评审：[10-风险](../reviews/agc-review-2026-10-14/10-风险.md#r-036)、
-  [10-风险](../reviews/agc-review-2026-10-14/10-风险.md#x-01)
+- 评审：`R-036`、`X-01`（评审快照已于 2026-11-06 退役，见 [ADR-0033](0033-review-snapshot-retirement.md#top)）
 - 契约：[#hard-constraints](0020-package-boundaries-and-runtime-topology.md#hard-constraints)、
   [#namespace](0020-package-boundaries-and-runtime-topology.md#namespace)、[#execution-port](0020-package-boundaries-and-runtime-topology.md#execution-port)、
   [#messages](0020-package-boundaries-and-runtime-topology.md#messages)

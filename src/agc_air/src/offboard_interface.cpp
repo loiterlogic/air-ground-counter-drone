@@ -132,8 +132,8 @@ void OffboardInterface::sendSetpointNed(const Vector3 & pos_ned, const Vector3 &
 void OffboardInterface::publishSetpoint(const Vector3 & pos_enu, const Vector3 & vel_enu,
   const Vector3 & acc_cmd_enu, double yaw_enu)
 {
-  // 位置项含 0.5·a·dt² 前馈（spec R5）；
-  // 世界 ENU → 局部 ENU（减 EKF 局部原点，）→ PX4 NED。速度/加速度是与原点无关的自由矢量。
+  // 位置项含 0.5·a·dt² 前馈；
+  // 世界 ENU → 局部 ENU（减 EKF 局部原点）→ PX4 NED。速度/加速度是与原点无关的自由矢量。
   const Vector3 pos_local_enu = pos_enu - origin_enu_;
   const Vector3 pos_local_ff =
     pos_local_enu + 0.5 * acc_cmd_enu * params_.setpoint_dt * params_.setpoint_dt;

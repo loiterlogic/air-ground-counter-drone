@@ -2,7 +2,7 @@
 
 链路位置：`ground_policy_rl → cmd_vel_raw → collision_monitor → 唯一执行口 → ground_drive_relay → GZ`。
 本节点**只**写中间话题 `cmd_vel_raw`（`/agc/ground/cmd_vel_raw`），**SHALL NOT** 直接写契约
-唯一执行口（spec R6/R7；契约 [唯一执行口](../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#execution-port)）。
+唯一执行口（契约 [唯一执行口](../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#execution-port)）。
 
 - 订阅：`/agc/ground/odom`（world 位姿/速度）、`/agc/ground/scan`（2D LaserScan）、`/agc/ground/goal`、
  `/agc/task/state`（仅 `GROUND_APPROACH` 允许驱动）。
@@ -11,14 +11,14 @@
  `input_timeout.*` 单一注入），任一过期 / 无效即输出**零速**；`scan` 的「未知」（NaN）与
  「合法无回波」（`+inf`）区分见 `agc_rl.interface`；**从未收到 / 全 NaN** 的扫描**不**默认无遮挡。
 - 策略由 config `policy_path` 加载（`agc_rl.policy`）；obs/action 语义由 `agc_rl.interface` 冻结。
-- **路径消费（，ADR-0013/0109）**：另订 `/agc/ground/path`（`nav_msgs/Path`，`frame_id=world`），
+- **路径消费（ADR-0013）**：另订 `/agc/ground/path`（`nav_msgs/Path`，`frame_id=world`），
  经 `agc_rl.path_consumer` 的五类质量门后算出**确定性参考点**，用它替换原来的 goal 航向参考。
  这是**确定性占位消费者**：路径**不进入** obs（`interface.py` 的 obs/action 空间与冻结口径不变），
   因此"能沿路径走"**不等于**"训练 RL 已具备路径跟踪能力"（ADR-0013(b)）。
   路径任一质量门不过 → **清缓存 + 持续零速**，**不得**静默退回 goal-only（ADR-0013(e)）。
 - 语言：Python（RL 域，[ADR-0020](../../docs/adr/0020-package-boundaries-and-runtime-topology.md#top)）。
 
-RL 节点**不写文件**（ spec R13）：run 级日志 / 产物归 `agc_run_logger` 与 `experiments/`。
+RL 节点**不写文件**：run 级日志 / 产物归 `agc_run_logger` 与 `experiments/`。
 """
 
 import math
@@ -72,7 +72,7 @@ class GroundPolicyRL(Node):
         self.pose_norm_m = self.declare_parameter('pose_norm_m', 10.0).value
         self.track_norm_m = self.declare_parameter('track_norm_m', 5.0).value
 
-        # 策略加载路径（config/*.yaml 单一注入，spec R6）：config 给文件名，节点在
+        # 策略加载路径（config/*.yaml 单一注入；config 给文件名，节点在
         # `agc_rl/policies/` 下解析为绝对路径；空则用内置默认确定性策略。
         self.policy_file = self.declare_parameter('policy_file', '').value
 
@@ -147,7 +147,7 @@ class GroundPolicyRL(Node):
         self.sectors = [1.0] * self.num_sectors
         self.scan_valid = False
         self.last_action = 0
-        # 各输入的**到达时刻**（单调钟）；`None` = 从未收到（ 独立寿命）。
+        # 各输入的**到达时刻**（单调钟）；`None` = 从未收到（独立寿命）。
         self._t_odom = None
         self._t_goal = None
         self._t_state = None
@@ -243,7 +243,7 @@ class GroundPolicyRL(Node):
         self.pub.publish(cmd)
 
     def _fresh(self, t_arrival, limit_s):
-        """到达时刻（单调钟）是否在寿命内；`None`（从未收到）恒为 False（R-010）。"""
+        """到达时刻（单调钟）是否在寿命内；`None`（从未收到）恒为 False。"""
         return t_arrival is not None and (time.monotonic() - t_arrival) <= limit_s
 
     def _authorized(self):
@@ -325,7 +325,7 @@ class GroundPolicyRL(Node):
         action = self.policy.act(obs, self.num_sectors)
         self.last_action = action
 
-        # 车前净空（米）：扇区为 range / lidar_max_range 的归一值，乘量程还原为米（ 量纲一致）。
+        # 车前净空（米）：扇区为 range / lidar_max_range 的归一值，乘量程还原为米（量纲一致）。
         forward_clearance_m = interface.forward_clearance(
             self.sectors, self.num_sectors, 1) * self.lidar_max_range
         v, w = interface.action_to_twist(

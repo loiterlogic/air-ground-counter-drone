@@ -1,4 +1,4 @@
-// gt_adapter —— 真值目标适配器（，spec R3；2026-11-03 加不确定性模型）
+// gt_adapter —— 真值目标适配器（2026-11-03 加不确定性模型）
 //
 // 消费 真值旁路 `/agc/gt/<target_model>`（world 系 PoseStamped），产出契约
 // `/agc/targets`（`agc_msgs/TargetTrackArray`）：
@@ -406,12 +406,12 @@ private:
       ++published_;
     } else if (has_pose_) {
       // **显式**发空数组：本拍无新样本（丢包 / 延迟未到）→ 下游按"无目标"处理，
-      // 绝不重发上次位置冒充新观测（契约 / N4 出口判据 2）。
+      // 绝不重发上次位置冒充新观测（出口判据：不确定性可观测）。
       ++empty_pubs_;
     }
     if (has_pub_) {pub_->publish(arr);}
 
-    // 诊断（N4 出口判据 2：不确定性必须**可观测**，不得静默计数）：
+    // 诊断（不确定性必须**可观测**，不得静默计数）：
     // 每 5 s 汇总一次：入站数 / 丢包 / 队列溢出 / 已发布 / 空发布 / 延迟队列深度。
     if (diag_period_s_ > 0.0 && (now_s - last_diag_s_) >= diag_period_s_) {
       last_diag_s_ = now_s;
@@ -448,7 +448,7 @@ private:
   double last_t_{0.0};
   bool has_prev_t_{false};
   bool burst_state_{false};
-  // 诊断计数（N4 出口判据 2：不确定性必须可观测，不得静默累加）
+  // 诊断计数（不确定性必须可观测，不得静默累加）
   unsigned long long received_{0}, diag_dropped_{0}, diag_overflow_{0};
   unsigned long long published_{0}, empty_pubs_{0};
   double diag_period_s_{5.0}, last_diag_s_{0.0};

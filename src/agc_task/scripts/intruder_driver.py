@@ -141,7 +141,7 @@ class IntruderDriver(Node):
         self.sub_odom_ = self.create_subscription(VehicleOdometry, f'{p}/out/vehicle_odometry', self._on_odom, _qos())
         self.sub_st_ = self.create_subscription(VehicleStatus, f'{p}/out/vehicle_status', self._on_status, _qos())
         # 只消费 jammer 的**已校验授权事件**（非原始命令）→ 停止 Offboard 流
-        # （：停发 Offboard 流 → 触发 PX4 offboard-loss 行为，非 data-link-loss）
+        # （停发 Offboard 流 → 触发 PX4 offboard-loss 行为，非 data-link-loss）
         self.jam_state_topic_ = self.declare_parameter(
             'jam_state_topic', '/agc/task/jam_state').value
         self.sub_jam_state_ = self.create_subscription(

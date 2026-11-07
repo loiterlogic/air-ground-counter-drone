@@ -1,4 +1,4 @@
-# agc_ground 离线对照基线参数（ · R8）——由 ground_bringup.launch.py 单一注入
+# agc_ground 离线对照基线参数——由 ground_bringup.launch.py 单一注入
 #
 # 基线 = Nav2 planner 插件（pluginlib 复用 Nav2 `navfn_planner`）+ `agc_control` 的 LQR 控制器插件
 # （共用实现，未复制，ADR-0004 / ADR-0003 吸收点：planner/controller 的 plugin 抽象）。

@@ -44,7 +44,7 @@ gt_adapter:
     target_source: "gt_adapter"      # 契约 /agc/target/source（launch 可覆写）
     rate_hz: 10.0
     diff_window_s: 0.15
-    # ---- 2026-11-03（N4）：真值链路的不确定性模型 ----
+    # ---- 2026-11-03：真值链路的不确定性模型 ----
     # 缺省全 0 = **理想基线**，行为与旧版等价（节点启动时会打 WARN 提示不得据此宣称鲁棒性）。
     # 说明见 docs/adr/0009-perception-truth-derived-and-vision-path.md#top（2026-11-04 已回填）。
     sigma_xy_m: 0.3                  # 位置噪声（m）；只进协方差与融合权重 [nominal 档]

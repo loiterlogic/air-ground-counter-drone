@@ -17,7 +17,7 @@
 一起入库后，`HEAD` 就变成了"改动后"——拿 `HEAD` 当基线会退化成**自己跟自己比**，
 `test_only_highlight_differs_from_baseline` 恒真、`test_x500_core_links_keep_inertial_and_collision`
 反而恒假（joint 差从 +1 变 0）。这正是"守卫看似在跑、其实没在守"的典型形状，故改为常量
-`BASELINE_REV`（ 之前的最后一次提交，即 派工单登记的基线 `b627043`）。
+`BASELINE_REV`（改动前的最后一次提交，即登记的基线 `b627043`）。
 该 rev 取不到时**跳过并说明**，不静默通过。
 
 不启任何仿真进程；`xacro` + `gz sdf -p` 都是纯解析（秒级）。若无 ROS 环境则**跳过**并说明原因
@@ -39,7 +39,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__
 XACRO_PATH = os.path.join(ROOT, 'src', 'agc_sim', 'models', 'intruder_uav',
                           'intruder_uav.sdf.xacro')
 REL_PATH = 'src/agc_sim/models/intruder_uav/intruder_uav.sdf.xacro'
-# 改动前基线（ 高亮入库前的最后一次提交； 基线卫生提交把高亮入库后
+# 改动前基线（高亮入库前的最后一次提交； 基线卫生提交把高亮入库后
 # 若仍用 `HEAD`，比对会退化为"自己跟自己比"——见文件头「基线怎么来」）
 BASELINE_REV = 'b627043'
 PX4_MODELS = os.path.join(ROOT, 'toolchain', 'PX4-Autopilot', 'Tools', 'simulation', 'gz',

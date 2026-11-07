@@ -172,7 +172,7 @@ def explain(summary, thresholds=None, terminal_state=None, terminal_reason=None,
             lines.append('拍数      ticks_total=%s / ticks_triggered=%s'
                          % (doc.get('ticks_total'), doc.get('ticks_triggered')))
 
-    # 4) 安全 / 复位（ 两指标）
+    # 4) 安全 / 复位（两指标）
     ca = doc.get('command_attribution') or {}
     if doc:
         lines.append('安全      shield_infeasible_rate=%s；介入 %s 段 / %s 拍（shield 层%s）'

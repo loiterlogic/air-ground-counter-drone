@@ -33,6 +33,8 @@ from std_msgs.msg import Bool
 from trajectory_msgs.msg import MultiDOFJointTrajectory
 
 from agc_msgs.msg import TargetTrackArray
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 
 LATCHED = QoSProfile(depth=1, history=HistoryPolicy.KEEP_LAST,
                      reliability=ReliabilityPolicy.RELIABLE,

@@ -1,4 +1,4 @@
-// ground_odom_adapter —— 地面 odom 归一（ 加固 spec R2； 源时刻分离 + 复位 epoch 速度历史）
+// ground_odom_adapter —— 地面 odom 归一（加固 ； 源时刻分离 + 复位 epoch 速度历史）
 //
 // 位姿来源：** 真值旁路**（`/agc/gt/agc_car`，gz 物理引擎产生的世界真值）。
 // 归一为 world 系 `/agc/ground/odom`（`world`→`car/base_link`）+ TF + `/agc/ground/odom_valid`

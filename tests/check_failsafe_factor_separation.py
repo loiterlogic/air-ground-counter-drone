@@ -52,6 +52,12 @@ from ament_index_python.packages import get_package_share_directory
 
 from px4_msgs.msg import VehicleCommand, VehicleStatus
 from std_msgs.msg import Bool, String
+import functools  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+dump = functools.partial(checklib.dump, filename='metrics/r019.json', width=32, detail='lines', notes=[('factor_3_data_link_loss =', 'res.get("factor_3_data_link_loss")')])
+
 
 NS = 'px4_1'
 STATUS_TOPIC = f'/{NS}/fmu/out/vehicle_status'
@@ -457,22 +463,6 @@ def case_d(node, share, out_dir):
     res['adr_mentions_limitation'] = has_limit
     res['pass'] = bool(adrs and has_dll and has_limit)
     return res
-
-
-def dump(res, out_dir):
-    path = os.path.join(out_dir, 'metrics', 'r019.json')
-    with open(path, 'w') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    for name, t in res.get('tests', {}).items():
-        print('%-32s %s' % (name, 'PASS' if t.get('pass') else 'FAIL'))
-        for k, v in t.items():
-            if k != 'pass':
-                print('      %s = %s' % (k, v))
-    print('factor_3_data_link_loss = %s' % res.get('factor_3_data_link_loss'))
-    if 'error' in res:
-        print('error:', res['error'])
-    print('\n%s -> %s' % ('PASS' if res.get('overall_pass') else 'FAIL', path))
-    return 0 if res.get('overall_pass') else 1
 
 
 def main():

@@ -41,8 +41,8 @@ ament_target_dependencies(agc_air_lib ${DEPS})
 target_link_libraries(agc_air_lib Eigen3::Eigen)
 
 # 空中链路节点（R1/R2/R4/R5/R6/R7/R8）
-# 注： 占位目标源节点已在 退役（真值源改由 agc_perception 的 gt_adapter /
-# air_fusion 提供，见 .trae/ADR-0025 R3）。
+# 注：占位目标源节点已退役（真值源改由 agc_perception 的 gt_adapter 提供，
+# 见 ADR-0025 / ADR-0009）。
 set(NODES
   px4_adapter
   takeoff_controller

@@ -1,7 +1,7 @@
-// agc_air/reference_msg.hpp —— 参考轨迹的对外消息形态（/agc/air/ref、/agc/air/tracking_ref）
+// agc_air/reference_msg.hpp —— 参考轨迹的对外消息形态（agc/air/ref、/agc/air/tracking_ref）
 //
 // 契约未定义专用参考消息，故复用标准 `trajectory_msgs/MultiDOFJointTrajectory`
-// （含 Header，可置 frame_id=world），以**单点**承载 位置 / 速度 / 加速度（spec R8、R6）。
+// （含 Header，可置 frame_id=world），以**单点**承载 位置 / 速度 / 加速度（R6）。
 
 #pragma once
 

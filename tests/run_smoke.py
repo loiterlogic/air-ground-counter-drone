@@ -12,7 +12,7 @@
 | `entry` | 跟踪的 shell / Python 文件可被解析器读懂（`tests/check_entry_syntax.py`） | 入口坏掉时其他组的绿灯毫无意义 |
 | `geometry` | 几何派生链：地图配置文件 → 世界 SDF 展开一致（`tests/check_scene_geometry.py`） | 改地图/材质最常踩的坑，纯静态 |
 | `messages` | 9 消息 ABI 字段与顺序不变 + `AgcTaskState` 9 个状态常量 | 契约红线，离线可判 |
-| `docs` | 活跃文档本地链接与锚点可解析（`tests/docs_link_check.py`） | 改 README / 计划文档后必跑 |
+| `docs` | 活跃文档本地链接与锚点可解析 + **计数与实况一致**（`tests/docs_link_check.py` + `tests/check_doc_counts.py`） | 改 README / 计划文档后必跑 |
 | `index` | 脚本索引与实际文件集合一致（`scripts/adr_index.py --check` + `scripts/tests/test_scripts_index.py`） | 索引漂移靠测试拦，不靠纪律 |
 | `offline` | `scripts/tests/` 全部离线单测（不启 ROS 节点 / 不启仿真） | 演示入口、视觉接线、视觉高亮等回归 |
 | `dds` | DDS 契约：不写死发现范围 / launch 不覆盖 | 写死 `LOCALHOST` 曾两次让收发链静默零送达 |
@@ -68,8 +68,9 @@ GROUPS = [
      [[sys.executable, '-m', 'pytest', '-q',
        os.path.join(ROOT, 'scripts', 'tests', 'test_demo_observability.py'),
        '-k', 'message or state']]),
-    ('docs', '活跃文档本地链接与锚点',
-     [[sys.executable, os.path.join(ROOT, 'tests', 'docs_link_check.py')]]),
+    ('docs', '活跃文档本地链接与锚点 + 计数一致性',
+     [[sys.executable, os.path.join(ROOT, 'tests', 'docs_link_check.py')],
+      [sys.executable, os.path.join(ROOT, 'tests', 'check_doc_counts.py')]]),
     ('index', 'ADR 索引 + 脚本索引一致性',
      [[sys.executable, os.path.join(ROOT, 'scripts', 'adr_index.py'), '--check'],
       [sys.executable, '-m', 'pytest', '-q',
@@ -89,6 +90,15 @@ GROUPS = [
 ]
 
 GREEN, RED, YELLOW, DIM, RESET = '\033[32m', '\033[31m', '\033[33m', '\033[2m', '\033[0m'
+
+# 可选组：**不**进 `GROUPS`，因此默认组数不变（`tests/check_doc_counts.py` 的判据 b 会抓）。
+# 它们是"证据核查"（`tests/run_evidence_checks.py` 的那 22 项）：判据是"历史 run 的证据仍在
+# 且自洽"，读 `experiments/` 且会写新证据目录——空证据根下如实 FAIL，违反冒烟
+# "只读 + 无产物也全绿"两条前提，故只能按需追加。分类口径见 [tests/README](README.md#categories)。
+OPTIONAL_GROUPS = [
+    ('evidence', '证据核查（读 experiments/，需真实证据根）',
+     [[sys.executable, os.path.join(ROOT, 'tests', 'run_evidence_checks.py')]]),
+]
 
 
 def _color(text, code, enabled):
@@ -160,27 +170,43 @@ def main(argv=None):
                                  description='AGC 冒烟门槛（5 分钟内全绿）')
     ap.add_argument('--only', action='append', default=[], metavar='GROUP',
                     help='只跑指定组（可多次）：%s' % ', '.join(g[0] for g in GROUPS))
+    ap.add_argument('--with-evidence', action='store_true',
+                    help='追加可选组 evidence（证据核查；读 experiments/，需真实证据根）')
+    ap.add_argument('--experiments-root', default=os.path.join(ROOT, 'experiments'),
+                    help='--with-evidence 使用的证据根（默认 <repo>/experiments）')
     ap.add_argument('--list', action='store_true', help='只列出组与命令，不执行')
     ap.add_argument('--verbose', action='store_true', help='失败时打印完整输出')
     ap.add_argument('--timeout', type=int, default=GROUP_TIMEOUT_S,
                     help='单组超时秒数（默认 %d）' % GROUP_TIMEOUT_S)
     args = ap.parse_args(argv)
 
+    optional = OPTIONAL_GROUPS if args.with_evidence else []
     if args.list:
         print('AGC 冒烟门槛（整轮预算 %d s）' % TOTAL_BUDGET_S)
         for name, desc, cmds in GROUPS:
             print('\n[%s] %s' % (name, desc))
             for cmd in cmds:
                 print('  %s' % ' '.join(cmd))
+        if args.with_evidence:
+            print('\n--- 可选组（默认不跑，需 --with-evidence）---')
+            for name, desc, cmds in OPTIONAL_GROUPS:
+                print('\n[%s] %s' % (name, desc))
+                for cmd in cmds:
+                    print('  %s %s' % (' '.join(cmd),
+                                       '--experiments-root %s' % args.experiments_root))
         return 0
 
-    known = [g[0] for g in GROUPS]
+    known = [g[0] for g in GROUPS] + [g[0] for g in OPTIONAL_GROUPS]
     unknown = [n for n in args.only if n not in known]
     if unknown:
         print('未知组：%s（可用：%s）' % (', '.join(unknown), ', '.join(known)),
               file=sys.stderr)
         return 2
-    selected = [g for g in GROUPS if not args.only or g[0] in args.only]
+    # `--only` 指名可选组时自动启用它，避免"选了却报未运行"的静默差异。
+    if args.only and not args.with_evidence:
+        if any(n in args.only for n in (g[0] for g in OPTIONAL_GROUPS)):
+            optional = OPTIONAL_GROUPS
+    selected = [g for g in GROUPS + optional if not args.only or g[0] in args.only]
 
     color = sys.stdout.isatty() and os.environ.get('NO_COLOR') is None
     print('=' * 74)
@@ -194,6 +220,8 @@ def main(argv=None):
     for name, desc, cmds in selected:
         sys.stdout.write('%-10s %-46s ' % (name, desc))
         sys.stdout.flush()
+        if name in [g[0] for g in OPTIONAL_GROUPS]:
+            cmds = [cmd + ['--experiments-root', args.experiments_root] for cmd in cmds]
         ok, elapsed, log = run_group(name, cmds, args.verbose, args.timeout)
         results.append((name, ok, elapsed, log))
         print('%s %6.2f s' % (_color('OK' if ok else 'FAIL', GREEN if ok else RED, color),

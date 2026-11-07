@@ -46,6 +46,12 @@ from geometry_msgs.msg import TwistStamped
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Bool, Int32, String
 from std_srvs.srv import Trigger
+import functools  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+dump = functools.partial(checklib.dump, filename='metrics/r023.json', width=38, detail='lines')
+
 
 ROOT = '/home/chen/AGC'
 ODOM_TOPIC = '/agc/ground/odom'
@@ -468,21 +474,6 @@ def case_f(_node, _share, _out_dir):
     res['agc_msgs_unchanged'] = (rc1 == 0 and rc2 == 0 and rc3 == 0 and not d1 and not d2 and not d3)
     res['pass'] = bool(res['hit_literal_present'] and res['agc_msgs_unchanged'])
     return res
-
-
-def dump(res, out_dir):
-    path = os.path.join(out_dir, 'metrics', 'r023.json')
-    with open(path, 'w') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    for name, t in res.get('tests', {}).items():
-        print('%-38s %s' % (name, 'PASS' if t.get('pass') else 'FAIL'))
-        for k, v in t.items():
-            if k != 'pass':
-                print('      %s = %s' % (k, v))
-    if 'error' in res:
-        print('error:', res['error'])
-    print('\n%s -> %s' % ('PASS' if res.get('overall_pass') else 'FAIL', path))
-    return 0 if res.get('overall_pass') else 1
 
 
 def main():

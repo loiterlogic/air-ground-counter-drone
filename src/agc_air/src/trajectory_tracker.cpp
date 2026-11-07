@@ -1,4 +1,4 @@
-// trajectory_tracker —— 轨迹跟踪 + setpoint 唯一发布者 + 冲突检测（spec R3/R4/R5/R7）
+// trajectory_tracker —— 轨迹跟踪 + setpoint 唯一发布者 + 冲突检测
 //
 // 控制层用 agc_control 的 **pluginlib** 插件（轨迹生成器 + LQR 控制器），本节只做
 // 「取参考 → 安全层 → LQR → 世界系 ENU 转 PX4 setpoint」的消费者工作（ADR-0004）。
@@ -89,7 +89,7 @@ protected:
     // 目标门同时校验**源时间窗**与 **confidence**：两者都新鲜才放行。
     target_max_age_s_ = declare_param_idempotent<double>("target_max_age_s", 0.5);
     confidence_min_ = declare_param_idempotent<double>("confidence_min", 0.5);
-    // N4（2026-11-03）：`acquired_` 判据 = **连续新鲜** `latch_hold_s` 秒（0 = 旧行为"一帧即建立"）。
+    // 2026-11-03：`acquired_` 判据 = **连续新鲜** `latch_hold_s` 秒（0 = 旧行为"一帧即建立"）。
     // 理由见 ⑨ 参考来源裁定处注释：一帧看见 ≠ 已捕获（实测会导致永久 hold）。
     latch_hold_s_ = declare_param_idempotent<double>("latch_hold_s", 3.0);
     // RL 局部偏移的**寿命 / 生效窗口**与**能力限幅**（幅值上限）。
@@ -118,7 +118,7 @@ protected:
     // 输入缝 = 既有 `/agc/targets`（`target_pos_` / `target_stamp_` / `target_confidence_`），
     // **不**创建 `/agc/gt/*` 指向订阅；与 `target` 分支的差别只在这里。
     // 无 fresh 航迹时执行**确定性偏航搜索**（三角波扫掠）以打破"先看见才能对准"的自锁；
-    // 搜索**只改偏航**，不改平移八字 / 恒速 / 相位或高度基准（ 不受影响）。
+    // 搜索**只改偏航**，不改平移八字 / 恒速 / 相位或高度基准（不受影响）。
     yaw_search_rate_dps_ =
       declare_param_idempotent<double>("yaw_search_rate_dps", 25.0);
     yaw_search_amplitude_deg_ =
@@ -178,7 +178,7 @@ protected:
       control_permit_topic_, rclcpp::QoS(1).transient_local().reliable(),
       [this](std_msgs::msg::String::SharedPtr m) {onPermitClaim(*m);});
 
-    // 相位复位触发：episode 起始把轨迹相位归零（spec R3；供 R2 起始时序调用）
+    // 相位复位触发：episode 起始把轨迹相位归零；供 R2 起始时序调用）
     reset_phase_srv_ = create_service<std_srvs::srv::Trigger>(
       reset_phase_service_,
       [this](
@@ -199,7 +199,7 @@ protected:
       target_topic_, rclcpp::QoS(rclcpp::KeepLast(1)).reliable(),
       [this](agc_msgs::msg::TargetTrackArray::SharedPtr m) {
         // 空数组 = **本拍无新观测**（感知侧门控 / 丢包），**不是**目标消失（ADR-0009）。
-        // 2026-11-03（N4）修正，与 `standoff_follower` 同款：旧实现 `have_target_=false` 把
+        // 2026-11-03 修正，与 `standoff_follower` 同款：旧实现 `have_target_=false` 把
         // "没新数据"当成"目标丢了"，`drop_prob=0.1` 下每 ~10 拍就误判一次 → `targetFresh`
         // 假阴性 → `acquired_` 分支进入 hold。保持上一有效航迹，由年龄（`target_max_age_s=0.5`）
         // 判定失效——那才是契约 的过期语义。
@@ -390,7 +390,7 @@ private:
       controller_->reset();
       t0_ = now();   // 新一集起点（接管 = 新许可生效点，ADR-0010）。
       // 高度基准（ADR-0008，唯一世界高度语义 = 世界 ENU z）：状态已是世界 ENU（px4_adapter 含 EKF
-      // 原点平移，），此处 z_offset 是**层高基准**选择（轨迹 h=2.5 m 相对接管时刻机体高度）——
+      // 原点平移），此处 z_offset 是**层高基准**选择（轨迹 h=2.5 m 相对接管时刻机体高度）——
       // **非**世界原点代偿；对外 base_ref 与该 effective **同一基准**（发布带同一 z_offset_）。
       z_offset_ = state.pos.z() - trajectory_->sample(0.0).pos.z();
       have_control_ = true;
@@ -413,7 +413,7 @@ private:
     const double t = have_control_ ? (now() - t0_).seconds() : 0.0;
     const agc_control::Reference base_ref = trajectory_->sample(t);
 
-    // ⑦ 始终发布基础参考（对外话题，spec R8）——**非** setpoint（不构成命令者）。
+    // ⑦ 始终发布基础参考（对外话题，——**非** setpoint（不构成命令者）。
     // （ADR-0008）：对外 `base_ref` 与生效 `effective` 须**同一世界高度基准**——发布前对**副本**
     // 加 `z_offset_`（层高基准），使公开 base_ref 的 z 与 effective 一致（**不**静默不同）；
     // **不**改动下游使用的 `base_ref`（下游 / effective 仍按世界 ENU 轨迹原高 + 同一 z_offset）。
@@ -438,16 +438,16 @@ private:
       return;   // **本拍不发 OCM / setpoint**（不继续争夺）
     }
 
-    // ⑨ 许可路径：参考 / 目标新鲜度（以**源 header.stamp**计，目标门并检 confidence，）。
+    // ⑨ 许可路径：参考 / 目标新鲜度（以**源 header.stamp**计，目标门并检 confidence）。
     const bool ref_fresh = trackingRefFresh();
     const bool tgt_fresh = targetFresh();
 
-    // 参考来源裁定（spec R6 + 冻结下游封闭）：
+    // 参考来源裁定（+ 冻结下游封闭）：
     // tracking —— 参考与目标均新鲜 → 采用 tracking_ref（覆盖基础轨迹）；
     // hold —— **已获目标后**失参考 / 失目标 → 显式 hold（保持最后有效位置、前馈清零）；
     // base —— **从未获目标** → 正常基础八字。
     //
-    // 2026-11-03（N4 / N1 子计划第 3 步）：`acquired_` 判据由「收到一帧新鲜航迹」改为
+    // 2026-11-03：`acquired_` 判据由「收到一帧新鲜航迹」改为
     // **「连续 `latch_hold_s` 秒满足新鲜度」**。理由：旧判据把"偶然看见一帧"当成"已捕获"，
     // 实测后果是——八字偶然扫进量程、看见 1 帧（`gate_ok=30`）后立刻失新鲜 → 永久 hold
     // → 全程 `gate_ok=0` → TIMEOUT（`20261103-n1-stag70` episode 1 的真实死因）。
@@ -509,7 +509,7 @@ private:
     // 高度基准对齐（见接管处说明）
     effective.pos.z() += z_offset_;
 
-    // 联合安全屏障（spec R7 + ）：联合约束复检（障碍 + 目标间距**同时**）+ 扫掠复检
+    // 联合安全屏障（+ ）：联合约束复检（障碍 + 目标间距**同时**）+ 扫掠复检
     // + **显式不可行路径**（无可行参考 → hold / 逃逸）； 记录安全层是否介入。
     // ADR-0010「垂直门控」：传入**实测垂直速度**——门控用 `z − v_z⁺·τ` 判定，下降穿越顶面
     // 之前圆盘即复活（不需要状态机 / 滞回）。
@@ -869,7 +869,7 @@ private:
   bool have_target_{false};
   // 诊断：空数组拍数（"本拍无新观测"，不是"目标丢失"）——不静默吞掉
   unsigned long long diag_empty_{0};
-  // N4（2026-11-03）：`acquired_` 连续新鲜计时起点 + 判据时长（0 = 旧行为"一帧即建立"）
+  // 2026-11-03：`acquired_` 连续新鲜计时起点 + 判据时长（0 = 旧行为"一帧即建立"）
   rclcpp::Time latch_start_{0, 0, RCL_ROS_TIME};
   double latch_hold_s_{3.0};
   agc_air::Vector3 rl_offset_{agc_air::Vector3::Zero()};

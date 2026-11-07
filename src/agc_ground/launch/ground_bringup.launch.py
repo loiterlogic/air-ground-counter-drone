@@ -7,7 +7,7 @@
 链路：命令源 → `/agc/ground/cmd_vel_raw` → `collision_monitor` → `/agc/ground/cmd_vel`
  → `ground_drive_relay` → GZ（`/model/agc_car/cmd_vel`）。
 
-命令源（`command_source`，互斥；同一时刻仅一路下发，spec R7/R8）：
+命令源（`command_source`，互斥；同一时刻仅一路下发）：
  * `rl` —— `agc_rl` 的 RL 推理节点（主控，ADR-0004）。RL **不消费** costmap
  （仅订 odom/scan/goal/state，见 `agc_rl.inference_node` / `agc_rl.interface`），
  故**不**起独立 costmap 进程（按命令源裁剪，[ADR-0003](../../../docs/adr/0003-nav2-paradigm-absorption.md#top)）；
@@ -58,7 +58,7 @@ from launch_ros.actions import Node
 # 传感器几何（与 agc_sim/models/agc_car/agc_car.sdf.xacro 的 car/lidar_link pose 一致）
 LIDAR_X, LIDAR_Y, LIDAR_Z = 0.0, 0.0, 0.48
 # gz 点云/LaserScan 的 header.frame_id 为 gz 作用域名（`<model>/<link>/<sensor>`），非契约帧名；
-# 以单位静态 TF 将其接到契约帧 `car/lidar_link`（见 spec R2）。
+# 以单位静态 TF 将其接到契约帧 `car/lidar_link`（见 。
 GZ_LIDAR_FRAME = 'agc_car/car/lidar_link/lidar3d'
 
 

@@ -97,7 +97,7 @@ public:
 private:
   // 输入是否新鲜。**负年龄一律拒绝**：仿真 reset / 时钟回跳后，reset **之前**收到的
   // odom/goal 会得到 `now - t < 0`；若只判 `<= limit`，这些旧输入会在新时刻被"重新包装"
-  // 成新鲜数据，进而用旧车位/旧目标发布新路径（ review B3）。
+  // 成新鲜数据，进而用旧车位/旧目标发布新路径（review B3）。
   bool fresh(const rclcpp::Time & t, double limit_s) const
   {
     if (limit_s <= 0.0) {

@@ -1,4 +1,4 @@
-// gt_bypass —— 世界真值旁路（，spec R1）
+// gt_bypass —— 世界真值旁路（
 //
 // 直读 gz `/world/<world>/dynamic_pose/info`（`gz.msgs.Pose_V`），归一为 world 系真值，
 // 按实体发布 `/agc/gt/<entity>`（`geometry_msgs/PoseStamped`）。

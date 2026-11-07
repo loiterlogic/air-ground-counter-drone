@@ -23,6 +23,8 @@ CAMPAIGN = 'w7-rl'
 sys.path.insert(0, os.path.join(ROOT, 'scripts'))                  # episode_runner（单一来源一致性核查）
 
 from agc_rl import interface, obs_spec, seeding, termination  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
 
 
 def t1_termination(res):
@@ -142,11 +144,10 @@ def main():
 
     res['git_commit'] = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
                                        capture_output=True, text=True).stdout.strip()
-    with open(os.path.join(run_dir, 'config', 'run_identity.json'), 'w', encoding='utf-8') as f:
-        json.dump({'campaign': CAMPAIGN, 'run_id': args.run_id, 'git_commit': res['git_commit'],
-                   'checker': 'tests/check_rl_core.py'}, f, indent=2, ensure_ascii=False)
-    with open(os.path.join(run_dir, 'metrics', 'core.json'), 'w', encoding='utf-8') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
+    checklib.write_json(os.path.join(run_dir, 'config', 'run_identity.json'),
+                        {'campaign': CAMPAIGN, 'run_id': args.run_id,
+                         'git_commit': res['git_commit'], 'checker': 'tests/check_rl_core.py'})
+    checklib.write_json(os.path.join(run_dir, 'metrics', 'core.json'), res)
 
     for k in sorted(flat):
         print('%-52s %s' % (k, 'PASS' if flat[k] else 'FAIL'))

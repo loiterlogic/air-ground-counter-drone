@@ -51,6 +51,16 @@ from agc_msgs.msg import AgcTaskState
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Int32
+import functools  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))  # noqa: E402
+import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+dump = functools.partial(checklib.dump, filename='metrics/r015.json', width=28, detail='name', notes=lambda res: [('      %s = ' % k, t[k])
+                            for t in res.get('tests', {}).values()
+                            for k in ('success', 'reason', 'car_start_arrived', 'rollback_dist_m',
+                                      'dist_from_new_spawn_m', 'idle_car_start_delay_s',
+                                      'active_car_start_arrived') if k in t])
+
 
 SERVICE = '/agc/scenario/reset'
 CAR_START = '/agc/scenario/car_start'
@@ -438,22 +448,6 @@ def main():
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
-
-
-def dump(res, out_dir):
-    path = os.path.join(out_dir, 'metrics', 'r015.json')
-    with open(path, 'w') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    for name, t in res.get('tests', {}).items():
-        print('%-28s %s' % (name, 'PASS' if t.get('pass') else 'FAIL'))
-        for k in ('success', 'reason', 'car_start_arrived', 'rollback_dist_m',
-                  'dist_from_new_spawn_m', 'idle_car_start_delay_s', 'active_car_start_arrived'):
-            if k in t:
-                print('      %s = %s' % (k, t[k]))
-    if 'error' in res:
-        print('error:', res['error'])
-    print('\n%s -> %s' % ('PASS' if res.get('overall_pass') else 'FAIL', path))
-    return 0 if res.get('overall_pass') else 1
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-// px4_adapter —— PX4 uORB → 契约口径 的归一化适配（spec R2，ADR-0005）
+// px4_adapter —— PX4 uORB → 契约口径 的归一化适配（ADR-0005）
 //
 // 唯一直接消费 `/fmu/out/*` 的节点：集中完成微秒时间戳→ROS 时间、NED/FRD↔ENU/FLU、
 // QoS 标定，并归一化到契约口径 `/agc/air/*`。上层控制节点只消费归一化话题。
@@ -134,7 +134,7 @@ private:
     // `sec≈−1.7e9` / `+8.5e7` 的脏 stamp，令下游 `rclcpp::Time(stamp)` 抛
     // "cannot store a negative time point"（**整节点崩溃**）与年龄门失效。
     // 处置：**拒发该帧** + 一次性如实告警 + **重锚**（丢弃被污染的偏移，下一帧自愈）——
-    // **不**静默替换为其它时刻（ 源采样时刻语义不许伪装）。
+    // **不**静默替换为其它时刻（源采样时刻语义不许伪装）。
     const std::int64_t now_ns = now().nanoseconds();
     if (mapper_.valid()) {
       const std::int64_t ros_ns = mapper_.toRosNanoseconds(px4_us);
@@ -173,7 +173,7 @@ private:
     out.header.stamp = rclcpp::Time(mapper_.toRosNanoseconds(px4_us), RCL_ROS_TIME);
     out.header.frame_id = world_frame_;
     out.child_frame_id = base_frame_;
-    // 位置：局部 NED → 世界 ENU（含 EKF 原点平移，）
+    // 位置：局部 NED → 世界 ENU（含 EKF 原点平移）
     const agc_air::Vector3 p = agc_air::localNedToWorldEnu(pos_ned, origin_enu_);
     out.pose.pose.position.x = p.x();
     out.pose.pose.position.y = p.y();
@@ -184,7 +184,7 @@ private:
     out.pose.pose.orientation.w = q_enu.w();
 
     // 速度：世界 ENU → **机体系 FLU**（nav_msgs Odometry 约定：twist 在 child_frame_id，
-    // 与 frame_id 的世界位姿区分；消费端用 px4_conversions 的 bodyFluToEnu 还原世界速度，）
+    // 与 frame_id 的世界位姿区分；消费端用 px4_conversions 的 bodyFluToEnu 还原世界速度）
     const agc_air::Vector3 v_flu = agc_air::enuToBodyFlu(q_enu, agc_air::nedToEnu(vel_ned));
     out.twist.twist.linear.x = v_flu.x();
     out.twist.twist.linear.y = v_flu.y();

@@ -4,7 +4,7 @@
 ## 为什么要一个专门的驱动
 
 `./run_demo.sh` 跑完就回收进程组，Screenshot 服务随之消失——**运行结束后再取帧必然失败**
-（ 的 T2-b 就是这样失败的：探针在 `run_demo.sh` 退出后才执行，服务清单 0 条）。
+（一次探针就是这样失败的：探针在 `run_demo.sh` 退出后才执行，服务清单 0 条）。
 所以取帧必须**在运行期间**由外部驱动轮询完成。本脚本做这件事：
 
 1. **自然运行**（`./run_demo.sh`，不带 `--gui-config`）——α 之后世界 SDF 的 `<gui>` 块
@@ -168,7 +168,7 @@ def pick_frames(frames, timeline, prefer_size=None, stable_median=None, tol=0.02
     if first_search is not None:
         # "启动"= 任务开始**之前**的画面（世界已起来、任务还没动）。
         # 用**严格早于** first_search 的帧，避免与"跟踪中"选到同一帧
-        # （ 实测：<= 会把任务启动那一刻的帧同时当成启动图与跟踪图）。
+        # （实测：<= 会把任务启动那一刻的帧同时当成启动图与跟踪图）。
         before = [f for f in frames if f[0] < first_search - 0.5]
         if before:
             start_frame = before[-1][1]
@@ -186,7 +186,7 @@ def pick_frames(frames, timeline, prefer_size=None, stable_median=None, tol=0.02
     if approach:
         t_best = min(approach, key=lambda kv: kv[1])[0]
         track_frame = nearest(t_best)
-    # 若"跟踪中"离启动太近（<2 s），画面与启动图几乎相同（ 实测：仅差 7 个像素），
+    # 若"跟踪中"离启动太近（<2 s），画面与启动图几乎相同（实测：仅差 7 个像素），
     # 观众看不出"在动"。改取任务进行中**偏后**的帧（更接近终态、车已明显接近）。
     if track_frame is not None and first_search is not None:
         t_track = next((t for t, p in frames if p == track_frame), None)
@@ -530,7 +530,7 @@ def main(argv=None):
             tick_start = time.monotonic()
             path = os.path.join(frames_dir, 'f-%04d.png' % i)
             # 首帧查一次服务（确认在线）；之后跳过——每次 `gz service -l` 要 1–2 s，
-            # 会把 1 Hz 拖成 4–6 s（ 实测 8 帧 / 34 s，GIF 需 ≥20 帧）
+            # 会把 1 Hz 拖成 4–6 s（实测 8 帧 / 34 s，GIF 需 ≥20 帧）
             ok, _d = gui_capture.snap(path, timeout_ms=8000, check_service=(i == 0))
             if ok:
                 if not _frame_has_content(path):

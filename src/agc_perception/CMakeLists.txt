@@ -15,7 +15,7 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(agc_msgs REQUIRED)
 find_package(yaml-cpp REQUIRED)
-# gz 真值旁路（gt_bypass）：经 gz-transport 直读 dynamic_pose/info（见 spec R1）
+# gz 真值旁路（gt_bypass）：经 gz-transport 直读 dynamic_pose/info（见 
 find_package(gz-transport13 REQUIRED)
 find_package(gz-msgs10 REQUIRED)
 
@@ -54,7 +54,7 @@ install(TARGETS
 
 install(DIRECTORY launch config DESTINATION share/${PROJECT_NAME})
 
-# N4（2026-11-04）：α-β 速度滤波的可执行判据（出口判据 3）。
+# 2026-11-04：α-β 速度滤波的可执行判据。
 # 此前 `AlphaBeta` 藏在 gt_adapter.cpp 的匿名命名空间里，任何测试都引用不到，
 # "σ_v 被抑制 40–100 倍"只能写在 ADR 里而无法复核。现抽到
 # include/agc_perception/alpha_beta.hpp，单测直接跑蒙特卡洛。

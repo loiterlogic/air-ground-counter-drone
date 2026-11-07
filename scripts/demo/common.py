@@ -44,7 +44,7 @@ DEFAULT_BACKEND = 'full'
 DEFAULT_SEED = 0
 # 观测指向臂的**实际生效值**（仅供展示 / 记录，**不**作为 launch 参数传递）。
 #
-# 2026-11-04 修正：`observe_yaw_mode` 的 launch 参数已清退（ 对照臂结档），
+# 2026-11-04 修正：`observe_yaw_mode` 的 launch 参数已清退（对照臂结档），
 # 现只有「场景覆盖 > `air.yaml` 配置文件」两级，**没有** run 级 CLI 覆盖口。
 # 主场景 `s04` 在 `scenarios.yaml` 覆盖为 `track`（机头对准 `/agc/targets` 感知航迹，
 # **非** oracle）；`air.yaml` 缺省 `velocity`。
@@ -352,7 +352,7 @@ def reap_process_group(pgid, sigint_s=REAP_SIGINT_S, sigkill_s=REAP_SIGKILL_S,
 
     after = pgid_members(pgid)
     res['members_after'] = [{'pid': p, 'cmd': c} for p, c in after]
-    # **判据口径**（ 实测修正）：`pgid_members` 只看**非僵尸**活进程，而
+    # **判据口径**（实测修正）：`pgid_members` 只看**非僵尸**活进程，而
     # `killpg(pgid, 0)` 对"只剩僵尸"的组仍返回成功（僵尸已被回收、不再执行任何代码）。
     # 若用 `and not pgid_alive(pgid)`，会出现"members_after=[] 但 confirmed=False"的自相矛盾
     # （实测于 Ctrl-C 回收：36 个进程全清、无任何残留进程，却被判 FAIL）。

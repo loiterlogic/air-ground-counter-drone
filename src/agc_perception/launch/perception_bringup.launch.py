@@ -121,7 +121,7 @@ def generate_launch_description():
                     output='screen')
 
     # ---- 真值链：唯一发布者 gt_adapter ----
-    # `air_fusion` 已于 2026-11-04 退役；`air_perception`（/agc/air/obs）及其无消费者的
+    # `air_fusion` 已于 2026-11-04 退役；`air_perception`（agc/air/obs）及其无消费者的
     # 通道配置已于 2026-11-06 一并删除。本链现在只剩 gt_adapter 一个节点。
     gt_node = Node(package='agc_perception', executable='gt_adapter',
                    name='gt_adapter',

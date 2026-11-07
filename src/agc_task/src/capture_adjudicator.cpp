@@ -1,6 +1,6 @@
-// capture_adjudicator —— 发射式网捕获裁决器（ R9 / ADR-0011； T2/E2 升级为「最小动态火控」）
+// capture_adjudicator —— 发射式网捕获裁决器（ADR-0011；升级为「最小动态火控」）
 //
-// 物理捕获 = **发射式网**。（T2 / E2，ADR-0022 / F-11）把 的**闭式包络占位**
+// 物理捕获 = **发射式网**。（ADR-0022）把**闭式包络占位**
 // 升级为**最小动态火控裁决**：
 // ① 交战门（相对高度与可及集）：h = target.z − car.z − launcher_h；h∈[applicable_min, applicable_max]
 // 且该高度可达（vy0²−2gh ≥ 0）且水平距离 ≤ 该高度闭式射程 + d/2 → 可交战（envelope_in）。
@@ -21,7 +21,7 @@
 // 模型边界（如实，不得外推）：网的弹道在本节点内逐帧积分（非 GZ 物理刚体）；
 // 「与 GZ 交叉核验」指逐帧与 GZ 目标/车真值位姿比对（目标运动来自 GZ 真值旁路），
 // 非把网做成 GZ 实体。applicable_* 高度与网参数仍为可标定暂定值；载荷物理启用后须重标。
-// 替换占位后任务难度先冻结（F-11）：命中结论一 episode 锁存；参数逐字沿用。
+// 替换占位后任务难度先冻结：命中结论一 episode 锁存；参数逐字沿用。
 //
 // 可插拔接口（R9）：本节点只依赖 CaptureAdjudicator 抽象；后续补真实弹道（含网体 GZ 实体）
 // 仅换实现，调用方（task_manager，订 /agc/task/capture_event 配套事件）不改。
@@ -119,7 +119,7 @@ public:
     required_target_id_ = declare_parameter<std::string>("required_target_id", "");
 
     rate_hz_ = declare_parameter<double>("rate_hz", 20.0);
-    // （T2/E2）：射击授权（任务决策，非自动）——缺省 false（保持跟踪类场景结局不变）。
+    // ：射击授权（任务决策，非自动）——缺省 false（保持跟踪类场景结局不变）。
     interception_authorized_ = declare_parameter<bool>("interception_authorized", false);
     const auto odom_topic = declare_parameter<std::string>("ground_odom_topic", "/agc/ground/odom");
     const auto target_topic = declare_parameter<std::string>("target_topic", "/agc/targets");
@@ -159,7 +159,7 @@ public:
       });
     target_sub_ = create_subscription<agc_msgs::msg::TargetTrackArray>(
       target_topic, 10, [this](agc_msgs::msg::TargetTrackArray::SharedPtr m) {
-        // 空数组 = **本拍无新观测**（门控 / 丢包），不是目标消失（ADR-0009；N4 2026-11-03）。
+        // 空数组 = **本拍无新观测**（门控 / 丢包），不是目标消失（ADR-0009）。
         // 与 standoff_follower / trajectory_tracker / task_manager 同款修正：
         // 保持上一有效航迹，由年龄（target_max_age_s）判定失效——火控自身另有新鲜度门。
         if (m->tracks.empty()) {

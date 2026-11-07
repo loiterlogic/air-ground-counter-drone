@@ -5,7 +5,7 @@
 门控/复位与 run logger。参数配置文件 src/agc_task/config/skeleton.yaml。
 验收跑有头（GUI）；无头可传 gz_args:='-s -r -v 3 <world>'。
 
-`command_source` 透传至 agc_ground 的 ground_bringup（ 命令源互斥选择）：
+`command_source` 透传至 agc_ground 的 ground_bringup（命令源互斥选择）：
  * rl（默认）—— `agc_rl` 推理节点为主控（ADR-0004）；
  * baseline —— `agc_ground` 的离线对照基线（R8）。
 
@@ -81,7 +81,7 @@ def generate_launch_description():
         launch_arguments={
             'use_sim_time': LaunchConfiguration('use_sim_time'),
             'command_source': LaunchConfiguration('command_source'),
-            # （T1/E1）：安全层开关透传（缺省 true；false = 无 shield 对照臂，纯仿真）
+            # ：安全层开关透传（缺省 true；false = 无 shield 对照臂，纯仿真）
         }.items(),
     )
 
@@ -106,7 +106,7 @@ def generate_launch_description():
                   # （ADR-0006）：世界模型文件 → run_logger 记 sha256（工具链身份）
                   'world_file': LaunchConfiguration('world_file'),
                   'params_file': LaunchConfiguration('params_file'),
-                  # （T1/E1）：安全层开关（字符串承载→节点内解析）——false 时 action 新鲜度门不适用
+                  # ：安全层开关（字符串承载→节点内解析）——false 时 action 新鲜度门不适用
                   'shield_layer_enabled': True}],
              output='screen'),
     ]

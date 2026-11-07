@@ -1,4 +1,4 @@
-// standoff_follower —— 对目标**常开** standoff 跟踪（spec R6，）
+// standoff_follower —— 对目标**常开** standoff 跟踪
 //
 // 契约 [硬约束] ：无人机对目标的跟踪**常开**（非可选），保持安全间距（不紧贴），
 // 目的是不丢失目标；目标须在时间窗内新鲜且 confidence 达标，**过期即冻结**。
@@ -61,7 +61,7 @@ protected:
       target_topic_, rclcpp::QoS(rclcpp::KeepLast(1)).reliable(),
       [this](agc_msgs::msg::TargetTrackArray::SharedPtr m) {
         // 空数组 = **本拍无新观测**（感知侧门控 / 丢包），**不是**目标消失（ADR-0009）。
-        // 2026-11-03（N4）修正：旧实现 `have_target_ = false` 把"没新数据"当成"目标丢了"——
+        // 2026-11-03 修正：旧实现 `have_target_ = false` 把"没新数据"当成"目标丢了"——
         // `drop_prob=0.1` 在 10 Hz 下每 ~10 拍就有一次空数组，每次都会立刻把航迹判死 →
         // `targetFresh` 返回 false → 冻结（hold）。**丢包被放大成航迹中断**（实测 nominal 档
         // 3 次 hold，全部对应空数组拍；ideal 档 0 次）。

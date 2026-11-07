@@ -24,7 +24,7 @@
 
 （[ADR-0015]）：授权 / 发送**不等于**效果。证据链拆为
 **意图 → 授权 → 发送 → ACK → 真实 nav 状态 → 持续行为**：
- * 授权事件（`/agc/task/jam_state`）语义**保留**（，驱动 `intruder_driver` 停发 Offboard）。
+ * 授权事件（`/agc/task/jam_state`）语义**保留**（驱动 `intruder_driver` 停发 Offboard）。
  * 发送后开 **确认窗口**（`jam_confirm_window_s`）；订阅入侵者 PX4 `VehicleStatus`（`vehicle_status_topic`），
  **仅当**实际 `nav_state` **达到所命令模式**（`LOST` 为 `lost_expected_nav_state`）且
  **持续 ≥ `jam_sustain_s`** 才产出**已确认事件** `/agc/task/jam_confirm`
@@ -40,7 +40,7 @@
 
 （[ADR-0011]）：干扰**作用包络**已与**捕获作用包络**分离。
  * 可交战包络 `/agc/task/envelope_in` 由 `capture_adjudicator` 的**最小动态火控交战门**给出
- （ T2/E2：逐帧弹道；高度含车体 `h = target.z − car.z − launcher_h`）。
+ （逐帧弹道；高度含车体 `h = target.z − car.z − launcher_h`）。
  （高度含车体 `h = target.z − car.z − launcher_h`）。
  * 干扰包络 `/agc/task/envelope_jam` 为**独立模型**（`behavioral_range_gate`：高度带 + 水平距离门），
  **不**与网弹道共源。本节点默认门控话题即为该独立干扰包络。

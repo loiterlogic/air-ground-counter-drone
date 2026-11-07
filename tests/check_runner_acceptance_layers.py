@@ -9,6 +9,7 @@ Case d 用**实跑** runner 报告（Phase A）；Case a/b/c 用**合成 episode
 `classify_acceptance_layers` / `summarize_metrics`（**不**跑仿真，非口径假绿）。
 """
 
+import functools
 import argparse
 import glob
 import importlib.util
@@ -19,6 +20,9 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import checklib  # noqa: E402  （tests/ 内共用小工具）
+
+dump = functools.partial(checklib.dump, filename='metrics/r031.json', width=40, detail='lines')
+
 
 ROOT = '/home/chen/AGC'
 RUNNER_PY = os.path.join(ROOT, 'scripts', 'episode_runner.py')
@@ -166,22 +170,6 @@ def case_g_no_abi_change():
     res['porcelain'] = p.stdout.strip()
     res['pass'] = (p.stdout.strip() == '')
     return res
-
-
-def dump(res, run_dir):
-    os.makedirs(os.path.join(run_dir, 'metrics'), exist_ok=True)
-    path = os.path.join(run_dir, 'metrics', 'r031.json')
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(res, f, indent=2, ensure_ascii=False)
-    for name, t in res.get('tests', {}).items():
-        print('%-40s %s' % (name, 'PASS' if t.get('pass') else 'FAIL'))
-        for k, v in t.items():
-            if k != 'pass':
-                print('      %s = %s' % (k, v))
-    if 'error' in res:
-        print('error:', res['error'])
-    print('\n%s -> %s' % ('PASS' if res.get('overall_pass') else 'FAIL', path))
-    return 0 if res.get('overall_pass') else 1
 
 
 def main():
