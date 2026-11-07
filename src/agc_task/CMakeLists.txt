@@ -20,6 +20,8 @@ find_package(sensor_msgs REQUIRED)
 add_executable(task_manager src/task_manager.cpp)
 ament_target_dependencies(task_manager
   rclcpp geometry_msgs nav_msgs std_msgs std_srvs agc_msgs)
+# 判定逻辑在 include/agc_task/task_fsm.hpp（纯类，无 ROS 依赖，见 ADR-0014）
+target_include_directories(task_manager PRIVATE include)
 
 add_executable(scenario_reset src/scenario_reset.cpp)
 ament_target_dependencies(scenario_reset
@@ -73,6 +75,13 @@ if(BUILD_TESTING)
   # P3 / ADR-0021：固定预算任务 FCO 积分器（手算确定性案例）
   ament_add_gtest(test_mission_fco_fixed_budget test/test_mission_fco_fixed_budget.cpp)
   target_include_directories(test_mission_fco_fixed_budget PRIVATE include)
+  # ADR-0014：任务 FSM 转移条件与 dwell 判据（纯判定类，无 ROS 依赖）
+  # 这些判据原先只存在于 911 行的 task_manager 节点类里，零单元测试。
+  ament_add_gtest(test_task_fsm test/test_task_fsm.cpp)
+  target_include_directories(test_task_fsm PRIVATE include)
+  # 常量一致性断言要读 `AgcTaskState.msg` 原文（见 test 的 StateConstantsMatchMsgDefinition）
+  target_compile_definitions(test_task_fsm PRIVATE
+    AGC_TASK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
   # P3 / ADR-0021：真实 run_logger 节点级合成 /clock + 消息链
   ament_add_pytest_test(test_run_logger_mission_fco "test/test_run_logger_mission_fco.py")
 endif()

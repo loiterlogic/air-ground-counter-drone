@@ -56,6 +56,8 @@
 #include <std_msgs/msg/string.hpp>
 #include <std_srvs/srv/trigger.hpp>
 
+#include "agc_task/task_fsm.hpp"
+
 using Trigger = std_srvs::srv::Trigger;
 using AgcTaskState = agc_msgs::msg::AgcTaskState;
 
@@ -533,11 +535,8 @@ private:
     }
 
     start_time_ = now();
-    dwell_start_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
     // 新 episode 起点——dwell 全部清零（杜绝跨 episode 累计有效时长）。
-    dwell_segment_start_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
-    dwell_target_id_.clear();
-    dwell_epoch_ = -1;
+    fsm_.reset_dwell();
     last_dwell_segment_s_ = 0.0;
     dwell_valid_total_s_ = 0.0;
     tracking_milestone_met_ = false;
@@ -569,7 +568,7 @@ private:
       return;
     }
     // 任务离开 active（abort / 进终态）即视为暂停——活跃 dwell 先中断记录。
-    if (dwell_start_.nanoseconds() != 0) {interruptDwell(now(), "TASK_PAUSED");}
+    if (fsm_.dwell_active()) {interruptDwell(now(), "TASK_PAUSED");}
     enterTerminal(AgcTaskState::ABORTED, "abort");
     res->success = true;
     res->message = "aborted";
@@ -590,7 +589,7 @@ private:
     if (kind == "DWELL_START") {
       std::snprintf(
         buf, sizeof(buf), "DWELL_START ep=%d target=%s",
-        episode_epoch_, dwell_target_id_.c_str());
+        episode_epoch_, fsm_.dwell_target_id().c_str());
     } else {
       std::snprintf(
         buf, sizeof(buf), "DWELL_INTERRUPT ep=%d reason=%s seg=%.3f total=%.3f",
@@ -604,15 +603,12 @@ private:
   // 中断当前活跃 dwell——结算分段有效时长并入本 episode 累计，发布 DWELL_INTERRUPT 后清零。
   void interruptDwell(const rclcpp::Time & t, const std::string & reason)
   {
-    if (dwell_start_.nanoseconds() == 0) {return;}
-    const double seg = (t - dwell_segment_start_).seconds();
+    if (!fsm_.dwell_active()) {return;}
+    const double seg = t.seconds() - fsm_.dwell_segment_start_s();
     last_dwell_segment_s_ = seg;
     dwell_valid_total_s_ += seg;
     publishDwellEvent("DWELL_INTERRUPT", reason, seg);
-    dwell_start_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
-    dwell_segment_start_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
-    dwell_target_id_.clear();
-    dwell_epoch_ = -1;
+    fsm_.reset_dwell();
   }
 
   void fail(
@@ -680,6 +676,8 @@ private:
   {
     state_ = s;
     reason_ = reason;
+    // 纯类的状态必须与节点一致：否则下一拍 `step()` 会按旧状态判定。
+    fsm_.force_state(s);
     publishState();
   }
 
@@ -690,85 +688,79 @@ private:
     return age_out >= 0.0 && age_out <= target_max_age_s_ && target_conf_ >= confidence_min_;
   }
 
+  // 本拍观测 → 纯判定类的输入。**所有**判据都在 `TaskFsm` 里（可单测）；
+  // 本函数只负责：取时间、算新鲜度、把判定结果落成副作用（置状态 / 发事件）。
+  agc_task::TaskFsmInputs buildFsmInputs(const rclcpp::Time & t)
+  {
+    agc_task::TaskFsmInputs in;
+    in.now_s = t.seconds();
+    in.start_s = start_time_.seconds();
+    in.t_max_s = t_max_;
+
+    double age = NAN;
+    in.fresh = targetFresh(age);
+    in.have_target = have_target_;
+    in.target_conf = target_conf_;
+    in.confidence_min = confidence_min_;
+    in.current_epoch = current_epoch_;
+    in.target_id = target_id_;
+    in.target_x = target_x_;
+    in.target_y = target_y_;
+
+    in.have_car = have_car_;
+    in.car_age_s = (have_car_ && last_car_odom_rx_.nanoseconds() != 0)
+                   ? (t - last_car_odom_rx_).seconds()
+                   : std::numeric_limits<double>::infinity();
+    in.car_x = car_x_;
+    in.car_y = car_y_;
+
+    in.have_cmd = have_cmd_;
+    in.cmd_age_s = have_cmd_ ? (t - last_cmd_rx_).seconds()
+                             : std::numeric_limits<double>::infinity();
+    in.cmd_fresh_s = 0.5;
+
+    in.d_track_m = d_track_;
+    in.t_dwell_s = t_dwell_;
+    in.car_odom_max_age_s = car_odom_max_age_s_;
+    in.tracking_milestone_is_terminal = tracking_milestone_is_terminal_;
+
+    in.capture_reason = capture_reason_;
+    in.jam_reason = jam_reason_;
+    in.capture_rx_s = capture_rx_.seconds();
+    in.jam_rx_s = jam_rx_.seconds();
+    return in;
+  }
+
+  // 把判定结果落成副作用。判定与副作用分离后，判据可在 gtest 里逐条穷举。
+  void applyFsmDecision(const agc_task::TaskFsmDecision & d)
+  {
+    if (d.dwell_interrupted) {
+      last_dwell_segment_s_ = d.dwell_segment_s;
+      dwell_valid_total_s_ += d.dwell_segment_s;
+      publishDwellEvent("DWELL_INTERRUPT", d.dwell_interrupt_reason, d.dwell_segment_s);
+    }
+    if (d.dwell_started) {
+      publishDwellEvent("DWELL_START", "", 0.0);
+    }
+    if (d.milestone_met_now) {
+      tracking_milestone_met_ = true;
+    }
+    if (d.state_changed) {
+      if (d.terminal) {
+        enterTerminal(d.next_state, d.reason);
+      } else {
+        setState(d.next_state, d.reason);
+      }
+    }
+  }
+
   void tickFsm()
   {
     if (!isActive(state_)) {return;}
     const auto t = now();
     AgeProbe();
-    // 超时一律算失败
-    if ((t - start_time_).seconds() > t_max_) {
-      enterTerminal(AgcTaskState::MISSION_FAILED, "TIMEOUT");
-      return;
-    }
-    double age = NAN;
-    const bool fresh = targetFresh(age);
-    switch (state_) {
-      case AgcTaskState::AIR_SEARCH:
-        if (fresh) {setState(AgcTaskState::TARGET_ACQUIRED, "target_acquired");}
-        break;
-      case AgcTaskState::TARGET_ACQUIRED:
-        if (have_cmd_ && (t - last_cmd_rx_).seconds() < 0.5) {
-          setState(AgcTaskState::GROUND_APPROACH, "ground_approach");
-        }
-        break;
-      case AgcTaskState::GROUND_APPROACH: {
-        // R11：捕获 / 干扰命中 → INTERCEPT_CONFIRMED。
-        // jam_reason_ 仅由 jammer 的**已确认事件**（jam_confirm）写入 → 授权 / 发送不结算。
-        // 本 episode 内仅接受配套事件；先命中者胜**按事件到达时刻定序**（不固定 capture 优先）。
-        const bool have_cap = !capture_reason_.empty();
-        const bool have_jam = !jam_reason_.empty() && jam_reason_ != "JAM_NONE";
-        if (have_cap && have_jam) {
-          enterTerminal(
-            AgcTaskState::INTERCEPT_CONFIRMED,
-            (capture_rx_ <= jam_rx_) ? capture_reason_ : jam_reason_);
-          break;
-        }
-        if (have_cap) {enterTerminal(AgcTaskState::INTERCEPT_CONFIRMED, capture_reason_); break;}
-        if (have_jam) {enterTerminal(AgcTaskState::INTERCEPT_CONFIRMED, jam_reason_); break;}
-        // dwell 逐拍显式判据——任何不满足「目标新鲜 + 同 target_id + 车地面 odom 有效未超龄 +
-        // 包络内」的拍（含目标数组为空 / have_target_==false）一律中断清零；不得把失联段累计进
-        // dwell；成功仍为「连续 t_dwell 有效」（不降级为累计接近时长）。
-        // 本拍合法性
-        const double car_age = (have_car_ && last_car_odom_rx_.nanoseconds() != 0)
-                               ? (t - last_car_odom_rx_).seconds()
-                               : std::numeric_limits<double>::infinity();
-        const bool car_ok = have_car_ && car_age >= 0.0 && car_age <= car_odom_max_age_s_;
-        const bool range_ok = have_target_ && car_ok &&
-                              std::hypot(target_x_ - car_x_, target_y_ - car_y_) <= d_track_;
-        // 1) 已有活跃 dwell：逐拍连续性检查，任一不满足即中断（含空数组 / 换 id / 车 odom 失效超龄 /
-        // 目标失效 / 包络外 / epoch 变化）。
-        if (dwell_start_.nanoseconds() != 0) {
-          std::string ir;
-          if (current_epoch_ != dwell_epoch_) {ir = "EPOCH_CHANGED";}
-          else if (!have_target_) {ir = "TARGET_LOST";}
-          else if (!fresh) {ir = (target_conf_ < confidence_min_) ? "TARGET_LOW_CONF" : "TARGET_STALE";}
-          else if (!car_ok) {ir = have_car_ ? "CAR_ODOM_STALE" : "CAR_ODOM_MISSING";}
-          else if (target_id_ != dwell_target_id_) {ir = "TARGET_ID_CHANGED";}
-          else if (std::hypot(target_x_ - car_x_, target_y_ - car_y_) > d_track_) {ir = "RANGE_EXCEEDED";}
-          if (!ir.empty()) {interruptDwell(t, ir);}
-        }
-        // 2) 无活跃 dwell 且本拍合法 → 起新 dwell（换 id / epoch 变化后在清零基础上从 0 重算，杜绝跨段累计）。
-        if (dwell_start_.nanoseconds() == 0 && range_ok && fresh && have_target_) {
-          dwell_start_ = t;
-          dwell_segment_start_ = t;
-          dwell_target_id_ = target_id_;
-          dwell_epoch_ = current_epoch_;
-          publishDwellEvent("DWELL_START", "", 0.0);
-        }
-        // 3) 连续达阈值才成功（保持 不降级）
-        if (dwell_start_.nanoseconds() != 0 && (t - dwell_start_).seconds() >= t_dwell_) {
-          tracking_milestone_met_ = true;
-          // ADR-0014：capture 场景（tracking_milestone_is_terminal=false）下**不**锁存 TRACKING_SUCCESS——
-          // 否则 `capture_adjudicator` 的 GROUND_APPROACH 交火窗口会被提前关闭，捕获永远不发生。
-          // 里程碑仍如实记入 tracking_milestone_met_（随 /agc/task/state 发布），供指标使用；
-          // 结局交由捕获裁决（CAPTURE_NET）或 t_max TIMEOUT 决定。
-          if (tracking_milestone_is_terminal_) {
-            enterTerminal(AgcTaskState::TRACKING_SUCCESS, "tracking_milestone");
-          }
-        }
-        break; }
-      default: break;
-    }
+    const auto d = fsm_.step(buildFsmInputs(t));
+    applyFsmDecision(d);
   }
 
   // 空实现占位（避免未用变量告警；保留扩展点）
@@ -915,11 +907,10 @@ private:
   rclcpp::Time reset_done_time_{0, 0, RCL_ROS_TIME};      // 复位完成 epoch（新鲜度基准）（ADR-0014）
   rclcpp::Time prev_clock_{0, 0, RCL_ROS_TIME};           // 时钟进展门的上一次采样（ADR-0014）
   rclcpp::Time start_time_{0, 0, RCL_ROS_TIME};
-  rclcpp::Time dwell_start_{0, 0, RCL_ROS_TIME};
-  // dwell 逐拍判据状态
-  rclcpp::Time dwell_segment_start_{0, 0, RCL_ROS_TIME};   // 当前有效段起点（与 dwell_start_ 同步）
-  std::string dwell_target_id_{};                          // 当前 dwell 所属 target_id
-  int dwell_epoch_{-1};                                    // dwell 起始时记录的 current_epoch_
+  // dwell 逐拍判据状态（dwell 起停 / 分段起点 / 所属 target_id 与 epoch）
+  // **唯一实现在 `agc_task::TaskFsm`**（见 task_fsm.hpp）——节点不再自持一份，
+  // 否则"节点状态"与"判定状态"会漂移。
+  agc_task::TaskFsm fsm_;
   double last_dwell_segment_s_{0.0};                       // 刚被中断的那段有效时长（s）
   double dwell_valid_total_s_{0.0};                        // 本 episode 内累计有效时长（s）
   double car_odom_max_age_s_{1.0};                         // 车地面 odom 寿命门（s）
