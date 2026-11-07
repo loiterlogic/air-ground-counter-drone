@@ -14,7 +14,7 @@
 | [`run_regression_matrix.py`](./run_regression_matrix.py) | **里程碑**（回归矩阵：四类要求，4 格） | **是** | ~580 s |
 
 ```bash
-./run_demo.sh test # 离线冒烟（8 组）
+./run_demo.sh test # 离线冒烟（9 组）
 python3 tests/run_full_regression.py --list # 整链回归：先看要跑什么
 python3 tests/run_full_regression.py # 整链回归（定时任务用这个）
 python3 tests/run_regression_matrix.py --list # 回归矩阵：四类要求
@@ -48,13 +48,13 @@ python3 tests/run_all.py --all --timeout 600 # 全跑（带超时）
 <a id="categories"></a>
 ## 三分类：哪些能进默认冒烟，哪些不能
 
-60 个 `check_*.py` 按**运行前提**分三类。口径不是约定俗成，而是**机械可判**、
+61 个 `check_*.py` 按**运行前提**分三类。口径不是约定俗成，而是**机械可判**、
 由 `checklib.check_categories()` 单一实现；`check_doc_counts.py` 判据 e 拿它与本表逐项对账，
 所以"表里写 22、实际 21"会让冒烟变红。
 
 | 类 | 数量 | 判据 | 能否进**默认**冒烟 | 跑法 |
 |---|---|---|---|---|
-| `static` | **5** | 不 import `rclpy`，且不涉及 `experiments/` | **能**（默认 8 组里的静态核查全属此类） | `./run_demo.sh test` |
+| `static` | **6** | 不 import `rclpy`，且不涉及 `experiments/` | **能**（默认 9 组里的静态核查全属此类） | `./run_demo.sh test` |
 | `evidence` | **22** | 不 import `rclpy`，但接受 `--experiments-root` | **不能** | `--with-evidence` 可选组 |
 | `needs_sim` | **33** | `import rclpy`：判定要活着的 ROS 图 / 仿真 | 不能 | `run_all.py --run <name>` |
 
@@ -74,7 +74,7 @@ python3 tests/run_all.py --all --timeout 600 # 全跑（带超时）
 是因为它**写**证据目录（破坏"只读"），而不是因为它**读**证据。
 
 ```bash
-python3 tests/run_smoke.py --list # 8 组（默认）
+python3 tests/run_smoke.py --list # 9 组（默认）
 python3 tests/run_smoke.py --list --with-evidence # 9 组（多出 evidence）
 python3 tests/run_smoke.py --with-evidence # 跑 8+1 组
 python3 tests/run_smoke.py --with-evidence --experiments-root /tmp/emptyexp # 如实 FAIL（rc=1）

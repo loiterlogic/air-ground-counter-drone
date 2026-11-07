@@ -64,6 +64,10 @@ GROUPS = [
      [[sys.executable, os.path.join(ROOT, 'tests', 'check_entry_syntax.py')]]),
     ('geometry', '几何派生链：地图配置 → 世界 SDF',
      [[sys.executable, os.path.join(ROOT, 'tests', 'check_scene_geometry.py')]]),
+    # 2026-11-07：配置孤儿闸门。实测 `agc_task/config/` 曾有 5 个全仓零引用的验收配置，
+    # 仍被安装、仍被当成"配置目录的一部分"，没有任何门槛能发现。纯静态、秒级。
+    ('config', '配置孤儿：src/*/config 下每个 YAML 都被引用',
+     [[sys.executable, os.path.join(ROOT, 'tests', 'check_config_orphans.py')]]),
     ('messages', '9 消息 ABI 字段序 + AgcTaskState 状态常量',
      [[sys.executable, '-m', 'pytest', '-q',
        os.path.join(ROOT, 'scripts', 'tests', 'test_demo_observability.py'),

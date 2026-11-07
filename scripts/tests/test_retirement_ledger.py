@@ -49,6 +49,13 @@ DELETED_PATHS = (
     'src/agc_perception/config/perception_sensors_no_target.yaml',
     # 5.2.3 批次：评审快照目录（ADR-0033）
     'docs/reviews',
+    # 5.2.4 批次：零引用验收配置（可维护性收敛第三轮）
+    # 判定口径：全仓（除自身）零引用，且判据已由 `tests/check_config_orphans.py` 机械复核。
+    'src/agc_task/config/timeout.yaml',
+    'src/agc_task/config/safety_trigger.yaml',
+    'src/agc_task/config/reset_failure.yaml',
+    'src/agc_task/config/reset_infeasible.yaml',
+    'src/agc_task/config/spawn_random.yaml',
 )
 
 # 这些文件仍在，但其中不得再出现已退役标识的**代码形态**。
