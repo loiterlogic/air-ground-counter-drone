@@ -13,6 +13,31 @@
 |---|---|---|
 | 迁移 Runbook（原 `docs/ROS2迁移步骤.md`） | [ROS2迁移步骤.md](./ROS2迁移步骤.md#top) | 它是 W0–W8 的**编排史**，回答"当年按什么顺序推、每段出口是什么"，ADR 不承载编排顺序 |
 | ROS1 基线盘点（原契约附录 A） | [ros1-baseline.md](./ros1-baseline.md#appendix-a-archived) | 旧树已删（`reference/` 2026-10-31 退役），这是**唯一**的旧系统行为记录 |
+| 预注册冻结快照（6 份） | [frozen-prereg-snapshots/](./frozen-prereg-snapshots/) | 见下节：它们是**冻结时的原文字节**，供按原文复核研究预注册 |
+
+## 预注册冻结快照：**故意与活跃配置不同**
+
+`frozen-prereg-snapshots/` 里的 6 份 YAML 是 2026-11-06「代码层编号清零」**改写前**的原文字节。
+它们与 `src/agc_rl/config/` 下的同名活跃配置**内容不同**，这是**有意的**，不是漂移：
+
+差异分**两类**，都是预期的：
+
+| 类别 | 差异 | 冻结快照 | 活跃配置 |
+|---|---|---|---|
+| **措辞** | 过程编号（`W8` / `W7-c` / `F-04` 等） | **保留**（当时就是这样写的） | 已清除 |
+| **措辞** | 契约引用形式 | 当时的历史路径 | 现行 `ADR-NNNN` |
+| **版本** | 预注册版本号与执行状态 | 冻结那一刻的版本（多为 v1 / `pre_registered`） | 现行版本（如 `research_prereg.yaml` 已到 v6 / `executed`） |
+
+**版本差异不是缺陷**：预注册按版本演进（v1 → v6），活跃配置跟着走，而快照**永远停在 v1**。
+这正是"冻结"的含义——历史判定必须能按当时的规则复核，不能拿 v6 的阈值去解释 v1 的 run。
+
+**为什么不直接改快照去对齐**：快照的用途是"研究预注册可按原文复核"（[ADR-0021](../adr/0021-gui-headless-equivalence.md#top)、
+[ADR-0024](../adr/0024-multi-worker-isolation.md#top)）。改写它就等于让复核对象消失，
+而过程编号在**历史证据**里是合法的（[ADR-0002](../adr/0002-docs-source-of-truth-and-reference-discipline.md#top)：历史不改写）。
+
+**守护**：[`scripts/tests/test_frozen_prereg_snapshots.py`](../../scripts/tests/test_frozen_prereg_snapshots.py)
+把 6 份的 sha256 **钉死**，并断言它们能由登记的冻结提交逐字节复现、且与 ADR 正文记录的短哈希一致。
+改一个字节即失败。
 
 ## 2026-11-03 删除的内容（不再保留）
 

@@ -160,7 +160,7 @@ def main(argv=None):
 
     if orphans:
         print('\n孤儿配置：%d' % len(orphans))
-        for cfg_rel, name in orphans:
+        for cfg_rel, _name in orphans:
             print('  %s' % cfg_rel)
         print('\nFAIL：以下配置全仓零引用。处置二选一：')
         print('  · 删掉（`git rm`），并在 docs/conventions/路线分支治理.md 的退役台账登记；')

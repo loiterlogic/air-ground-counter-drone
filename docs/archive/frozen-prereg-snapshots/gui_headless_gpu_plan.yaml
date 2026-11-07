@@ -1,4 +1,4 @@
-# GUI/headless 模式等价 pilot 与正式等价预声明（ADR-0021）——配置文件。
+# W8 GUI/headless 模式等价 pilot 与正式等价预声明（ADR-0096）—— 单一来源。
 # 在任何 pilot run 之前冻结；首个 run 之后不得修改 v1；偏离单独登记。
 w8_gui_headless_plan:
   version: 1.1
@@ -7,11 +7,11 @@ w8_gui_headless_plan:
   scope: "W8-E1 前置 GUI/headless 模式等价：GPU-GUI 修正后的 pilot（默认软件 GUI 作为受限条件单列）"
   campaign: w8-parity
   reference:
-    base_plan: "src/agc_rl/config/gui_headless_plan.yaml（v1，sha256 3afa82c4…a292；未修改）"
+    base_plan: "src/agc_rl/config/w8_gui_headless_plan.yaml（v1，sha256 3afa82c4…a292；未修改）"
     renderer_diagnosis: "experiments/w8-parity/20261025-w8-gui-headless-pilot/metrics/gpu_renderer_diagnosis.md"
-    w7c_plan: "src/agc_rl/config/multi_worker_admission.yaml"
-    adr_0095: "docs/adr/0024-w7c-multi-worker-isolation.md#top"
-    adr_0057: "docs/adr/0018-acceptance-and-coverage-matrix.md#top"
+    w7c_plan: "src/agc_rl/config/w7c_admission_plan.yaml"
+    adr_0095: "docs/adr/0095-w7c-admission-metric-and-worker-run-dir-isolation.md"
+    adr_0057: "docs/adr/0057-c3-gui-acceptance-scope-authorization.md"
 
   pilot:
     id: 20261025-w8-gui-gpu-pilot
@@ -126,7 +126,7 @@ w8_gui_headless_plan:
     no_auto_retry: true
     new_run_id_per_attempt: true
     artifacts: [metrics/arms.json, metrics/summary.json, log/, config/]
-    archive: "按 ADR-0006 归档到 experiments/_archive/w8-parity/"
+    archive: "按 ADR-0064 归档到 experiments/_archive/w8-parity/"
 
   cost:
     record_per_attempt: [wall_elapsed_s, rtf, started_at, ended_at]
@@ -135,7 +135,7 @@ w8_gui_headless_plan:
 
   formal_equivalence:
     status: to_be_frozen_after_pilot
-    note: "pilot 后按 ADR-0021 冻结 v2；不得在正式结果后回填 delta / n。"
+    note: "pilot 后按 ADR-0096 冻结 v2；不得在正式结果后回填 delta / n。"
     rule: "等价 iff Δ=GUI-headless 的 95% 双侧 CI 完全落入 [-delta, +delta]；报告两个单侧 p；禁止以不显著代替等价。"
     co_primary_all_required: true
     secondary_material_difference: "按 v2 预声明；不得静默忽略。"
@@ -148,7 +148,7 @@ w8_gui_headless_plan:
       capture_t_s: 2.0
       min_clearance_m: 0.20
       intervention_ticks_ratio: 0.05
-    delta_note: "以上为候选锚点，不是最终值；最终 delta 由 ADR-0021 按决策相关性、within-mode 底噪与安全非劣论证。"
+    delta_note: "以上为候选锚点，不是最终值；最终 delta 由 ADR-0096 按决策相关性、within-mode 底噪与安全非劣论证。"
     n_formula: "n_per_mode = ceil( (z_0.975 + z_0.80)^2 * (sigma_gui^2 + sigma_headless^2) / (delta - |delta_pilot|)^2 )"
     n_take: "多个 co-primary 取最大 n；|delta_pilot| >= delta 判为在该 delta 下不可行；率类接近 0/1 时预声明精确/角变换方法。"
     cost_cap:

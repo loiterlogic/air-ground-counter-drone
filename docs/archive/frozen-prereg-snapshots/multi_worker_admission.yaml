@@ -1,4 +1,4 @@
-# 扩容准入预声明分析计划（ADR-0024）——配置文件。
+# W7-c 扩容准入预声明分析计划（ADR-0095）—— 单一来源。
 # 在任何 A / B / P 对照 run 之前写定；首个 run 之后不得修改；偏离单独登记。
 w7c_admission_plan:
   version: 1
@@ -96,6 +96,6 @@ w7c_admission_plan:
     - "任一硬不变量失败 → 保留单 worker，不启动 P"
     - "共享 PX4 可写文件被写入 → 隔离失败，先修 B1–B4"
     - "A/B 粗移或存在 unexplained → 保留单 worker，不启动 P"
-    - "P 失败或成本 / 收益不值得 → 显式接受单 worker；ADR-0024 保持 deferred 或写明新状态；另立 W8 执行规格"
+    - "P 失败或成本 / 收益不值得 → 显式接受单 worker；ADR-0077 保持 deferred 或写明新状态；另立 W8 执行规格"
 
   deviations: []
