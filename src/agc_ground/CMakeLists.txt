@@ -40,8 +40,6 @@ ament_target_dependencies(ground_baseline
   agc_control pluginlib tf2_ros nav2_core nav2_costmap_2d nav2_util)
 
 # 无 shield 对照臂的恒等透传（纯仿真；[ADR-0022](../../docs/adr/0022-research-propositions-and-decision-rule.md#top)）
-add_executable(cmd_vel_passthrough src/cmd_vel_passthrough.cpp)
-ament_target_dependencies(cmd_vel_passthrough rclcpp geometry_msgs)
 
 # 几何/直连占位全局规划器（ADR-0013 当前占位阶段）——只发路径，不发速度。
 # 不链接 nav2_*、不含 costmap；Navfn 属离线基线（ground_baseline），与本节点无关。
@@ -53,7 +51,6 @@ install(TARGETS
   ground_drive_relay
   ground_baseline
   scan_self_filter
-  cmd_vel_passthrough
   placeholder_path_planner
   DESTINATION lib/${PROJECT_NAME})
 

@@ -37,6 +37,7 @@ PERCEPTION_YAML = ROOT / 'src' / 'agc_perception' / 'config' / 'perception.yaml'
 PERCEPTION_CMAKE = ROOT / 'src' / 'agc_perception' / 'CMakeLists.txt'
 M0_LAUNCH = ROOT / 'src' / 'agc_task' / 'launch' / 'skeleton.launch.py'
 W6_LAUNCH = ROOT / 'src' / 'agc_task' / 'launch' / 'main.launch.py'
+GROUND_LAUNCH = ROOT / 'src' / 'agc_ground' / 'launch' / 'ground_bringup.launch.py'
 
 # --------------------------------------------------------------------------------------
 # 5.2.2 批次：登记「已删除」的退役物路径（相对 ROOT）
@@ -56,6 +57,9 @@ DELETED_PATHS = (
     'src/agc_task/config/reset_failure.yaml',
     'src/agc_task/config/reset_infeasible.yaml',
     'src/agc_task/config/spawn_random.yaml',
+    # 5.2.5 批次：无 shield 对照臂的恒等透传节点（可维护性收敛第三轮）
+    # `shield_enabled = True` 写死后，`ground_bringup` 的 `else` 分支永久不可达。
+    'src/agc_ground/src/cmd_vel_passthrough.cpp',
 )
 
 # 这些文件仍在，但其中不得再出现已退役标识的**代码形态**。
@@ -69,6 +73,9 @@ ALIVE_FILES_NO_RETIRED_SYMBOLS = {
     M0_LAUNCH: ("DeclareLaunchArgument(\n        'sensors_file'", "'sensors_file': LaunchConfiguration",
                 "DeclareLaunchArgument(\n        'seed', default_value='0'"),
     W6_LAUNCH: ("'sensors_file':", "'seed': LaunchConfiguration('seed')"),
+    # 5.2.5：无 shield 对照臂退役后，分支与节点都不得复活。
+    # 判据是**代码形态**（`else:` + 节点名），不是注释——退役说明必须允许写进注释。
+    GROUND_LAUNCH: ('shield_enabled', "executable='cmd_vel_passthrough'"),
     COMPOSITION: ("info['sensors_file", "entries['perception']", 'perception_sensors_file_effective_matches',
                   "res['dz_within_perception_range']", 'def _load_sensors_range(',
                   'def _load_air_baseline('),

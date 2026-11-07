@@ -65,11 +65,6 @@ GZ_LIDAR_FRAME = 'agc_car/car/lidar_link/lidar3d'
 def _nodes(context, *args, **kwargs):
     command_source = LaunchConfiguration('command_source').perform(context)
     use_sim_time = LaunchConfiguration('use_sim_time')
-    # 2026-11-04：安全层**恒定启用**（launch 开关已删，见 docs/conventions/路线分支治理.md 5.3）。
-    # 原 `shield=false` 是无 shield 消融臂，属 研究（ADR-0023 已结档）；
-    # 研究复跑须在 scripts/research/ 里自带参数，不得在主链开口子。
-    shield_enabled = True
-
     ground_share = get_package_share_directory('agc_ground')
     rl_share = get_package_share_directory('agc_rl')
     params_file = os.path.join(ground_share, 'config', 'ground.yaml')
@@ -107,20 +102,16 @@ def _nodes(context, *args, **kwargs):
         ),
     ]
 
-    # 安全层（有 shield）或恒等透传（无 shield 对照臂）
+    # 安全层：**恒定启用**（Nav2 collision_monitor，scan 源 = 自滤后扫描；直接复用 Nav2 组件）。
+    # 无 shield 对照臂已随 `shield` 参数一起退役（ADR-0023 研究结档）；
+    # 原 `else` 分支起的 `cmd_vel_passthrough` 自 2026-11-04 起**永久不可达**，
+    # 节点与分支一并删除，防复活闸门见 scripts/tests/test_retirement_ledger.py。
     managed = []
-    if shield_enabled:
-        # R1：安全层（Nav2 collision_monitor，scan 源 = 自滤后扫描；直接复用 Nav2 组件）
-        actions.append(Node(
-            package='nav2_collision_monitor', executable='collision_monitor',
-            name='collision_monitor', parameters=common, output='screen',
-        ))
-        managed.append('collision_monitor')
-    else:
-        actions.append(Node(
-            package='agc_ground', executable='cmd_vel_passthrough',
-            name='cmd_vel_passthrough', parameters=common, output='screen',
-        ))
+    actions.append(Node(
+        package='nav2_collision_monitor', executable='collision_monitor',
+        name='collision_monitor', parameters=common, output='screen',
+    ))
+    managed.append('collision_monitor')
 
     # 唯一执行口中继
     actions.append(Node(
