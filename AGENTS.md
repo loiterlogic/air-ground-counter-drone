@@ -12,7 +12,7 @@ AGC（空地协同反无人机仿真）：同一世界、同一时钟下，无�
 
 1. `docs/plan/README.md` — **任务计划规则**：本目录是**临时工作区**（写完就删）；结论归宿表与 plan 文件最小结构见该文件
 
-> **2026-10-29 方向裁定**：迁移推进与论文优先**暂停**，先确保项目"完成"。任务在 `docs/plan/` 立项，**结档即删**（规则见 [任务计划规则](docs/plan/README.md#plan-index)）；编排史见 Runbook 归档。（暂停事实由 [ADR-0025](docs/adr/0025-publishing-boundary-and-retirement.md#top) 承载，原开关文件 `PAUSED.md` 已于 2026-10-31 退役。）
+> **方向现状（2026-11-07 更新）**：论文方向已由 [ADR-0034](docs/adr/0034-paper-direction-resume-and-doc-isolation.md#top) **整体解除暂停、正式立项**；「迁移推进」仍按 [ADR-0025](docs/adr/0025-publishing-boundary-and-retirement.md#top) 暂停。历史事实：2026-10-29 曾裁定「迁移推进与论文优先暂停，先确保项目完成」（该暂停事实原由 ADR-0025 承载，原开关文件 `PAUSED.md` 已于 2026-10-31 退役）。任务在 `docs/plan/` 立项，**结档即删**（规则见 [任务计划规则](docs/plan/README.md#plan-index)）；编排史见 Runbook 归档。
 > **术语不是每轮必读**：`GLOSSARY.md` 按任务查—— 设计/命名/写文档时读，纯执行既定步骤不读。**L1 口径 = 本文件 + `docs/plan/README.md`（规则）**—— 其他文档按任务查，不预读。
 
 ## 按需查（不预读，按任务取用）
@@ -28,6 +28,20 @@ AGC（空地协同反无人机仿真）：同一世界、同一时钟下，无�
 - [技能](.agents/README.md#skills) — 领域建模 / 访谈类可复用技能（`.agents/skills/`）
 
 Leader / Worker 交接见 [协作规则](.coordination/README.md#protocol)、[当前交接](.coordination/CURRENT.md#current)；协作原则见 [单任务链、决策自主、消息来源与停止条件](.coordination/README.md#协作原则)（每链一个任务；[独立链可并行](.coordination/README.md#parallel)，N=6 记录检查点 / K=4 无进展熔断）。
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are tracked as GitHub issues (via the `gh` CLI). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical triage roles, default names. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+single-context: one root `GLOSSARY.md` plus `docs/adr/`. See `docs/agents/domain.md`.
 
 ## 铁律
 

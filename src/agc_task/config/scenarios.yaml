@@ -13,7 +13,7 @@
 # `dropout` / `fov` 字样为**历史遗留标签**，不表示存在对应的活跃轴或行为差异。
 # * `support_status`：supported = 全部声明轴有承载者；unsupported:<axis> = 该轴无承载者（拒绝运行）。
 # * `world_map`（**场景级**、位于 `axes` 之外）：该场景默认使用的**地图 / 配置文件**。
-# minimal（缺省）| yard | open_field——见 agc_sim/launch/world_map.py（单一清单）。
+# minimal（缺省）| yard | open_field | dense_map——见 agc_sim/launch/world_map.py（单一清单）。
 # launch `world_map:=<name>` 可强制覆盖（优先级：launch > 场景 > 缺省 minimal）。
 # 地图是**配置文件的选择**，不是场景轴：它不改变声明轴 / 期望终态 / 判据；
 # s04 指向 yard，正是「主场景在演示主地图上跑」的落地（派工范围决定 1）。
@@ -253,3 +253,35 @@ scenes:
       run_logger: {scenario: "s18_epicycle_none_nominal_track"}
       intruder_driver: {motion: epicycle, speed_mps: 1.0, radius_m: 1.8,
                         drift_amplitude_m: 0.6, drift_period_s: 30.0}
+
+  # ---- ADR-0036（2026-11-10）：小障碍高密度能力图 `dense_map` 的消费者 ----
+  # 命名（用户 2026-11-10 裁定「就改成 dense_scene 就行，又不是没有注释」）：
+  # 本场景 id **不**遵循 `s<NN>_<目标运动>_<障碍>_<结局>_<期望>` 的长式，改用短名
+  # `dense_scene` —— 语义由本段注释承载，不靠 id 自解释。其余场景的长式命名不受影响。
+  # 为什么需要这个场景：新地图必须有**当前消费者**（路线分支治理 准入②），否则是空登记；
+  # 同时它是 ADR-0035「实验 D（不同地图验证感知指标）」的承载场景。
+  #
+  # 为什么 `expected_terminal: MISSION_FAILED` / `TIMEOUT`：
+  # 该图密集区**不留走廊**（用户 2026-11-10 裁定「不需要走廊和净空」；2026-11-12 复述
+  # 「不要走廊，后面会做路径规划」—— 通行由规划器解决，地图不开洞），车沿占位规划器的
+  # **直连**路径一出发即处于 `collision_monitor` 碰撞档（2.0 m）内而停车（出行点最近的实体
+  # 净空 ≈1.6 m，见 `tests/check_dense_map_layout.py` 的 (H)）；
+  # 而 `TRACKING_SUCCESS` 要求 `dist(车,目标) ≤ d_track = 3.0 m`。
+  # ⇒ **跟踪终态不可达是设计意图**，不是缺陷；本场景的价值是压测"密排小件下的地面安全层
+  # 行为 + 正下视感知建图"，不是再验一次跟踪。
+  #
+  # 为什么 `world_map: dense_map` + 不覆盖出生位：出生位随**地图**派生（ADR-0036），
+  # 坐标在 `spawn_layout.yaml` 的 `per_map.dense_map`（车 (-34,-6) / 目标 (0,0) /
+  # 己方机 (-34,-2)）；在场景层再写一遍就是第二来源。
+  #
+  # 高度随地图派生：己方 14 / 目标 12（与 yard 同档，使两图感知指标可对照）；
+  # 本图全部构件 ≤3.0 m ⇒ 14 m 下全部被垂直门控移除（能力边界见地图文件头）。
+  dense_scene:
+    axes: {target_motion: static, obstacle: static, outcome: timeout}
+    support_status: supported
+    expected_terminal: MISSION_FAILED
+    expected_reason: TIMEOUT
+    world_map: dense_map
+    params:
+      run_logger: {scenario: "dense_scene"}
+      intruder_driver: {motion: static}

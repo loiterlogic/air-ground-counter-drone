@@ -302,6 +302,21 @@ def _geometry_file(world_map):
     return os.path.join(SIM_CONFIG_DIR, mod.MAP_GEOMETRY_FILES[world_map])
 
 
+def _world_maps():
+    """全部已登记地图名 —— 取自 `world_map.WORLD_MAPS` 单一清单。
+
+ ADR-0036（2026-11-10）：本文件此前两处写死 `('minimal','yard','open_field')`，
+ 新地图（`dense_map`）因此**不受这些不变量守护** —— 一个"加了图但没被任何断言覆盖"
+ 的静默缺口。改为遍历清单后，新增地图自动纳入。
+    """
+    import importlib.util
+    path = os.path.join(_ROOT, 'src', 'agc_sim', 'launch', 'world_map.py')
+    spec = importlib.util.spec_from_file_location('wm_for_tests_names', path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return list(mod.WORLD_MAPS)
+
+
 def _map_flight_altitude(world_map):
     """读某地图的 `flight_altitude` 块（缺失即失败——不得静默回落 base）。"""
     with open(_geometry_file(world_map)) as f:
@@ -416,7 +431,7 @@ def test_cruise_altitude_comes_from_map_not_scene():
         assert 'alt_m' not in idr, (
             '%s 用弃用别名 alt_m 覆盖高度（应删除，改由地图派生）' % scene)
     # 三张地图都必须声明 flight_altitude 且四键齐全（缺块会静默回落 base）。
-    for wm in ('minimal', 'yard', 'open_field'):
+    for wm in _world_maps():
         fa = _map_flight_altitude(wm)
         for key in ('own_track_m', 'own_takeoff_m', 'target_cruise_m', 'own_clearance_min_m'):
             assert key in fa, '地图 %s 的 flight_altitude 缺键 %r' % (wm, key)
@@ -456,7 +471,7 @@ def test_yard_is_raised_above_tallest_building():
 
 def test_flight_altitude_keys_are_sane():
     """ADR-0007：三图高度键的基本合理性（正数、己方机不低于目标、净空为正）。"""
-    for wm in ('minimal', 'yard', 'open_field'):
+    for wm in _world_maps():
         fa = _map_flight_altitude(wm)
         for key in ('own_track_m', 'own_takeoff_m', 'target_cruise_m', 'own_clearance_min_m'):
             assert float(fa[key]) > 0, '地图 %s 的 %s=%r 必须为正' % (wm, key, fa[key])
@@ -846,3 +861,104 @@ def test_flow_validation_scene_may_use_preset_trajectory():
     fake2.pop('usage')
     assert _is_counter_uav_scene('s99_figure8_flow', fake2), (
         '去掉 usage 标注后必须重新受规则约束（否则标注就成了万能豁免）')
+
+
+# ------------------------------------------------------------------------------
+# ADR-0036（2026-11-10）：出生位是**地图属性**（`spawn_layout.per_map`）
+# ------------------------------------------------------------------------------
+def _spawn_layout_raw():
+    with open(os.path.join(CONFIG_DIR, 'spawn_layout.yaml')) as f:
+        return yaml.safe_load(f)['spawn_layout']
+
+
+def test_spawn_layout_per_map_covers_every_registered_map_or_falls_back():
+    """`per_map` 的每个键必须是**已登记地图**；未登记的地图必须回落顶层（逐值不变）。
+
+ 守护的 bug 类别（两条，方向相反）：
+ ① `per_map` 写了拼错的地图名 → 覆盖静默失效，换图不换出生位（正是 ADR-0036 要消灭的病灶）；
+ ② 顶层坐标被顺手改掉 → 三张旧图的出生位与全部历史证据基线一起漂移。
+    """
+    layout = _spawn_layout_raw()
+    per_map = layout.get('per_map') or {}
+    registered = set(_world_maps())
+    unknown = sorted(set(per_map) - registered)
+    assert not unknown, (
+        'spawn_layout.per_map 含未登记的地图 %s（可用：%s）—— 拼错地图名会让覆盖静默失效'
+        % (unknown, sorted(registered)))
+    # 未在 per_map 登记的图 → 必须与顶层逐值相同
+    for wm in registered:
+        if wm in per_map:
+            continue
+        eff = _load_spawn_layout_for(wm)
+        for entity, keys in (('car', ('x', 'y')), ('target', ('x', 'y')),
+                             ('own_uav', ('x', 'y'))):
+            for k in keys:
+                assert float(eff[entity][k]) == float(layout[entity][k]), (
+                    '地图 %s 未在 per_map 登记，%s.%s 却与顶层不一致（%r != %r）'
+                    % (wm, entity, k, eff[entity][k], layout[entity][k]))
+
+
+def _load_spawn_layout_for(world_map):
+    import importlib.util
+    launch_dir = os.path.join(os.path.dirname(CONFIG_DIR), 'launch')
+    spec = importlib.util.spec_from_file_location(
+        'scene_spawn_for_test', os.path.join(launch_dir, 'scene_spawn.py'))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.load_spawn_layout(os.path.dirname(CONFIG_DIR), world_map=world_map)
+
+
+def test_spawn_layout_rejects_unknown_entity_in_per_map(tmp_path):
+    """`per_map` 里拼错实体段（如 `cars`）必须**拒绝运行**，不得静默忽略。
+
+ 为什么必须拒绝：拼错实体名时覆盖**看起来生效**（文件合法、launch 不报错），
+ 实际车仍从顶层坐标出发 —— 这类"静默不生效"比报错昂贵得多。
+    """
+    path = _layout_with(None, lambda d: d.__setitem__(
+        'per_map', {'yard': {'cars': {'x': 1.0}}}))
+    with pytest.raises(RuntimeError, match='未知实体段'):
+        _load_spawn_layout_from(path)
+
+
+def test_spawn_layout_per_map_applies_for_dense_map():
+    """`dense_map` 的出生位必须是"目标居中、车与己方机在西边缘"，且满足设计目标。
+
+ 这是用户 2026-11-10 的布局裁定（Q6）：目标 (0,0)、车 (-34,-6)、己方机 (-34,-2)。
+ 判据（与 `scene_assertions.spawn_design_goals_met` 同口径）：
+ 车↔目标 ≥30 m、己方机↔目标 ≥25 m、车↔己方机 ∈[3,8] m。
+    """
+    import math
+    if 'dense_map' not in _world_maps():
+        pytest.skip('dense_map 未登记')
+    eff = _load_spawn_layout_for('dense_map')
+    car, tgt, own = eff['car'], eff['target'], eff['own_uav']
+    assert (tgt['x'], tgt['y']) == (0.0, 0.0), (
+        'dense_map 目标应在作业区正中 (0,0)，实际 (%g,%g)' % (tgt['x'], tgt['y']))
+    d_ct = math.hypot(car['x'] - tgt['x'], car['y'] - tgt['y'])
+    d_ot = math.hypot(own['x'] - tgt['x'], own['y'] - tgt['y'])
+    d_co = math.hypot(car['x'] - own['x'], car['y'] - own['y'])
+    assert d_ct >= 30.0, 'dense_map 车↔目标 %.2f < 30 m（F1 设计目标）' % d_ct
+    assert d_ot >= 25.0, 'dense_map 己方机↔目标 %.2f < 25 m（F1 设计目标）' % d_ot
+    assert 3.0 <= d_co <= 8.0, 'dense_map 车↔己方机 %.2f 不在 [3,8] m（F1 设计目标）' % d_co
+
+
+def test_dense_map_scene_is_registered_and_points_to_dense_map():
+    """`dense_map` 必须有**当前消费者**场景（路线分支治理 准入②），且指向该图。
+
+ 同时守护期望终态：该图不留走廊 ⇒ 跟踪终态不可达是**设计意图**，
+ 场景必须声明 `MISSION_FAILED`；把它写成 `TRACKING_SUCCESS` 会让回归永远红着。
+    """
+    scenarios, _base = _load()
+    consumers = [s for s, v in scenarios.items() if v.get('world_map') == 'dense_map']
+    assert consumers, (
+        'dense_map 没有任何场景消费者 —— 新地图必须有当前消费者，否则是空登记')
+    for s in consumers:
+        sc = scenarios[s]
+        assert str(sc.get('expected_terminal')) == 'MISSION_FAILED', (
+            '%s 期望终态应为 MISSION_FAILED（该图不留走廊，车到不了目标）' % s)
+        # 出生位随地图派生（ADR-0036）——场景层不得再覆盖出生位（第二来源）
+        sr = ((sc.get('params') or {}).get('scenario_reset') or {})
+        leaked = {'car_x', 'car_y', 'target_x', 'target_y'} & set(sr)
+        assert not leaked, (
+            '%s 覆盖了出生位 %s —— ADR-0036 起出生位随地图派生（spawn_layout.per_map）'
+            % (s, sorted(leaked)))

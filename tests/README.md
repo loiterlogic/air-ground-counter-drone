@@ -48,26 +48,26 @@ python3 tests/run_all.py --all --timeout 600 # 全跑（带超时）
 <a id="categories"></a>
 ## 三分类：哪些能进默认冒烟，哪些不能
 
-61 个 `check_*.py` 按**运行前提**分三类。口径不是约定俗成，而是**机械可判**、
+62 个 `check_*.py` 按**运行前提**分三类。口径不是约定俗成，而是**机械可判**、
 由 `checklib.check_categories()` 单一实现；`check_doc_counts.py` 判据 e 拿它与本表逐项对账，
 所以"表里写 22、实际 21"会让冒烟变红。
 
 | 类 | 数量 | 判据 | 能否进**默认**冒烟 | 跑法 |
 |---|---|---|---|---|
-| `static` | **6** | 不 import `rclpy`，且不涉及 `experiments/` | **能**（默认 9 组里的静态核查全属此类） | `./run_demo.sh test` |
+| `static` | **7** | 不 import `rclpy`，且不涉及 `experiments/` | **能**（默认 9 组里的静态核查全属此类） | `./run_demo.sh test` |
 | `evidence` | **22** | 不 import `rclpy`，但接受 `--experiments-root` | **不能** | `--with-evidence` 可选组 |
 | `needs_sim` | **33** | `import rclpy`：判定要活着的 ROS 图 / 仿真 | 不能 | `run_all.py --run <name>` |
 
 另有 **2** 个 `docs_*_check.py`（`docs_link_check.py` / `docs_tooling_check.py`）是文档护栏，
-命名上不属于 `check_*.py`，分别进冒烟 `docs` 组与离线单测。合计 **61 + 2 = 63** 个验收脚本。
+命名上不属于 `check_*.py`，分别进冒烟 `docs` 组与离线单测。合计 **62 + 2 = 64** 个验收脚本。
 
 ### 新 clone 能跑多少（**如实登记**）
 
 | 前提 | 数量 | 占比 | 说明 |
 |---|---|---|---|
-| **什么都不用准备** | **6** | **9.5%** | `static` 类；`git clone` 后直接跑 |
-| 需 `experiments/` 历史证据 | **22** | **34.9%** | 该目录 gitignored；空证据根下 **21/22 FAIL** |
-| 需活着的仿真 / ROS 图 | **33** | **52.4%** | 要 `run_demo.sh` 先起链路 |
+| **什么都不用准备** | **7** | **11.3%** | `static` 类；`git clone` 后直接跑 |
+| 需 `experiments/` 历史证据 | **22** | **35.5%** | 该目录 gitignored；空证据根下 **21/22 FAIL** |
+| 需活着的仿真 / ROS 图 | **33** | **53.2%** | 要 `run_demo.sh` 先起链路 |
 | 合计 | **61** | — | 另加 2 个文档护栏 = 63 |
 
 **这个比例是必须说清的事实，不是缺陷清单**：本目录里 90% 的脚本是**一次性取证档案**

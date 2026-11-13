@@ -37,7 +37,8 @@ protected:
     world_frame_ = declare_param_idempotent<std::string>("world_frame", "world");
     odom_topic_ = declare_param_idempotent<std::string>("odom_topic", "/agc/air/odom");
     target_topic_ = declare_param_idempotent<std::string>("target_topic", "/agc/targets");
-    out_topic_ = declare_param_idempotent<std::string>("tracking_ref_topic", "/agc/air/tracking_ref");
+    out_topic_ = declare_param_idempotent<std::string>("tracking_ref_topic",
+      "/agc/air/tracking_ref");
 
     safe_min_ = declare_param_idempotent<double>("safe_min", 8.0);
     safe_max_ = declare_param_idempotent<double>("safe_max", 15.0);
@@ -199,7 +200,8 @@ private:
 
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
   rclcpp::Subscription<agc_msgs::msg::TargetTrackArray>::SharedPtr target_sub_;
-  rclcpp_lifecycle::LifecyclePublisher<trajectory_msgs::msg::MultiDOFJointTrajectory>::SharedPtr ref_pub_;
+  rclcpp_lifecycle::LifecyclePublisher<trajectory_msgs::msg::MultiDOFJointTrajectory>::SharedPtr
+    ref_pub_;
   rclcpp::TimerBase::SharedPtr timer_;
 
   agc_air::Vector3 drone_pos_{agc_air::Vector3::Zero()};

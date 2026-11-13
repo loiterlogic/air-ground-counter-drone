@@ -40,7 +40,8 @@ protected:
     offboard_after_n_ = declare_param_idempotent<int>("offboard_after_setpoints", 60);
     arm_retry_ticks_ = declare_param_idempotent<int>("arm_retry_ticks", 100);
     active_controller_topic_ =
-      declare_param_idempotent<std::string>("active_controller_topic", "/agc/air/active_controller");
+      declare_param_idempotent<std::string>("active_controller_topic",
+      "/agc/air/active_controller");
     release_service_ =
       declare_param_idempotent<std::string>("release_service", "/agc/air/release_control");
 
@@ -154,8 +155,8 @@ private:
         offboard_->sendArm(true);
         arm_sent_ = true;
       }
-      if (arm_sent_ && (counter_ >= arm_after_n_ + offboard_after_n_)
-        && !offboard_->offboard() && (counter_ % arm_retry_ticks_ == 0))
+      if (arm_sent_ && (counter_ >= arm_after_n_ + offboard_after_n_) &&
+        !offboard_->offboard() && (counter_ % arm_retry_ticks_ == 0))
       {
         offboard_->sendOffboardMode();
         offboard_requested_ = true;

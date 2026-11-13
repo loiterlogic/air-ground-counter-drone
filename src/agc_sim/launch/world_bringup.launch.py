@@ -41,10 +41,10 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
+    ExecuteProcess,
     IncludeLaunchDescription,
     OpaqueFunction,
     SetEnvironmentVariable,
-    TimerAction,
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, EnvironmentVariable, FindExecutable, LaunchConfiguration
@@ -114,6 +114,19 @@ def _link_sdf(link_name, pose, geom_sdf, color, finish=None):
             'pr': pose[3], 'pp': pose[4], 'pyaw': pose[5]})
 
 
+# 语义分割标签：障碍统一用同一个 label，地面/其它实体不打标签（gz-sim-label-system
+# 把未打标签实体视为背景）。该组件只被分割 / 包围盒传感器消费，不改物理、视觉或碰撞；
+# 默认机型无分割相机时它是惰性的，故无条件注入不影响「默认行为逐字不变」。
+OBSTACLE_SEG_LABEL = 10
+
+
+def _label_plugin_sdf():
+    return ('      <plugin filename="gz-sim-label-system" '
+            'name="gz::sim::systems::Label">\n'
+            '        <label>%d</label>\n'
+            '      </plugin>\n' % OBSTACLE_SEG_LABEL)
+
+
 def _obstacle_model_sdf(ob):
     """单个实体 → 一个 `<model>`（复合实体 = 一个 model 含多个 static link）。
 
@@ -125,10 +138,11 @@ def _obstacle_model_sdf(ob):
         return ('\n    <model name="%(id)s">\n'
                 '      <static>true</static>\n'
                 '      <pose>%(x)s %(y)s %(z)s 0 0 %(yaw)s</pose>\n'
+                '%(label)s'
                 '%(link)s\n'
                 '    </model>' % {
                     'id': ob['id'], 'x': ob['x'], 'y': ob['y'], 'z': ob['z'],
-                    'yaw': ob.get('yaw', 0.0),
+                    'yaw': ob.get('yaw', 0.0), 'label': _label_plugin_sdf(),
                     'link': _link_sdf('link', (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
                                       obstacle_geometry_sdf(ob), color,
                                       obstacle_finish(ob))})
@@ -143,26 +157,98 @@ def _obstacle_model_sdf(ob):
     return ('\n    <model name="%(id)s">\n'
             '      <static>true</static>\n'
             '      <pose>%(x)s %(y)s %(z)s 0 0 %(yaw)s</pose>\n'
+            '%(label)s'
             '%(links)s\n'
             '    </model>' % {
                 'id': ob['id'], 'x': ob['x'], 'y': ob['y'], 'z': ob['z'],
-                'yaw': ob.get('yaw', 0.0), 'links': '\n'.join(links)})
+                'yaw': ob.get('yaw', 0.0), 'label': _label_plugin_sdf(),
+                'links': '\n'.join(links)})
+
+
+# 地表装饰模型名（`agc_world.sdf` 里的**地面分层**：沥青环路 / 场坪 / 路缘石 / 车位线 /
+# 排水沟 / 碎石带 / 绿化带）。它们是**世界级视觉层**，不在任何地图 yaml 里，四张地图共用。
+# 2026-11-10 用户裁定「地板怎么是s18的，不需要，换成纯色就行」→ 地图可在自己 yaml 里
+# 声明 `ground_style: plain`，运行期把这一族**从生成世界剥离**，只留基层 `ground_plane`。
+# 判据用**前缀**而不是逐个名字：新增地表件时无需再改这里（前缀族是既有分类，见技能
+# map-design 的 SCHEMA-AND-DERIVATION `#visual-vs-obstacle`）。
+GROUND_DECOR_PREFIXES = (
+    'road_', 'apron_', 'curb_', 'bay_', 'drain_', 'gravel_', 'green_',
+)
+
+# 允许的 `ground_style`（缺省 = 保留全部地表分层，即 `yard` 的现有外观逐字不变）。
+GROUND_STYLES = ('layered', 'plain')
+
+
+def _ground_style(geometry):
+    """读地图 yaml 的 `ground_style`；非法值**拒绝运行**（不静默回退）。"""
+    raw = (geometry or {}).get('ground_style')
+    if raw is None:
+        return 'layered'
+    val = str(raw).strip().lower()
+    if val not in GROUND_STYLES:
+        raise RuntimeError(
+            '地图 %s 的 ground_style=%r 不受支持（可用：%s；留空 = layered）→ 拒绝运行'
+            % ((geometry or {}).get('map'), geometry.get('ground_style'),
+               ' | '.join(GROUND_STYLES)))
+    return val
+
+
+def _strip_ground_decor(text):
+    """把地表装饰 `<model>` 块从 world 文本里整块删掉（只留基层 `ground_plane`）。
+
+ 为什么用**文本块剥离**而不是 XML 重写：base world 里有大量注释，XML 往返会丢注释，
+ 使「生成世界 vs base world」的逐字节对比失效（核查 (b) 与 `none` 世界口径都依赖它）。
+ 判据：从 `<model name="<前缀>…">` 起，到与之配对的 `</model>` 止（模型块内无嵌套 model）。
+    """
+    lines = text.split('\n')
+    out = []
+    i = 0
+    removed = 0
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+        name = None
+        if stripped.startswith('<model name="'):
+            try:
+                name = stripped.split('"')[1]
+            except IndexError:
+                name = None
+        if name and any(name.startswith(p) for p in GROUND_DECOR_PREFIXES):
+            depth = 0
+            while i < len(lines):
+                depth += lines[i].count('<model') - lines[i].count('</model>')
+                i += 1
+                if depth <= 0:
+                    break
+            removed += 1
+            continue
+        out.append(line)
+        i += 1
+    return '\n'.join(out), removed
 
 
 def _inject_static_obstacles(src_path, dst_path, geometry):
     """由**地图 yaml 的 obstacles**向 base world 注入静态障碍 `<model>` 块，
  生成运行期世界写入临时文件。
 
- **不**手写第二份完整 world：base world（光源/地面/物理/插件/`spherical_coordinates`）
+  **不**手写第二份完整 world：base world（光源/地面/物理/插件/`spherical_coordinates`）
  原样保留，仅把配置文件障碍**逐值**注入到 `</world>` 之前——保证几何**只**来自配置文件、
- 「无障碍」只改障碍因子（`none` 直接用 base，不注入）、**不改世界其它物理**。
-按 `shape` 生成 `<box>` / `<cylinder>` / `<sphere>`，支持**复合模型**（`parts` →
+  「无障碍」只改障碍因子（`none` 直接用 base，不注入）、**不改世界其它物理**。
+ 按 `shape` 生成 `<box>` / `<cylinder>` / `<sphere>`，支持**复合模型**（`parts` →
  多 static link）；**视觉与碰撞同源**。
+
+ `ground_style: plain`（ADR-0037）→ 先剥离地表装饰族，只留基层 `ground_plane`。
+ **纯视觉**：地表装饰本就不进障碍几何 / 空中安全层 / 占位栅格，剥离不改任何物理。
     """
     with open(src_path, 'r') as f:
         text = f.read()
     if '</world>' not in text:
         raise RuntimeError('world 生成失败：base world %s 无 </world> 锚点' % src_path)
+    style = _ground_style(geometry)
+    if style == 'plain':
+        text, removed = _strip_ground_decor(text)
+        print('[world_bringup] ground_style=plain → 剥离地表装饰 %d 块（只留 ground_plane）'
+              % removed)
     injected = ''.join(_obstacle_model_sdf(ob) for ob in (geometry.get('obstacles') or []))
     idx = text.rfind('</world>')
     out = text[:idx] + injected + '\n\n  ' + text[idx:]
@@ -285,18 +371,6 @@ def generate_launch_description():
             'target_yaw': _spawn_value(context, 'target_yaw', tgt_s['yaw']),
         }
 
-    def _spawn_kwargs(context):
-        return {
-            'car_x': _spawn_value(context, 'car_x', car_s['x']),
-            'car_y': _spawn_value(context, 'car_y', car_s['y']),
-            'car_z': _spawn_value(context, 'car_z', car_s['z']),
-            'car_yaw': _spawn_value(context, 'car_yaw', car_s['yaw']),
-            'target_x': _spawn_value(context, 'target_x', tgt_s['x']),
-            'target_y': _spawn_value(context, 'target_y', tgt_s['y']),
-            'target_z': _spawn_value(context, 'target_z', tgt_s['z']),
-            'target_yaw': _spawn_value(context, 'target_yaw', tgt_s['yaw']),
-        }
-
     declared = [
         DeclareLaunchArgument(
             'gz_args', default_value=['-r -v 3 ', world_file],
@@ -344,6 +418,25 @@ def generate_launch_description():
             'gui_render_backend', default_value='auto',
             description='GUI 渲染后端：auto（WSL2 + /dev/dxg + X11 自动 D3D12）| d3d12 | software；'
                         'headless（gz -s）忽略'),
+        # ADR-0038：事务式 spawn 的就绪上界（**墙钟**）。这是"愿意等多久"的上限，
+        # 不是"等多久就认为就绪"的判据——判据是 create 服务 + 世界时钟推进 + 实体存在。
+        DeclareLaunchArgument(
+            'spawn_ready_timeout_s', default_value='120.0',
+            description='事务式 spawn 的世界就绪上界（墙钟秒；就绪即创建，不空等）'),
+        # **实体存在性校验窗口**（秒）。与上面的"世界就绪上界"是**两个**判据：
+        # 前者等 create 服务/时钟，后者等"实体真的出现在 scene/info 里"。
+        #
+        # **为什么必须可配**：该值原先写死在 `scene_spawn_gate.py` 里（30 s）。实测
+        # `dense_map`（数百个障碍；下述实测取自 620 个的版本）加载时，`agc_car` 从 create 请求到出现在 `scene/info`
+        # 用了 **30.13 s** —— 紧贴 30 s 上限，差 0.13 s 就判失败。而 `agc_car` 其实已由
+        # `world_bringup` 预创建（日志里 "already exists"），gate 只是在等确认。
+        # 场景越密这个窗口越紧，写死等于让"世界大一点"变成"随机启动失败"。
+        # 默认 60 s（原写死 30 s 的两倍）：实测 `dense_map` 已用到 30.13 s，
+        # 30 s 没有余量。这是**上界**不是延时——实体一出现就立刻继续，不会空等。
+        DeclareLaunchArgument(
+            'spawn_verify_timeout_s', default_value='60.0',
+            description='每个实体创建后等待其出现在 scene/info 的上界（墙钟秒）；'
+                        '就绪即继续、不空等'),
     ]
 
     # gz sim（世界）：按 `world_map` × `world_obstacles` 由**单一配置文件**注入 / 不注入生成
@@ -393,27 +486,39 @@ def generate_launch_description():
     ])
     # spawn 车 / 目标（F1：坐标在 OpaqueFunction 内**解析后**注入——`auto` 落到 config 缺省，
     # 显式值时逐值使用；同时把生效值打印出来，便于与复位日志逐项比对）。
+    #
+    # ADR-0038：**事务式创建**替代 `TimerAction(period=15.0)` 盲等。
+    # 原实现无论 Gazebo 是否就绪都固定等 15 s：就绪快则白等，就绪慢则 spawn 失败且无人重试。
+    # 现在由 `scene_spawn_gate` 做「create 服务可用 → 世界时钟推进 → 逐个创建 → 校验存在」，
+    # 失败有界重试并**非零退出**；成功后发布 `/agc/sim/entities_ready`（latched），
+    # 供上层（PX4 / 复位 / 感知）作为**真实就绪信号**依赖。
     def _spawn_actions(context, *args, **kwargs):
         kw = _spawn_kwargs(context)
         print('[world_bringup] spawn car=(%s,%s,%s,%s) target=(%s,%s,%s,%s)'
               % (kw['car_x'], kw['car_y'], kw['car_z'], kw['car_yaw'],
                  kw['target_x'], kw['target_y'], kw['target_z'], kw['target_yaw']))
-        car_node = Node(
-            package='ros_gz_sim', executable='create', output='screen',
-            arguments=[
-                '-world', 'agc_world', '-name', 'agc_car', '-string', car_desc,
-                '-x', kw['car_x'], '-y', kw['car_y'], '-z', kw['car_z'], '-Y', kw['car_yaw'],
-            ],
-        )
-        target_node = Node(
-            package='ros_gz_sim', executable='create', output='screen',
-            arguments=[
-                '-world', 'agc_world', '-name', 'intruder_uav', '-string', target_desc,
-                '-x', kw['target_x'], '-y', kw['target_y'], '-z', kw['target_z'],
-                '-Y', kw['target_yaw'],
-            ],
-        )
-        return [TimerAction(period=15.0, actions=[car_node, target_node])]
+        gate = ExecuteProcess(
+            cmd=[FindExecutable(name='python3'),
+                 os.path.join(share, 'scripts', 'scene_spawn_gate.py'),
+                 '--world', 'agc_world',
+                 '--timeout-s', LaunchConfiguration('spawn_ready_timeout_s'),
+                 '--verify-timeout-s', LaunchConfiguration('spawn_verify_timeout_s'),
+                 # 车先、目标后：创建顺序即依赖顺序（目标 attach 依赖其存在）。
+                 # 实体参数用 `=` 形式：位姿 x/y 常为负数，`--pose -15.0,…` 会被 argparse
+                 # 当成选项名而报 unrecognized arguments（实测）。
+                 '--entity=agc_car',
+                 '--pose=%s,%s,%s,0,0,%s' % (kw['car_x'], kw['car_y'], kw['car_z'],
+                                             kw['car_yaw']),
+                 # `car_desc` / `target_desc` 是 `Command` 替换（xacro 在**执行期**求值），
+                 # 不能 `'--sdf=%s' % car_desc`——那会拼出替换对象的 repr 而不是它的值。
+                 # 用嵌套列表让 launch 把前缀与替换**拼接成同一个 argv 元素**。
+                 ['--sdf=', car_desc],
+                 '--entity=intruder_uav',
+                 '--pose=%s,%s,%s,0,0,%s' % (kw['target_x'], kw['target_y'],
+                                             kw['target_z'], kw['target_yaw']),
+                 ['--sdf=', target_desc]],
+            output='screen')
+        return [gate]
 
     # spawn 目标（与车同一条 OpaqueFunction，见上；此处只构造模型描述串）
     target_desc = Command([

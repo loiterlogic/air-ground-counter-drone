@@ -32,6 +32,9 @@ MAP_GEOMETRY_FILES = {
     'minimal': 'world_geometry.yaml',
     'yard': os.path.join('maps', 'yard.yaml'),
     'open_field': os.path.join('maps', 'open_field.yaml'),
+    # 小障碍高密度能力图（ADR-0036；用户 2026-11-10 裁定）：目标居中、车与己方机在西边缘、
+    # 密集区 60×60 m 六角错排、全部构件 ≤3.0 m、**不留走廊**（跟踪终态不可达是设计意图）。
+    'dense_map': os.path.join('maps', 'dense_map.yaml'),
 }
 
 DEFAULT_WORLD_MAP = 'minimal'

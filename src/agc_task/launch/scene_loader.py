@@ -277,7 +277,8 @@ def load_scene(task_share, sim_share, scene, seed, token=None,
 
 
 def compose_params(base, sc, backend, seed, own_uav=(0.0, 0.0), geometry=None,
-                   spawn_randomize=None, goal_follow_target=None):
+                   spawn_randomize=None, goal_follow_target=None,
+                   startup_reset_max_attempts=None, startup_reset_timeout_s=None):
     """合并参数（base + 场景覆盖）并按 backend 注入运行模式。
 
  lightweight：`task_manager.air_present=False`（无空中域，相位复位门禁不适用）。
@@ -308,6 +309,15 @@ def compose_params(base, sc, backend, seed, own_uav=(0.0, 0.0), geometry=None,
     # P2 v3（ADR-0023）：任务目标是否跟随感知目标——显式覆盖场景值（None=不改）。
     if goal_follow_target is not None:
         merged.setdefault('task_manager', {})['goal_follow_target'] = bool(goal_follow_target)
+    # 复位就绪门的上界（**地图属性**，与出生位同一论证）：
+    # `dense_map` 有数百个障碍（620 时的实测：70–94 s），而默认 60 次 × 1 s = 60 s
+    # 必然失败。**必须写进参数文件**：`scenario_reset` 读的是 params_file，
+    # 靠 launch 字典覆盖在这里不生效（实测传了 :=300 但节点仍按 60 次跑）。
+    if startup_reset_max_attempts is not None:
+        merged['scenario_reset']['startup_reset_max_attempts'] = int(
+            startup_reset_max_attempts)
+    if startup_reset_timeout_s is not None:
+        merged['scenario_reset']['startup_reset_timeout_s'] = float(startup_reset_timeout_s)
     # 静态障碍清单 + 作业区边界由**配置文件**派生注入（物理世界为 static 时注入 pole_*）。
     if geometry is not None:
         merged['scenario_reset']['obstacle_names'] = geometry_ids(geometry)

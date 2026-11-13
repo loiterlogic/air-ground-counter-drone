@@ -94,6 +94,28 @@ _Avoid_: 出生间距（旧 `2.4 m` 口径）
 车载**行为级电子干扰**发射器：以对目标行为的干预体现（EMI 不建模）；行为与接口属 [ADR-0015](docs/adr/0015-jam-authorization-and-confirmation.md#top)。
 _Avoid_: 电磁武器、EMI 设备
 
+**证据层（Evidence Layer）**:
+感知地图中**累积观测证据**的栅格层（当前 0.25 m），承载逐格 log-odds 概率与连续的**几何占据率**；carving、衰减、生命周期都在它上面进行。它回答"这一格有多少比例被障碍覆盖、这个判断有多可靠"。
+_Avoid_: 感知真源（与文档真源混淆）、高精度地图（未定义）、栅格层（与规划层不分）
+**规划层（Planning Layer）**:
+由**证据层派生**的栅格层（当前 0.5 m），只服务规划安全：任一子格确认占据即整格占据（max-pool），并可叠加**米制**安全膨胀。它**不代表真实几何**，因此不得用于评价感知精度。`/agc/map` 就是这一层。
+_Avoid_: 规划图（含义含路径）、代价图（本仓未在 `/agc/map` 上表达代价梯度）
+**分层评价（Layered Evaluation）**:
+把地图质量拆成四套**互不冒充**的口径：**几何重建**（对真值几何的 precision / recall / IoU / 边界距离）、**规划可用性**（漏掉危险障碍 vs 误阻塞）、**实例稳定性**（按实例 id 的中心位移与边界位移）、**栅格可达率**（图上通不通）。稳定性**主判据**自 ADR-0042/0043 起是三条空间量：集合 IoU p50 / 已知区边界抖动 p90 / **实例中心位移 p50**，不再只看 `occupied` 数量差。实例位移取 **p50 而非 p90**：p90 被少数大实例的边缘翻转支配，而那是深度噪声的正常现象（单帧 `|Δocc|` ≈ 130 格）。口径与取舍以 [ADR-0040](docs/adr/0040-perception-multi-resolution-evidence-and-planning-layers.md#top) / [ADR-0042](docs/adr/0042-point-uncertainty-arbitrary-resolution-and-reachability.md#top) 为准。
+_Avoid_: 感知精度（会被读成单一数字）、地图质量（未区分层）、规划成功率（见「栅格可达率」）
+
+**栅格可达率（Grid Reachability）**:
+在**风险图**上做真实栅格搜索（8 邻域 A*），回答"从起点到终点存不存在一条可通行路径"。口径与 `planning_policy.hpp` 的 `classifyCell` 一致：`0` 可通行、`1–99` 可通行但有代价、`>=100` 不可通行、`-1` 默认不可通行。**不含动力学**（加减速 / 转弯半径 / 倒车），因此**不得**表述为"规划成功率"。
+_Avoid_: 规划成功率（会让人以为量的是"车能不能真的开过去"）、可达性（与图论可达性混淆）
+
+**逐格元数据（Per-cell Metadata）**:
+`/agc/map/cell_meta` 上的五元组：**占据比例**（0..1，被占了多少）/ **置信度**（0..1，判断有多可靠）/ **最近观测**（秒）/ **来源实例**（稳定 id）/ **完整可见**（`unknown` 是"没看过"还是"看不清"）。它回答 `OccupancyGrid.data` 一个 int8 装不下的问题 —— 后者只能回答"这一格算不算占据"。口径见 [ADR-0042](docs/adr/0042-point-uncertainty-arbitrary-resolution-and-reachability.md#top)。
+_Avoid_: 概率图（占多少与有多可信是两件事）、代价图（那是 `/agc/map` 的风险分档）
+
+**逐点不确定度（Per-point Uncertainty）**:
+几何层里**每个点**自带的位置 2×2 协方差（world XY 上三角）与观测视角余弦，由位姿位置 / 位姿偏航 / 深度轴向 / 像素落位四项误差源解析传播相加得出。用途是**门控**（σ 超过半格宽的点本帧不进 hit 证据），不是逐点权重 —— 后者会让证据强度依赖像素采样密度。口径见 [ADR-0042](docs/adr/0042-point-uncertainty-arbitrary-resolution-and-reachability.md#top)。
+_Avoid_: 置信度（那是 `confidence.hpp` 的声明值，与几何精度不是一回事）、误差椭圆（只描述了形状没描述来源）
+
 **Runbook（步骤文档）**:
 **历史**：迁移期唯一指导执行重构流程的入口文档，已归档为 [`docs/archive/ROS2迁移步骤.md`](./docs/archive/ROS2迁移步骤.md#top)；只编排"当时做什么、如何验收"，不承载约束。当前执行入口是 [当前方向](./docs/plan/README.md#plan-index)。
 _Avoid_: 执行入口、执行口（迁移已暂停，Runbook 不再是任一任务的入口）

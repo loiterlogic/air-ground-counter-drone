@@ -1,6 +1,14 @@
 # 出生布局：世界 spawn / 复位位置 / 己方机起飞参考三处共用同一组坐标（ADR-0007 / ADR-0012）。
 # main.launch.py 读本文件后显式传给 world_bringup 与 scenario_reset；己方机位由 own_uav 派生。
 # 布局意图与净空推导见 ADR-0012 实施回填；改坐标须同步 tests/check_scene_geometry.py。
+#
+# ---- `per_map`（2026-11-10，ADR-0036）：出生位也是**地图属性** ----
+# 与 `flight_altitude` 同款论证：某张图上"车从哪出发"是**地图事实**，不是全局常量。
+# 缺省（不写 `per_map` 或该图不在表内）→ 用下方顶层坐标（`minimal` / `yard` / `open_field`
+# 三图**逐值不变**，历史证据基线不受影响）。
+# 解析口径（单一实现：`agc_task/launch/scene_spawn.py` 的 `load_spawn_layout`）：
+#   顶层 `car/target/own_uav` 提供**完整缺省**；`per_map.<map>` 只写**要覆盖的键**（深合并一层）。
+# 未登记的地图名 → 拒绝运行（不静默回落，避免"换图不换出生位"静默漂移）。
 spawn_layout:
   car:
     x: -15.0
@@ -24,4 +32,25 @@ spawn_layout:
   goal_offset_m:
     dx: -2.5
     dy: 0.0
+
+  # ---- 按地图覆盖（ADR-0036）----
+  # `dense_map`：目标在作业区正中 (0,0)，车与己方机在西边缘。
+  # 车↔目标 34.53 m（≥30）、己方机↔目标 34.06 m（≥25）、车↔机 4.00 m（∈[3,8]）——
+  # 三条设计目标（`spawn_design_goals_met`）全部满足，判据未放宽。
+  # `goal_offset_m` 沿用顶层缺省 ⇒ 派生任务目标 = (−2.5, 0)，距目标 2.50 m ≤ d_track 3.0。
+  # ⚠ 该图密集区不留走廊（2026-11-12 用户再次裁定「不要走廊，后面会做路径规划」），
+  # 车沿直连 goal 一出发即在 `collision_monitor` 碰撞档内 ⇒ 跟踪终态不可达是**设计意图**
+  # （见 `maps/dense_map.yaml` 文件头；出行点净空实测见 `tests/check_dense_map_layout.py` (H)）。
+  per_map:
+    dense_map:
+      car:
+        x: -34.0
+        y: -6.0
+        yaw: 0.0
+      target:
+        x: 0.0
+        y: 0.0
+      own_uav:
+        x: -34.0
+        y: -2.0
 

@@ -25,6 +25,9 @@ __pycache__/
 # ===== 过程草稿（家见 docs/conventions/目录与命名规范.md）=====
 /docs/temp/
 
+# ===== 本机私人文档，不入库（ADR-0034）=====
+/docs/paper/
+
 # ===== 编辑器本地设置 =====
 .vscode/
 

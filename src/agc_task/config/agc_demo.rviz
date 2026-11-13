@@ -6,53 +6,97 @@ Panels:
     Splitter Ratio: 0.5
   - Class: rviz_common/Views
     Name: Views
+  - Class: rviz_common/Selection
+    Name: Selection
+  - Class: rviz_common/Tool Properties
+    Name: Tool Properties
+  - Class: rviz_common/Time
+    Name: Time
+    SyncMode: 0
+    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:
-    - Class: rviz_default_plugins/Grid
-      Name: Grid
-      Enabled: false
-    - Class: rviz_default_plugins/Map
-      Name: 占位栅格 /agc/map
-      Topic: {Depth: 1, Durability Policy: Transient Local, History Policy: Keep Last, Reliability Policy: Reliable, Value: /agc/map}
-      Alpha: 0.75
-      Color Scheme: costmap
-      # 本机 RViz 的 OccupancyGrid 着色器链接失败（GLSL：active samplers ... same texture
-      # image unit），且 /agc/map 以 2 Hz 重发 —— 显示不出来还白白重传。缺省关闭；
-      # 在能正常渲染的机器上把 Enabled 改成 true 即可。
-      Enabled: false
-    - Class: rviz_default_plugins/Path
-      Name: 车规划路径 /agc/ground/path
-      Topic: {Depth: 5, Durability Policy: Volatile, History Policy: Keep Last, Reliability Policy: Reliable, Value: /agc/ground/path}
-      Color: {255, 255, 0}
-      Line Style: Lines
-      Line Width: 0.12
+    - Class: rviz_common/Group
+      Displays:
+        - Class: rviz_default_plugins/Axes
+          Enabled: true
+          Length: 5
+          Name: 坐标轴
+          Radius: 0.3
+          Reference Frame: <Fixed Frame>
+          Value: true
+        - Class: rviz_default_plugins/Grid
+          Enabled: false
+          Name: 网格
+          Value: false
       Enabled: true
-    - Class: rviz_default_plugins/LaserScan
-      Name: 车激光 /agc/ground/scan
-      Topic: {Depth: 5, Durability Policy: Volatile, History Policy: Keep Last, Reliability Policy: Best Effort, Value: /agc/ground/scan}
-      Style: Flat Squares
-      Size (m): 0.12
-      Color Transformer: FlatColor
-      Color: {255, 60, 60}
+      Name: 场景基准
+    - Class: rviz_common/Group
+      Displays:
+        - Class: rviz_default_plugins/Map
+          Name: 规划风险图 /agc/map
+          Topic: {Depth: 1, Durability Policy: Transient Local, History Policy: Keep Last, Reliability Policy: Reliable, Value: /agc/map}
+          Alpha: 0.62
+          Color Scheme: costmap
+          # /agc/map 是规划风险图：-1 未知、0 自由、1–98 代价、99 擦碰、100 占据。
+          # costmap 方案提供连续暖色风险梯度；不使用 rainbow，避免相邻风险值跳变。
+          Enabled: true
+        - Class: rviz_default_plugins/Map
+          Name: 几何证据（诊断） /agc/map/evidence
+          Topic: {Depth: 1, Durability Policy: Transient Local, History Policy: Keep Last, Reliability Policy: Reliable, Value: /agc/map/evidence}
+          Alpha: 0.28
+          Color Scheme: map
+          Enabled: false
+        - Class: rviz_default_plugins/LaserScan
+          Name: 车激光 /agc/ground/scan
+          Topic: {Depth: 5, Durability Policy: Volatile, History Policy: Keep Last, Reliability Policy: Best Effort, Value: /agc/ground/scan}
+          Style: Flat Squares
+          Size (m): 0.04
+          Alpha: 0.45
+          Color Transformer: FlatColor
+          Color: {255, 60, 60}
+          Enabled: true
+        - Class: rviz_default_plugins/MarkerArray
+          Name: 语义叠加 /agc/viz/markers
+          Topic: {Depth: 5, Durability Policy: Transient Local, History Policy: Keep Last, Reliability Policy: Reliable, Value: /agc/viz/markers}
+          Enabled: true
       Enabled: true
-    - Class: rviz_default_plugins/MarkerArray
-      Name: 语义叠加 /agc/viz/markers
-      Topic: {Depth: 5, Durability Policy: Transient Local, History Policy: Keep Last, Reliability Policy: Reliable, Value: /agc/viz/markers}
+      Name: 感知
+    - Class: rviz_common/Group
+      Displays:
+        - Class: rviz_default_plugins/Path
+          Name: 车规划路径 /agc/ground/path
+          Topic: {Depth: 5, Durability Policy: Volatile, History Policy: Keep Last, Reliability Policy: Reliable, Value: /agc/ground/path}
+          Color: {255, 255, 0}
+          Line Style: Lines
+          Line Width: 0.12
+          Enabled: true
+        - Class: rviz_default_plugins/Odometry
+          Name: 车里程 /agc/ground/odom
+          Topic: {Value: /agc/ground/odom}
+          Keep: 200
+          Position Tolerance: 0.05
+          Color: {0, 255, 0}
+          Enabled: true
       Enabled: true
-    - Class: rviz_default_plugins/Odometry
-      Name: 车里程 /agc/ground/odom
-      Topic: {Value: /agc/ground/odom}
-      Keep: 200
-      Position Tolerance: 0.05
-      Color: {0, 255, 0}
-      Enabled: true
+      Name: 载体与轨迹
   Enabled: true
   Global Options:
     Background Color: 18, 20, 24
     Fixed Frame: map
     Frame Rate: 20
-  Tools: []
+  # 交互工具：空列表会让 RViz 无法拖动/缩放/选中（视角完全锁死）。
+  # 类名按 ROS2 Jazzy 的 rviz_default_plugins/*；只取与本项目相关的，
+  # 不引入 SetInitialPose / SetGoal / PublishPoint（导航专用，本项目无对应消费者）。
+  Tools:
+    - Class: rviz_default_plugins/Interact
+      Hide Inactive Objects: true
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Measure
+      Line color: 128; 128; 0
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
@@ -66,7 +110,43 @@ Visualization Manager:
       Yaw: 0
       Target Frame: map
       Near Clip Distance: 0.01
-    Saved: ~
+    Saved:
+      - Class: rviz_default_plugins/Orbit
+        Name: 正俯视（北朝上）
+        Distance: 150
+        Focal Point: {X: 0, Y: 0, Z: 0}
+        Focal Shape Fixed Size: true
+        Focal Shape Size: 0.05
+        Invert Z Axis: false
+        Pitch: 1.5707
+        Yaw: 0
+        Target Frame: map
+        Near Clip Distance: 0.01
+        Value: true
+      - Class: rviz_default_plugins/Orbit
+        Name: 斜视 3/4
+        Distance: 120
+        Focal Point: {X: 0, Y: 0, Z: 0}
+        Focal Shape Fixed Size: true
+        Focal Shape Size: 0.05
+        Invert Z Axis: false
+        Pitch: 0.6
+        Yaw: 0.7
+        Target Frame: map
+        Near Clip Distance: 0.01
+        Value: true
+      - Class: rviz_default_plugins/Orbit
+        Name: 近景跟随车
+        Distance: 40
+        Focal Point: {X: 0, Y: 0, Z: 0}
+        Focal Shape Fixed Size: true
+        Focal Shape Size: 0.05
+        Invert Z Axis: false
+        Pitch: 1.1
+        Yaw: 0.4
+        Target Frame: car/base_link
+        Near Clip Distance: 0.01
+        Value: true
 Window Geometry:
   Height: 1000
   Width: 1400

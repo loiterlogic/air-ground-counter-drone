@@ -55,8 +55,9 @@
   gz_type_name: "gz.msgs.Contacts"
   direction: GZ_TO_ROS
 
-# 机载相机图像（GZ → ROS； / ADR-0009）。**仅当**己方机型为 `gz_x500_mono_cam` 时存在——
-# launch 参数 `px4_sim_model`；用默认 `gz_x500` 时 gz 侧无这两条话题，桥条目会等话题而不影响其它条目。
+# 机载前视相机图像（GZ → ROS； / ADR-0009）。**仅当**己方机型为 `gz_x500_mono_cam` 时存在——
+# launch 参数 `px4_sim_model`；默认 `gz_agc_x500_nadir` 与其余机型下 gz 侧无这两条话题，
+# 桥条目会等话题而不影响其它条目。
 #
 # **实测**（2026-10-30，`gz topic -l`，机型 gz_x500_mono_cam、实例 0、实体 x500_mono_cam_0）：
 # /camera ← 相机图像（gz.msgs.Image），-f 实测 ~33 Hz
@@ -86,25 +87,48 @@
   direction: GZ_TO_ROS
   qos_profile: SENSOR_DATA
 
-# 机载**正下视（nadir）**相机（GZ → ROS；ADR-0030）。**仅当**己方机型为 `gz_agc_x500_nadir` 时存在——
-# launch 参数 `px4_sim_model`；默认 `gz_x500` 下 gz 侧无这两条话题，桥条目等话题而不影响其它条目。
+# 机载**正下视（nadir）**相机（GZ → ROS；ADR-0030）。**默认机型**（`gz_agc_x500_nadir`）自带；
+# 显式换机型（`gz_agc_x500` / `gz_x500` / `gz_x500_mono_cam`）时 gz 侧无这些话题，
+# 桥条目等话题而不影响其它条目。
 #
-# ⚠ **本相机无消费者，仅取证/测绘**：`/agc/targets` 的发布者仍是 `gt_adapter`（真值），
-# 图像**不**接入任务链、不供任何识别/定位节点订阅。视觉定位路径已于 2026-11-04 退役。
+# ⚠ **RGB 图像仅取证/测绘**：`/agc/targets` 的发布者仍是 `gt_adapter`（真值），
+# 目标识别不依赖相机。视觉定位路径已于 2026-11-04 退役。
+# 正下视**分割标签**（下方 /seg/labels_map 条目）+ **深度图**（下方 /depth 条目）由感知地图链消费：
+# 标签像素 → 查该像素的深度 → 反投影出真实 3D 点 → XY 包络 + 高度 → `/agc/obstacles` → `/agc/map`。
+# RGB 原图本身仍不进识别/定位链。
+#
+# **为什么需要深度**（2026-11-08）：纯 RGB 只有标签，没有高度。把标签像素投到地面平面 z=0 时，
+# 高层建筑的**侧墙**会被当成地面点，按 H/(H−h) 向外放大——yard 的 admin_block（10.55 m / H=14.24 m）
+# 糊成 3.86 倍面积，整图 IoU 仅 0.363（实测）。有深度就无此问题。
 #
 # **gz 侧话题名**（由模型 SDF 决定，见 src/agc_sim/models/agc_x500_nadir/model.sdf）：
-# 图像取 `<topic>agc/air/nadir</topic>` → gz `/agc/air/nadir`；
-# 内参**显式**取 `<camera>` 内的 `<camera_info_topic>agc/air/nadir/camera_info</camera_info_topic>`。
-# 若不显式写该元素，gz-sensors 会按 `<topic>_info` 派生 → `/agc/air/nadir_info`（**与本桥不符**）。
-# 两者都必须与 SDF 逐字一致；`scripts/tests/test_nadir_camera_contract.py` 静态守护这一点。
+# 机型用 `rgbd_camera`，它**在 <topic> 后加后缀**（实测，与旧 `camera` 直接用 <topic> 不同）：
+#   <topic>agc/air/nadir</topic> ⇒
+#     /agc/air/nadir/image        （RGB，sensor_msgs/Image）
+#     /agc/air/nadir/depth_image  （深度，R_FLOAT32，**轴向深度**不是欧氏距离）
+#     /agc/air/nadir/points       （点云，不桥：本链不需要，少一条带宽）
+#     /agc/air/nadir/camera_info  （内参，由 <topic>/camera_info 派生）
+# 四者必须与 SDF 逐字一致；`scripts/tests/test_nadir_camera_contract.py` 静态守护这一点。
 #
 # ⚠ **话题存在 ≠ 有帧**（实测，见 experiments/p1-4//evidence/camera-ownership-finding.md）：
-# `gz topic -l` 会列出**只有订阅者**的话题，而本文件正是以订阅方式桥接——默认臂（无相机）里
-# `/agc/air/nadir*` 照样会出现在 `gz topic -l` / `ros2 topic list`，但**一帧都没有**。
+# `gz topic -l` 会列出**只有订阅者**的话题，而本文件正是以订阅方式桥接——换回无相机机型
+# （`gz_agc_x500` / `gz_x500`）时 `/agc/air/nadir*` 照样会出现在 `gz topic -l` / `ros2 topic list`，
+# 但**一帧都没有**。
 # 判「相机是否真的在发布」必须用 `ros2 topic hz`（≥10 Hz）、累计帧数（≥30）、
-# 或 `gz topic -f -t /agc/air/nadir` 看到真实帧；**不得**只看话题列表。
-- ros_topic_name: "/agc/air/nadir/image_raw"
-  gz_topic_name: "/agc/air/nadir"
+# 或 `gz topic -f -t /agc/air/nadir/image` 看到真实帧；**不得**只看话题列表。
+# **2026-11-09 退役：RGB 原图桥条目（用户裁定）**
+# 这条流**零订阅者**（ADR-0030 的「不接任务链」一节早已登记，`test_no_vision_consumer_of_nadir_image` 静态守护），
+# 却占 1152² 下 3.80 MB/帧 = 总感知带宽的 30%。删掉它不改变任何消费者行为。
+# 需要取证/测绘时**临时**加回即可（gz 侧 /agc/air/nadir/image 仍在，只是不桥到 ROS）。
+# 防复活：本段被删除是**有意的**，不得因为"看着少了一条"而顺手补回。
+
+# 深度图（GZ → ROS）：sensor_msgs/Image，encoding=32FC1，值 = **沿光轴的轴向深度**（米）。
+# 实测判据（平坦地面、相机高 10 m）：画面各处恒为 10.0000，而欧氏距离应随像素在
+# 10.0（中心）→ 15.55（边缘）变化 ⇒ 是轴向深度。反投影公式据此：
+#   z_cam = depth;  x_cam = (u−cx)/fx · depth;  y_cam = (v−cy)/fy · depth
+# 不桥 /points：本链只要 depth，点云是纯带宽浪费（640×480×16B ≈ 4.9 MB/帧）。
+- ros_topic_name: "/agc/air/nadir/depth"
+  gz_topic_name: "/agc/air/nadir/depth_image"
   ros_type_name: "sensor_msgs/msg/Image"
   gz_type_name: "gz.msgs.Image"
   direction: GZ_TO_ROS
@@ -112,6 +136,23 @@
 
 - ros_topic_name: "/agc/air/nadir/camera_info"
   gz_topic_name: "/agc/air/nadir/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+
+# 语义分割标签图：gz 由 <topic>agc/air/nadir/seg</topic> 派生
+# /agc/air/nadir/seg/labels_map（B 通道 = label id；障碍统一 label=10，地面/背景不显影）。
+# 分割相机自身发布 camera_info（gz 实测），与 RGBD 相机共位姿共内参；显式桥内参供投影节点用。
+- ros_topic_name: "/agc/air/nadir/seg/labels_map"
+  gz_topic_name: "/agc/air/nadir/seg/labels_map"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+
+- ros_topic_name: "/agc/air/nadir/seg/camera_info"
+  gz_topic_name: "/agc/air/nadir/seg/camera_info"
   ros_type_name: "sensor_msgs/msg/CameraInfo"
   gz_type_name: "gz.msgs.CameraInfo"
   direction: GZ_TO_ROS

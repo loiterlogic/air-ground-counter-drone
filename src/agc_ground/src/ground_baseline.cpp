@@ -48,6 +48,7 @@
 #include <std_msgs/msg/string.hpp>
 
 #include "agc_control/controller.hpp"
+#include "agc_ground/planning_policy.hpp"
 #include "agc_control/param_reader.hpp"
 
 namespace
@@ -77,6 +78,13 @@ bool parseGoalInfoValid(const std::string & s)
 }
 }  // namespace
 
+using agc_ground::blocksDirectLink;
+using agc_ground::CellClass;
+using agc_ground::classifyCell;
+using agc_ground::PlanRejection;
+using agc_ground::planRejectionReason;
+using agc_ground::toString;
+
 class GroundBaseline : public nav2_util::LifecycleNode
 {
 public:
@@ -98,6 +106,9 @@ public:
     max_path_age_s_ = declare_parameter<double>("max_path_age_s", 5.0);
     // stop_on_invalid：路径失效（规划失败 / 绑定破坏）时是否失效停车（默认 fail-stop）
     stop_on_invalid_ = declare_parameter<bool>("stop_on_invalid", true);
+    // 边缘直连兜底（2026-11-08 用户裁定 Q12）：goal 在未知区时从已知边缘直连。
+    // 这是**粗糙路径**兜底，不是精细轨迹；关闭它则未知区 goal 一律判不可规划。
+    direct_link_enabled_ = declare_parameter<bool>("direct_link_enabled", true);
     goal_tol_m_ = declare_parameter<double>("goal_reached_tol_m", 0.3);
     lookahead_m_ = declare_parameter<double>("lookahead_m", 1.0);
     k_yaw_ = declare_parameter<double>("k_yaw", 1.5);
@@ -416,6 +427,113 @@ private:
     return age >= replan_period_s_;                          // 周期性刷新
   }
 
+  // 边缘直连兜底（2026-11-08 用户裁定 Q12）。
+  //
+  // **什么时候用**：goal 落在**未知区**（地图覆盖不足）且起点在已知自由区。
+  // 用户原话："如果没覆盖到目标点就从已知区域边缘直接连一条直线到目标点，
+  // 这一步本来就是生成粗糙路径"。
+  //
+  // **做什么**（三条判据，缺一不可）：
+  //   1. 从车当前位置出发，沿"车→goal"直线**走已知自由格**，走到不能再走为止
+  //      （边缘点）；这段由规划器正常规划，保证可通行；
+  //   2. 从边缘点**直连** goal；直连段不得穿过**已知占据**格（未知不挡 ——
+  //      未知正是要穿过去的部分）；
+  //   3. 直连段拼在规划路径尾部，作为**粗糙路径**发布（不是精细轨迹）。
+  //
+  // **失败条件**：直连段穿过已知占据 → 返回 false（交给上层按"不可规划"处理，
+  // 因为那时这条粗糙路径是**错的**，不是粗糙）。
+  //
+  // **为什么不做"沿边界绕行"**：那已经是规划器的工作，而这里的场景是
+  // "目标在覆盖外、无路可循"，绕行没有依据。直连是唯一可解释的兜底。
+  bool tryDirectLinkFallback()
+  {
+    const double step = std::max(0.1, costmap_ros_ ? costmap_ros_->getCostmap()->getResolution() : 0.25);
+    // ---- 1) 找边缘点：沿 车→goal 方向走到最后一个"已知自由"格 ----
+    const double dx = goal_x_ - x_, dy = goal_y_ - y_;
+    const double dist = std::hypot(dx, dy);
+    if (dist < 1e-6) {return false;}
+    const double ux = dx / dist, uy = dy / dist;
+    double edge_x = x_, edge_y = y_;
+    double walked = 0.0;
+    bool found_edge = false;
+    for (double t = step; t <= dist; t += step) {
+      const double px = x_ + ux * t, py = y_ + uy * t;
+      const int v = cellValueAt(px, py);
+      if (v == 0) {                      // 仍已知自由 → 继续走
+        edge_x = px; edge_y = py;
+        walked = t;
+        found_edge = true;
+      } else {
+        break;                           // 进入未知/占据 → 这就是边缘
+      }
+    }
+    if (!found_edge) {return false;}     // 起点即不可走（不该发生，上层已判过）
+
+    // ---- 2) 直连段不得穿过已知占据 ----
+    const double link_dx = goal_x_ - edge_x, link_dy = goal_y_ - edge_y;
+    const double link_len = std::hypot(link_dx, link_dy);
+    if (link_len < 1e-6) {return false;}
+    const double lux = link_dx / link_len, luy = link_dy / link_len;
+    for (double t = 0.0; t <= link_len; t += step) {
+      const double px = edge_x + lux * t, py = edge_y + luy * t;
+      if (blocksDirectLink(cellValueAt(px, py))) {
+        RCLCPP_WARN(get_logger(),
+          "直连兜底失败：线段在 (%.2f,%.2f) 穿过已知占据格 → 视为不可规划",
+          px, py);
+        return false;
+      }
+    }
+
+    // ---- 3) 拼路径：车 → 边缘点（沿直线采样）→ goal ----
+    nav_msgs::msg::Path path;
+    path.header.frame_id = global_frame_;
+    path.header.stamp = now();
+    auto append = [&path](double px, double py) {
+        geometry_msgs::msg::PoseStamped ps;
+        ps.header = path.header;
+        ps.pose.position.x = px;
+        ps.pose.position.y = py;
+        ps.pose.position.z = 0.0;
+        ps.pose.orientation.w = 1.0;
+        path.poses.push_back(ps);
+      };
+    // 已走过的部分（已知自由区内，按 step 采样）
+    for (double t = 0.0; t < walked; t += step) {append(x_ + ux * t, y_ + uy * t);}
+    append(edge_x, edge_y);
+    // 直连段（粗糙段）：按同样 step 采样，保证下游 lookahead 有足够点
+    for (double t = step; t <= link_len; t += step) {
+      append(edge_x + lux * t, edge_y + luy * t);
+    }
+    append(goal_x_, goal_y_);
+
+    if (path.poses.size() < 2) {return false;}
+
+    path_ = path;
+    last_plan_goal_ = {goal_x_, goal_y_};
+    last_plan_map_sig_ = mapSignature();
+    path_valid_ = true;
+    path_pub_->publish(path_);
+    RCLCPP_WARN(get_logger(),
+      "边缘直连兜底：goal (%.1f,%.1f) 在未知区；从已知边缘 (%.1f,%.1f) 直连，"
+      "已知段 %.1f m + 直连段 %.1f m = %zu 点（**粗糙路径**，非精细轨迹）",
+      goal_x_, goal_y_, edge_x, edge_y, walked, link_len, path_.poses.size());
+    return true;
+  }
+
+  // 世界坐标 → costmap 格的**原始值**（0–100 / -1），供未知空间策略判定。
+  //
+  // 为什么读 master costmap 而不是 static_layer：分层 costmap 的最终可通行性
+  // 由所有层共同决定（obstacle/voxel 层也会 marking），端点判定应与规划器看到的
+  // **同一份** master 栅格一致。越界返回 -1（未知），安全方向。
+  int cellValueAt(double wx, double wy) const
+  {
+    auto * cm = costmap_ros_ ? costmap_ros_->getCostmap() : nullptr;
+    if (cm == nullptr) {return -1;}
+    unsigned int mx = 0, my = 0;
+    if (!cm->worldToMap(wx, wy, mx, my)) {return -1;}
+    return static_cast<int>(cm->getCost(mx, my));
+  }
+
   void plan()
   {
     geometry_msgs::msg::PoseStamped start, goal;
@@ -430,6 +548,43 @@ private:
     goal.pose.orientation.w = 1.0;
 
     last_plan_s_ = now().seconds();
+
+    // ---- 未知空间策略（2026-11-08 用户裁定 Q9/Q11/Q21）----
+    // **为什么在规划前自己检查**：`track_unknown_space: true` 与 Navfn 的
+    // `allow_unknown`（默认 true）互相抵消，实际是"未知区随便穿"。
+    // 项目正与 Nav2 解绑，故"未知不可走"由我们自己的判据表达（不依赖 Navfn 私有参数），
+    // 换规划器时这条口径仍然成立。
+    //
+    // 检查的是**端点**而非整条路径：整条路径的可通行性由规划器在栅格上保证；
+    // 我们额外守的是"不要从没看过的地方起步、也不要奔着没看过的地方去"。
+    {
+      const auto cls_start = classifyCell(cellValueAt(x_, y_));
+      const auto cls_goal = classifyCell(cellValueAt(goal_x_, goal_y_));
+      // **Q12 边缘直连兜底**：goal 在未知区不是"不可规划"，而是"需要直连兜底"。
+      // 判据（用户裁定）：从已知区域边缘直接连一条直线到目标点 —— 这一步本来就是粗路径。
+      // 起点仍必须已知自由（车不能从没看过的地方出发）；goal 未知时走兜底分支。
+      if (cls_goal == CellClass::kUnknown && cls_start == CellClass::kFree &&
+        direct_link_enabled_)
+      {
+        if (tryDirectLinkFallback()) {return;}
+      }
+      const auto rej = planRejectionReason(cls_start, cls_goal);
+      if (rej != PlanRejection::kNone) {
+        path_valid_ = false;
+        // 限流：同一理由只在变化时告警，避免 20 Hz 刷屏
+        if (rej != last_rejection_) {
+          last_rejection_ = rej;
+          RCLCPP_WARN(get_logger(),
+            "拒绝规划（%s）：起点=(%.2f,%.2f) 类=%d 终点=(%.2f,%.2f) 类=%d "
+            "—— 未知/占据区不可作为起终点（Q9/Q11）",
+            toString(rej), x_, y_, static_cast<int>(cls_start),
+            goal_x_, goal_y_, static_cast<int>(cls_goal));
+        }
+        return;
+      }
+      last_rejection_ = PlanRejection::kNone;
+    }
+
     try {
       nav_msgs::msg::Path path = planner_->createPlan(start, goal, []() {return false;});
       if (path.poses.size() >= 2) {
@@ -573,6 +728,10 @@ private:
   double rate_hz_{20.0}, replan_period_s_{2.0}, replan_disp_m_{1.0}, goal_tol_m_{0.3};
   double max_path_age_s_{5.0};
   bool stop_on_invalid_{true};
+  // 未知空间策略的诊断状态（限流告警用）
+  PlanRejection last_rejection_{PlanRejection::kNone};
+  // 边缘直连兜底开关（Q12；缺省开启，0/false 用于对照）
+  bool direct_link_enabled_{true};
   double lookahead_m_{1.0}, k_yaw_{1.5}, v_max_{1.5}, w_max_{2.0};
   double v_ref_{1.0};
 

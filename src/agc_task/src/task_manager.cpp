@@ -241,6 +241,21 @@ public:
     epoch_sub_ = create_subscription<std_msgs::msg::Int32>(
       epoch_topic, rclcpp::QoS(1).transient_local(),
       [this](std_msgs::msg::Int32::SharedPtr m) {current_epoch_ = m->data;});
+    // （ADR-0038）：场景就绪状态——`scenario_reset` 的初始复位成功才为 true，超限失败为 false。
+    // 启动事务在复位之前先等它：否则任务可能在一个"从未完成初始复位"的场景上开跑。
+    // 空话题名 = 不等待（仅用于把 task_manager 单独起起来的台架 / 单测）。
+    scenario_ready_topic_ =
+      declare_parameter<std::string>("scenario_ready_topic", "/agc/scenario/ready");
+    scenario_ready_wait_s_ = declare_parameter<double>("scenario_ready_wait_s", 30.0);
+    if (!scenario_ready_topic_.empty()) {
+      scenario_ready_sub_ = create_subscription<std_msgs::msg::Bool>(
+        scenario_ready_topic_, rclcpp::QoS(1).transient_local(),
+        [this](std_msgs::msg::Bool::SharedPtr m) {
+          scenario_ready_ = m->data;
+          have_scenario_ready_ = true;
+          scenario_ready_rx_ = now();
+        });
+    }
 
     state_pub_ = create_publisher<AgcTaskState>(state_topic, 10);
     goal_pub_ = create_publisher<geometry_msgs::msg::PoseStamped>(goal_topic, 10);
@@ -395,6 +410,34 @@ private:
       res->message = "start rejected: already_active state=" + std::string(nameOf(state_));
       RCLCPP_WARN(get_logger(), "start 拒绝：active 重入（state=%s），不尝试 reset", nameOf(state_));
       return;
+    }
+    // （ADR-0038）：先等**场景就绪**（scenario_reset 的初始复位已成功）。
+    // 为什么必须在 reset 之前等：初始复位与本事务的复位是两件事——前者建立"场景真的
+    // 按布局摆好"这一事实（含读回校验），若它还没成功，本事务的 reset 只是在未就绪的
+    // 场景上再赌一次，而 GT 缓存可能压根还没建立。等不到就**如实拒绝** start，不假装成功。
+    if (!scenario_ready_topic_.empty()) {
+      const auto ready_deadline = std::chrono::steady_clock::now() +
+        std::chrono::duration<double>(scenario_ready_wait_s_);
+      while (!have_scenario_ready_ && std::chrono::steady_clock::now() < ready_deadline) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+      }
+      if (!have_scenario_ready_) {
+        res->success = false;
+        res->message = "start rejected: scenario_not_ready (no state on " +
+          scenario_ready_topic_ + " within " + std::to_string(scenario_ready_wait_s_) + " s)";
+        RCLCPP_WARN(
+          get_logger(), "start 拒绝：场景未就绪（%.1f s 内 %s 无状态；state 保持 %s）",
+          scenario_ready_wait_s_, scenario_ready_topic_.c_str(), nameOf(state_));
+        return;
+      }
+      if (!scenario_ready_) {
+        res->success = false;
+        res->message = "start rejected: scenario_not_ready (initial reset failed)";
+        RCLCPP_ERROR(
+          get_logger(), "start 拒绝：场景初始复位失败（%s=false；state 保持 %s）",
+          scenario_ready_topic_.c_str(), nameOf(state_));
+        return;
+      }
     }
     // 1) 先 reset（ADR-0020 的 #lessons 竞态修复：reset 在前，不得先校验 odom，否则自伤 ODOM_INVALID）
     // 复位失败最多重试 3 次（口径，ADR-0012）；重试不占 episode 预算（episode 计时自 start 成功起）
@@ -948,6 +991,12 @@ private:
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr air_conflict_sub_;   // 只读 control_conflict（ADR-0010）
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr air_odom_sub_;   // 起飞完成（悬停）判据
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr epoch_sub_;   // episode epoch 学习（ADR-0014）
+  // （ADR-0038）：场景就绪（初始复位结果）——start 事务的前置条件
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr scenario_ready_sub_;
+  std::string scenario_ready_topic_;
+  double scenario_ready_wait_s_{30.0};
+  bool scenario_ready_{false}, have_scenario_ready_{false};
+  rclcpp::Time scenario_ready_rx_{0, 0, RCL_ROS_TIME};
   rclcpp::Publisher<AgcTaskState>::SharedPtr state_pub_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr goal_pub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr goal_info_pub_;   // goal 有效性/身份/时刻伴随诊断（ADR-0013）

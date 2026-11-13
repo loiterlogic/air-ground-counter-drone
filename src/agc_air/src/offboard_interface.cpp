@@ -14,7 +14,9 @@ namespace
 constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 }
 
-OffboardInterface::OffboardInterface(rclcpp_lifecycle::LifecycleNode & node, const OffboardParams & params)
+OffboardInterface::OffboardInterface(
+  rclcpp_lifecycle::LifecycleNode & node,
+  const OffboardParams & params)
 : node_(node), params_(params)
 {
   // 局部原点：PX4 `TrajectorySetpoint.position` 在**局部 NED**（相对 EKF 原点），
@@ -53,8 +55,10 @@ void OffboardInterface::activate()
 {
   const auto reliable = rclcpp::QoS(rclcpp::KeepLast(1)).reliable();
   // PX4 uXRCE-DDS 侧的默认 writer 为 reliable，故用 reliable keep_last(1) 匹配
-  ocm_pub_ = node_.create_publisher<px4_msgs::msg::OffboardControlMode>(params_.ocm_topic, reliable);
-  sp_pub_ = node_.create_publisher<px4_msgs::msg::TrajectorySetpoint>(params_.setpoint_topic, reliable);
+  ocm_pub_ = node_.create_publisher<px4_msgs::msg::OffboardControlMode>(params_.ocm_topic,
+      reliable);
+  sp_pub_ = node_.create_publisher<px4_msgs::msg::TrajectorySetpoint>(params_.setpoint_topic,
+      reliable);
   cmd_pub_ = node_.create_publisher<px4_msgs::msg::VehicleCommand>(params_.command_topic, reliable);
   ocm_pub_->on_activate();
   sp_pub_->on_activate();
@@ -106,7 +110,8 @@ void OffboardInterface::publishControlMode()
   ocm_pub_->publish(m);
 }
 
-void OffboardInterface::sendSetpointNed(const Vector3 & pos_ned, const Vector3 & vel_ned,
+void OffboardInterface::sendSetpointNed(
+  const Vector3 & pos_ned, const Vector3 & vel_ned,
   const Vector3 & acc_ned, double yaw_ned)
 {
   if (!sp_pub_ || !sp_pub_->is_activated()) {return;}
@@ -129,7 +134,8 @@ void OffboardInterface::sendSetpointNed(const Vector3 & pos_ned, const Vector3 &
   ++setpoint_write_count_;
 }
 
-void OffboardInterface::publishSetpoint(const Vector3 & pos_enu, const Vector3 & vel_enu,
+void OffboardInterface::publishSetpoint(
+  const Vector3 & pos_enu, const Vector3 & vel_enu,
   const Vector3 & acc_cmd_enu, double yaw_enu)
 {
   // 位置项含 0.5·a·dt² 前馈；

@@ -15,7 +15,7 @@
   | `--backend` | `backend` | `full` |
 
 **脚本固定**（不暴露）：`seed=0`、`viz:=true`、`command_source=rl`、
-`shield=true`、`agent0_port=8888` / `agent1_port=8889`、PX4 错峰默认值。
+`shield=true`、`agent0_port=8888` / `agent1_port=8889`；PX4 启动由就绪门驱动（ADR-0038）。
 
 ⚠ 观测指向臂由**场景覆盖**决定（`s04` → `track`，机头对准 `/agc/targets` 感知航迹，**非** oracle）；
 `observe_yaw_mode` 的 launch 参数已清退，本脚本**不再**传它——
@@ -74,9 +74,11 @@ def expected_terminal_for_scene(scene):
 # 期望终态由 scenarios.yaml 场景登记提供
 EXPECTED_TERMINAL = 'TRACKING_SUCCESS'
 
-# PX4 错峰窗口（main.launch.py 默认值；进度提示必须覆盖，否则使用者以为卡死）
-PX4_OWN_DELAY_S = 25.0
-PX4_INTRUDER_DELAY_S = 35.0
+# PX4 启动的**提示窗口**（秒，仅用于进度文案；不是 launch 的等待时长）。
+# ADR-0038 起 PX4 由就绪门驱动（实体就绪 → 己方 PX4 → 己方 air odom 新鲜 → 入侵者 PX4），
+# 实测整段落在 20–40 s 量级；超过这个窗口仍未就绪就该提示"在等什么"，而不是以为卡死。
+PX4_OWN_HINT_S = 25.0
+PX4_INTRUDER_HINT_S = 35.0
 
 
 def gz_args(headless):
@@ -92,26 +94,31 @@ def gz_args(headless):
  留着只会静默改变视角 → 属脚枪，故移除（审查裁定）。
  需要取证时用 `scripts/demo/gui_capture.py`（自然运行下即可，见其文件头）。
     """
-    prefix = '-s -r -v 3 ' if headless else '-r -v 3 '
+    # **`--headless-rendering`（2026-11-08 修复）**：`-s` 只关掉渲染**客户端**，
+    # 传感器仍要在服务端渲染（rgbd + segmentation 各一个 pass）。不加这个 flag 时
+    # gz 走的是另一条（慢）路径 —— 实测 2048²@30Hz 双传感器：
+    #   无 flag: RTF **0.022**（仿真比实时慢 45 倍 → 起飞超时）
+    #   有 flag: RTF **1.000**
+    # 症状是 `air_hover_timeout`：仿真太慢，悬停在墙钟时限内没到位。
+    # 注意这不是"加速渲染"，而是**选对了渲染路径**；画质与像素结果不变。
+    prefix = '-s -r -v 3 --headless-rendering ' if headless else '-r -v 3 '
     return prefix + common.WORLD_SDF
 
 
 def viz_enabled(headless):
-    """RViz 叠加层是否该起：**只有 GUI 形态需要**。
+    """RViz 语义叠加层：GUI 与 headless **都起**（固定、不暴露开关）。
 
- 依据状态呈现口径：
-    "脚本用 `ros2 topic echo --once` 或轻量 Python 订阅（**不要**起 RViz 才能看状态）"。
- headless 用于经济快跑 / 服务器，本来就没有窗口可看，再起 `viz_markers` + `rviz2` +
- `static_tf`（[`main.launch.py::_viz_actions`](../../src/agc_task/launch/main.launch.py)）
- 只是白烧内存与 CPU（rviz2 ≈257 MB + viz_markers ≈90 MB，见 MAP_DESIGN_PLAYBOOK 16.2）。
-
-    原实现无条件 `viz:=true`，导致 `--headless` 也起 RViz。
+  语义层（viz_markers + rviz2 + static_tf）是 `/agc/obstacles` / `/agc/map` 等感知产物的
+  唯一可视化载体；headless 只是不给 gz 渲染客户端（`-s`），RViz 作为独立窗口照常工作。
+  代价：纯服务器无 DISPLAY 时 RViz 会空转/报错，且多占约 350 MB —— 用户明确接受，
+  不提供 `--viz` 之类开关（避免路线分支与产物口径歧义）。
     """
-    return not headless
+    return True
 
 
 def launch_argv(*, backend, scene, world_map, headless, extra=(), px4_run_root=None,
-                gui_render_backend='auto'):
+                gui_render_backend='auto', spawn_verify_timeout_s=None,
+                startup_reset_max_attempts=None, startup_reset_timeout_s=None):
     """组装 `ros2 launch agc_task main.launch.py …`（**不改**任何参数语义，只透传）。
 
  `px4_run_root`：PX4 每实例可写运行根（[ADR-0024 (d)](../../docs/adr/0024-multi-worker-isolation.md#top)）。
@@ -126,7 +133,6 @@ def launch_argv(*, backend, scene, world_map, headless, extra=(), px4_run_root=N
             'backend:=%s' % backend,
             'scene:=%s' % scene,
             'seed:=%d' % common.DEFAULT_SEED,
-            'world_map:=%s' % world_map,
             'gz_args:=%s' % gz_args(headless),
             # 2026-11-04：`observe_yaw_mode:=...` **不再传**——该 launch 参数已清退，
             # 现由场景覆盖决定（s04 → `track`）。ros2 launch 会**静默忽略**未声明参数，
@@ -135,8 +141,30 @@ def launch_argv(*, backend, scene, world_map, headless, extra=(), px4_run_root=N
             'viz:=%s' % ('true' if viz_enabled(headless) else 'false'),
             'gui_render_backend:=%s' % gui_render_backend,
             'agc_root:=%s' % common.ROOT]
+    # **只在用户显式指定地图时才传 `world_map`**（2026-11-11 实测 bug）。
+    #
+    # `main.launch.py` 的地图解析是**两级**（`scene_loader.load_scene`）：
+    #   launch 显式非空 > 场景登记(`scenarios.yaml` 的 `world_map:`) > 缺省 minimal。
+    # 改造前这里**无条件**传 `world_map:=yard`（`common.DEFAULT_MAP`），
+    # 于是"显式"永远成立 ⇒ **场景登记的地图永远不生效**，而且没有任何提示。
+    # 实测后果：`--scene dense_scene`（登记 `world_map: dense_map`）实际跑在 `yard` 上，
+    # 感知帧数 0、地图 occupied=0，而场景名与期望终态看起来都"正常"。
+    # 这与"路线分支治理"要防的静默漂移是同一类：配置写了、运行时不生效。
+    #
+    # 现在空串 ⇒ **不传该参数**，让场景登记生效；非空 ⇒ 用户显式覆盖（优先级不变）。
+    # 世界 spawn 门限（数值，非路线分支）：只在调用方**显式**给出时才传，
+    # 否则沿用 main.launch.py 的 60 s 默认值（既有行为不变）。
+    if spawn_verify_timeout_s is not None:
+        argv.append('spawn_verify_timeout_s:=%g' % float(spawn_verify_timeout_s))
+    # 复位就绪门的上界（数值，非路线分支）：只在显式给出时才传。
+    if startup_reset_max_attempts is not None:
+        argv.append('startup_reset_max_attempts:=%d' % int(startup_reset_max_attempts))
+    if startup_reset_timeout_s is not None:
+        argv.append('startup_reset_timeout_s:=%g' % float(startup_reset_timeout_s))
     if px4_run_root:
         argv.append('px4_run_root:=%s' % px4_run_root)
+    if world_map:
+        argv.append('world_map:=%s' % world_map)
     argv.extend(extra)
     return argv
 
@@ -195,11 +223,10 @@ class Progress:
             pass
         self.fh.write(s + '\n')
 
-    def step(self, title, status, note=''):
-        """`[00:05] 启动仿真世界 ......... OK` 形式的对齐行。"""
-        dots = '.' * max(3, 30 - len(title) - len(status))
-        self.line('%s %s %s%s' % (title, dots, status,
-                                  (' (%s)' % note) if note else ''))
+    def boot_stage(self, name, state, retries=0, reason=''):
+        """写统一的启动阶段事件；阶段耗时由调用方提供在 reason 中。"""
+        self.line('[boot stage=%s state=%s elapsed_s=%.3f retries=%d reason=%s]' % (
+            name, state, self.elapsed(), retries, reason or '-'))
 
     def block(self, lines):
         """整块输出（终态判定说明这种**有对齐**的文本），不加时间戳前缀。"""
@@ -215,6 +242,12 @@ class Progress:
     def raw(self, text):
         """只写日志（供长输出，不刷屏）。"""
         self.fh.write(text.rstrip('\n') + '\n')
+
+    def step(self, title, status, note=''):
+        """`[00:05] 启动仿真世界 ......... OK` 形式的对齐行。"""
+        dots = '.' * max(3, 30 - len(title) - len(status))
+        self.line('%s %s %s%s' % (title, dots, status,
+                                  (' (%s)' % note) if note else ''))
 
     def close(self):
         try:
@@ -359,10 +392,18 @@ class TaskMonitor:
     def spin(self, timeout=0.1):
         self.rclpy.spin_once(self.node, timeout_sec=timeout)
 
-    def wait_ready(self, timeout_s, require_air, progress, on_wait=None):
+    def wait_ready(self, timeout_s, require_air, progress, on_wait=None, process=None):
         t0 = time.monotonic()
         last = None
         while time.monotonic() - t0 < timeout_s:
+            # launch leader 先退出通常意味着 world/spawn/PX4 阶段已经失败。
+            # 必须在这里短路；否则监督器会把真实根因掩盖成“整链就绪超时”。
+            if process is not None:
+                exit_code = process.poll()
+                if exit_code is not None:
+                    rep = self.ready_report(require_air)
+                    rep['_launch_exit_code'] = exit_code
+                    return False, rep
             self.spin()
             rep = self.ready_report(require_air)
             ok = all(rep.values())
@@ -598,15 +639,24 @@ class DemoRun:
                                  panel=self.panel)
         self.progress.line('run_demo 启动：%s' % ' '.join(self.opts.get('_argv') or []))
         try:
+            self.progress.boot_stage('preflight', 'start', reason='阻断性预检已通过')
             self.progress.step('环境预检', 'OK', '由 run_demo.sh doctor 项复用，详见 doctor.log')
+            self.progress.boot_stage('preflight', 'ready', reason='doctor checks passed')
             self._timeline('环境预检 OK（阻断性检查由 run_demo.sh doctor 项复用）')
+            self.progress.boot_stage('world', 'start')
             self._phase_launch()
+            self.progress.boot_stage('world', 'ready', reason='launch process started')
+            self.progress.boot_stage('readiness', 'start')
             self._phase_wait_ready()
+            self.progress.boot_stage('readiness', 'ready', reason='all freshness checks passed')
+            self.progress.boot_stage('task', 'start')
             self._phase_start_task()
+            self.progress.boot_stage('task', 'ready', reason='task start service accepted')
             self._phase_follow()
             self._phase_collect()
         except common.DemoError as e:
             self.result['exit_reason'] = 'demo_error'
+            self.result['failure_stage'] = 'readiness' if '就绪' in e.message or '启动编排' in e.message else 'task'
             self.result['error'] = {'message': e.message, 'hint': e.hint}
             self.progress.line('失败：%s' % e.message)
             for h in (e.hint or []):
@@ -646,7 +696,10 @@ class DemoRun:
                           world_map=self.opts['map'], headless=self.opts['headless'],
                           extra=self.opts.get('extra') or (),
                           px4_run_root=self.px4_run_root,
-                          gui_render_backend=self.opts.get('gui_render_backend') or 'auto')
+                          gui_render_backend=self.opts.get('gui_render_backend') or 'auto',
+                          spawn_verify_timeout_s=self.opts.get('spawn_verify_timeout_s'),
+                          startup_reset_max_attempts=self.opts.get('startup_reset_max_attempts'),
+                          startup_reset_timeout_s=self.opts.get('startup_reset_timeout_s'))
         self.result['launch_argv'] = argv
         self.result['px4_run_root'] = self.px4_run_root
         self.result['launch_env'] = {
@@ -680,8 +733,8 @@ class DemoRun:
                            % (self.opts['backend'], self.opts['scene'],
                               self.opts['map'], self.pgid))
         if self.opts['backend'] == 'full':
-            self.progress.raw('# PX4 错峰：own %.0fs / intruder %.0fs（ADR-0027）'
-                              % (PX4_OWN_DELAY_S, PX4_INTRUDER_DELAY_S))
+            self.progress.raw('# PX4 就绪门：实体就绪 → own → own air odom 新鲜 → intruder'
+                              '（ADR-0038；典型 20–40 s）')
 
     def _phase_wait_ready(self):
         self.monitor = TaskMonitor()
@@ -691,35 +744,47 @@ class DemoRun:
 
         def on_wait(rep):
             el = time.monotonic() - t0
-            # PX4 错峰窗口必须**显式提示**，否则使用者以为卡死
+            # 就绪门窗口必须**显式提示**（在等什么），否则使用者以为卡死
             if require_air and el > 3 and not announced['px4_own']:
                 announced['px4_own'] = True
-                self.progress.step('PX4 己方实例', '等待中', '错峰 %.0fs' % PX4_OWN_DELAY_S)
-            if require_air and el > PX4_OWN_DELAY_S and not announced['px4_intruder']:
+                self.progress.step('PX4 己方实例', '等待中',
+                                   '等实体就绪门（ADR-0038，不是固定延时）')
+            if require_air and el > PX4_OWN_HINT_S and not announced['px4_intruder']:
                 announced['px4_intruder'] = True
                 self.progress.step('PX4 入侵者实例', '等待中',
-                                   '错峰 %.0fs，仍在等 air odom / gt 新鲜' % PX4_INTRUDER_DELAY_S)
+                                   '仍在等 air odom / gt 新鲜（ADR-0038 就绪门）')
             pending = [k for k, v in rep.items() if not v]
             if pending:
                 self.progress.raw('  [%.1fs] 未就绪：%s' % (el, ', '.join(pending)))
 
         ok, rep = self.monitor.wait_ready(self.opts['ready_timeout_s'], require_air,
-                                          self.progress, on_wait)
+                                           self.progress, on_wait, process=self.proc)
         self.result['phases']['ready'] = {'ok': ok, 'checks': rep,
                                          'wall_s': round(time.monotonic() - t0, 3),
                                          'ready_timeout_s': self.opts['ready_timeout_s']}
         if not ok:
-            missing = [k for k, v in rep.items() if not v]
-            raise common.DemoError(
-                '整链就绪超时（%.0f s）' % self.opts['ready_timeout_s'],
-                ['未就绪项：%s' % ', '.join(missing),
-                 'PX4 错峰 25/35 s 是正常的；若超 90 s 仍未就绪，看日志：%s'
-                 % launch_log_path(self.run_dir),
-                 '常见原因：残留进程 / DDS 段过多 / 端口被占 → ./run_demo.sh doctor'],
-                exit_code=5, detail={'ready': rep})
+            launch_exit = rep.get('_launch_exit_code')
+            missing = [k for k, v in rep.items() if not v and k != '_launch_exit_code']
+            if launch_exit is not None:
+                message = '启动编排进程提前退出（exit_code=%s）' % launch_exit
+                hints = [
+                    '失败阶段：world/entities/PX4 启动编排（launch 已退出）',
+                    '未就绪项：%s' % (', '.join(missing) or '无（launch 自身失败）'),
+                    '最近日志：%s' % launch_log_path(self.run_dir),
+                ]
+            else:
+                message = '整链就绪超时（%.0f s）' % self.opts['ready_timeout_s']
+                hints = [
+                    '未就绪项：%s' % ', '.join(missing),
+                    'PX4 由就绪门驱动（ADR-0038）：典型 20–40 s 就绪；若超 90 s 仍未就绪，'
+                    '看日志里 startup_gate 报的"未就绪"项：%s' % launch_log_path(self.run_dir),
+                    '常见原因：残留进程 / DDS 段过多 / 端口被占 → ./run_demo.sh doctor',
+                ]
+            raise common.DemoError(message, hints, exit_code=5,
+                                   detail={'ready': rep})
         if require_air:
-            self.progress.step('PX4 己方实例', 'OK', 'air odom 新鲜（错峰 %.0fs）' % PX4_OWN_DELAY_S)
-            self.progress.step('PX4 入侵者实例', 'OK', '错峰 %.0fs' % PX4_INTRUDER_DELAY_S)
+            self.progress.step('PX4 己方实例', 'OK', 'air odom 新鲜（就绪门通过）')
+            self.progress.step('PX4 入侵者实例', 'OK', '就绪门通过（own 链路已建立）')
         self.progress.step('任务层就绪', 'OK', '/agc/task/start 可用且 gt/cmd/odom 新鲜')
         if self.timeline is not None:
             self._timeline('整链就绪：%s' % ', '.join(

@@ -1,12 +1,13 @@
 """机载正下视（nadir）相机 —— 契约闸门（纯静态，不启任何仿真进程）。
 
-守护 ADR-0030 的五条不变量。每一条都对应一种**曾经会静默失败**的错法：
+守护相机链的静态不变量。每一条都对应一种**曾经会静默失败**的错法：
 
-1. **默认臂没有相机**：`gz_x500`（默认 `px4_sim_model`）的启动路径里不得出现任何相机模型。
-   历史坑：bridge.yaml 一旦有相机条目，默认臂的 `ros2 topic list` 也会出现
- `/agc/air/nadir/*`（桥节点自己是订阅者），**看起来有相机、其实一帧都没有**
- （见 experiments/p1-4//evidence/camera-ownership-finding.md）。
- ⇒ 判据必须落在"模型资产与机型注入"上，不能落在"话题是否存在"上。
+1. **默认机型即带相机**（2026-11-08 用户裁定，相机是平台基本能力）：
+   两处 launch 的 `px4_sim_model` 默认值须为 `gz_agc_x500_nadir`，且该模型 SDF 含相机传感器。
+   历史坑：bridge.yaml 一旦有相机条目，无相机机型下 `ros2 topic list` 也会出现
+  `/agc/air/nadir/*`（桥节点自己是订阅者），**看起来有相机、其实一帧都没有**
+  （见 experiments/p1-4//evidence/camera-ownership-finding.md）。
+  ⇒ 判据必须落在"模型资产与机型注入"上，不能落在"话题是否存在"上。
 
 2. **模型本身**：`agc_x500_nadir` 存在、`<model name>` 正确（决定实体名 `agc_x500_nadir_0`）、
  恰好 1 个 `type="camera"` 传感器、相机挂在**独立 link + fixed joint** 上
@@ -53,10 +54,17 @@ PX4_AIRFRAMES = (ROOT / 'toolchain' / 'PX4-Autopilot' / 'ROMFS' / 'px4fmu_common
 
 MODEL_NAME = 'agc_x500_nadir'
 SIM_MODEL = 'gz_' + MODEL_NAME
-GZ_IMAGE_TOPIC = '/agc/air/nadir'
-GZ_INFO_TOPIC = '/agc/air/nadir/camera_info'
+# rgbd_camera 在 <topic> 后**加后缀**（2026-11-08 实测；旧 camera 是直接用 <topic>）。
+GZ_RGBD_BASE = '/agc/air/nadir'
+GZ_IMAGE_TOPIC = GZ_RGBD_BASE + '/image'
+GZ_DEPTH_TOPIC = GZ_RGBD_BASE + '/depth_image'
+GZ_INFO_TOPIC = GZ_RGBD_BASE + '/camera_info'
 ROS_IMAGE_TOPIC = '/agc/air/nadir/image_raw'
+ROS_DEPTH_TOPIC = '/agc/air/nadir/depth'
 ROS_INFO_TOPIC = '/agc/air/nadir/camera_info'
+GZ_SEG_TOPIC = '/agc/air/nadir/seg'
+ROS_SEG_LABELS_TOPIC = GZ_SEG_TOPIC + '/labels_map'
+ROS_SEG_INFO_TOPIC = GZ_SEG_TOPIC + '/camera_info'
 
 PITCH_TOL = 1e-3          # 裁定 1：数值断言容差
 AXIS_Z_TOL = 1e-2         # 裁定 1：语义断言容差
@@ -78,10 +86,15 @@ def _strip_comments(sdf: str) -> str:
     return re.sub(r'<!--.*?-->', '', sdf, flags=re.S)
 
 
-def _sensor_block(sdf: str) -> str:
-    """取 `<sensor ... type="camera">` 到其 `</sensor>` 之间的整段。"""
-    m = re.search(r'<sensor\b[^>]*type\s*=\s*"camera"[^>]*>(.*?)</sensor>', sdf, re.S)
-    assert m, '模型里找不到 type="camera" 的 sensor'
+def _sensor_block(sdf: str, sensor_type: str = 'rgbd_camera') -> str:
+    """取指定 type 的 `<sensor ...>` 到其 `</sensor>` 之间的整段。
+
+ 2026-11-08：主相机由 `camera` 改为 `rgbd_camera`（需要深度来消除侧墙视差）。
+    """
+    m = re.search(
+        r'<sensor\b[^>]*type\s*=\s*"%s"[^>]*>(.*?)</sensor>' % re.escape(sensor_type),
+        sdf, re.S)
+    assert m, '模型里找不到 type="%s" 的 sensor' % sensor_type
     return m.group(0)
 
 
@@ -99,40 +112,41 @@ def _effective_axis_z(pitch: float) -> float:
 
 
 # --------------------------------------------------------------------------------------
-# 1. 默认臂不得有相机
+# 1. 默认机型即带相机（2026-11-08 用户裁定：相机是平台基本能力）
 # --------------------------------------------------------------------------------------
-def test_default_model_has_no_camera_anywhere():
-    """默认 `px4_sim_model` 的启动路径**不包含任何相机模型资产**。
+def test_default_model_has_nadir_camera():
+    """两处 launch 的 `px4_sim_model` 默认值须为 `gz_agc_x500_nadir`，模型 SDF 含相机传感器。
 
- 2026-11-05 更新：默认机型由 PX4 官方 `gz_x500` 改为本仓 `gz_agc_x500`
- （= x500 + **纯视觉**青色高亮球，无 camera 传感器；原因：默认 x500 在 50 m 正俯视下
- 仅约 5 px，GUI 里看不见我方机）。本条的**语义未变**——默认臂仍然没有相机；
- 变的只是默认机型名，故断言改为"默认值 ∈ {无相机的本仓高亮机型, PX4 官方 x500}"。
+  相机链的分割标签是 /agc/map 的唯一障碍来源，故默认即带相机、不再 opt-in。
+  历史 run 证据按旧机型（gz_agc_x500）封存、不回溯改写；显式可换回旧机型复现。
     """
     for path in (W6_LAUNCH, AIR_LAUNCH):
         src = _read(path)
         m = re.search(r"DeclareLaunchArgument\(\s*['\"]px4_sim_model['\"]\s*,\s*"
                       r"default_value\s*=\s*['\"]([^'\"]+)['\"]", src)
         assert m, '%s 里找不到 px4_sim_model 的 DeclareLaunchArgument' % path.name
-        assert m.group(1) in ('gz_agc_x500', 'gz_x500'), (
-            '%s 的 px4_sim_model 默认值应为无相机机型（gz_agc_x500 或 gz_x500），实际 %r'
-            % (path.name, m.group(1)))
-        if m.group(1) == 'gz_agc_x500':
-            sdf = _read(ROOT / 'src' / 'agc_sim' / 'models' / 'agc_x500' / 'model.sdf')
-            assert 'type="camera"' not in _strip_comments(sdf), (
-                '%s 默认 gz_agc_x500 但 agc_x500 模型含相机传感器（默认臂必须无相机）'
-                % path.name)
+        assert m.group(1) == SIM_MODEL, (
+            '%s 的 px4_sim_model 默认值应为带相机机型 %s，实际 %r'
+            % (path.name, SIM_MODEL, m.group(1)))
         assert 'own_repo_model' in src, (
             '%s 缺少本仓机型条件注入（own_repo_model）——无条件注入会让 PX4 官方臂也走新路径'
             % path.name)
         assert "nadir_sim_model = 'gz_%s'" % MODEL_NAME in src, (
             '%s 的 nadir 机型名应与模型名对齐（gz_%s）' % (path.name, MODEL_NAME))
         assert "highlight_sim_model = 'gz_agc_x500'" in src, (
-            '%s 缺少高亮机型名常量 highlight_sim_model（gz_agc_x500）' % path.name)
+            '%s 缺少旧机型常量 highlight_sim_model（gz_agc_x500，复现历史 run 用）' % path.name)
+    sdf = _strip_comments(_read(MODEL_SDF))
+    assert 'type="rgbd_camera"' in sdf, (
+        '默认机型对应的 nadir 模型必须是 rgbd_camera（需要深度来消除侧墙视差）')
+    assert 'type="segmentation"' in sdf, '默认机型对应的 nadir 模型 SDF 必须含分割传感器'
 
 
-def test_default_arm_model_is_px4_x500_without_camera_sensor():
-    """PX4 官方 x500/x500_base 里确实没有相机传感器（默认臂"无相机"的物理依据）。"""
+def test_px4_official_x500_has_no_camera_sensor():
+    """PX4 官方 x500/x500_base 里确实没有相机传感器。
+
+  2026-11-08 起默认机型已是本仓 `gz_agc_x500_nadir`，本条不再是"默认臂依据"，
+  而是**显式换回官方机型时无相机**的事实依据（换回后感知链无输入，属降级运行）。
+  """
     models = ROOT / 'toolchain' / 'PX4-Autopilot' / 'Tools' / 'simulation' / 'gz' / 'models'
     if not models.is_dir():
         import pytest
@@ -141,7 +155,7 @@ def test_default_arm_model_is_px4_x500_without_camera_sensor():
         f = models / name / 'model.sdf'
         assert f.is_file(), '缺少 PX4 官方模型 %s' % f
         assert 'type="camera"' not in _read(f) and "type='camera'" not in _read(f), (
-            'PX4 官方 %s 不应含相机传感器（默认臂无相机的依据）' % name)
+            'PX4 官方 %s 不应含相机传感器（显式换官方机型时无相机的事实依据）' % name)
 
 
 # --------------------------------------------------------------------------------------
@@ -163,10 +177,19 @@ def test_model_assets_exist_and_name_matches():
         % (MODEL_NAME, MODEL_NAME))
 
 
-def test_exactly_one_camera_sensor_and_mounted_on_own_link():
+def test_exactly_one_rgbd_sensor_and_mounted_on_own_link():
+    """恰好 1 个 rgbd 相机（2026-11-08 由 `camera` 改为 `rgbd_camera`）。
+
+ **为什么必须是 rgbd 而不是纯 camera**：分割标签只说"这个像素是障碍"，不说"多高"。
+ 投到地面平面会把高层建筑的侧墙糊成影子（yard 实测 IoU 0.363、面积膨胀 2.17×）；
+ 有了深度才能反投影出真实 3D 点。rgbd 的 color 与 depth 同一次渲染 ⇒ 像素严格对齐。
+    """
     sdf = _strip_comments(_read(MODEL_SDF))
-    n = len(re.findall(r'type\s*=\s*["\']camera["\']', sdf))
-    assert n == 1, '必须恰好 1 个 type="camera" 传感器，实际 %d' % n
+    n = len(re.findall(r'type\s*=\s*["\']rgbd_camera["\']', sdf))
+    assert n == 1, '必须恰好 1 个 type="rgbd_camera" 传感器，实际 %d' % n
+    # 不得再残留纯 camera（会与 rgbd 抢 <topic> 后缀，话题名冲突）
+    assert not re.search(r'type\s*=\s*["\']camera["\']', sdf), (
+        '不得同时保留 type="camera"：rgbd 已提供 RGB，两者会抢同一 <topic> 前缀')
     # 相机必须在**独立 link** 上，且该 link 用 fixed joint 连到 base_link
     assert '<link name="nadir_cam_link">' in sdf, '相机应挂在独立 link nadir_cam_link 上'
     m = re.search(r'<joint\s+name\s*=\s*["\'][^"\']+["\']\s+type\s*=\s*["\']fixed["\']\s*>(.*?)</joint>',
@@ -217,32 +240,55 @@ def _bridge_entries():
 
 
 def test_sdf_topics_match_bridge_verbatim():
+    """rgbd 的话题名 = `<topic>` + 固定后缀（实测），桥必须逐字对上。
+
+ 与旧 `camera` 的关键差异：旧版必须**显式**写 `<camera_info_topic>`（否则派生成
+ `<topic>_info`）；rgbd 实测自己按 `<topic>/camera_info` 派生，正是我们要的名字，
+ 故**不需要**显式写——这里反过来守"不要写"，避免与派生值冲突。
+    """
     sdf = _strip_comments(_read(MODEL_SDF))
     blk = _sensor_block(sdf)
     m = re.search(r'<topic>\s*([^<\s]+)\s*</topic>', blk)
     assert m, 'SDF 缺少 <topic>'
-    gz_image = '/' + m.group(1).lstrip('/')
-    m = re.search(r'<camera_info_topic>\s*([^<\s]+)\s*</camera_info_topic>', blk)
-    assert m, ('SDF 必须在 <camera> 内显式写 <camera_info_topic>；'
-               '否则 gz-sensors 按 <topic>_info 派生，与桥的 %s 不符' % GZ_INFO_TOPIC)
-    gz_info = '/' + m.group(1).lstrip('/')
+    base = '/' + m.group(1).lstrip('/')
+    assert base == GZ_RGBD_BASE, 'gz rgbd 基础话题应为 %s，实际 %s' % (GZ_RGBD_BASE, base)
+    assert '<camera_info_topic>' not in blk, (
+        'rgbd 不需要显式 <camera_info_topic>：它按 <topic>/camera_info 派生，'
+        '写死可能与派生值冲突（实测四话题名见 SDF 注释）')
+    gz_image = base + '/image'
+    gz_info = base + '/camera_info'
+    gz_depth = base + '/depth_image'
 
-    assert gz_image == GZ_IMAGE_TOPIC, (
-        'gz 图像话题应为 %s，实际 %s' % (GZ_IMAGE_TOPIC, gz_image))
-    assert gz_info == GZ_INFO_TOPIC, (
-        'gz 内参话题应为 %s，实际 %s' % (GZ_INFO_TOPIC, gz_info))
+    assert gz_image == GZ_IMAGE_TOPIC
+    assert gz_info == GZ_INFO_TOPIC
+    assert gz_depth == GZ_DEPTH_TOPIC
 
     entries = _bridge_entries()
-    assert (ROS_IMAGE_TOPIC, gz_image) in entries, (
-        'bridge.yaml 缺少 (%s, %s) 条目；现有配对：%r'
-        % (ROS_IMAGE_TOPIC, gz_image, sorted(entries)))
+    # **2026-11-09 判据反转（用户裁定：退役 RGB 原图桥条目）**：
+    # RGB 流**零订阅者**（ADR-0030 的「不接任务链」一节早已登记），却占 1152² 下 3.80 MB/帧 =
+    # 感知总带宽的 30%。实测删掉它后 RTF 提升：1152² 0.778→0.853、1536² 0.456→0.567。
+    # 故判据从"必须有"反转为"**必须没有**"，防止被"看着少了一条"顺手补回。
+    assert (ROS_IMAGE_TOPIC, gz_image) not in entries, (
+        'RGB 原图桥条目已于 2026-11-09 退役（零消费者 + 占 30% 带宽），'
+        '不得补回；需要取证/测绘时临时加回并同步改本判据。现有配对：%r'
+        % (sorted(entries),))
     assert (ROS_INFO_TOPIC, gz_info) in entries, (
         'bridge.yaml 缺少 (%s, %s) 条目' % (ROS_INFO_TOPIC, gz_info))
 
-    img = entries[(ROS_IMAGE_TOPIC, gz_image)]
+    assert (ROS_DEPTH_TOPIC, gz_depth) in entries, (
+        'bridge.yaml 缺少深度条目 (%s, %s) —— 没有深度就无法反投影，'
+        '感知链会退化成"把侧墙糊成影子"' % (ROS_DEPTH_TOPIC, gz_depth))
+    # nadir 的 /points 必须**不**桥（纯带宽浪费，本链不用）。
+    # 注意只看 nadir 前缀：车的激光点云 /agc/sim/car_points 是合法条目，不能误伤。
+    assert not any((r or '').startswith(GZ_RGBD_BASE + '/points') or
+                   (g or '').startswith(GZ_RGBD_BASE + '/points')
+                   for r, g in entries), (
+        '不得桥接 rgbd 的 /points：本链只要 depth，点云是纯带宽浪费')
+
     info = entries[(ROS_INFO_TOPIC, gz_info)]
-    for e, ros_t, gz_t in ((img, 'sensor_msgs/msg/Image', 'gz.msgs.Image'),
-                           (info, 'sensor_msgs/msg/CameraInfo', 'gz.msgs.CameraInfo')):
+    depth = entries[(ROS_DEPTH_TOPIC, gz_depth)]
+    for e, ros_t, gz_t in ((info, 'sensor_msgs/msg/CameraInfo', 'gz.msgs.CameraInfo'),
+                           (depth, 'sensor_msgs/msg/Image', 'gz.msgs.Image')):
         assert e.get('ros_type_name') == ros_t, '%s 的 ros_type_name 应为 %s' % (ros_t, ros_t)
         assert e.get('gz_type_name') == gz_t, '%s 的 gz_type_name 应为 %s' % (ros_t, gz_t)
         assert e.get('direction') == 'GZ_TO_ROS', '%s 的 direction 应为 GZ_TO_ROS' % ros_t
@@ -252,10 +298,16 @@ def test_sdf_topics_match_bridge_verbatim():
 
 
 def test_bridge_comment_declares_no_consumer_and_topic_vs_frames():
-    """注释必须写清口径——这两句是历史踩坑的防复发标记。"""
+    """注释必须写清口径——这两句是历史踩坑的防复发标记。
+
+  感知地图链立项后：RGB 原图仍仅取证/测绘；**分割标签**由感知地图链消费。
+  故断言改为「RGB 仅取证 + 标签消费去向明确」，不再要求「整体无消费者」。
+    """
     src = _read(BRIDGE)
-    assert '无消费者' in src and ('取证' in src or '测绘' in src), (
-        'bridge.yaml 的 nadir 段注释必须写明"无消费者、仅取证/测绘"')
+    assert ('取证' in src or '测绘' in src), (
+        'bridge.yaml 的 nadir 段注释必须写明 RGB 图像仅取证/测绘')
+    assert '分割标签' in src and '/agc/obstacles' in src, (
+        'bridge.yaml 的 nadir 段注释必须写明分割标签由感知地图链消费（→ /agc/obstacles → /agc/map）')
     assert '话题存在 ≠ 有帧' in src, (
         'bridge.yaml 的 nadir 段注释必须写明"话题存在 ≠ 有帧"的判据')
 
@@ -286,10 +338,13 @@ def test_no_new_airframe_in_toolchain():
 
 
 def test_no_vision_consumer_of_nadir_image():
-    """图像不得被任何节点订阅（无消费者、不接任务链）。
+    """RGB 原图不得被任何节点订阅（仍仅取证/测绘、不接任务链）。
+
+  注意区分：**RGB 原图**无消费者；**分割标签**（`/agc/air/nadir/seg/labels_map`）
+  由感知地图链消费（→ /agc/obstacles → /agc/map），两者是不同的桥条目。
 
  **判据是"有没有订阅者"，不是"代码里有没有出现 nadir 字样"**：
- 机型选择（`nadir_sim_model` / `nadir_enabled`）必然出现该词，那不是消费者。
+ 机型选择（`nadir_sim_model` / `own_repo_model`）必然出现该词，那不是消费者。
  第一版按"出现即违规"判，把 launch 里的机型开关全判成消费者——过宽的闸门会被人关掉，
  等于没有闸门。故改为查**订阅/回调**形态：
  * C++/Python 里对 `ROS_IMAGE_TOPIC` 字面量的订阅调用；
@@ -485,3 +540,54 @@ def test_targets_publisher_is_still_gt_adapter_only():
     assert not non_gt, (
         '/agc/targets 的发布者必须只有 gt_adapter（识别仍靠真值，ADR-0009 (a2)），另发现：%r。'
         '全部发布点：%r' % (non_gt, publishers))
+
+
+# --------------------------------------------------------------------------------------
+# 6. 感知地图链：分割传感器 / 桥条目 / 障碍标签（立项后新增的正向守护）
+# --------------------------------------------------------------------------------------
+def test_segmentation_sensor_mounts_with_rgb_camera():
+    """分割传感器与 RGB 相机共 link / 共姿态 / 共内参，且只出一个 labels_map 话题。"""
+    sdf = _strip_comments(_read(MODEL_SDF))
+    n = len(re.findall(r'type\s*=\s*["\']segmentation["\']', sdf))
+    assert n == 1, '必须恰好 1 个 type="segmentation" 传感器，实际 %d' % n
+    m = re.search(r'<sensor\b[^>]*type\s*=\s*"segmentation"[^>]*>(.*?)</sensor>', sdf, re.S)
+    assert m, '找不到 segmentation sensor'
+    blk = m.group(0)
+    assert '<segmentation_type>semantic</segmentation_type>' in blk, '分割类型应为 semantic'
+    assert _pose_of(blk)[4] == _pose_of(_sensor_block(sdf))[4], (
+        '分割相机 pitch 必须与 RGB 相机一致（共姿态）')
+    t = re.search(r'<topic>\s*([^<\s]+)\s*</topic>', blk)
+    assert t and '/' + t.group(1).lstrip('/') == GZ_SEG_TOPIC, (
+        '分割相机 gz 话题应为 %s' % GZ_SEG_TOPIC)
+    ci = re.search(r'<camera_info_topic>\s*([^<\s]+)\s*</camera_info_topic>', blk)
+    assert ci and '/' + ci.group(1).lstrip('/') == ROS_SEG_INFO_TOPIC, (
+        '分割相机须显式写 <camera_info_topic>（gz 实测会发布该话题）')
+    # 与 RGB 相机同一独立 link（未在别处另起 link）
+    link_m = re.search(r'<link\s+name\s*=\s*["\']nadir_cam_link["\']\s*>(.*?)</link>', sdf, re.S)
+    assert link_m and 'type="segmentation"' in link_m.group(1), (
+        '分割传感器必须与 RGB 相机同挂 nadir_cam_link（保证共位姿/共内参）')
+
+
+def test_segmentation_labels_bridge_entry():
+    """labels_map + 分割 camera_info 桥条目存在且类型 / 方向 / QoS 正确。"""
+    entries = _bridge_entries()
+    for topic, ros_type, gz_type in (
+        (ROS_SEG_LABELS_TOPIC, 'sensor_msgs/msg/Image', 'gz.msgs.Image'),
+        (ROS_SEG_INFO_TOPIC, 'sensor_msgs/msg/CameraInfo', 'gz.msgs.CameraInfo'),
+    ):
+        key = (topic, topic)
+        assert key in entries, 'bridge.yaml 缺少 %s 条目' % topic
+        e = entries[key]
+        assert e.get('ros_type_name') == ros_type, '%s 的 ros_type_name' % topic
+        assert e.get('gz_type_name') == gz_type, '%s 的 gz_type_name' % topic
+        assert e.get('direction') == 'GZ_TO_ROS'
+        assert e.get('qos_profile') == 'SENSOR_DATA'
+
+
+def test_obstacles_carry_segmentation_label():
+    """世界生成链给每个障碍 model 打 gz-sim-label-system 标签（地面/背景不显影）。"""
+    src = _read(ROOT / 'src' / 'agc_sim' / 'launch' / 'world_bringup.launch.py')
+    assert 'gz-sim-label-system' in src, '障碍 SDF 注入链缺少 label 插件'
+    assert 'OBSTACLE_SEG_LABEL' in src and '_label_plugin_sdf' in src, (
+        'label 应以单一常量 + 单一辅助函数注入，避免两处重复定义')
+    assert 'gz::sim::systems::Label' in src

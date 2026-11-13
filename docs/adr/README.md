@@ -6,7 +6,20 @@
 > 用法：查历史决策先扫本表 → 只打开命中的 1–2 篇；**不要**靠 `grep` 全目录。
 > 全量决策仍以各 ADR 正文为准；本表只是索引。状态说明见 [目录与命名规范](../conventions/目录与命名规范.md#10-产物分类与生命周期)。
 > **旧编号体系已退役**：各篇正文里「由 ADR-00xx 合并」的编号属 2026-11-02 重写前的旧体系，
-> 对应文件已删除；现行有效编号只有本表 0001–0033（见 [引用与注释纪律](../conventions/引用与注释纪律.md#rule)）。
+> 对应文件已删除；现行有效编号只有本表 0001–0044（见 [引用与注释纪律](../conventions/引用与注释纪律.md#rule)）。
+> ⚠ **编号会被复用的坑**：旧体系的 0035（拦截口径，已合并进 [0011](./0011-interception-and-fire-control.md)）
+> 与新体系的 [0035](./0035-perception-map-representation-and-unknown-policy.md) **编号相同、含义无关**。
+> 读正文遇到 `ADR-0035` 时须先判断它出现在「由 … 合并」的历史句里（= 旧体系）还是普通引用里（= 新体系）。
+
+## ADR 是记录，不是对未来的限制
+
+> 本节是**索引级说明**（不归属于任何单篇 ADR）：ADR 的作用、改动规程与引用口径。
+
+- **作用**：ADR 记录**当前生效的设计口径与当时的理由**，供后来者复核；它**不**禁止未来改造。项目做不出好东西时，改造是必然的，确认过后即可改 ADR。
+- **改法（supersession，保留审计轨迹）**：① 新 ADR 标 `supersedes: ADR-NNNN`；② 旧 ADR 的 `Status` 标 `superseded by ADR-NNNN`，**正文与历史行逐字保留**，演进记录追加一行；③ 确认人 = **用户裁定**（如 2026-11-04 对视觉定位路径的删除裁定）；④ 本索引由 `scripts/adr_index.py` 重新生成。理由：论文与复盘需要「当时为什么这么判」的轨迹，静默改写旧结论等于抹掉证据。
+- **硬约束变更另走更重口径**：[ADR-0020](0020-package-boundaries-and-runtime-topology.md#hard-constraints)里的不可变约束（坐标系、唯一执行口、终态语义、接口语义）变更，不受「一般改造」覆盖，须单独复核。
+- **确认过后修改 ≠ 静默改写**：旧结论保留可读、可查，新结论另起一篇并指向它。
+- **引用口径**：跨文档引用决策**只**用 `ADR-NNNN` 编号 + 稳定锚点，不用任何过程 / 评审 / 章节编号；详见 [引用与注释纪律](../conventions/引用与注释纪律.md#rule)。
 
 ## 怎么用
 
@@ -19,7 +32,7 @@
 
 ## 统计
 
-- 合计 **33** 篇：`accepted` 32 篇、`deferred` 0 篇、其它 1 篇
+- 合计 **44** 篇：`accepted` 43 篇、`deferred` 0 篇、其它 1 篇
 
 ## 索引表
 
@@ -31,13 +44,13 @@
 | [0004](./0004-ground-control-rl-primary-and-nav2-safety.md) | 地面控制栈：RL 主控、Nav2 安全层与共享控制库 | accepted（2026-11-02 由 0004 / 0018 / 0026 合并；分层口径、`agc_control` 归属与标定值均未变） | **RL 主控**：RL 直接输出 `cmd_vel`，经 Nav2 `collision_monitor`（按多边形区域缩放 / 急停）收敛到唯一执行口 `/agc/ground/cmd_vel`。链路顺序固定为 `RL → cmd_vel_raw → collision_monitor → 唯… |
 | [0005](./0005-px4-toolchain-and-link.md) | PX4 工具链：uXRCE-DDS 链路、本体依赖与 pin 清单 | accepted（2026-11-02 由 0005 / 0012 / 0065 / 0067 / 0068 合并；链路协议、本体形态与 pin 纪律结论未变，agent 版本适用值统一为 v2.4.3） | 空中链路以 Micro-XRCE-DDS Agent + `px4_msgs`（`release/1.15`，与固件 v1.15.4 同版）直连 PX4 uORB，弃用 MAVROS / MAVLink 中间层。节点需自行处理 uORB 语义：微秒时间戳、NED/FRD 与 ENU 的换算、QoS… |
 | [0006](./0006-experiment-artifacts-and-evidence-discipline.md) | 实验产物与证据纪律 | accepted（2026-11-02 由 0007 / 0044 / 0045 / 0063 / 0064 合并；结论未变，其中一次真实证据丢失事故的 登记与重做义务一并保留；2026-11-06 增补 (h) 产物保留策略与回收，用户裁定日期 2026-11-06、 `demo/` 定位口径 2026-11-07） | 所有实验产物只落一个根，按 campaign → run 两层组织： |
-| [0007](./0007-scene-geometry-single-source-and-layout.md) | 场景几何单一真源、布局范式与物理驱动 | accepted（2026-11-02 由 ADR-0010 / 0055 / 0062 / 0106 / 0112 合并；结论未变） | `agc_car` 重设为差速两驱动轮 + 2 caster，挂 `gz::sim::systems::DiffDrive`；`wheel_separation` / `wheel_radius` / `max_wheel_torque` / `max_wheel_accel` 落 `agc_si… |
+| [0007](./0007-scene-geometry-single-source-and-layout.md) | 场景几何单一真源、布局范式与物理驱动 | accepted（2026-11-02 由 ADR-0010 / 0055 / 0062 / 0106 / 0112 合并；结论未变）； **部分 superseded by [ADR-0035](0035-perception-map-representation-and-unknown-policy.md#top)（2026-11-09）** | `agc_car` 重设为差速两驱动轮 + 2 caster，挂 `gz::sim::systems::DiffDrive`；`wheel_separation` / `wheel_radius` / `max_wheel_torque` / `max_wheel_accel` 落 `agc_si… |
 | [0008](./0008-air-trajectory-and-tracking-calibration.md) | 空中轨迹与跟踪参数标定 | accepted（2026-11-02 由 0019 / 0051 合并；口径与容限结论未变，跟踪容限仍是**占位待回填**，如实标注） | **「8 字」改为真八字（Gerono）**：`x = cx + rx·sinθ`、`y = cy + ry·sinθ·cosθ`（自交成 ∞），`rx=15`、`ry=9`、 `h=2.5 m`；**全程恒速 `v=2.0 m/s`**（弧长参数化，无加减速）；**删去「角速度 0.1」**。… |
-| [0009](./0009-perception-truth-derived-and-vision-path.md) | 感知口径：真值派生与能力边界（视觉路径已退役） | accepted（2026-11-02 由 0020 / 0052 / 0053 / 0103 / 0110 合并；2026-11-03 新增 (a2) 真值目标指示的不确定性模型与置信度/精度解耦；**2026-11-04 视觉定位路径整体删除**，本 ADR 由"真值派生 / 视觉并行"改为"只有真值派生一条路径"。能力边界的「不做 / 不承诺」部分一并收窄登记） | `air_perception` 以**世界真值**为输入、以**通道模型**产出观测：丢包 / 突发丢失 / 几何门控（量程 + FOV）/ 遮挡 / 高斯噪声与偏置，并给出**已标定** `confidence` 与观测序号 `obs_seq`。 ⚠ **2026-11-04 起该输出无消费者… |
+| [0009](./0009-perception-truth-derived-and-vision-path.md) | 感知口径：真值派生与能力边界（视觉路径已退役） | accepted（2026-11-02 由 0020 / 0052 / 0053 / 0103 / 0110 合并；2026-11-03 新增 (a2) 真值目标指示的不确定性模型与置信度/精度解耦；**2026-11-04 视觉定位路径整体删除**，本 ADR 由"真值派生 / 视觉并行"改为"只有真值派生一条路径"。能力边界的「不做 / 不承诺」部分一并收窄登记）； **补充 by [ADR-0035](0035-perception-map-representation-and-unknown-policy.md#top)（2026-11-09，非取代）** | `air_perception` 以**世界真值**为输入、以**通道模型**产出观测：丢包 / 突发丢失 / 几何门控（量程 + FOV）/ 遮挡 / 高斯噪声与偏置，并给出**已标定** `confidence` 与观测序号 `obs_seq`。 ⚠ **2026-11-04 起该输出无消费者… |
 | [0010](./0010-safety-thresholds-and-failsafe.md) | 安全阈值、末端失效停车与安全屏障 | accepted（2026-11-02 由 ADR-0021 / 0025 / 0042 / 0048 / 0050 合并；结论未变） | 硬约束 **** 保留的是**顺序不变量** `紧急 < 碰撞 < 安全`；三档**绝对值**由地面安全层按实测动力学标定，属契约真源的可标定量。旧值 `0.7 / 0.9 / 2.4 m`（源自旧树无人机避障配置、为小场地慢速设定）**作废**，文档 / 报告不得再引用。 |
 | [0011](./0011-interception-and-fire-control.md) | 拦截口径与火控：发射式网、交战门与在飞生命周期 | accepted（2026-11-02 由 ADR-0015 / ADR-0022 / ADR-0024 / ADR-0035 / ADR-0058 / ADR-0079 / ADR-0091 / ADR-0111 合并；结论未变。其中「入包络即命中」的占位裁决口径已被后续「预演弹道能命中才开火」替换，旧口径作废） | **物理捕获**：以发射式网的物理模型判定，终态 `INTERCEPT_CONFIRMED` + `reason_code = CAPTURE_NET`。 **电子干扰**：**行为级等价**—— 对入侵者强制 `RTL` / `LAND` / `HOLD`，或用「停发 Offboard 指令」触… |
 | [0012](./0012-spawn-clearance-and-reset-transaction.md) | 出生净空与场景复位事务 | accepted（2026-11-02 由 0023 / 0029 合并；出生净空下限为可标定量、候选校验为「实体对 + 边界」的统一口径均未变） | 拆为两条**独立**语义： |
-| [0013](./0013-ground-planning-path-contract.md) | 地面规划：基线路径、重规划策略与外部规划器契约 | accepted（2026-11-02 由 ADR-0027 / 0056 / 0089 / 0092 / 0108 / 0109 合并；路径绑定、重规划触发口径与外部规划器契约的结论均未变，四项外部对接未决仍挂起） | 每次**成功**规划记录绑定三元组，仅在绑定仍有效时继续使用既有路径：**目标身份**（规划时刻 goal，`last_plan_goal_`； 当前 goal 位移 > `replan_displacement_m` → 目标变）、**地图签名**（`last_plan_map_sig_`，见… |
+| [0013](./0013-ground-planning-path-contract.md) | 地面规划：基线路径、重规划策略与外部规划器契约 | accepted（2026-11-02 由 ADR-0027 / 0056 / 0089 / 0092 / 0108 / 0109 合并；路径绑定、重规划触发口径与外部规划器契约的结论均未变，四项外部对接未决仍挂起）； **补充 by [ADR-0035](0035-perception-map-representation-and-unknown-policy.md#top)（2026-11-09，非取代）** | 每次**成功**规划记录绑定三元组，仅在绑定仍有效时继续使用既有路径：**目标身份**（规划时刻 goal，`last_plan_goal_`； 当前 goal 位移 > `replan_displacement_m` → 目标变）、**地图签名**（`last_plan_map_sig_`，见… |
 | [0014](./0014-task-fsm-and-scenario-transaction.md) | 任务 FSM、起始事务与终态锁存 | accepted（2026-11-02 由 ADR-0028 / 0030 / 0031 / 0037 / 0076 合并；结论未变） | `main` 由 `rclcpp::spin` 改 `MultiThreadedExecutor`；`/agc/task/start` 与 `/agc/task/abort` 放专用 互斥回调组（`srv_cb_group_`），服务回调可在本线程阻塞等 `reset` / `reset_phas… |
 | [0015](./0015-jam-authorization-and-confirmation.md) | 干扰：单一授权、真实确认与因子分离 | accepted（2026-11-02 由 ADR-0032 / ADR-0033 / ADR-0034 合并；结论未变。其中「发送即确认」与「停流 ≡ `NAV_DLL_ACT`」两处旧口径作废） | **授权**：仅当「命令合法」（`key in JAM_MAP`）**且**「作用包络**新鲜**」才产出**已校验授权事件** `JAM_*`（发布到 `/agc/task/jam_state`）并 `_send_nav_state`；未知命令 / 包络外 / 包络过期（未就绪）一律**不产出事… |
 | [0016](./0016-episode-window-and-sample-validity.md) | episode 窗口统计与有效样本掩码 | accepted（2026-11-02 由 0036 / 0038 / 0043 / 0078 合并；结论未变，其中样本掩码已两次修订，正文只保留现行 `window_valid_v2` / `scan_frame_fresh_v2` 口径并注明旧口径作废） | 以 task 进入 / 离开 **active**（`AIR_SEARCH` / `TARGET_ACQUIRED` / `GROUND_APPROACH`）为事件边界： |
@@ -54,10 +67,21 @@
 | [0027](./0027-uxrce-startup-reproducibility.md) | uXRCE 启动可复现性：预热、错峰与种子协议 | accepted（2026-11-02 由 ADR-0075 / 0094 / 0100 / 0101 合并；结论未变） | 本篇只覆盖**启动可复现性**：进程清场、PX4 启动错峰、可选 warmup、空中就绪门、seed 派生与注入。 它**不**改变估计 odom 契约、**不**替代正式测量门、**不**宣称整链确定性。per-instance seed 派生 只适用于full 组合；standalone `a… |
 | [0028](./0028-dds-discovery-range-and-transport.md) | DDS 发现范围与传输：按 `lo` 能力探测，禁止写死 `LOCALHOST` | accepted（2026-11-04） | DDS 发现范围与传输的**唯一决定点**是 `scripts/demo/dds_transport.py`。 禁止在任何其它位置写死 `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`。 |
 | [0029](./0029-continuous-validation-layers.md) | 持续验证：三层回归入口与"负例加严"判定 | accepted（2026-11-04） | `tests/run_smoke.py` · 离线冒烟 7 组 · 每次提交 · 否 · ~40 s `tests/run_full_regression.py` · `full` 整链 3 场景 · 定时 · 是 · ~240 s `tests/run_regression_matrix.py`… |
-| [0030](./0030-nadir-camera-capability.md) | 机载正下视（nadir）相机能力 | accepted（2026-11-04） | 新增机型取值 `gz_agc_x500_nadir`（复用**已有** launch 参数 `px4_sim_model`，**不新增 launch 参数**）。 默认 `gz_x500` 时：不加相机、不注入任何新环境变量、rcS 走原路径 —— 与改动前完全一致。 |
+| [0030](./0030-nadir-camera-capability.md) | 机载正下视（nadir）相机能力 | accepted（2026-11-04）；**部分 superseded by [ADR-0035](0035-perception-map-representation-and-unknown-policy.md#top)（2026-11-09）** | 新增机型取值 `gz_agc_x500_nadir`（复用**已有** launch 参数 `px4_sim_model`，**不新增 launch 参数**）。 默认 `gz_x500` 时：不加相机、不注入任何新环境变量、rcS 走原路径 —— 与改动前完全一致。 |
 | [0031](./0031-target-motion-and-speed-regime.md) | 目标无人机运动规则与三主体速度体制 | accepted（2026-11-04） | 本篇同时结档两条 plan：**目标无人机运动规则** 与 **速度调研与运行节奏优化** （两者按 [任务计划规则](../plan/README.md#plan-index) 结档即删，结论只存在于本篇）。 它们共用 `intruder_driver` 与 `scenarios.yaml` 的… |
 | [0032](./0032-pending-directions.md) | 待立项的后续方向（占位登记） | proposed（2026-11-06；未立项、无实施） | 以下 4 项**均未立项**，不得据本篇推定已实现、已批准或已有排期： |
 | [0033](./0033-review-snapshot-retirement.md) | 评审快照目录退役（`docs/reviews/`） | accepted（2026-11-06，来源：用户裁定——"docs/reviews删掉，写在plan，然后执行"） | `git rm -r docs/reviews/`，**不留转发文件、不留软链、不迁 `docs/archive/`**。 取回方式写在本篇：`git show d793126:docs/reviews/<路径>`，或 `git log --all -- docs/reviews/`。该目录最后一… |
+| [0034](./0034-paper-direction-resume-and-doc-isolation.md) | 论文方向解禁与私人文档隔离 | accepted（2026-11-07，用户裁定；2026-11-07 按用户二次裁定收窄） | 2026-10-29 的「迁移推进与论文优先暂停」中，**「论文优先暂停」部分解除**；论文方向自此**正式立项**， 可作为任务链的合法来源。 [AGENTS.md](../../AGENTS.md) 中该句改为「现行方向已由 [ADR-0034](0034-paper-direction-re… |
+| [0035](./0035-perception-map-representation-and-unknown-policy.md) | 感知地图表示、相机口径与未知空间策略 | accepted（2026-11-09，用户裁定） | 用户裁定原话：**"红框其实没有存在的必要，直接显示栅格，这样最真实，车用的是什么就看到什么"**。 |
+| [0036](./0036-dense-obstacle-map-and-per-map-spawn.md) | 小障碍高密度地图、出生位按地图派生、环带判据门控化 | accepted（2026-11-10，用户逐条裁定；6 轮 grilling 定案） | > ⚠ **布局范式已被 [ADR-0037](0037-dense-map-random-layout-and-plain-ground.md#top) 取代**： > 由"六角错排 60×60"改为"**随机撒点 70×70**（固定种子）、最小间距 2.3 m"； > 地面改为 `groun… |
+| [0037](./0037-dense-map-random-layout-and-plain-ground.md) | 高密度图改为随机撒点、间距加宽、地面按地图纯色化 | accepted（2026-11-10，用户裁定；推翻 [ADR-0007](0007-scene-geometry-single-source-and-layout.md#top) 对"随机撒点"的否决 —— **仅限本图**） | 范式取自 `refs/Fast-Planner/uav_simulator/map_generator/src/random_forest_sensing.cpp`： `uniform_real_distribution` 均匀撒点 + 与已放置点做距离拒绝采样。**只迁移范式，不抄资产/尺度**… |
+| [0038](./0038-startup-readiness-gates.md) | 启动就绪门：以可观测判据替代固定秒数 | accepted（2026-11-10，用户裁定「完全按这个文件进行修复」并指定 `temp.md` 的审查结论为实施依据） | 每个启动阶段必须能回答"它凭什么算就绪"，且答案是**可以查询的事实**，不是"过了 N 秒"。 允许的事实只有五类： |
+| [0039](./0039-occupied-evidence-lifecycle-and-support-gates.md) | 占据证据的生命周期、空间支持与遮挡置信度 | accepted（2026-11-10，用户裁定「完全按这里做优化」并指定 `temp.md` 的审查结论为实施依据） | `LogOddsParams::occupied_expire_frames`（`occupied_expire_s`，按实测帧率换算）： 某格进入 occupied 后，若连续超过该时长**没有被任何正向 hit**，则按 `p_decay` 逐步削弱， 降到 `occupied_exit_th… |
+| [0040](./0040-perception-multi-resolution-evidence-and-planning-layers.md) | 感知地图的多分辨率表示：证据层与规划层分离 | accepted（2026-11-10，用户裁定「按 temp.md 把改革方向 1-5 全部完成」） | `perception_resolution`（默认 0.25 m）是证据累积与 carving 的分辨率； `/agc/map` 的 `resolution`（0.5 m）是**规划消费格式**，由证据层派生。 |
+| [0041](./0041-geometry-metadata-instances-and-risk-map.md) | 几何层元数据、障碍实例层与规划风险图 | accepted（2026-11-10，用户裁定「A 好好完成，接入 /agc/map」） | `ObstacleFootprintArray` 增两个**并行数组**（与 `points` 等长）： |
+| [0042](./0042-point-uncertainty-arbitrary-resolution-and-reachability.md) | ADR-0042 · 逐点不确定度、任意分辨率派生、实例轨迹历史与栅格可达率 | accepted（2026-11-11，用户裁定「ok，继续做完」并指定 `temp.md` 为实施依据； 上一轮如实登记为未做的 4 项） | `ObstacleFootprintArray` 增**四条并行数组**（与 `points` 等长）： `point_cov_xx` / `point_cov_xy` / `point_cov_yy` / `point_view_cos`。 |
+| [0043](./0043-instance-drift-percentile-and-stability-criteria.md) | ADR-0043 · 稳定性主判据的分位数选择：p50 而非 p90 | accepted（2026-11-11，用户裁定「同意」——采纳 [ADR-0042](0042-point-uncertainty-arbitrary-resolution-and-reachability.md#top) 登记的两个候选改法中的「改用 p50」） | `instance_drift` 主判据从 **p90 ≤ 0.25 m** 改为 **p50 ≤ 0.15 m**。 p90 保留为**诊断**（不进 verdict），与 `delta_p99` 同样处理。 |
+| [0044](./0044-dense-map-second-gap-widening.md) | `dense_map` 间距第二轮加宽 15%（2.3 → 2.645 m），区域不变、实体数降到 486 | accepted（2026-11-12，用户裁定：「我需要把 dense_map 的地图中障碍物的间隔再增加 15%， 现在太密集了，小车没有足够空间行驶」；并对"是否清走廊"另行裁定：「不要走廊，后面会做路径规划」； 文档与核查断言「全部同步」） | 生成器 `scripts/gen_dense_map.py`：`MIN_GAP = 2.645`、`CORE_HALF = 35.0`（不变）； 判据仍是**拒绝采样的下限**（不是均值），并额外保留"足迹不穿插"的保守外扩 0.05 m； 固定种子 `SEED = 20261110` **不变*… |
 
 ## 合并映射（2026-11-02，112 → 27）
 

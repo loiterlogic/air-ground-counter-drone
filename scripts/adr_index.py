@@ -201,6 +201,21 @@ def collect(adr_dir: Path) -> list[dict[str, str]]:
     return entries
 
 
+def _ceiling(entries: list[dict[str, str]]) -> str:
+    """本表里**最大**的 ADR 编号（4 位补零）—— 供索引头部"现行有效编号 0001–NNNN"用。
+
+ 为什么算而不是写死：写死会让"加了 ADR 却忘了改这句"静默漂移，而
+ `tests/check_doc_counts.py` 判据 d 正是拿这句里的数字与实况对账（ADR-0036 时踩过）。
+ 取**最大**而非"条数"：编号不连续时（历史上有退役/合并留下的空号），条数会算错。
+    """
+    nums = []
+    for e in entries:
+        m = re.match(r"(\d{4})", str(e.get("number") or e.get("file") or ""))
+        if m:
+            nums.append(int(m.group(1)))
+    return "%04d" % max(nums) if nums else "0000"
+
+
 def render(entries: list[dict[str, str]]) -> str:
     accepted = sum(1 for e in entries if e["status"].lower().startswith("accepted"))
     deferred = sum(1 for e in entries if e["status"].lower().startswith("deferred"))
@@ -214,7 +229,30 @@ def render(entries: list[dict[str, str]]) -> str:
         "> 用法：查历史决策先扫本表 → 只打开命中的 1–2 篇；**不要**靠 `grep` 全目录。",
         "> 全量决策仍以各 ADR 正文为准；本表只是索引。状态说明见 [目录与命名规范](../conventions/目录与命名规范.md#10-产物分类与生命周期)。",
         "> **旧编号体系已退役**：各篇正文里「由 ADR-00xx 合并」的编号属 2026-11-02 重写前的旧体系，",
-        "> 对应文件已删除；现行有效编号只有本表 0001–0033（见 [引用与注释纪律](../conventions/引用与注释纪律.md#rule)）。",
+        # 上限**由实况算出**，不手写数字：手写会让"加了 ADR 却忘了改这句"静默漂移，
+        # 而 `tests/check_doc_counts.py` 的判据 d 正是拿这句里的数字与实况对账（ADR-0036）。
+        "> 对应文件已删除；现行有效编号只有本表 0001–%s（见 [引用与注释纪律](../conventions/引用与注释纪律.md#rule)）。"
+        % _ceiling(entries),
+        "> ⚠ **编号会被复用的坑**：旧体系的 0035（拦截口径，已合并进 [0011](./0011-interception-and-fire-control.md)）",
+        "> 与新体系的 [0035](./0035-perception-map-representation-and-unknown-policy.md) **编号相同、含义无关**。",
+        "> 读正文遇到 `ADR-0035` 时须先判断它出现在「由 … 合并」的历史句里（= 旧体系）还是普通引用里（= 新体系）。",
+        "",
+        "## ADR 是记录，不是对未来的限制",
+        "",
+        "> 本节是**索引级说明**（不归属于任何单篇 ADR）：ADR 的作用、改动规程与引用口径。",
+        "",
+        "- **作用**：ADR 记录**当前生效的设计口径与当时的理由**，供后来者复核；它**不**禁止未来改造。"
+        "项目做不出好东西时，改造是必然的，确认过后即可改 ADR。",
+        "- **改法（supersession，保留审计轨迹）**：① 新 ADR 标 `supersedes: ADR-NNNN`；"
+        "② 旧 ADR 的 `Status` 标 `superseded by ADR-NNNN`，**正文与历史行逐字保留**，"
+        "演进记录追加一行；③ 确认人 = **用户裁定**（如 2026-11-04 对视觉定位路径的删除裁定）；"
+        "④ 本索引由 `scripts/adr_index.py` 重新生成。理由：论文与复盘需要「当时为什么这么判」的轨迹，"
+        "静默改写旧结论等于抹掉证据。",
+        "- **硬约束变更另走更重口径**：[ADR-0020](0020-package-boundaries-and-runtime-topology.md#hard-constraints)"
+        "里的不可变约束（坐标系、唯一执行口、终态语义、接口语义）变更，不受「一般改造」覆盖，须单独复核。",
+        "- **确认过后修改 ≠ 静默改写**：旧结论保留可读、可查，新结论另起一篇并指向它。",
+        "- **引用口径**：跨文档引用决策**只**用 `ADR-NNNN` 编号 + 稳定锚点，"
+        "不用任何过程 / 评审 / 章节编号；详见 [引用与注释纪律](../conventions/引用与注释纪律.md#rule)。",
         "",
         "## 怎么用",
         "",

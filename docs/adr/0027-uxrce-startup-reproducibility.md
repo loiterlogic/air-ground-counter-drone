@@ -61,6 +61,25 @@ seed 内调度 / 执行重复仍是实验设计的一部分，不能删除重复
 `stale_swept_cmds` + 该次 run 日志追加「清场」行。诱饵 / 负例测试：`install/agc_*` 诱饵与「桥 +
 `agc_world`」诱饵**被清**；无 `agc` 守卫的桥、非 AGC 进程、仅命令行提及字符串的 shell **存活**。
 
+**2026-11-10 续：`run_demo.sh stop` 也做孤儿回收。** 原 `stop` 只按 `current.json` 登记的
+PGID 回收，而**外部终止**（工具宿主只杀 leader / 终端被关 / Ctrl-C 落在 supervisor 而非进程组）
+会让子进程逃出该组、并可能把 supervisor 卡在收尾（实测 39288 卡了 1 分 55 秒）。此时 `stop`
+幂等返回"上一次演示已结束，无进程组成员"，而 preflight 同时报"有 34 个残留进程"——两条信息
+互相打架，使用者只能手动 `kill` 一串 PID。
+
+修复：`stop` 在按 PGID 回收**之后**追加一轮 `common.reap_orphan_processes()`：
+
+* 判定复用 `project_processes()` 的**同一套** 7 类特征规则（不另写第二份匹配表，
+  否则 preflight 报 N 个、stop 只收 M 个，没人知道差在哪）；
+* **显式排除** `current.json` 登记 PGID 的成员——正在运行的实例绝不被误杀；
+* 两段式信号：SIGTERM（给 run_logger / PX4 落盘机会）→ 等待 → SIGKILL；
+* 僵尸算已清理（已被回收、不再执行代码）——否则每次正常退出都报"仍有 N 个未退出"，
+  使用者会学会忽略这条警告，比不报更糟。
+
+**跳过判据是"实例实际已死"（无进程组成员 + supervisor 已退出），不是 `state` 字段**：
+外部终止会留下 `state=running` 但组已空的**陈旧记录**，那恰恰是要清理的场景；只看状态字段
+会在该场景静默跳过（实测踩到）。
+
 `/dev/shm/fastrtps_*` **不**由 runner 自动清（清场只保证本项目进程已退出，无法保证机器上无其它 DDS
 系统 ⇒ 自动删段有误伤风险），仍为**人工 ops 前置**。实测段数随 run 数大致线性增长（单 run 约余 100
 段，累积数百段曾致 SHM 端口初始化失败），7 个 run 从 221 → 363 无初始化失败。
@@ -70,6 +89,16 @@ own PX4 默认延时 **12 s → 25 s**，intruder **25 s → 35 s**：25 s 避�
 的**首个** participant 创建耗时实测 694–704 ms（< 1 s）；35 s 与 own 错峰 10 s，避免两个 agent 同时
 创建 participant（25/25 同时启动实测 own+intruder 双双 `create entities failed`）。launch 参数
 `own_px4_delay_s` / `intruder_px4_delay_s` 保留，供 A/B 与回退。
+
+> **2026-11-10 续（[ADR-0038](0038-startup-readiness-gates.md#top)）**：本条要规避的**约束不变**
+> （两个 uXRCE 参与者不得并发创建），但**实现手段**从「错开 10 秒」改为「等前者真的开始发数据」：
+> 己方 PX4 等 `/agc/sim/entities_ready`（实体已确认存在），入侵者 PX4 等己方 `/agc/air/odom` 新鲜
+> （= own 的 participant 已建立、EKF 在发数据）。因果链比时间差更准确——它保证的是**先后**，
+> 而不是"大概错开了"。两个延时参数默认值改为 **0**，降级为可选下限。
+
+> **2026-11-10 续**：本节结论（warmup 无额外收益、默认关闭）不变；[ADR-0038](0038-startup-readiness-gates.md#top)
+> 进一步把它与 lifecycle 的启动解耦——`air_lifecycle_prewarm` 同样降级为可选优化，不再是
+> `lifecycle_manager` 的启动前提。
 
 ### (e) 可选 sacrificial SIH warmup（默认关闭）
 `main.launch.py` 保留一个**不参与任务**的 SIH PX4 warmup（`-i 3`、`PX4_SIMULATOR=sihsim`、

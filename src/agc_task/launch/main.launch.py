@@ -37,7 +37,7 @@ from launch.actions import (
 )
 from launch.event_handlers import OnProcessExit, OnProcessStart
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import FindExecutable, LaunchConfiguration
 from launch_ros.actions import Node
 
 # 共享配置解析模块与本入口同目录（随包安装到 share/agc_task/launch）。
@@ -121,10 +121,11 @@ def _resolve(context):
     # 原 `perception_path` ∈ {truth, vision} / `vision_detector` / `detector_backend` 三个
     # launch 参数及其互斥校验已删除：项目不做目标识别，目标位置**始终由真值给出**
     # （ADR-0009 (a2)）。`/agc/targets` 的发布者此后**恒为 `gt_adapter`**（air_fusion 亦已退役）。
-    # 己方 PX4 gz 机型：默认 gz_x500 = 既有行为逐字不变；gz_x500_mono_cam = 挂机载相机。
+    # 己方 PX4 gz 机型：默认 gz_agc_x500_nadir（带相机，平台基本能力）。
     px4_sim_model = (LaunchConfiguration('px4_sim_model').perform(context) or '').strip()
     if not px4_sim_model:
-        raise RuntimeError('px4_sim_model 不得为空（默认 gz_x500）→ 拒绝运行')
+        raise RuntimeError(
+            'px4_sim_model 不得为空（默认 gz_agc_x500_nadir）→ 拒绝运行')
 
     info = load_scene(task_share, sim_share, scene, seed, world_map=world_map)
 
@@ -143,7 +144,9 @@ def _resolve(context):
     # ③ 己方机起飞参考（`own_uav_pose_string(layout)`，同一字符串既作 PX4_GZ_MODEL_POSE 又作 origin_pose）；
     # ④ 出生净空校验坐标（scenario_reset.own_uav_x/y 由 ③ 派生，见 compose_params）。
     # 显式 launch 参数（px4_own_pose）仍可覆盖 ③（保留旧的覆盖能力），但**不再默默取默认值 0,0,0.2**。
-    layout = load_spawn_layout(task_share)
+    # ADR-0036：出生位是**地图属性**——按 `info['world_map']`（已解析生效值，非空串）取
+    # `spawn_layout.per_map.<map>` 覆盖；未登记的地图回落顶层缺省（minimal/yard/open_field 逐值不变）。
+    layout = load_spawn_layout(task_share, world_map=info['world_map'])
     layout_sha256 = spawn_layout_sha256(task_share)
     own_pose_override = (LaunchConfiguration('px4_own_pose').perform(context) or '').strip()
     own_pose = own_uav_pose_string(layout, override=own_pose_override)
@@ -167,6 +170,11 @@ def _resolve(context):
         'world_map': world_map, 'px4_sim_model': px4_sim_model,
         'info': info, 'layout': layout, 'layout_sha256': layout_sha256,
         'own_pose': own_pose, 'effective_own': effective_own, 'context': context,
+        # 复位就绪门的上界（**地图属性**；由调用方显式给，缺省沿用 config 默认）
+        'startup_reset_max_attempts': _opt_int(
+            LaunchConfiguration('startup_reset_max_attempts').perform(context)),
+        'startup_reset_timeout_s': _opt_float(
+            LaunchConfiguration('startup_reset_timeout_s').perform(context)),
     }
 
 
@@ -178,7 +186,9 @@ def _compose_lightweight(ctx):
     merged = compose_params(info['base'], info['sc'], backend, seed,
                             geometry=info['geometry'],
                             spawn_randomize=ctx['spawn_randomize'],
-                            goal_follow_target=ctx['goal_follow_target'])
+                            goal_follow_target=ctx['goal_follow_target'],
+                            startup_reset_max_attempts=ctx['startup_reset_max_attempts'],
+                            startup_reset_timeout_s=ctx['startup_reset_timeout_s'])
     # ADR-0007：高度随地图派生注入（任务侧）。必须在 compose_params 之后、
     # assertions 之前——与 apply_air_geometry 的时序纪律同款。
     apply_flight_altitude_params(merged, info)
@@ -204,6 +214,11 @@ def _compose_lightweight(ctx):
                 'use_sim_time': ctx['use_sim_time'],
                 'world_obstacles': info['world_obstacles'],
                 'world_map': info['world_map'],
+                # 复位就绪门的上界（缺省值来自本节声明，与 config 默认一致）
+                'startup_reset_max_attempts': LaunchConfiguration(
+                    'startup_reset_max_attempts'),
+                'startup_reset_timeout_s': LaunchConfiguration(
+                    'startup_reset_timeout_s'),
                 # `sensors_file` 已于 2026-11-06 随 `perception` 轴退役，不再透传。
                 # 障碍先验 / 地图几何由**配置文件派生**（不再读 agc_perception 包内副本）
                 'obstacles_file': info['obstacles_file'],
@@ -236,7 +251,9 @@ def _full_params(ctx, agc_root):
     merged = compose_params(info['base'], info['sc'], backend, seed, (own_uav_x, own_uav_y),
                             geometry=info['geometry'],
                             spawn_randomize=ctx['spawn_randomize'],
-                            goal_follow_target=ctx['goal_follow_target'])
+                            goal_follow_target=ctx['goal_follow_target'],
+                            startup_reset_max_attempts=ctx['startup_reset_max_attempts'],
+                            startup_reset_timeout_s=ctx['startup_reset_timeout_s'])
     # ADR-0007：高度随地图派生注入（任务侧：巡航高度 / 网弹道 / 起飞完成判据）。
     # 时序纪律：compose_params 之后、apply_spawn_layout / assertions 之前。
     apply_flight_altitude_params(merged, info)
@@ -289,9 +306,11 @@ def _px4_env(ctx, agc_root):
     gz_models = os.path.join(px4_dir, 'Tools', 'simulation', 'gz', 'models')
     gz_worlds = os.path.join(px4_dir, 'Tools', 'simulation', 'gz', 'worlds')
 
-    # ---- ADR-0030：机载正下视相机机型（opt-in）----
-    # `gz_agc_x500_nadir` 的模型资产在**本仓** `install/agc_sim/share/agc_sim/models/agc_x500_nadir/`，
-    # 不在 PX4 工具链里（工具链只读，**禁止**加 airframe）。机型解析不改工具链，走两条既有机制：
+    # ---- ADR-0030：机载正下视相机机型（2026-11-08 起为**默认**，相机是平台基本能力）----
+    # 分割标签 → nadir_projection → /agc/obstacles → /agc/map 是感知地图唯一障碍来源，
+    # 故默认机型即带相机，不再是 opt-in。`gz_agc_x500_nadir` 的模型资产在**本仓**
+    # `install/agc_sim/share/agc_sim/models/agc_x500_nadir/`，不在 PX4 工具链里
+    # （工具链只读，**禁止**加 airframe）。机型解析不改工具链，走两条既有机制：
     # ① `PX4_SYS_AUTOSTART=4001` —— rcS:41-44 的该分支**优先于**按 `PX4_SIM_MODEL` 文件名反查
     # （rcS:52-63），故 rcS 仍 source 官方 `4001_gz_x500`（旋翼/参数集与默认臂完全相同），
     # 而 `PX4_SIM_MODEL` 只用于 spawn 时给 gz 的模型名；
@@ -299,20 +318,14 @@ def _px4_env(ctx, agc_root):
     # 的 `GZ_SIM_RESOURCE_PATH`（world_bringup 已把 `install/agc_sim/share/agc_sim/models`
     # 追加进去）。此处再把同一目录并入**己方 PX4 进程**的 env：standalone 下虽由 gz 服务器
     # 解析，但显式给出可避免将来改成自起 gz 时静默失效。
-    # **默认臂已改为 `gz_agc_x500`（2026-11-05，用户裁定）**：与 nadir 走**同一套**机制
-    # （本仓 models 资源路径 + `PX4_SYS_AUTOSTART=4001`），差别只在模型名 → 本仓 `agc_x500`
-    # = x500 + 纯视觉青色高亮球。`gz_x500` 仍可显式选用（此时不加路径、不注入 AUTOSTART，
-    # rcS 走原「按名反查 4001_gz_x500」路径，行为与改动前逐字一致）。
+    # 两个**本仓机型**共用同一注入机制（本仓 models 资源路径 + PX4_SYS_AUTOSTART=4001
+    # 让 rcS 仍 source 官方 `4001_gz_x500`，旋翼/参数集逐字不变），差别只在模型名：
+    # `gz_agc_x500_nadir`（默认，带相机）与 `gz_agc_x500`（旧默认，纯视觉高亮球、无相机，
+    # 仅用于复现历史 run）。显式选 PX4 官方 `gz_x500` 时不加路径、不注入 AUTOSTART，
+    # rcS 走原「按名反查 4001_gz_x500」路径，行为与改动前逐字一致。
     nadir_sim_model = 'gz_agc_x500_nadir'
-    nadir_enabled = (ctx['px4_sim_model'] == nadir_sim_model)
-    # 2026-11-05（用户裁定）：己方机 **GUI 辨识高亮**机型 `gz_agc_x500`。
-    # 与 nadir 同一解析机制（本仓 models 资源路径 + PX4_SYS_AUTOSTART=4001 让 rcS 仍 source
-    # 官方 `4001_gz_x500`，旋翼/参数集逐字不变），差别只在模型名指向本仓
-    # `agc_x500/model.sdf` = x500 + 一个**纯视觉**青色高亮球（无 collision → 不影响物理 /
-    # 接触 / 安全层）。实体名随之变为 `agc_x500_0`（GZBridge.cpp 的 `<model_sim>_<instance>`）。
-    # 实测依据：默认 `gz_x500` 在 50 m 正俯视下仅约 5 px（85 m 时 3 px），用户"看不见我方机"。
     highlight_sim_model = 'gz_agc_x500'
-    own_repo_model = nadir_enabled or (ctx['px4_sim_model'] == highlight_sim_model)
+    own_repo_model = ctx['px4_sim_model'] in (nadir_sim_model, highlight_sim_model)
     own_px4_env_extra = {}
     if own_repo_model:
         own_px4_env_extra['GZ_SIM_RESOURCE_PATH'] = (
@@ -329,6 +342,9 @@ def _px4_env(ctx, agc_root):
     warmup_timeout_s = float(LaunchConfiguration('px4_warmup_timeout_s').perform(c))
     own_px4_delay_s = float(LaunchConfiguration('own_px4_delay_s').perform(c))
     intruder_px4_delay_s = float(LaunchConfiguration('intruder_px4_delay_s').perform(c))
+    # ADR-0038：就绪门的墙钟上界（**不是**等待时长——就绪即通过）。
+    px4_ready_timeout_s = float(LaunchConfiguration('px4_ready_timeout_s').perform(c))
+    air_link_timeout_s = float(LaunchConfiguration('air_link_timeout_s').perform(c))
     return {
         'px4_dir': px4_dir, 'px4_build': px4_build, 'px4_bin': px4_bin, 'px4_root': px4_root,
         'gz_models': gz_models, 'gz_worlds': gz_worlds,
@@ -336,6 +352,7 @@ def _px4_env(ctx, agc_root):
         'warmup_enable': warmup_enable, 'warmup_delay_s': warmup_delay_s,
         'warmup_timeout_s': warmup_timeout_s, 'own_px4_delay_s': own_px4_delay_s,
         'intruder_px4_delay_s': intruder_px4_delay_s,
+        'px4_ready_timeout_s': px4_ready_timeout_s, 'air_link_timeout_s': air_link_timeout_s,
         'agent0_port': LaunchConfiguration('agent0_port').perform(c),
         'agent1_port': LaunchConfiguration('agent1_port').perform(c),
         'agent_bin': str(Path(agc_root) / 'toolchain' / 'bin' / 'MicroXRCEAgent'),
@@ -359,7 +376,6 @@ def _compose_full(ctx, agc_root):
     gz_models, gz_worlds = e['gz_models'], e['gz_worlds']
     own_px4_env_extra = e['own_px4_env_extra']
     agent_bin, agent0_port, agent1_port = e['agent_bin'], e['agent0_port'], e['agent1_port']
-    own_px4_delay_s, intruder_px4_delay_s = e['own_px4_delay_s'], e['intruder_px4_delay_s']
 
     def _px4_cmd(instance=None):
         return px4_cmd(e['px4_bin'], px4_build, px4_root, instance)
@@ -370,8 +386,27 @@ def _compose_full(ctx, agc_root):
     # px4_adapter（局部→世界）与 OffboardInterface（世界→局部 setpoint）共用该值。
     air_common = [air_tmp, {'use_sim_time': use_sim_time, 'origin_pose': ctx['own_pose']}]
 
-    # 入侵者 PX4（实例 1）：attach 已生 `intruder_uav`。其进程 start 事件驱动 `intruder_driver`
-    # （见下方 RegisterEventHandler）——不再用绝对时间盲计时。
+    # 己方 PX4（实例 0）：standalone，自 spawn 本仓机型（默认带正下视相机）。
+    # ADR-0038：启动由就绪门驱动（实体已在世界中 + DDS 发现图已稳定），不再是 25 s 盲等。
+    own_px4 = ExecuteProcess(
+        cmd=_px4_cmd(), cwd=px4_build,
+        additional_env=dict({
+            'GZ_SIM_RESOURCE_PATH': gz_models + ':' + gz_worlds,
+            'PX4_GZ_STANDALONE': '1', 'PX4_GZ_WORLD': 'agc_world',
+            # 己方机型由 launch 参数单一设置（默认 gz_agc_x500_nadir = 带相机）。
+            # 入侵者（实例 1，attach）仍固定 gz_x500——它不参与视觉链路。
+            # 本仓机型（默认 nadir / 旧 gz_agc_x500）由 own_px4_env_extra 注入
+            # PX4_SYS_AUTOSTART=4001 + 本仓 models 资源路径；显式选 gz_x500 时该 dict 为空。
+            'PX4_SIM_MODEL': ctx['px4_sim_model'], 'PX4_GZ_MODEL_POSE': ctx['own_pose'],
+            # 己方实例绑 agent0 端口（显式，与入侵者的 agent1 端口对称，配置文件）
+            'PX4_UXRCE_DDS_PORT': agent0_port,
+            'AGC_PX4_SIM_SEED': str(derive_px4_sim_seed(seed, 0)),
+        }, **own_px4_env_extra), output='screen')
+
+    # 入侵者 PX4（实例 1）：attach 已生 `intruder_uav`。
+    # ADR-0038：启动条件由**真实就绪事件**给出（见下方 `_px4_startup_gates`），不再是 35 s 盲等。
+    # 仍保留 `intruder_px4_delay_s` 作为**可选下限**（默认 0 = 不额外等待），仅供
+    # 极端负载下人工加保险；正确性不依赖它。
     intruder_px4 = ExecuteProcess(
         cmd=_px4_cmd(1), cwd=px4_build,
         additional_env={
@@ -401,7 +436,7 @@ def _compose_full(ctx, agc_root):
             }, output='screen')])
 
     actions = [
-        # （ADR-0015）：运行时 PX4 failsafe 参数锁定——须在 PX4（12 s / 25 s 定时器）**之前**执行，
+        # （ADR-0015）：运行时 PX4 failsafe 参数锁定——须在 PX4 启动**之前**执行，
         # 写入 SITL 启动参数文件 `px4-rc.params`（由 rcS source），使每次 SITL 启动确定化。
         ExecuteProcess(
             cmd=['bash', str(agc_root / 'scripts' / 'lock_px4_failsafe_params.sh')],
@@ -423,7 +458,9 @@ def _compose_full(ctx, agc_root):
                 'world_obstacles': info['world_obstacles'],
                 # 按地图选择配置文件（minimal | yard | open_field）
                 'world_map': info['world_map'],
-            }, **world_spawn_args).items()),
+            }, **world_spawn_args,
+                **{'spawn_verify_timeout_s': LaunchConfiguration(
+                    'spawn_verify_timeout_s')}).items()),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 os.path.join(perc_share, 'launch', 'perception_bringup.launch.py')),
@@ -450,33 +487,94 @@ def _compose_full(ctx, agc_root):
         ExecuteProcess(cmd=[agent_bin, 'udp4', '-p', agent0_port], output='screen'),
         ExecuteProcess(cmd=[agent_bin, 'udp4', '-p', agent1_port], output='screen'),
         *([warmup_action] if warmup_action is not None else []),
-        # 己方 PX4（实例 0）：standalone，自 spawn gz_x500 自机。
-        # 计时**保留**理由：属 gz 引擎 spawn 时序（世界/桥先起，PX4 才具 gz 资源与时钟）；
-        # ADR-0027：默认 25 s——等 5 s warmup 完成首次 participant 创建，且让 DDS 发现图
-        # 从启动风暴中稳定；12 s 实测会让 own participant 创建落入 1.5–13 s 长尾。
-        # 本层仍无可达就绪信号（该 PX4 进程本身即被 spawn），故用计时 + 后续 air odom 门。
-        TimerAction(period=own_px4_delay_s, actions=[ExecuteProcess(
-            cmd=_px4_cmd(), cwd=px4_build,
-            additional_env=dict({
-                'GZ_SIM_RESOURCE_PATH': gz_models + ':' + gz_worlds,
-                'PX4_GZ_STANDALONE': '1', 'PX4_GZ_WORLD': 'agc_world',
-                # 己方机型由 launch 参数单一设置（默认 gz_x500 = 既有行为逐字不变）。
-                # 入侵者（实例 1，attach）仍固定 gz_x500——它不参与视觉链路。
-                # ADR-0030：gz_agc_x500_nadir 时另注入 PX4_SYS_AUTOSTART=4001 + 本仓 models 资源路径
-                # （见上方 own_px4_env_extra；默认臂该 dict 为空 → env 与改动前逐字相同）。
-                'PX4_SIM_MODEL': ctx['px4_sim_model'], 'PX4_GZ_MODEL_POSE': ctx['own_pose'],
-                # 己方实例绑 agent0 端口（显式，与入侵者的 agent1 端口对称，配置文件）
-                'PX4_UXRCE_DDS_PORT': agent0_port,
-                'AGC_PX4_SIM_SEED': str(derive_px4_sim_seed(seed, 0)),
-            }, **own_px4_env_extra), output='screen')]),
-        # 入侵者 PX4（实例 1）：attach 已生 `intruder_uav`（world_bringup 于 gz+3 s spawn）。
-        # ADR-0027：默认 35 s——与 own（25 s）错峰 10 s，避免两个 agent 同时创建 participant
-        # 造成 1.5–3 s 级并发热点（25/25 实测 own+intruder 双双 `create entities failed`）。
-        TimerAction(period=intruder_px4_delay_s, actions=[intruder_px4]),
     ]
+
+    # ---- ADR-0038：PX4 启动由**真实就绪事件**驱动，不再是 25 s / 35 s 盲等 ----
+    #
+    # 旧的固定延时解决的是两个**真实**约束，但它们都不是"时间"：
+    # ① own PX4 必须等 gz 世界就绪（否则 PX4 的 gz_bridge 找不到世界 / 无法 spawn 模型）；
+    # ② 两个 uXRCE 参与者的创建**不得并发**（并发会让 agent 侧 participant 创建落入长尾，
+    #    PX4 侧 1 s 硬预算超时 → `create entities failed: participant: 255`）。
+    # 现在两者都由可观测信号表达：① 车/目标**已在世界中**（gz `scene/info` 实查）；
+    # ② 入侵者 PX4 等**己方 PX4 原始链路**新鲜（`/fmu/out/vehicle_odometry`，不经 lifecycle）。
+    actions.extend(_px4_startup_gates(
+        ctx, e, own_px4, intruder_px4, agents_started=True))
 
     actions.extend(_air_and_task_actions(ctx, common, air_common, intruder_px4))
     return actions
+
+
+def _px4_startup_gates(ctx, e, own_px4, intruder_px4, agents_started=False):
+    """按就绪事件依次启动：己方 PX4 → 入侵者 PX4（**永不并发**创建 uXRCE 参与者）。
+
+    链路（每段都有墙钟上界与显式失败，见 ADR-0038）：
+
+        entities_ready（车/目标已确认存在）
+          → 启动己方 PX4
+          → 等 /fmu/out/vehicle_odometry 新鲜（own 参与者已建立、EKF 在发数据）
+          → 启动入侵者 PX4（attach 已存在的 intruder_uav）
+    """
+    # 就绪门脚本随 `agc_sim` 安装（两个入口都要用，且 agc_air 不得依赖 agc_task：
+    # 那会形成 agc_task → agc_air → agc_task 的环，见 ADR-0020 的 #top (b) 包边界）。
+    gate_bin = os.path.join(ctx['sim_share'], 'scripts', 'startup_gate.py')
+    gate_timeout_s = str(int(e['px4_ready_timeout_s']))
+    odom_timeout_s = str(int(e['air_link_timeout_s']))
+    # 可选下限（默认 0）：仅供极端负载下人工加保险；**正确性不依赖它**。
+    own_floor = float(e['own_px4_delay_s'])
+    intruder_floor = float(e['intruder_px4_delay_s'])
+
+    # ① 世界实体就绪 → 己方 PX4
+    own_gate = ExecuteProcess(
+        cmd=[FindExecutable(name='python3'), gate_bin,
+             '--name', 'px4_own_gate',
+             '--timeout-s', gate_timeout_s,
+             # 判据 = **两个实体都真的在 gz 世界里**（直接查 scene/info）。
+             # 为什么不用 `/agc/sim/entities_ready` 话题：那是给外部（run_demo / 排障）
+             # 读的呈现层信号；若本门依赖它，就把"实体是否存在"这个事实二次转发成了
+             # 一次可能错过的消息投递。查实体本身是同一个事实的更短路径。
+             '--await', 'entity:agc_world:agc_car',
+             '--await', 'entity:agc_world:intruder_uav',
+             '--await', 'gzservice:/world/agc_world/create',
+             # **必须**等 DDS 发现图稳定（节点集合连续数秒不再变化）。
+             # 这是旧的 `own_px4_delay_s=25` 真正在保护的东西：整链启动时十几个节点 +
+             # 两个 uXRCE Agent 同时上线，此时启动 PX4 会让其 participant 创建撞上发现
+             # 风暴，PX4 侧 1 s 硬预算超时 → `create entities failed: participant: 255`
+             # → 无 odom / 不 arm / 整链 infra（2026-11-10 实测：实体就绪 +12.9 s 就起 PX4
+             # 即命中该故障）。判据是可观测的"图不再变化"，不是"过了 25 秒"。
+             # 嵌套列表：前缀 + 两个替换必须拼成**同一个** argv 元素
+             # （`'…%s…' % LaunchConfiguration(...)` 只会拼出替换对象的 repr）。
+             '--await', ['graph-stable:',
+                         LaunchConfiguration('px4_graph_stable_hold_s'), ':',
+                         LaunchConfiguration('px4_graph_stable_min_nodes')]],
+        output='screen')
+    own_actions = [own_px4] if own_floor <= 0 else [
+        TimerAction(period=own_floor, actions=[own_px4])]
+
+    # ② 己方空中链路新鲜 → 入侵者 PX4
+    intruder_gate = ExecuteProcess(
+        cmd=[FindExecutable(name='python3'), gate_bin,
+             '--name', 'px4_intruder_gate',
+             '--timeout-s', odom_timeout_s,
+             # 判据 = **己方 PX4 的原始链路已在发数据**（`/fmu/out/vehicle_odometry`）。
+             # 这一刻之后才创建第二个参与者，二者不会并发（ADR-0027 的错峰理由在此保留）。
+             #
+             # 为什么不用 `/agc/air/odom`（2026-11-10 实测死锁）：那是 px4_adapter 在
+             # **on_activate 之后**才发布的，而 activate 依赖 lifecycle_manager，manager 又
+             # 排在本门之后 ⇒ 循环等待。`/fmu/out/*` 由 PX4 经 uXRCE 直发，不经任何 lifecycle
+             # 节点，因此它是"own 参与者已建立"的**最短可达**证据。
+             '--await', 'topic:/fmu/out/vehicle_odometry:3.0',
+             '--await', 'entity:agc_world:intruder_uav'],
+        output='screen')
+    intruder_actions = [intruder_px4] if intruder_floor <= 0 else [
+        TimerAction(period=intruder_floor, actions=[intruder_px4])]
+
+    return [
+        own_gate,
+        RegisterEventHandler(OnProcessExit(target_action=own_gate, on_exit=own_actions)),
+        intruder_gate,
+        RegisterEventHandler(OnProcessExit(target_action=intruder_gate,
+                                          on_exit=intruder_actions)),
+    ]
 
 
 def _air_and_task_actions(ctx, common, air_common, intruder_px4):
@@ -487,6 +585,9 @@ def _air_and_task_actions(ctx, common, air_common, intruder_px4):
     """
     info = ctx['info']
     actions = []
+    # ADR-0038：空中 lifecycle 的启动门墙钟上界（就绪即通过，不是等待时长）。
+    air_lifecycle_timeout_s = float(
+        LaunchConfiguration('air_lifecycle_timeout_s').perform(ctx['context']))
 
     # 空中链路节点 + lifecycle（复用 Nav2 lifecycle_manager）
     for exe in ('px4_adapter', 'takeoff_controller', 'trajectory_tracker', 'standoff_follower'):
@@ -532,9 +633,37 @@ def _air_and_task_actions(ctx, common, air_common, intruder_px4):
              'px4_adapter', 'takeoff_controller', 'trajectory_tracker',
              'standoff_follower'],
         output='screen')
+    # ADR-0038：prewarm 从"隐式启动依赖"降级为**可选性能优化**。
+    #
+    # 原链路是「prewarm 退出 → 启动 lifecycle_manager」这一条**单事件依赖**：
+    # prewarm 只证明"lifecycle 服务能被调用到"，**不证明** PX4 已就绪 / 模型存在 /
+    # odom 新鲜 / 能进 ACTIVE。它退出得太早（PX4 还没起）时 manager 照样会 configure 失败。
+    # 现在改为：prewarm 仍先跑（尽力而为），但 manager 的启动由**真实信号**决定——
+    # 己方 PX4 的原始链路 `/fmu/out/vehicle_odometry` 新鲜（= 参与者已建立、EKF 在发数据）。
+    # prewarm 是否成功、是否超时，都**不**再影响正确性（它只影响首次服务调用是否命中已建连接）。
+    air_link_gate = ExecuteProcess(
+        cmd=[FindExecutable(name='python3'),
+             os.path.join(ctx['sim_share'], 'scripts', 'startup_gate.py'),
+             '--name', 'air_lifecycle_gate',
+             '--timeout-s', str(int(air_lifecycle_timeout_s)),
+             # 判据必须用**PX4 原始链路**，不能用 `/agc/air/odom`。
+             #
+             # 为什么（2026-11-10 实测死锁）：`/agc/air/odom` 由 px4_adapter 在
+             # **on_activate 之后**才发布；而 activate 由 lifecycle_manager 执行，manager 又
+             # 在等本门通过 ⇒ 循环等待，150 s 必然超时（实测 `air_lifecycle_gate` 卡满 150 s，
+             # 任务层随后 `air_hover_timeout`）。
+             #
+             # `/fmu/out/vehicle_odometry` 是 PX4 经 uXRCE 直发的话题，**不经过**任何 lifecycle
+             # 节点——它新鲜就证明"PX4 的 DDS 参与者已建立且 EKF 在发数据"，这正是 manager
+             # 需要的启动前提。lifecycle 服务本身不必在此等：manager 自己会 `wait_for_service`
+             # （Nav2 范式），等不到就是它该报的错，不该由本门代为判定。
+             '--await', 'topic:/fmu/out/vehicle_odometry:3.0'],
+        output='screen')
     actions.append(prewarm)
+    actions.append(air_link_gate)
+    # prewarm 与就绪门**并行**跑；两者都结束后才起 manager（prewarm 只为暖连接，不构成正确性前提）。
     actions.append(RegisterEventHandler(OnProcessExit(
-        target_action=prewarm, on_exit=[lifecycle_manager])))
+        target_action=air_link_gate, on_exit=[lifecycle_manager])))
 
     # 任务层（地面侧）
     for exe in ('scenario_reset', 'task_manager', 'run_logger', 'capture_adjudicator', 'jammer'):
@@ -604,11 +733,12 @@ def _air_and_task_actions(ctx, common, air_common, intruder_px4):
             'result_topic': '/agc/task/target_takeoff',
             'min_takeoff_alt_m': round(_tgt_cruise * 0.5, 3),
             # 2026-11-03 实测标定：目标机从 launch 到"真正 Armed 并开始爬升"落在 **110 s 量级**
-            # ——PX4 实例 1 排在 own（+25 s）之后（+35 s），EKF 收敛 + uXRCE 会话 + driver 首帧
-            # odom + 反复 ARM 重试，实测 `Armed by external command` 在 tw≈110 s。
-            # 原 60 s 会在这个正常时序**之前**判死（实测超时点比 ARM 成功早约 6 s），把"还没到"
-            # 误报成"不会起飞"。放宽到 150 s：仍拦得住真正卡死（odom 永不到），又不与正常启动竞争。
-            # 将来若再调 PX4 错峰（own_px4_delay_s / intruder_px4_delay_s），本值须同步复核。
+            # ——EKF 收敛 + uXRCE 会话 + driver 首帧 odom + 反复 ARM 重试，实测
+            # `Armed by external command` 在 tw≈110 s。原 60 s 会在这个正常时序**之前**判死
+            # （实测超时点比 ARM 成功早约 6 s），把"还没到"误报成"不会起飞"。
+            # 放宽到 150 s：仍拦得住真正卡死（odom 永不到），又不与正常启动竞争。
+            # ADR-0038 起 PX4 启动改由就绪门驱动（不再有 +25/+35 s 错峰），本值仍是**任务级**
+            # 上界（等的是 ARM 与爬升，不是进程启动）；若整链就绪门预算整体调整，本值须同步复核。
             'startup_timeout_s': 150.0,
             'rate_hz': 10.0,
             'use_sim_time': ctx['use_sim_time'],
@@ -644,14 +774,41 @@ def _viz_actions(context, sim_share):
     # 于是 RViz 什么都不画。→ 发一条 map→world 的恒等静态变换，Fixed Frame 用 `map`。
     tf = Node(package='tf2_ros', executable='static_transform_publisher', name='world_frame_tf',
               arguments=['0', '0', '0', '0', '0', '0', 'map', 'world'], output='log')
+    # 机体 mesh 的资源根：与 Gazebo 场景**同一份** PX4 模型目录（不复制资产）。
+    # 派生自 agc_root 的 toolchain 路径；目录不在时 viz_markers 自行回退几何体。
+    _px4_dir, _, _ = px4_paths(Path(LaunchConfiguration('agc_root').perform(context)))
     return [
         tf,
         Node(package='agc_task', executable='viz_markers', name='viz_markers',
              parameters=[{'use_sim_time': True,
-                          'world_map': LaunchConfiguration('world_map')}], output='screen'),
+                          'world_map': LaunchConfiguration('world_map'),
+                          'px4_models_dir': os.path.join(_px4_dir, 'Tools', 'simulation',
+                                                         'gz', 'models')}], output='screen'),
         Node(package='rviz2', executable='rviz2', name='rviz2', arguments=['-d', rviz_cfg],
              parameters=[{'use_sim_time': True}], output='screen'),
     ]
+
+
+def _opt_int(text):
+    """空串 → None（**不覆盖** config 默认值）；否则 int。非法值拒绝运行。"""
+    t = (text or '').strip()
+    if not t:
+        return None
+    try:
+        return int(t)
+    except ValueError:
+        raise RuntimeError('startup_reset_max_attempts 必须是整数，实际：%r' % text)
+
+
+def _opt_float(text):
+    """空串 → None（**不覆盖** config 默认值）；否则 float。非法值拒绝运行。"""
+    t = (text or '').strip()
+    if not t:
+        return None
+    try:
+        return float(t)
+    except ValueError:
+        raise RuntimeError('startup_reset_timeout_s 必须是数字，实际：%r' % text)
 
 
 def generate_launch_description():
@@ -708,14 +865,43 @@ def generate_launch_description():
     ld.add_action(DeclareLaunchArgument(
         'target_motion', default_value='',
         description='目标运动覆盖：空=场景默认；static|linear|maneuver|epicycle'))
+    # 世界 spawn 的门限（**上界，不是延时**：实体一出现就继续）。
+    #
+    # **为什么必须能调**：`dense_map` 有数百个障碍（ADR-0037 时 620、ADR-0044 起 486），
+    # `create` 服务会连续超时约 50 s 后才恢复应答 —— 实测 620 个障碍下 `agc_car` 在 +68 s 才确认
+    # （`yard` 只需 +23 s）。
+    # `world_bringup` 自身的默认值是 60 s，而此前 `main.launch.py` **不转发**它，
+    # 于是"换到更大的图"没有任何入口能把门限放宽，只能随机启动失败。
+    # 默认值沿用 world_bringup 的 60 s（不改既有行为）；大图由调用方显式调大。
+    ld.add_action(DeclareLaunchArgument(
+        'spawn_verify_timeout_s', default_value='60.0',
+        description='每个实体创建后等待其出现在 scene/info 的上界（墙钟秒）；'
+                    '就绪即继续、不空等。密障碍地图（如 dense_map）需调大'))
+    # 场景复位就绪门（**上界，不是延时**）。
+    #
+    # **为什么必须能调**：`scenario_reset` 的失败条件是
+    # `attempts >= startup_reset_max_attempts_ || elapsed >= startup_reset_timeout_s_`，
+    # 默认 60 次 × 1 s = 60 s **先触发**，`startup_reset_timeout_s`（120 s）从未被用满。
+    # 于是"按超时调"实际调不动 —— 这是两个上界口径不一致导致的隐藏上限。
+    # `dense_map`（数百个障碍）实测实体上线需 90 s+（该实测取自 620 个障碍的版本），
+    # 60 s 必然失败。
+    # 两个都暴露出来，调用方按需同时放大。
+    ld.add_action(DeclareLaunchArgument(
+        'startup_reset_max_attempts', default_value='60',
+        description='场景复位就绪门最多尝试次数（每次 startup_reset_period_ms）；'
+                    '与 startup_reset_timeout_s 取**先到者**'))
+    ld.add_action(DeclareLaunchArgument(
+        'startup_reset_timeout_s', default_value='120.0',
+        description='场景复位就绪门的时间上界（秒）；与次数上界取先到者'))
     ld.add_action(DeclareLaunchArgument('use_sim_time', default_value='true'))
     ld.add_action(DeclareLaunchArgument(
         'gz_args', default_value=['-r -v 3 ', world_file],
         description='gz sim 参数（加 -s 可无头）'))
     ld.add_action(DeclareLaunchArgument(
         'viz', default_value='false',
-        description='R6 演示叠加层：true = 起 viz_markers + rviz2（GUI 保持纯场景；'
-                    '缺省 false，既有时序不变）'))
+        description='R6 演示叠加层：true = 起 viz_markers + rviz2 + static_tf。'
+                    'standalone 直接 launch 时缺省 false；run_demo.sh 对 GUI / headless '
+                    '两种形态均显式传 true（固定、不暴露开关，用户 2026-11-08 裁定）'))
     ld.add_action(DeclareLaunchArgument(
         'gui_render_backend', default_value='auto',
         description='GUI 渲染后端：auto（WSL2 + /dev/dxg + X11 自动 D3D12）| d3d12 | software；'
@@ -740,11 +926,31 @@ def generate_launch_description():
         'px4_warmup_timeout_s', default_value='6.5',
         description='ADR-0027：warmup PX4 运行上限（s；timeout 收回，不参与任务）'))
     ld.add_action(DeclareLaunchArgument(
-        'own_px4_delay_s', default_value='25.0',
-        description='ADR-0027：own PX4 启动延时（s；默认 25 s，等 warmup 完成 + 发现图稳定）'))
+        'own_px4_delay_s', default_value='0.0',
+        description='己方 PX4 的**可选额外下限**（s；默认 0 = 不等）。启动时机由'
+                    '「车/目标已在世界中」的就绪门决定（ADR-0038）；本参数仅供极端负载下加保险'))
     ld.add_action(DeclareLaunchArgument(
-        'intruder_px4_delay_s', default_value='35.0',
-        description='ADR-0027：intruder PX4 启动延时（s；默认 35 s，与 own 错峰 10 s）'))
+        'intruder_px4_delay_s', default_value='0.0',
+        description='入侵者 PX4 的**可选额外下限**（s；默认 0 = 不等）。启动时机由己方 '
+                    '/agc/air/odom 新鲜决定（ADR-0038：两个 uXRCE 参与者永不并发创建）'))
+    ld.add_action(DeclareLaunchArgument(
+        'px4_graph_stable_hold_s', default_value='5.0',
+        description='启动 PX4 前要求 ROS 图连续稳定多久（s）。这是旧的 own_px4_delay_s=25 '
+                    '真正在保护的约束：发现图未平息时启动 PX4 会撞上 uXRCE participant '
+                    '创建长尾（ADR-0027 / ADR-0038）'))
+    ld.add_action(DeclareLaunchArgument(
+        'px4_graph_stable_min_nodes', default_value='10',
+        description='ROS 图稳定判据要求的最少节点数（低于此数视为图尚未建起来）'))
+    ld.add_action(DeclareLaunchArgument(
+        'px4_ready_timeout_s', default_value='240.0',
+        description='己方 PX4 就绪门（等实体存在 + gz create 服务 + ROS 图稳定）的墙钟上界（s）'))
+    ld.add_action(DeclareLaunchArgument(
+        'air_link_timeout_s', default_value='120.0',
+        description='入侵者 PX4 就绪门（等己方 /agc/air/odom 新鲜）的墙钟上界（s）'))
+    ld.add_action(DeclareLaunchArgument(
+        'air_lifecycle_timeout_s', default_value='150.0',
+        description='空中 lifecycle 就绪门（等 /agc/air/odom 新鲜 + lifecycle 服务可发现）'
+                    '的墙钟上界（s）；就绪即 activate，不空等'))
     ld.add_action(DeclareLaunchArgument(
         'px4_run_root', default_value='',
         description='ADR-0024：PX4 每实例可写运行根（空=既有共享 build 行为）'))
@@ -755,12 +961,13 @@ def generate_launch_description():
     # `vision_model_*` / `detector_backend` 六个 launch 参数一并删除（项目不做目标识别，
     # 目标位置始终由真值给出，ADR-0009 (a2)）。summary.json 的对应键保留恒写固定值。
     ld.add_action(DeclareLaunchArgument(
-        'px4_sim_model', default_value='gz_agc_x500',
-        description='2026-11-05：己方 PX4 机型。**默认 gz_agc_x500** = 本仓 `agc_x500`'
-                    '（PX4 官方 x500 + 纯视觉青色高亮球；无 collision，物理/接触/安全层不受影响）'
-                    '——因默认 gz_x500 在 50 m 正俯视下仅约 5 px，GUI 里看不见我方机。'
-                    '其余可选：gz_x500（PX4 官方原厂，无高亮）；gz_x500_mono_cam（机载前视相机）；'
-                    'gz_agc_x500_nadir（机载**正下视**相机，ADR-0030，仅取证/测绘、无消费者）'))
+        'px4_sim_model', default_value='gz_agc_x500_nadir',
+        description='2026-11-08：己方 PX4 机型。**默认 gz_agc_x500_nadir** = 本仓 `agc_x500_nadir`'
+                    '（x500 + 正下视 RGB / 语义分割相机，ADR-0030）。相机是平台基本能力：'
+                    '分割标签 → nadir_projection → /agc/obstacles → /agc/map（感知地图唯一障碍来源），'
+                    '故默认即带相机，不再是 opt-in。其余可选：gz_agc_x500（旧默认，纯视觉高亮球、'
+                    '无相机，仅用于复现历史 run）；gz_x500（PX4 官方原厂）；gz_x500_mono_cam（前视相机）。'
+                    '机型是资产选择，不是路线分支（路线分支治理 2.1）。'))
     ld.add_action(OpaqueFunction(function=_compose))
     ld.add_action(OpaqueFunction(function=lambda c: _viz_actions(c, sim_share)))
     return ld

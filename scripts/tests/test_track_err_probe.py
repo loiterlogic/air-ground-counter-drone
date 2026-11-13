@@ -25,11 +25,23 @@ REPO = Path(__file__).resolve().parents[2]
 LAUNCH_MAIN = REPO / 'src' / 'agc_task' / 'launch' / 'main.launch.py'
 PROBE = REPO / 'scripts' / 'tracking' / 'track_err_probe.py'
 
+# 契约 #messages 冻结的 9 个消息：**字段与顺序不得变更**。
 FROZEN_9 = {
     'AgcTaskState', 'AirObservationArray', 'ObstacleObservation', 'ObstacleTrack',
     'ObstacleTrackArray', 'SensorObservation', 'TargetObservation', 'TargetTrack',
     'TargetTrackArray',
 }
+
+# 2026-11-08 用户裁定 Q7/Q28：**新增**的第 10 个消息（足迹点）。
+#
+# 判据口径（这是本次唯一需要澄清的契约边界）：契约写的是「9 个消息的**字段与顺序**
+# 不得变更」—— 保护的是**既有消息的内容**，不是「消息总数恒为 9」。
+# 新增一个消息不改动上面 9 个的任何字段/顺序，故不违反；但必须**显式登记**，
+# 否则下次有人新增消息时无法区分"有意的加"与"误删后的补"。
+# 新增消息登记表（**加消息必须在这里登记**，否则与"误加"无法区分）。
+#   ObstacleFootprintArray —— 2026-11-08，足迹点（ADR-0041）
+#   PerceptionCellMeta     —— 2026-11-11，逐格元数据（ADR-0042）
+ADDED_MESSAGES = {'ObstacleFootprintArray', 'PerceptionCellMeta'}
 
 
 def _text(p):
@@ -253,8 +265,21 @@ def test_probe_pair_accepts_mapping_and_key_list():
 # --------------------------------------------------------------------------------------
 
 def test_nine_messages_still_frozen():
-    msgs = sorted(p.stem for p in (REPO / 'src' / 'agc_msgs' / 'msg').glob('*.msg'))
-    assert set(msgs) == FROZEN_9, sorted(set(msgs) ^ FROZEN_9)
+    """契约 9 个消息必须**一个不少**（字段/顺序由 agc_msgs 的 golden 逐行守护）。
+
+    2026-11-08 判据反转（用户裁定 Q7/Q28）：原断言是「消息集合**恰好**等于 9 个」，
+    新增第 10 个后必然红。改为两段式：
+      * `FROZEN_9 ⊆ 实际集合`（9 个一个都不许少 —— 这才是契约真正保护的东西）；
+      * 多出来的只允许是**显式登记**的 `ADDED_MESSAGES`（防止误加/误删混在一起）。
+    """
+    msgs = {p.stem for p in (REPO / 'src' / 'agc_msgs' / 'msg').glob('*.msg')}
+    missing = FROZEN_9 - msgs
+    assert not missing, '契约冻结的 9 个消息缺失：%r' % sorted(missing)
+    extra = msgs - FROZEN_9
+    assert extra == ADDED_MESSAGES, (
+        '多出的消息必须与登记表一致（多=%r 少=%r）。'
+        '新增消息是"加"不是"改"，但必须显式登记才能与误加区分。'
+        % (sorted(extra - ADDED_MESSAGES), sorted(ADDED_MESSAGES - extra)))
 
 
 # --------------------------------------------------------------------------------------

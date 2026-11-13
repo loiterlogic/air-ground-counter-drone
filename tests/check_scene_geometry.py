@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""场景几何单一来源 + 按域派生 + 三地图 —— 一致性核查（只读）。
+"""场景几何单一来源 + 按域派生 + 全部已登记地图 —— 一致性核查（只读）。
 
-断言（任一失败即整体 FAIL，退出码 1）。**(a)-(h)** 对**每张已登记地图**逐一跑（minimal /
-yard / open_field）；**(i)-(m)** 是跨图 / 一次性断言。
+断言（任一失败即整体 FAIL，退出码 1）。**(a)-(h)** 对**每张已登记地图**逐一跑
+（`world_map.WORLD_MAPS`：minimal / yard / open_field / dense_map）；**(i)-(m)** 是跨图 /
+一次性断言；**(n)-(r)** 是专项断言。
 
 单图断言（per map）：
  (a) 配置文件 schema 合法（work_area 五键；障碍 id/x/y/z/yaw/size；`shape ∈ {box, cylinder}`；
@@ -17,19 +18,29 @@ yard / open_field）；**(i)-(m)** 是跨图 / 一次性断言。
  (f) `geometry_sha256` 稳定且**按图区分**；manifest `geometry` 块（含 `map` / `shape` /
  `safety_radius`）== 配置文件；
  (g) 出生净空：车/目标/己方机 ↔ 每个障碍**足迹**净空 ≥ 物体外伸之和（与
- `scenario_reset.validateCandidate` 同一判据），且作业区边界内缩成立；
+ `scenario_reset.validateCandidate` 同一判据），且作业区边界内缩成立。
+ **出生位按地图派生**（ADR-0036 (b)：`spawn_layout.per_map.<map>`），不再用全局那一组；
  (h) 障碍族可见性：每个实体在 z=0.48（地面激光扫描面）处有水平截面（ADR-0009 口径）；
- (i) 空中安全层**存在可行解**：目标周围 [8,15] m 待机环带上的可行率 / 最大连续阻塞弧，
- 且新地图**不新增**阻塞单元（相对 minimal 逐单元比对）；
+ (i) 空中安全层**存在可行解**：**本图目标**周围 [8,15] m 待机环带上的可行率 / 最大连续阻塞弧。
+ **判据 = 门控口径**（ADR-0036 (c)：按 `z_gate ≥ z_top + c_clear` 移除障碍后再算，
+与 `safety_shield.cpp` 的 `deriveRings` 同判据）；**二维口径并列登记**在
+ `two_d_feasible_pct` / `two_d_max_free_arc_deg`，不参与 pass；
  (j) 回退副本边界：`perception_bringup` 的 `map_file` / `obstacles_file` 缺省仍指向包内副本，
  且 `w6` 路径按地图派生注入（非 minimal 不读副本）；
  (k) 权限：`obstacles.yaml` 静态先验成文假设仍在（不静默引入真值优势）；
  (l) 地图登记一致：`scenarios.yaml` 的 `world_map` 值 ∈ 清单；s04 主场景指向 yard；
  (m) 配置文件清单**单一实现**：`world_bringup` / `air_bringup` / `composition` 都经
- `agc_sim/launch/world_map.py` 解析，且三处无自持文件名表。
+ `agc_sim/launch/world_map.py` 解析，且三处无自持文件名表；
+ (n) GUI 网格只关视觉；
+ (o) `yard` 形状 / 尺寸 / 朝向多样性 + 并集覆盖率 5%–12%（**`yard` 专属**，不套用到别图）；
+ (p) 全部地图作业区一致（100×100 / origin −50）；
+ (q) 明度带（屋面 L − 地面 L ≥ 0.30，`yard` 专属）；
+ (r) **高密度图 `dense_map`**（ADR-0036 (e)）：实体数 / **最近邻中位数** / **最小间距下限**
+ （≥2.645 m，ADR-0044）/ 尺寸上限 / 高度上限 / 无复合体 —— "高密度"第一次可判定。
+ 覆盖率**不套用** (o) 的 5–12%。
 
 输出 JSON 摘要（stdout）；`--out <path>` 落盘。用法：
-  `python3 tests/check_scene_geometry.py`              # 三张地图全查
+  `python3 tests/check_scene_geometry.py`              # 全部已登记地图
   `python3 tests/check_scene_geometry.py --maps minimal`  # 只查一张
 """
 
@@ -314,9 +325,16 @@ def _blocked_cells(geometry_obs, ring, world_map_mod):
 SPAWN_LAYOUT_PATH = os.path.join(ROOT, 'src', 'agc_task', 'config', 'spawn_layout.yaml')
 
 
-def _spawn_layout():
-    doc = _load_yaml(SPAWN_LAYOUT_PATH)['spawn_layout']
-    return doc
+def _spawn_layout(world_map=None):
+    """读出生布局；`world_map` 非空时按 `per_map` 覆盖（ADR-0036，与 `scene_spawn` 同一条路径）。
+
+ 为什么核查也要按图取：出生位自 ADR-0036 起是**地图属性**。核查 (g) 若仍用顶层坐标判
+ 每张图，就会拿"yard 的出生位"去验 dense_map 的布局 —— 假绿或假 FAIL 都是证据失真。
+    """
+    sys.path.insert(0, os.path.join(ROOT, 'src', 'agc_task', 'launch'))
+    import scene_spawn
+    return scene_spawn.load_spawn_layout(
+        os.path.join(ROOT, 'src', 'agc_task'), path=SPAWN_LAYOUT_PATH, world_map=world_map)
 
 
 _LAYOUT = _spawn_layout()
@@ -625,20 +643,28 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
     # F1（2026-10-31）：坐标来自出生布局配置文件（`spawn_layout.yaml`），并追加
     # 「车-目标 / 己方机-目标 / 车-己方机」三组设计距离判据——这是派工单的验收口径，
     # 不再只有"车↔目标 ≥6 m"这一条。
-    g = {'map': map_name, 'spawn_layout_source': SPAWN_LAYOUT_PATH}
+    # ADR-0036（2026-11-10）：出生位是**地图属性**——按 `per_map.<map>` 取本图生效坐标，
+    # 而不是拿顶层（yard 的）坐标去验每一张图。
+    _lay = _spawn_layout(map_name)
+    car_xy = (float(_lay['car']['x']), float(_lay['car']['y']))
+    tgt_xy = (float(_lay['target']['x']), float(_lay['target']['y']))
+    own_xy = (float(_lay['own_uav']['x']), float(_lay['own_uav']['y']))
+    _raw_per_map = (_load_yaml(SPAWN_LAYOUT_PATH).get('spawn_layout') or {}).get('per_map') or {}
+    g = {'map': map_name, 'spawn_layout_source': SPAWN_LAYOUT_PATH,
+         'spawn_from': 'per_map' if map_name in _raw_per_map else 'top_level'}
     worst = {}
     for name, (px, py), _extent in (
-            ('car', CAR_XY, 0.5037), ('target', (TARGET_X, TARGET_Y), 0.25),
-            ('own_uav', OWN_XY, 0.25)):
+            ('car', car_xy, 0.5037), ('target', tgt_xy, 0.25),
+            ('own_uav', own_xy, 0.25)):
         clear = min(_obb_clearance(px, py, o, world_map_mod) - _footprint_extent(o, world_map_mod)
                     for o in obstacles)
         worst[name] = round(clear, 6)
     g['min_footprint_clearance_m'] = worst
     g['all_spawns_clear'] = all(v > 0.0 for v in worst.values())
     # 车↔目标 标定值 6.0 m（ADR-0012）
-    car_target = math.hypot(CAR_XY[0] - TARGET_X, CAR_XY[1] - TARGET_Y)
-    own_target = math.hypot(OWN_XY[0] - TARGET_X, OWN_XY[1] - TARGET_Y)
-    car_own = math.hypot(CAR_XY[0] - OWN_XY[0], CAR_XY[1] - OWN_XY[1])
+    car_target = math.hypot(car_xy[0] - tgt_xy[0], car_xy[1] - tgt_xy[1])
+    own_target = math.hypot(own_xy[0] - tgt_xy[0], own_xy[1] - tgt_xy[1])
+    car_own = math.hypot(car_xy[0] - own_xy[0], car_xy[1] - own_xy[1])
     g['car_target_distance_m'] = round(car_target, 6)
     g['own_uav_target_distance_m'] = round(own_target, 6)
     g['car_own_uav_distance_m'] = round(car_own, 6)
@@ -648,8 +674,8 @@ def _check_map(map_name, sim_share, perc_share, air_share, task_share, geom_path
     g['own_uav_target_ge_25'] = own_target >= 25.0
     g['car_own_uav_in_3_8'] = 3.0 <= car_own <= 8.0
     g['boundary_inner_ok'] = bool(
-        wa['origin_x'] + 0.5037 <= CAR_XY[0] <= wa['origin_x'] + wa['size_x'] - 0.5037
-        and wa['origin_y'] + 0.5037 <= CAR_XY[1] <= wa['origin_y'] + wa['size_y'] - 0.5037)
+        wa['origin_x'] + 0.5037 <= car_xy[0] <= wa['origin_x'] + wa['size_x'] - 0.5037
+        and wa['origin_y'] + 0.5037 <= car_xy[1] <= wa['origin_y'] + wa['size_y'] - 0.5037)
     g['pass'] = all(g[k] for k in (
         'all_spawns_clear', 'car_target_clearance_ok', 'boundary_inner_ok',
         'car_target_ge_30', 'own_uav_target_ge_25', 'car_own_uav_in_3_8'))
@@ -695,7 +721,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--out', default=None, help='JSON 摘要落盘路径（可选）')
     ap.add_argument('--maps', default=None,
-                    help='逗号分隔地图名（缺省=清单全部：minimal,yard,open_field）')
+                    help='逗号分隔地图名（缺省 = world_map.WORLD_MAPS 全部）')
     args = ap.parse_args()
 
     sim_share = _share('agc_sim')
@@ -728,51 +754,87 @@ def main():
         i_res = {'ring_r_min_m': RING_R_MIN, 'ring_r_max_m': RING_R_MAX, 'maps': {}}
         for map_name in maps:
             _, geom_path = world_map_mod.geometry_path(sim_share, map_name)
-            obs = _load_yaml(geom_path).get('obstacles') or []
+            geometry_i = _load_yaml(geom_path)
+            obs = geometry_i.get('obstacles') or []
             cells = _blocked_cells(obs, ring, world_map_mod)
             if baseline is None:
                 baseline = cells
+            # ADR-0036 (c)：环带判据改为**门控口径**（运行期真实生效的那条）——
+            # 按 `z_gate ≥ z_top + c_clear` 先移除障碍，再算环带；二维口径**并列登记**。
+            # 为什么改：`safety_shield.cpp` 的 `deriveRings` 在飞行高度高于障碍顶面时
+            # 根本不把这些障碍放进圆盘集，二维口径与运行语义不符（dense_map 上两者相差
+            # 0% ↔ 100%）。改判据须留痕：ADR-0036 (c)。
+            fa_i = geometry_i.get('flight_altitude') or {}
+            gate_z = float(fa_i.get('own_track_m') or 0.0)
+            c_clear = float(fa_i.get('own_clearance_min_m') or 0.0)
+            alive = [o for o in obs
+                     if not (gate_z >= world_map_mod.obstacle_z_top(o) + c_clear)]
+            gated_off = len(obs) - len(alive)
+            # 本图出生位（ADR-0036）：环带以**本图目标**为圆心，不是顶层目标位。
+            lay_i = _spawn_layout(map_name)
+            tgt_x, tgt_y = float(lay_i['target']['x']), float(lay_i['target']['y'])
             # 环带可行率（按 RING 半径的 3600 个角向采样）与最大连续阻塞弧
             ring_r = ring['target_min_dist'] + ring['target_margin'] + ring['extra']
             total = 3600
-            blocked = [False] * total
-            for k in range(total):
-                ang = 2.0 * math.pi * k / total
-                px = TARGET_X + ring_r * math.cos(ang)
-                py = TARGET_Y + ring_r * math.sin(ang)
-                blocked[k] = any(
-                _safety_disk_contains(o, px, py, world_map_mod, ring) for o in obs)
-            feasible = total - sum(blocked)
-            # 最长**连续可行弧**（环形）：安全层有可行解 ⟺ 存在一段可用弧供 standoff 驻留
-            cur = 0
-            max_free = 0
-            for k in range(2 * total):
-                if not blocked[k % total]:
-                    cur += 1
-                    max_free = max(max_free, cur)
-                else:
-                    cur = 0
-            cur = 0
-            max_blocked = 0
-            for k in range(2 * total):
-                if blocked[k % total]:
-                    cur += 1
-                    max_blocked = max(max_blocked, cur)
-                else:
-                    cur = 0
+
+            def _scan(obs_set, tx, ty):
+                blocked = [False] * total
+                for k in range(total):
+                    ang = 2.0 * math.pi * k / total
+                    px = tx + ring_r * math.cos(ang)
+                    py = ty + ring_r * math.sin(ang)
+                    blocked[k] = any(
+                        _safety_disk_contains(o, px, py, world_map_mod, ring) for o in obs_set)
+                cur = 0
+                max_free = 0
+                for k in range(2 * total):
+                    if not blocked[k % total]:
+                        cur += 1
+                        max_free = max(max_free, cur)
+                    else:
+                        cur = 0
+                cur = 0
+                max_blocked = 0
+                for k in range(2 * total):
+                    if blocked[k % total]:
+                        cur += 1
+                        max_blocked = max(max_blocked, cur)
+                    else:
+                        cur = 0
+                return {
+                    'feasible_pct': round(100.0 * (total - sum(blocked)) / total, 2),
+                    'max_free_arc_deg': round(360.0 * max_free / total, 2),
+                    'max_blocked_arc_deg': round(360.0 * max_blocked / total, 2),
+                }
+
+            gated = _scan(alive, tgt_x, tgt_y)
+            two_d = _scan(obs, tgt_x, tgt_y)
             i_res['maps'][map_name] = {
                 'ring_radius_m': round(ring_r, 4),
-                'feasible_pct': round(100.0 * feasible / total, 2),
-                'max_free_arc_deg': round(360.0 * max_free / total, 2),
-                'max_blocked_arc_deg': round(360.0 * max_blocked / total, 2),
+                'target_xy': [tgt_x, tgt_y],
+                # pass 用的口径 = 门控口径（见上）。
+                'feasible_pct': gated['feasible_pct'],
+                'max_free_arc_deg': gated['max_free_arc_deg'],
+                'max_blocked_arc_deg': gated['max_blocked_arc_deg'],
+                'gated_off': gated_off,
+                'alive': len(alive),
+                # **二维口径并列登记**（不参与 pass）：任何人想看"若不门控会怎样"都能看到。
+                # `yard` 的 81.53% 历史值即此列，故历史证据仍可追溯。
+                'two_d_feasible_pct': two_d['feasible_pct'],
+                'two_d_max_free_arc_deg': two_d['max_free_arc_deg'],
+                'gate_z_m': gate_z,
+                'c_clear_m': c_clear,
                 # 相对 minimal 的**新增**阻塞单元：如实登记（不参与 pass——用户要求中央加内容，
                 # 阻塞必然增加；判据是"仍存在可行解"而不是"不比 minimal 多"）。
                 'new_blocked_cells_vs_minimal': len(cells - baseline),
                 'blocked_cells': len(cells),
             }
-        # 判据：**空中安全层在每张地图上均存在可行解**——
+        # 判据（ADR-0036 (c)，**门控口径**）：**空中安全层在每张地图上均存在可行解**——
         # ① 环带可行率 > 0（不是全被膨胀圆盘吃掉）；② 最长连续可行弧 ≥ 90°（够 standoff 驻留）。
-        # 新增阻塞量只作登记：yard 按用户要求增加中央内容后必然更挡环带，须如实报告而不据此判 FAIL。
+        # 能力收窄（如实登记）：改为门控口径后，任何"最高障碍顶 + c_clear ≤ 飞行高度"的地图
+        # 都会自动 100% 通过 —— 本断言从此只能抓"有高于飞行高度的障碍挡在环带上"这一种情况。
+        i_res['judged_by'] = 'gated（ADR-0036 (c)：按 z_gate ≥ z_top + c_clear 移除后再算）'
+        i_res['two_d_registered_only'] = True
         i_res['feasible_solution_exists'] = all(
             v['feasible_pct'] > 0.0 for v in i_res['maps'].values())
         i_res['max_free_arc_ge_90deg'] = all(
@@ -973,6 +1035,75 @@ def main():
         }
         q_res['pass'] = q_res['gap_ge_0_30'] and q_res['roof_uses_roofpanel']
         res['tests']['q_luma_bands'] = q_res
+
+        # ---- (r) 高密度图（`dense_map`）的可判定口径（ADR-0036 (e)）----
+        # 在此之前**没有任何断言**能判"高密度"：(o) 是 `yard` 专属（≤46 实体 / 覆盖率 5–12%），
+        # 对它套用会直接把这张图判成"超标"。故为**按图**立一条独立断言，判据是
+        # "密度真的够高 + 尺度真的小 + 高度真的低 + 确实不留走廊"四件事，逐条可判。
+        if 'dense_map' in maps:
+            _, df_path = world_map_mod.geometry_path(sim_share, 'dense_map')
+            df_geom = _load_yaml(df_path)
+            df_obs = df_geom.get('obstacles') or []
+            df_wa = df_geom.get('work_area') or {}
+            df_parts = [pt for o in df_obs for pt in world_map_mod.obstacle_parts(o)]
+            # 最近邻（锚点间距）：网格加速，避免 620² 拖慢核查
+            _cell = 4.0
+            _grid = {}
+            for o in df_obs:
+                _grid.setdefault((int(math.floor(float(o['x']) / _cell)),
+                                  int(math.floor(float(o['y']) / _cell))), []).append(o)
+            _nns = []
+            for o in df_obs:
+                ox, oy = float(o['x']), float(o['y'])
+                cx, cy = int(math.floor(ox / _cell)), int(math.floor(oy / _cell))
+                best = float('inf')
+                for dx in (-1, 0, 1):
+                    for dy in (-1, 0, 1):
+                        for p in _grid.get((cx + dx, cy + dy), ()):
+                            if p is o:
+                                continue
+                            best = min(best, math.hypot(ox - float(p['x']),
+                                                        oy - float(p['y'])))
+                _nns.append(best)
+            df_tops = [world_map_mod.obstacle_z_top(o) for o in df_obs]
+            df_fa = df_geom.get('flight_altitude') or {}
+            r_res = {
+                'n_obstacles': len(df_obs),
+                # ① 数量：≥ `yard` 上限（46）的 5 倍 —— "高密度"不是"稍多几个"。
+                'n_obstacles_ge_200': len(df_obs) >= 200,
+                # ② 最近邻中位数 ≤ 3.0 m —— "密"是间距属性，不是数量属性。
+                'nn_median_le_3m': sorted(_nns)[len(_nns) // 2] <= 3.0,
+                'nn_median_m': round(sorted(_nns)[len(_nns) // 2], 3),
+                'nn_min_m': round(min(_nns), 3),
+                # ②' 最小间距**下限** ≥ 2.645 m（ADR-0044 第二轮「再 +15%」：
+                # 首轮 2.0 × 1.15 = 2.3（ADR-0037）→ 2.3 × 1.15 = 2.645；防止后续改动悄悄把间距压回去）。
+                # 容差 1 mm：yaml 里的坐标是 3 位小数，四舍五入会让实测值微低于名义下限
+                # （实测 2.6455 vs 2.645）——那是表示精度，不是间距被压窄。
+                'nn_min_ge_2_645m': min(_nns) >= 2.645 - 1e-3,
+                # ③ 尺度长尾：水平尺寸最大 ≤ 2.5 m —— "小障碍"。
+                'footprint_max_le_2_5m': max(
+                    max(float(v) for v in pt['size'][:2]) for pt in df_parts) <= 2.5,
+                'footprint_max_m': round(max(
+                    max(float(v) for v in pt['size'][:2]) for pt in df_parts), 3),
+                # ④ 高度上限 3.0 m（用户 2026-11-10 裁定「不要超过 3 m」）。
+                'z_top_max_le_3m': max(df_tops) <= 3.0 + 1e-9,
+                'z_top_max_m': round(max(df_tops), 3),
+                # ⑤ 门控口径登记：全部障碍低于飞行高度 ⇒ 本图不测空中避障（能力边界如实登记）。
+                'all_gated_at_flight_altitude': all(
+                    float(df_fa['own_track_m']) >= z + float(df_fa['own_clearance_min_m'])
+                    for z in df_tops),
+                # ⑥ 单图元、无复合体（"不需要做的太精致"的量化形态）。
+                'no_composites': not any(world_map_mod.is_composite(o) for o in df_obs),
+                # ⑦ 覆盖率**不套用** yard 的 5–12%：那是 yard 专属。只要求"有实体覆盖"。
+                'coverage_union_pct': round(_union_coverage_pct(df_obs, df_wa, world_map_mod), 2),
+                'coverage_positive': _union_coverage_pct(df_obs, df_wa, world_map_mod) > 0.0,
+            }
+            r_res['pass'] = all(r_res[k_] for k_ in (
+                'n_obstacles_ge_200', 'nn_median_le_3m', 'nn_min_ge_2_645m',
+                'footprint_max_le_2_5m',
+                'z_top_max_le_3m', 'all_gated_at_flight_altitude', 'no_composites',
+                'coverage_positive'))
+            res['tests']['r_dense_map'] = r_res
 
         res['overall_pass'] = all(t.get('pass') for t in res['tests'].values()) and all(
             all(sub.get('pass') for sub in v.values() if isinstance(sub, dict) and 'pass' in sub)

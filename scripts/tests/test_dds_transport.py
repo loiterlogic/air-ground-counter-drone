@@ -109,3 +109,42 @@ def test_selection_does_not_rely_on_trial_traffic():
     for banned in ('rclpy', 'subprocess', 'socket', 'publish'):
         assert banned not in src, (
             '选择器不得依赖 %r：探活会在多进程拓扑下给出假阳性' % banned)
+
+
+# --------------------------------------------------------------------------------------
+# SHM segment 尺寸（2026-11-08 实测，用户裁定 Q33）
+# --------------------------------------------------------------------------------------
+def test_subnet_shm_points_at_a_profile_with_large_segment():
+    """`subnet-shm` 必须注入 SHM profile，且 segment 足够装下大图像帧。
+
+    为什么这条是硬判据：默认 SHM segment 太小会让**大消息**订阅吞吐崩到 0.4–1.5 Hz
+    （实测 16.78 MB 帧 0.12 Hz），整条感知链卡死；而渲染/CPU 都不是瓶颈
+    （RTF 1.00、GPU 16%、`ps %cpu` 约 1 核）。这不是"调优"，是**可用性**。
+    """
+    env = dds_transport.env_for(flags=FLAGS_NO_MC)
+    assert 'FASTRTPS_DEFAULT_PROFILES_FILE' in env, (
+        'subnet-shm 必须注入 FASTRTPS_DEFAULT_PROFILES_FILE；'
+        '`segment_size` 只能通过 XML profile 设置，没有对应环境变量')
+    path = env['FASTRTPS_DEFAULT_PROFILES_FILE']
+    assert os.path.isfile(path), 'profile 文件必须真实存在（已落盘）：%r' % path
+    text = open(path, encoding='utf-8').read()
+    assert 'segment_size' in text, 'profile 必须设置 segment_size'
+    # 2048² 深度帧 = 16.78 MB；segment 必须至少能装下一帧
+    assert dds_transport.SHM_SEGMENT_MB >= 16, (
+        'segment 至少 16 MB（2048² 深度帧 16.78 MB）；实测更小会崩到 0.4 Hz')
+
+
+def test_shm_segment_size_has_measured_rationale():
+    """segment 取值必须附实测依据（防止后来者随手改小）。"""
+    src = (ROOT / 'scripts' / 'demo' / 'dds_transport.py').read_text(encoding='utf-8')
+    assert '250' in src or '0.44' in src, (
+        '必须记录实测症状（默认配置下大帧 0.44 Hz / 提升 250×），'
+        '否则后人无法判断这个值能不能改')
+    assert '16' in src and 'MB' in src
+
+
+def test_localhost_policy_does_not_touch_profile():
+    """原生 Linux（lo 有组播）走 localhost-udp，不得注入任何 profile —— 行为零漂移。"""
+    env = dds_transport.env_for(flags=FLAGS_WITH_MC)
+    assert 'FASTRTPS_DEFAULT_PROFILES_FILE' not in env, (
+        'localhost-udp 不得注入 SHM profile：原生 Linux 的既有行为必须完全不变')

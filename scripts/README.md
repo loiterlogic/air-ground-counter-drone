@@ -19,6 +19,7 @@
 | [`lock_px4_failsafe_params.sh`](lock_px4_failsafe_params.sh) | 注入 PX4 失效安全参数锁定（ADR-0015） |
 | [`target_driver.py`](target_driver.py) | 目标驱动（直线 / 圆周）运行时驱动 |
 | [`adr_index.py`](adr_index.py) | 从 `docs/adr/*.md` 生成 ADR 索引；`--check` 校验漂移（纯静态、无副作用，ADR-0025） |
+| [`gen_dense_map.py`](gen_dense_map.py) | 高密度地图 `dense_map` 的作者工具（ADR-0036 / ADR-0037 / ADR-0044）：一次性生成几何 yaml，**默认拒绝覆盖已有文件**（`--force` 才写）；生成后 yaml 即唯一来源 |
 | [`gui_renderer_evidence.py`](gui_renderer_evidence.py) | GUI 渲染后端证据（snapshot + probe，纯 stdlib 库，**无 `__main__`**）；由 `episode_runner.py` 与 `scripts/tests/test_gui_renderer_evidence.py` 导入（ADR-0021/0097） |
 
 跨进程交接叫醒脚本（原协作脚本目录）随机制退役已删除（[ADR-0026](../docs/adr/0026-leader-worker-collaboration-and-batch-authorization.md#top)），不属于本目录的长期工程工具索引；现行 Leader / Worker 交接规则见 [ADR-0026](../docs/adr/0026-leader-worker-collaboration-and-batch-authorization.md#top)。

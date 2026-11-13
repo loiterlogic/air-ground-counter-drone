@@ -3,7 +3,13 @@
 
 ## Status
 
-accepted（2026-11-02 由 ADR-0010 / 0055 / 0062 / 0106 / 0112 合并；结论未变）
+accepted（2026-11-02 由 ADR-0010 / 0055 / 0062 / 0106 / 0112 合并；结论未变）；
+**部分 superseded by [ADR-0035](0035-perception-map-representation-and-unknown-policy.md#top)（2026-11-09）**
+
+> **被取代的部分**：本篇 (e) 末句「数据契约不变：`0=free / 100=occupied / -1=unknown`」——
+> `/agc/map` 自 2026-11-09 起输出**量化概率**（`-1=unknown / 0=free / 1–99=概率×100 / 100=occupied`）。
+> **仍有效的部分**：内容身份 hash、单调更新序号、逐字节等价比较、静态先验永不被空观测清除、
+> 动态轨按 `dynamic_max_age_s` 过期，(f) 的作业区与布局范式。
 
 ## 背景
 

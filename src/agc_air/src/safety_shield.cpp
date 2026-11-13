@@ -37,7 +37,9 @@ std::vector<Disk> toDisks(const RingSet & rs)
 {
   std::vector<Disk> ds;
   ds.reserve(rs.rings.size());
-  for (const auto & r : rs.rings) {ds.push_back(Disk{r.x, r.y, r.r, r.is_target});}
+  for (const auto & r : rs.rings) {
+    ds.push_back(Disk{r.x, r.y, r.r, r.is_target});
+  }
   return ds;
 }
 
@@ -114,7 +116,8 @@ bool pointInsideAny(const std::vector<Disk> & ds, double x, double y, bool want_
 
 /// 扫掠复检：当前位置 → 参考端点 的直线段是否穿入任一**起点在外**的约束圆盘。
 /// 起点已在圆盘内的约束跳过（那属于"自当前位置逃出"，由不可行路径处理，而非扫掠冲突）。
-bool sweptClear(const std::vector<Disk> & ds,
+bool sweptClear(
+  const std::vector<Disk> & ds,
   double ax, double ay, double bx, double by, std::size_t * hit)
 {
   for (std::size_t i = 0; i < ds.size(); ++i) {
@@ -204,7 +207,8 @@ void SafetyShield::configure_parameters(
   }
 }
 
-RingSet SafetyShield::deriveRings(const agc_control::Vector3 & current_pos,
+RingSet SafetyShield::deriveRings(
+  const agc_control::Vector3 & current_pos,
   const agc_control::Vector3 & current_vel,
   const agc_control::Vector3 & target_pos, bool target_valid) const
 {
@@ -226,12 +230,13 @@ RingSet SafetyShield::deriveRings(const agc_control::Vector3 & current_pos,
       ++rs.gated_off;
       continue;
     }
-    rs.rings.push_back(RingSet::Ring{ob.x, ob.y, ob.safety_radius + obstacle_margin_m_ + extra, false});
+    rs.rings.push_back(RingSet::Ring{ob.x, ob.y, ob.safety_radius + obstacle_margin_m_ + extra,
+        false});
   }
   if (target_valid) {
     // ⚠ 目标间距圆盘**不参与门控**：否则抬高高度即可无限接近目标，K1 视场 / 捕获几何会失效。
     rs.rings.push_back(RingSet::Ring{target_pos.x(), target_pos.y(),
-      target_min_dist_ + target_margin_m_ + extra, true});
+        target_min_dist_ + target_margin_m_ + extra, true});
     rs.target = 1;
   }
   rs.obstacles = static_cast<std::int32_t>(rs.rings.size()) - rs.target;
@@ -239,7 +244,8 @@ RingSet SafetyShield::deriveRings(const agc_control::Vector3 & current_pos,
 }
 
 
-SafetyResult SafetyShield::apply(const agc_control::Reference & desired,
+SafetyResult SafetyShield::apply(
+  const agc_control::Reference & desired,
   const agc_control::Vector3 & current_pos,
   const agc_control::Vector3 & current_vel,
   const agc_control::Vector3 & target_pos, bool target_valid) const
@@ -282,8 +288,8 @@ SafetyResult SafetyShield::apply(const agc_control::Reference & desired,
       // 归因（**不改语义**，只把 `adjusted` 拆成可分辨的两类）：
       // 期望端点就落在某目标圆盘内 → 目标盘；否则是障碍盘。两者都是"介入"，
       // 但「目标间距盘导致」与「避障导致」的调参方向完全相反，必须能分开看。
-      out.reason = pointInsideAny(disks, desired.pos.x(), desired.pos.y(), true)
-        ? "adjusted_target" : "adjusted_obstacle";
+      out.reason = pointInsideAny(disks, desired.pos.x(), desired.pos.y(), true) ?
+        "adjusted_target" : "adjusted_obstacle";
       out.ref.pos.x() = qx;
       out.ref.pos.y() = qy;
       // 去掉指向各约束中心的速度分量（不再朝里飞）

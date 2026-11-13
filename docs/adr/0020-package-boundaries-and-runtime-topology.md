@@ -102,9 +102,14 @@ manifest 记 `launch='main.launch.py'` + 实际 `backend` + `nodes`（完整展�
 
 ### (f) 就绪依赖替代盲计时
 `intruder_driver` 由 **`OnProcessStart(target_action=<入侵者 PX4 ExecuteProcess>)`** 事件驱动（其自身
-已有就绪门控：无 odom 先 no-op），**移除** 35 s `TimerAction`。己方 PX4 与入侵者 PX4 的延时**保留**
-`TimerAction` 并在代码旁注明理由—— 二者属 **gz 引擎 spawn 时序**（世界 / 入侵者模型于 gz+3 s spawn，
-PX4 才具 gz 资源与时钟 / 可 attach 模型），本层**无可达就绪信号**，故保留最小计时。
+已有就绪门控：无 odom 先 no-op），**移除** 35 s `TimerAction`。
+
+> **2026-11-10 续（[ADR-0038](0038-startup-readiness-gates.md#top)）**：本条原先保留的「己方 / 入侵者
+> PX4 用 `TimerAction` 计时、本层无可达就绪信号」**已不成立**——当时认为不可达的就绪信号，实际上
+> 由 gz `create` 服务发现、`scene/info` 实体存在、世界时钟推进、`/agc/air/odom` 新鲜这几类
+> **可查询事实**给出。车/目标的 15 s spawn 定时器、PX4 的 25/35 s、`air_bringup` 的 12 s 与
+> `scenario_reset` 的 4 s 初始复位**全部**改为就绪门驱动；固定秒数此后只作**上界**（超时即显式失败）
+> 与**可选下限**（默认 0）。判据与实现见 ADR-0038。
 
 ### (g) 命名空间与坐标系
 
@@ -204,8 +209,9 @@ PX4 才具 gz 资源与时钟 / 可 attach 模型），本层**无可达就绪�
 - **不**允许任意包互依赖（无类别区分即退化为无架构）。
 - **不**把 `agc_air_lib` 升格为公共库、**不**为修 export 新建跨域链接。
 - **不**引入 `bt_navigator` / 行为树；**不**新增第二 ROS 命令者。
-- **不**把启动依赖全部改成就绪等待（`launch_ros` **无**内置「等话题 / 服务」wait 动作，PX4 与 gz
-  引擎 spawn 属引擎侧时序，强行等待只会引入伪信号）。
+- **不**在 `launch` 内自造阻塞式「等话题 / 服务」动作（`launch_ros` 无内置能力，且在 launch 里
+  阻塞会卡住整个事件循环）。**就绪判定一律在独立子进程里做**，结论经**退出码 / 事件**回传
+  （见 [ADR-0038](0038-startup-readiness-gates.md#top)）——这不违反本条，反而正是它的落点。
 - **不**把 `backend` 只作顶层变量而不落能力表（否则覆盖状态退回逐文件硬编码）。
 - **不**改冻结 9 消息 / 服务 ABI、唯一执行口语义、硬约束–。
 
@@ -224,12 +230,11 @@ PX4 才具 gz 资源与时钟 / 可 attach 模型），本层**无可达就绪�
   导出承诺与安装产物一致；拓扑成为单一可审查实体，`backend` 贯穿身份与报告，`intruder_driver`
   随实际就绪启动（不早于入侵者 PX4 ≈25 s，与旧 35 s 相比**不晚**）。
 - **代价 / 限制**：`lightweight` / `full` 除入口名 / 身份 / 就绪改动外**等价**；gz 引擎 spawn 段
-  （12 / 25 s）仍是计时而非就绪信号；引用旧入口名的脚本与核查器（`scripts/run_w6_*.sh` /
+  已于 2026-11-10 改由就绪门承载（[ADR-0038](0038-startup-readiness-gates.md#top)），不再是计时；引用旧入口名的脚本与核查器（`scripts/run_w6_*.sh` /
   `episode_runner.py` / `w6_r0*_check.py` / `w6_r025_full_probe.py` / `check_full_chain_dual_px4.py`）与 config
   注释须同步更新。
 - **未决**：① `intruder_driver` / `jammer` 是否应归入独立「设备域」—— 本轮**不**迁移，后续若迁按
-  ③关系调整 `exec_depend`、**不**引入库链接；② gz 引擎 spawn 段若将来由引擎侧提供可达事件，须回归
-  就绪依赖；③ `intruder_driver` 事件驱动的实跑时序以整链实跑证据复核。
+  ③关系调整 `exec_depend`、**不**引入库链接；② gz 引擎 spawn 段**已**回归就绪依赖（ADR-0038）；③ `intruder_driver` 事件驱动的实跑时序以整链实跑证据复核。
 
 ## 参考
 - [ADR-0003](0003-nav2-paradigm-absorption.md#top)（Nav2 范式吸收：模式全覆盖、按命令源裁剪）

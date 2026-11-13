@@ -22,6 +22,7 @@ from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
@@ -85,6 +86,12 @@ def generate_launch_description():
         }.items(),
     )
 
+    ld.add_action(DeclareLaunchArgument(
+        'startup_reset_max_attempts', default_value='60',
+        description='场景复位就绪门最多尝试次数（与 startup_reset_timeout_s 取先到者）'))
+    ld.add_action(DeclareLaunchArgument(
+        'startup_reset_timeout_s', default_value='120.0',
+        description='场景复位就绪门的时间上界（秒）'))
     common = [params_file, {'use_sim_time': LaunchConfiguration('use_sim_time')}]
     # ground_controller 字段随 command_source 切换（rl → agc_rl；baseline → agc_ground）
     controller_name = PythonExpression([
@@ -92,7 +99,17 @@ def generate_launch_description():
 
     nodes = [
         Node(package='agc_task', executable='scenario_reset',
-             name='scenario_reset', parameters=common, output='screen'),
+             name='scenario_reset',
+             # 复位就绪门的上界（**按需显式传入，缺省沿用 config 的默认值**）。
+             # 密障碍地图（dense_map，数百个）实体上线需 90 s+，默认 60 次 × 1 s
+             # 必然失败；两个上界都要放大（它们取先到者）。
+             parameters=common + [{
+                 'startup_reset_max_attempts': ParameterValue(
+                     LaunchConfiguration('startup_reset_max_attempts'), value_type=int),
+                 'startup_reset_timeout_s': ParameterValue(
+                     LaunchConfiguration('startup_reset_timeout_s'), value_type=float),
+             }],
+             output='screen'),
         Node(package='agc_task', executable='task_manager',
              name='task_manager',
              parameters=common + [{'ground_controller_name': controller_name}],

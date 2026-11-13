@@ -34,6 +34,7 @@ ament_target_dependencies(scan_self_filter rclcpp sensor_msgs)
 
 # 离线对照基线（Nav2 planner 插件 + agc_control LQR 插件 + 内建 costmap）
 add_executable(ground_baseline src/ground_baseline.cpp)
+target_include_directories(ground_baseline PRIVATE include)
 target_link_libraries(ground_baseline Eigen3::Eigen)
 ament_target_dependencies(ground_baseline
   rclcpp rclcpp_lifecycle geometry_msgs nav_msgs agc_msgs
@@ -56,5 +57,16 @@ install(TARGETS
 
 install(DIRECTORY config launch
   DESTINATION share/${PROJECT_NAME})
+
+install(DIRECTORY include/
+  DESTINATION include)
+
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  # 未知空间规划策略：纯逻辑判定（不启 ROS / 不启仿真）。
+  # 守护"未知不可走"这条口径 —— 它不依赖任何 Navfn 私有参数（与 Nav2 解绑）。
+  ament_add_gtest(test_planning_unknown_policy test/test_planning_unknown_policy.cpp)
+  target_include_directories(test_planning_unknown_policy PRIVATE include)
+endif()
 
 ament_package()

@@ -242,7 +242,7 @@ Leader 审"摘要 + 抽样证据"；抽样比例与深度由 Leader 定，**独�
 ## 一轮交接
 
 1. Leader 读项目入口与实际证据，写完整派工单，状态置 `待执行`。
-2. **任务链首次派工**：Leader **只能用 `worker`** 创建 Worker（执行者路由由 Host 钉死为 workbuddy 分组 `deepseek-v4.1-flash` / `reasoningEffort: high`，无需传参；首选 `@huai_xin/dsh-workbuddy/intl` 不可用时由 `worker-route-fallback` 自动切到 `/cn`，Leader 不干预），把子会话 ID 记入本轮 `report.md`。**后续轮次复用同一子会话**，用 `send_message` 投递新派工，不重新创建；**阻塞**时按 [阻塞处置](#workflow) 结档并开新 Worker 续做。
+2. **任务链首次派工**：Leader **只能用 `worker`** 创建 Worker（执行者路由由 Host 钉死为 workbuddy 分组 `hy4free` / `reasoningEffort: high`，无需传参；首选 `@huai_xin/dsh-workbuddy/intl` 不可用时由 `worker-route-fallback` 自动切到 `/cn`，再不行才到 trae 的 `deepseek-v4.1-flash`，Leader 不干预），把子会话 ID 记入本轮 `report.md`。**后续轮次复用同一子会话**，用 `send_message` 投递新派工，不重新创建；**阻塞**时按 [阻塞处置](#workflow) 结档并开新 Worker 续做。
 3. Worker 先读本规则与当前指针，确认任务 ID、轮次、状态。**只有 `待执行`/`待返工` 可接单**。核对 HEAD、分支、已有改动与文件指纹，**把领取时间、执行者与"执行中"写入本轮 `report.md` 头部**后才开工。一个任务仅由一个执行会话处理。
    > **Worker 不改 `CURRENT.md`、不改任务的交接状态字段**（[写入归属](#files)）；`CURRENT.md` 的状态由 Leader 依据本轮 `report.md` 与 Worker 的交回通知同步。
 4. Worker 追加回报、核对差异，**在本轮 `report.md` 头部写明轮末状态**（批次末/触发事件写 `待审查`），用 `send_message` 通知 Leader；随后**结束本轮，不等待、不轮询、不接下一单**。
@@ -380,7 +380,8 @@ Leader 派工说明目标、边界与可判定验收，不逐个限制无风险�
 | Worker → Leader | `send_message` | 通知审查，只表示"回报已就绪" |
 
 - **一个任务一个 Worker**：同一任务链内不重新 `spawn`。子会话一轮结束只是 inactive，下轮 `send_message` 会恢复它。**例外**：任务被判 `阻塞`（或执行会话失联/被判死）时，先结档再为该链开新 Worker，见 [阻塞处置](roles/leader.md#blocked-handoff)。
-- **执行者模型钉死**：`worker` 工具在 Host 侧固定 `@huai_xin/dsh-workbuddy/intl` / `deepseek-v4.1-flash` / `reasoningEffort: high`（`intl` 不可用时按 `worker-route-fallback` 链 `intl → cn → codearts(on) → trae` 自动回退，全部 `deepseek-v4.1-flash`），与 Leader 当下所选模型无关；该路由写进子会话 descriptor，冷恢复沿用。**现行值与 `~/.dsh/profiles/web/cordis.patch.yml` 一致；历史上写的 `cn` / `max` 已过期。**
+- **执行者模型钉死**：`worker` 工具在 Host 侧固定 `@huai_xin/dsh-workbuddy/intl` / `hy4free` / `reasoningEffort: high`（与 Leader 同款）；`intl` 不可用时按 `worker-route-fallback` 链 `intl(hy4free) → cn(hy4free) → trae(deepseek-v4.1-flash)` 自动回退，Leader 不干预。**trae 是有意的混模型例外**：其目录不服务 `hy4free`，故该跳固定 `deepseek-v4.1-flash`。该路由写进子会话 descriptor，冷恢复沿用，与 Leader 当下所选模型无关。**现行值以 `~/.dsh/profiles/web/cordis.patch.yml` 为准；历史上写的 `deepseek-v4.1-flash` 全链、`cn` / `max`、以及含 `codearts` 的回退链均已过期。**
+- <a id="worker-model-macro"></a>**Worker 模型只改一处（2026-11-07 起）**：`~/.dsh/profiles/web/cordis.patch.yml` 用 YAML 标量锚点把四处配置（钉死路由 / `subagent-model-selection-settings` 白名单 / `worker-route-guard` 白名单 / `worker-route-fallback` 链）收敛成一个宏。**换 Worker 模型只改 `&WORKER_MODEL` 那一行**，其余自动同步；`&TRAE_MODEL` 是 trae 例外的独立一行。约束：只锚标量、不用 `<<: *base`（patch 由 `js-yaml` 的 `JSON_SCHEMA` + `!!js` 方言解析，不支持 merge key）；别名不要指向映射（避免共享引用污染）。核对用 `dsh --profile web --dump-config`（以 noRefs 展开别名）。**改完只对新派工生效，现存 Worker 会话 descriptor 已固化**。CodeArts 适配器不可用，已全部删除，不得复活。
 - **Leader 不得用 `subagent` 派工**（用户 2026-11-02 裁定）：Leader 派生执行者**只走 `worker`**。`subagent` 继承 Leader 当下模型，会让"一般模型 Worker"变成高质量模型，既破坏双模型分层，也会绕过钉死路由（实测：视觉最小闭环的子会话因此跑在 `totokens/gpt-6.1-sol` 上并撞余额不足）。
 - **一次性任务用临时 Worker**：只读调研、单点核查等"原本用 `subagent` 的活儿"，改为开一个**临时 `worker`**（`prompt` 写清一次性范围与"不改文件/不跑仿真"），完成后不续用。临时 Worker 不受"一链一个 Worker"约束，因为它不承载任务链。
 - **孙代路由受守卫约束**：白名单只在派工工具里检查显式选择；`workflow` 的 `agent()` 与裸继承会绕过它。`worker-route-guard` 挂在 `llm/stream`，`delegationDepth >= 2` 的会话只允许白名单路由，其余在发出前拒绝（`ROUTE_NOT_ALLOWED`），不花 token。孙代**可以**继续派，只是模型不能升级到 Leader 级。

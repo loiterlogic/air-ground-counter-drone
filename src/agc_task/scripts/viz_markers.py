@@ -7,23 +7,27 @@ ros_gz_interfaces），所以"在 Gazebo GUI 里叠加"技术上走不通；而 
 OccupancyGrid / Path / LaserScan / MarkerArray 是原生支持。分工：
  * **GZ GUI** = 纯场景（好看）
  * **RViz** = 语义层（可读）：栅格 / 路径 / 三机 / 障碍
- （三机 = 车 / 己方机 / 目标，统一由 `_body_markers` 画
- 「方向箭头 + 机体位置球 + 箭尾定位点」，外观只由类常量控制）
+ （三机 = 车 / 己方机 / 目标，统一由 `_body_markers` 画**一个真实模型**：
+  车用本仓 Husky 车体 mesh、机用 PX4 x500 机身 mesh，与 Gazebo 场景同一批资产；
+  **不画箭头、不画文字、不画位置球**——2026-11-08 用户裁定「去掉字和箭头」。
+  三机靠**辨识色**区分：车绿 / 己方机蓝 / 目标红）
  （**不含 8 字轨迹**——反无人机场景不用预设轨迹，2026-11-04 用户裁定删除）
 
 发布的 marker 全部**由配置文件派生**（经 `agc_sim/launch/world_map.py` 单一清单），
 不手写坐标；`/agc/viz/markers` 只读不参与任何决策。
 """
 import math
+import os
 
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 
 from geometry_msgs.msg import Point
+from std_msgs.msg import ColorRGBA
 from visualization_msgs.msg import Marker, MarkerArray
 from nav_msgs.msg import Odometry
-from agc_msgs.msg import TargetTrackArray, ObstacleTrackArray
+from agc_msgs.msg import TargetTrackArray
 
 
 class VizMarkers(Node):
@@ -31,8 +35,9 @@ class VizMarkers(Node):
         super().__init__('viz_markers')
         self.declare_parameter('world_map', '')
         self.declare_parameter('frame_id', 'world')
-        self.declare_parameter('safety_obstacle_margin', 2.5)
-        self.declare_parameter('safety_extra', 0.7)
+        # 机体 mesh 的资源根：PX4 工具链的 gz 模型目录（launch 从 px4_paths 派生后传入）。
+        # 空 = 找不到工具链 ⇒ 机体退回几何体，可视化照常工作。
+        self.declare_parameter('px4_models_dir', '')
         self.frame = self.get_parameter('frame_id').value
         self.static = MarkerArray()
         self.dyn = MarkerArray()
@@ -41,7 +46,11 @@ class VizMarkers(Node):
                              reliability=ReliabilityPolicy.RELIABLE)
         self.pub = self.create_publisher(MarkerArray, '/agc/viz/markers', latched)
         self.create_subscription(TargetTrackArray, '/agc/targets', self.on_targets, 10)
-        self.create_subscription(ObstacleTrackArray, '/agc/obstacles', self.on_obstacles, 10)
+        # **2026-11-08 用户裁定 Q2/Q7（批次 3）**：障碍框层已整体退役。
+        # 障碍**只以 `/agc/map` 栅格呈现**（RViz 的 Map display）——"车用的是什么就看到什么"。
+        # 为什么删：框是"连通域的轴对齐外接矩形"，不是障碍本身
+        # （实测框面积/真实足迹 1.65×，最差 14×35.5 m、fill=0.30），
+        # 而且它与栅格是**两份表示**，必须保持同源却永远对不齐。
         self.create_subscription(Odometry, '/agc/ground/odom', self.on_car_odom, 10)
         self.create_subscription(Odometry, '/agc/air/odom', self.on_own_odom, 10)
         self.car_path = []
@@ -102,7 +111,8 @@ class VizMarkers(Node):
                     m.pose.orientation.z = math.sin(yaw / 2.0)
                     m.pose.orientation.w = math.cos(yaw / 2.0)
                     m.scale.x, m.scale.y, m.scale.z = float(scale[0]), float(scale[1]), float(scale[2])
-                    m.color.r, m.color.g, m.color.b, m.color.a = 0.72, 0.76, 0.82, 0.45
+                    # 静态几何退到背景：更冷更淡，让 /agc/map 栅格与三机更突出。
+                    m.color.r, m.color.g, m.color.b, m.color.a = 0.55, 0.62, 0.72, 0.28
                     self.static.markers.append(m)
             wa = geom.get('work_area') or {}
             if wa:
@@ -156,101 +166,134 @@ class VizMarkers(Node):
     def on_own_odom(self, msg):
         self.own_pose = msg.pose.pose
 
-    # ---- 三机外观（集中在这里调，别散落在各回调里）----
-    # 车 / 己方机 / 目标**共用这一组参数**：改任意一个，三机同时变。
-    ARROW_LENGTH = 2.50      # scale.x：箭头长度
-    ARROW_SHAFT  = 0.40      # scale.y：箭杆宽度（加粗改这里）
-    ARROW_HEAD   = 0.70      # scale.z：箭头头部尺寸
-    BODY_DOT     = 1.20      # 机体位置球直径（画在机体位置，三机统一）
-    TAIL_DOT     = 0.45      # 箭尾定位点直径（三机统一）
-    TAIL_OFFSET  = 0.90      # 定位点沿机体 -X 后退量，避免被 BODY_DOT 球盖住
+    # ---- 三机外观：真实 mesh（2026-11-08，用户裁定「三机模型太丑」→「去掉字和箭头」）----
+    # 用的都是**场景里正在渲染的同一批资产**，不新增第三方资产、不复制外部项目代码：
+    #   车 = 本仓 Husky `base_link.stl`（与 Gazebo 里 agc_car 车体同一份，见第三方资产清单）
+    #   机 = PX4 pin 的 x500 机身 `NXP-HGD-CF.dae`（与 Gazebo 里 x500 机身同一份，BSD）
+    # 两者原生单位都是**米**（实测包围盒：车 0.81×0.57×0.23 m，机身 0.40×0.40×0.28 m）。
+    GROUND_MESH = 'package://agc_sim/models/agc_car/meshes/base_link.stl'
+    UAV_MESH = ('x500_base', 'meshes', 'NXP-HGD-CF.dae')
+    # 机身 mesh 在 SDF 里是 `base_link_visual` 的 `<pose>0 0 .025 0 0 3.141592654</pose>`
+    # ⇒ 相对 base_link 绕 Z 转了 π、抬了 2.5 cm。marker 必须施加**同一个**变换，
+    # RViz 才与 Gazebo 一致（朝向反了会看起来"倒着飞"）。
+    UAV_MESH_OFFSET_Z = 0.025
+    UAV_MESH_YAW = math.pi
+    # **显示放大**（不是物理尺寸）：真实车长 0.81 m、机身 0.40 m，在 RViz 默认 150 m 视距下
+    # 只有几像素——那正是"看不见"的原始症状。**只影响 RViz 语义层，不碰 Gazebo 物理**。
+    GROUND_MESH_SCALE = 2.0     # 车 → 约 1.6 m 长
+    UAV_MESH_SCALE = 4.0        # 机 → 约 1.6 m 轴距
+    # 回退几何体的尺寸（mesh 不可用时才用）。
+    BODY_DOT = 1.20      # 机体位置球直径
 
-    @staticmethod
-    def _rot_x(q, v):
-        """把机体局部向量 (v, 0, 0) 按四元数 q 旋到世界系（只需旋转矩阵第一列）。"""
-        x, y, z, w = q.x, q.y, q.z, q.w
-        return (v * (1.0 - 2.0 * (y * y + z * z)),
-                v * 2.0 * (x * y + w * z),
-                v * 2.0 * (x * z - w * y))
+    def _mesh_uri(self, is_ground):
+        """机体 mesh 的 `file://` URI；不可用（缺文件 / 未配工具链目录）→ None。
 
-    def _body_markers(self, ns, pose, color):
-        """一台机体 = 方向箭头 + 机体位置球 + 箭尾定位点。
+  返回 None 时 `_body_markers` 回退到原来的 CUBE / 扁球——**可视化不得因缺资产而整体失效**，
+  这是「取不到就报失败、不拿示意图冒充」的同一口径：回退后仍能看出机体位置与朝向。
+        """
+        if is_ground:
+            import resource_retriever as rr
+            try:
+                return 'file://' + rr.get_filename(self.GROUND_MESH, use_protocol=False)
+            except Exception:  # noqa: BLE001 —— 缺包 / 未 source 都只降级，不崩
+                return None
+        base = (self.get_parameter('px4_models_dir').value or '').strip()
+        if not base:
+            return None
+        path = os.path.join(base, *self.UAV_MESH)
+        return 'file://' + path if os.path.isfile(path) else None
 
- 三机（车 / 己方机 / 目标）**统一走本方法**，外观只由本类常量控制，
- 不再有目标专属的手写球体。改 BODY_DOT / TAIL_DOT 会让三机**同时**变化。
- ARROW 的 pivot 在尾部、沿 +X ⇒ pose.position 即机体位置（也是箭尾）。
- 各 marker 必须用不同 ns，否则 RViz 按 (ns, id) 唯一标识，会互相覆盖。
+    def _body_markers(self, ns, pose, color, is_ground=False):
+        """一台机体 = **一个模型**（车 Husky 车体 / 机 x500 机身），不带箭头与文字。
+
+  2026-11-08 用户裁定：「去掉字和箭头就完美了」—— 上一版箭头 + 球 + 尾点 + 标签
+  把模型盖住了，且标签压住机体。现在只画模型本身，位置/朝向全由 mesh 的位姿表达。
+
+  颜色**仍按三机辨识色给 mesh 上色**（车绿 / 己方机蓝 / 目标红）：
+  去掉箭头和标签后，己方机与目标都是同一款 x500 机身，若不染色就完全分不清是谁
+  （车是 Husky 底盘，外形本就不同）。这是**语义层**的辨识手段，不改变模型形状。
+
+  mesh 不可用时回退几何体（车 CUBE 带朝向 / 机扁球），保证任何环境下都看得见。
+  各 marker 必须用不同 ns，否则 RViz 按 (ns, id) 唯一标识，会互相覆盖。
         """
         r, g, b = color
-
-        a = Marker()
-        a.header.frame_id = self.frame
-        a.ns = ns; a.id = 0
-        a.type = Marker.ARROW; a.action = Marker.ADD
-        a.pose = pose
-        a.scale.x = self.ARROW_LENGTH
-        a.scale.y = self.ARROW_SHAFT
-        a.scale.z = self.ARROW_HEAD
-        a.color.r, a.color.g, a.color.b, a.color.a = r, g, b, 1.0
+        mesh_uri = self._mesh_uri(is_ground)
 
         body = Marker()
         body.header.frame_id = self.frame
         body.ns = ns + '_body'; body.id = 0
-        body.type = Marker.SPHERE; body.action = Marker.ADD
+        body.action = Marker.ADD
         body.pose.position.x = pose.position.x
         body.pose.position.y = pose.position.y
         body.pose.position.z = pose.position.z
-        body.pose.orientation.w = 1.0
-        body.scale.x = body.scale.y = body.scale.z = self.BODY_DOT
-        body.color.r, body.color.g, body.color.b, body.color.a = r, g, b, 1.0
+        if mesh_uri:
+            # MESH_RESOURCE：朝向必须与机体一致（车的车头、机的机头都沿 +X），
+            # 否则 mesh 会"横着走"。机身在 SDF 里额外绕 Z 转了 π、抬 2.5 cm，照抄。
+            body.type = Marker.MESH_RESOURCE
+            body.pose.orientation = pose.orientation
+            s = self.GROUND_MESH_SCALE if is_ground else self.UAV_MESH_SCALE
+            body.scale.x = body.scale.y = body.scale.z = s
+            body.mesh_resource = mesh_uri
+            # **不用**自带贴图：车身是深灰、机身是碳纤维，两者在深色背景上几乎看不出区别，
+            # 且无法表达"谁是我方/谁是目标"。改为用辨识色覆盖（mesh.color 在
+            # mesh_use_embedded_materials=false 时生效）。
+            body.mesh_use_embedded_materials = False
+            body.color.r, body.color.g, body.color.b, body.color.a = r, g, b, 1.0
+            if not is_ground:
+                # 机身 SDF 变换：绕 Z π + 抬 2.5 cm（随显示缩放同步抬高）。
+                q = pose.orientation
+                yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y),
+                                 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+                yaw += self.UAV_MESH_YAW
+                body.pose.orientation.z = math.sin(yaw / 2.0)
+                body.pose.orientation.w = math.cos(yaw / 2.0)
+                body.pose.position.z = pose.position.z + self.UAV_MESH_OFFSET_Z * s
+        else:
+            body.type = Marker.CUBE if is_ground else Marker.SPHERE
+            if is_ground:
+                body.pose.orientation = pose.orientation
+            else:
+                body.pose.orientation.w = 1.0
+            if is_ground:
+                body.scale.x = self.BODY_DOT * 1.4
+                body.scale.y = self.BODY_DOT
+                body.scale.z = self.BODY_DOT * 0.45
+            else:
+                body.scale.x = body.scale.y = self.BODY_DOT
+                body.scale.z = self.BODY_DOT * 0.55   # 扁球，区别于车
+            body.color.r, body.color.g, body.color.b, body.color.a = r, g, b, 1.0
 
-        tail = Marker()
-        tail.header.frame_id = self.frame
-        tail.ns = ns + '_tail'; tail.id = 0
-        tail.type = Marker.SPHERE; tail.action = Marker.ADD
-        dx, dy, dz = self._rot_x(pose.orientation, -self.TAIL_OFFSET)
-        tail.pose.position.x = pose.position.x + dx
-        tail.pose.position.y = pose.position.y + dy
-        tail.pose.position.z = pose.position.z + dz
-        tail.pose.orientation.w = 1.0
-        tail.scale.x = tail.scale.y = tail.scale.z = self.TAIL_DOT
-        tail.color.r, tail.color.g, tail.color.b, tail.color.a = r, g, b, 1.0
-
-        return [a, body, tail]
+        # 只有模型一个 marker：箭头 / 文字 / 位置球 / 箭尾点**全部不再画**。
+        # 用户 2026-11-08 裁定「去掉字和箭头就完美了」——那些叠加物把模型盖住了。
+        # 机体位置与朝向由 mesh 的 pose 直接表达，不需要额外图形去"指"。
+        return [body]
 
     def _path_marker(self):
         m = Marker(); m.header.frame_id = self.frame; m.ns = 'car_path'; m.id = 1
         m.type = Marker.LINE_STRIP; m.action = Marker.ADD; m.scale.x = 0.12
         m.color.r, m.color.g, m.color.b, m.color.a = 0.1, 0.8, 0.2, 1.0
-        for x, y, z in self.car_path:
+        n = max(1, len(self.car_path))
+        for i, (x, y, z) in enumerate(self.car_path):
             p = Point(); p.x, p.y, p.z = x, y, z + 0.08; m.points.append(p)
+            # 时间渐变：越新越亮越暖（老点冷绿半透明 → 新点黄绿不透明）。
+            # colors[] 长度必须与 points 一致，否则 RViz 按点索引取色会越界。
+            t = i / float(n - 1) if n > 1 else 1.0
+            m.colors.append(ColorRGBA(
+                r=0.10 + 0.75 * t, g=0.35 + 0.55 * t, b=0.20 - 0.10 * t,
+                a=0.35 + 0.65 * t))
         return m
 
     def on_targets(self, msg):
-        # 目标与车 / 己方机**同一套画法**：_body_markers 产出箭头 / 位置球 / 箭尾点。
-        # 用 startswith('target') 过滤，覆盖 'target_*' / 'target_*_body' / 'target_*_tail'。
+        # 目标与车 / 己方机**同一套画法**：_body_markers 只产出一个模型 marker。
+        # 用 startswith('target') 过滤覆盖 'target_*' 全部 ns。
         ms = [m for m in self.dyn.markers if not m.ns.startswith('target')]
         idx = 100
         for t in msg.tracks:
-            # p.orientation 在 gt_adapter 里有填（世界 ENU yaw）
-            ms.extend(self._body_markers('target_%d' % idx, t.pose.pose, (1.0, 0.0, 0.0)))
+            # p.orientation 在 gt_adapter 里有填（世界 ENU yaw）。
+            # 目标保持既定纯红（证据载体，不漂移）；confidence 只作用于感知障碍。
+            ms.extend(self._body_markers(
+                'target_%d' % idx, t.pose.pose, (1.0, 0.0, 0.0)))
             idx += 1
-        self.dyn.markers = ms
-
-    def on_obstacles(self, msg):
-        ms = [m for m in self.dyn.markers if m.ns != 'obstacle']
-        idx = 200
-        for o in msg.tracks:
-            m = Marker()
-            m.header.frame_id = msg.header.frame_id or self.frame
-            m.ns = 'obstacle'; m.id = idx; idx += 1
-            m.type = Marker.CUBE; m.action = Marker.ADD
-            m.pose = o.pose
-            m.scale.x = o.size.x
-            m.scale.y = o.size.y
-            m.scale.z = o.size.z
-            m.color.r, m.color.g, m.color.b, m.color.a = 1.0, 0.3, 0.3, 0.5
-            ms.append(m)
         self.dyn.markers = ms
 
     def publish(self):
@@ -268,9 +311,11 @@ class VizMarkers(Node):
         if self.car_path:
             out.markers.append(self._path_marker())
         if self.car_pose is not None:
-            out.markers.extend(self._body_markers('car', self.car_pose, (0.1, 0.8, 0.2)))
+            out.markers.extend(self._body_markers(
+                'car', self.car_pose, (0.1, 0.8, 0.2), is_ground=True))
         if self.own_pose is not None:
-            out.markers.extend(self._body_markers('own_uav', self.own_pose, (0.1, 0.3, 1.0)))
+            out.markers.extend(self._body_markers(
+                'own_uav', self.own_pose, (0.1, 0.3, 1.0)))
         for m in self.dyn.markers:
             if m.header.stamp.sec == 0:
                 m.header.stamp = now

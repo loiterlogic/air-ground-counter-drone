@@ -70,7 +70,8 @@ protected:
     world_frame_ = declare_param_idempotent<std::string>("world_frame", "world");
     traj_plugin_ = declare_param_idempotent<std::string>(
       "trajectory_plugin", "agc_control/Figure8Trajectory");
-    ctrl_plugin_ = declare_param_idempotent<std::string>("controller_plugin", "agc_control/LqrController");
+    ctrl_plugin_ = declare_param_idempotent<std::string>("controller_plugin",
+      "agc_control/LqrController");
     traj_ns_ = declare_param_idempotent<std::string>("trajectory_param_ns", "traj");
     ctrl_ns_ = declare_param_idempotent<std::string>("controller_param_ns", "ctrl");
     rate_hz_ = declare_param_idempotent<double>("setpoint_rate_hz", 50.0);
@@ -80,8 +81,10 @@ protected:
     target_topic_ = declare_param_idempotent<std::string>("target_topic", "/agc/targets");
     active_topic_ = declare_param_idempotent<std::string>("active_controller_topic",
         "/agc/air/active_controller");
-    conflict_topic_ = declare_param_idempotent<std::string>("conflict_topic", "/agc/air/control_conflict");
-    rl_offset_topic_ = declare_param_idempotent<std::string>("rl_offset_topic", "/agc/air/rl_offset");
+    conflict_topic_ = declare_param_idempotent<std::string>("conflict_topic",
+      "/agc/air/control_conflict");
+    rl_offset_topic_ = declare_param_idempotent<std::string>("rl_offset_topic",
+      "/agc/air/rl_offset");
     track_status_topic_ = declare_param_idempotent<std::string>(
       "tracking_status_topic", "/agc/air/tracking_status");
     own_name_ = declare_param_idempotent<std::string>("controller_name", "trajectory_tracker");
@@ -741,7 +744,8 @@ private:
   /// ADR-0010「垂直门控」：追加 `shield_rings_obstacles` / `shield_rings_gated_off` /
   /// `shield_rings_target` / `shield_gate_height_m`——**归因可观测**：任何一次介入都能分辨
   /// 「障碍盘」还是「目标间距盘」，以及本拍有多少障碍圆盘被垂直门控移除。
-  void publishTrackStatus(bool permit, const char * source, bool ref_fresh, bool tgt_fresh,
+  void publishTrackStatus(
+    bool permit, const char * source, bool ref_fresh, bool tgt_fresh,
     bool offset_applied, bool offset_clamped, bool shield_active,
     bool shield_infeasible, const std::string & shield_reason,
     const std::string & shield_action, std::int32_t rings_obstacles, std::int32_t rings_gated_off,
@@ -838,7 +842,8 @@ private:
   SafetyShield shield_;
 
   std::unique_ptr<OffboardInterface> offboard_;
-  rclcpp_lifecycle::LifecyclePublisher<trajectory_msgs::msg::MultiDOFJointTrajectory>::SharedPtr ref_pub_;
+  rclcpp_lifecycle::LifecyclePublisher<trajectory_msgs::msg::MultiDOFJointTrajectory>::SharedPtr
+    ref_pub_;
   rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::Bool>::SharedPtr conflict_pub_;
   rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::String>::SharedPtr active_pub_;
   rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::String>::SharedPtr track_status_pub_;

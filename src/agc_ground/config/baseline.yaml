@@ -36,6 +36,20 @@ ground_baseline:
     max_angular_velocity: 2.0
     # 路径失效（规划失败 / 绑定破坏）时失效停车（fail-stop；默认 True）
     stop_on_invalid: True
+    # ---- 未知空间策略（2026-11-08 用户裁定 Q9/Q11/Q12/Q21）----
+    # **为什么不依赖 Navfn 的 allow_unknown**：它是 Navfn 的私有参数，而项目正与 Nav2
+    # 解绑（ADR-0003）。"未知不可走"由
+    # `include/agc_ground/planning_policy.hpp` 的**端点判定**表达，换规划器仍成立。
+    # 起点在未知区 → 明确拒绝（车不能从没看过的地方出发）。
+    # 终点在未知区 → 走下面的直连兜底，不直接判失败。
+    #
+    # 边缘直连兜底（Q12，用户原话："如果没覆盖到目标点就从已知区域边缘直接连一条直线
+    # 到目标点，这一步本来就是生成粗糙路径"）：
+    #   * 直连段不得穿过**已知占据**格（否则这条粗糙路径是错的，不是粗糙）；
+    #   * 直连段两端必须都在已知自由区；
+    #   * 直连段在 costmap 里按可通行处理（否则规划器根本走不出来，兜底失效）。
+    # false = 关闭兜底（未知区 goal 一律判不可规划，用于对照）。
+    direct_link_enabled: True
     # LQR 控制器插件参数（`agc_control/LqrController`，前缀 `lqr.`）
     lqr:
       q_pos: 4.0

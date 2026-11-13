@@ -2,8 +2,8 @@
 """air_bringup —— 空中链路一键启动。
 
 一条 `ros2 launch` 起：agc_world（唯一 gz server，经 agc_sim/world_bringup）+ uXRCE-DDS Agent
-+ PX4 SITL（`PX4_GZ_STANDALONE=1`、`PX4_GZ_WORLD=agc_world`、`PX4_SIM_MODEL=gz_x500`（launch 参数
-`px4_sim_model` 可换 `gz_x500_mono_cam` 挂机载相机），
++ PX4 SITL（`PX4_GZ_STANDALONE=1`、`PX4_GZ_WORLD=agc_world`、
+`PX4_SIM_MODEL` 由 launch 参数 `px4_sim_model` 单一设置，默认 `gz_agc_x500_nadir`（带正下视相机），
 由 PX4 自身 gz_bridge 向 `/world/agc_world/create` spawn 机型）+ 空中链路节点。
 
 参数配置文件：`config/air.yaml`（契约 [参数入口]）。链路连接层（agent 地址 / 端口 / PX4 目录）
@@ -26,11 +26,10 @@ from launch.actions import (
     OpaqueFunction,
     RegisterEventHandler,
     SetEnvironmentVariable,
-    TimerAction,
 )
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import FindExecutable, LaunchConfiguration
 from launch_ros.actions import Node
 
 
@@ -133,19 +132,33 @@ def _generate(context, *args, **kwargs):
         output='screen',
     )
 
+    # ---- ADR-0038：PX4 启动由世界实体就绪驱动，不再是 12 s 盲等 ----
+    # 旧实现 `TimerAction(period=12.0)` 与统一入口（main.launch.py）的 25/35 s 是**两套语义**：
+    # 同一 PX4、同一世界、不同入口、不同启动时间。现在两边共用同一个就绪判据
+    # （车/目标**已在世界中**，由 `scene/info` 实查；同一判据两个入口共用）。
+    # 就绪门脚本随 `agc_sim` 安装：两个入口共用同一实现，且 agc_air **不得**依赖 agc_task
+    # （会形成 agc_task → agc_air → agc_task 的环，见 ADR-0020 的 #top (b) 包边界）。
+    gate_bin = os.path.join(sim_share, 'scripts', 'startup_gate.py')
+    px4_gate = ExecuteProcess(
+        cmd=[FindExecutable(name='python3'), gate_bin,
+             '--name', 'air_bringup_px4_gate',
+             '--timeout-s', LaunchConfiguration('px4_ready_timeout_s'),
+             # 与统一入口同一判据：实体真的在 gz 世界里（直查 scene/info）。
+             '--await', 'entity:agc_world:agc_car',
+             '--await', 'entity:agc_world:intruder_uav',
+             '--await', 'gzservice:/world/agc_world/create'],
+        output='screen')
+
     # ---- PX4 SITL（standalone：不自起 gz，挂入 agc_world）----
     px4_env = {
         'GZ_SIM_RESOURCE_PATH': gz_models + ':' + gz_worlds,
         'PX4_GZ_STANDALONE': '1',
         'PX4_GZ_WORLD': 'agc_world',
-        # 机型改由 launch 参数**单一设置**；默认 `gz_x500` = 既有行为**逐字不变**。
-        # 可选 `gz_x500_mono_cam`（airframe 4010：只把 PX4_SIM_MODEL 指向 merge 了
-        # `mono_cam` 的机型，旋翼/参数集与 4001 完全相同）——相机口径与验收见
-        # experiments/p1-4//preregistration/。
+        # 机型改由 launch 参数**单一设置**；默认 `gz_agc_x500_nadir`（带相机）。
         # 实体名规则（GZBridge.cpp：无 -n 且给 -i → `<model_sim>_<instance>`）：
-        # gz_x500 → x500_0；gz_x500_mono_cam → x500_mono_cam_0。
-        # ADR-0030：gz_agc_x500_nadir → agc_x500_nadir_0，另注入 PX4_SYS_AUTOSTART=4001 +
-        # 本仓 models 资源路径（见上方 px4_env_extra；默认臂该 dict 为空）。
+        # 默认 → agc_x500_nadir_0；gz_agc_x500 → agc_x500_0；gz_x500 → x500_0。
+        # 本仓机型（默认 nadir / 旧 gz_agc_x500）由 px4_env_extra 注入
+        # PX4_SYS_AUTOSTART=4001 + 本仓 models 资源路径；显式选 gz_x500 时该 dict 为空。
         'PX4_SIM_MODEL': LaunchConfiguration('px4_sim_model'),
         'PX4_GZ_MODEL_POSE': LaunchConfiguration('px4_gz_model_pose'),
         'AGC_PX4_SIM_SEED': seed,
@@ -206,12 +219,17 @@ def _generate(context, *args, **kwargs):
     # （PX4 自身 gz_bridge 只给文件名，资源解析靠 gz 侧），故本变量必须对整个 launch 生效。
     # OpaqueFunction 要求函数返回实体**列表**（LaunchDescription 本身不可迭代），
     # 故直接返回按原顺序组装的实体清单。
+    #
+    # ADR-0038：PX4 不再由固定 12 s 定时器启动，而由 `px4_gate` 的**就绪事件**驱动
+    # （等实体存在 + gz create 服务）；lifecycle manager 仍由 prewarm 退出驱动
+    # （prewarm 只是暖连接，正确性由空中节点自身的 lifecycle 状态决定）。
     return [
         SetEnvironmentVariable('GZ_SIM_RESOURCE_PATH', gz_models + ':' + gz_worlds),
         world,
         perception,
         agent,
-        TimerAction(period=12.0, actions=[px4]),
+        px4_gate,
+        RegisterEventHandler(OnProcessExit(target_action=px4_gate, on_exit=[px4])),
         *nodes,
         prewarm,
         RegisterEventHandler(OnProcessExit(target_action=prewarm, on_exit=[lifecycle_manager])),
@@ -230,16 +248,18 @@ def generate_launch_description():
                               description='gz sim 参数（加 -s 可无头）'),
         DeclareLaunchArgument('px4_gz_model_pose', default_value='0,0,0.2,0,0,0',
                               description='己方无人机 spawn 位姿（world 系 ENU，逗号分隔）'),
-        # 己方机型。**默认 gz_agc_x500**（2026-11-05，用户裁定）= 本仓 `agc_x500`
-        # （PX4 官方 x500 + 纯视觉青色高亮球，无 collision；因默认 gz_x500 在 GUI 俯视下仅约 5 px
-        # 看不见我方机）。其余可选：gz_x500（PX4 官方原厂）；gz_x500_mono_cam（机载前视单目相机）；
-        # gz_agc_x500_nadir（机载正下视相机，ADR-0030）。未知值由 PX4 rcS 报
+        # 己方机型。**默认 gz_agc_x500_nadir**（2026-11-08，用户裁定）= 本仓 `agc_x500_nadir`
+        # （x500 + 正下视 RGB / 语义分割相机）。相机为平台基本能力——分割标签是 /agc/map 的唯一
+        # 障碍来源，故默认即带相机，不再 opt-in。其余：gz_agc_x500（旧默认，无相机，复现历史 run）、
+        # gz_x500（PX4 官方原厂）、gz_x500_mono_cam（前视单目）。未知值由 PX4 rcS 报
         # `Unknown model` 并拒启（airframes 目录按名匹配），不在本文件另立白名单。
-        DeclareLaunchArgument('px4_sim_model', default_value='gz_agc_x500',
-                              description='己方 PX4 gz 机型：gz_agc_x500（**默认**，x500 + 纯视觉高亮球）| '
-                                          'gz_x500（PX4 官方原厂，无高亮）| '
-                                          'gz_x500_mono_cam（机载前视单目相机）| '
-                                          'gz_agc_x500_nadir（机载正下视相机，ADR-0030，仅取证/测绘、无消费者）'),
+        DeclareLaunchArgument('px4_sim_model', default_value='gz_agc_x500_nadir',
+                              description='己方 PX4 gz 机型：gz_agc_x500_nadir（**默认**，x500 + 正下视'
+                                          ' RGB / 语义分割相机，相机为平台基本能力）| '
+                                          'gz_agc_x500（旧默认，无相机，复现历史 run 用）| '
+                                          'gz_x500（PX4 官方原厂）| '
+                                          'gz_x500_mono_cam（机载前视单目相机）。'
+                                          '未知值由 PX4 rcS 报 Unknown model 拒启，不在本文件另立白名单。'),
         DeclareLaunchArgument('agent_port', default_value='8888'),
         DeclareLaunchArgument('autostart', default_value='true',
                               description='是否自动 configure/activate 空中节点'),
@@ -251,6 +271,10 @@ def generate_launch_description():
         # 地图（配置文件选择）；缺省 minimal = 既有行为（几何逐值不变）。
         DeclareLaunchArgument('world_map', default_value='minimal',
                               description='地图（几何来源选择）：minimal（默认）| yard | open_field'),
+        # ADR-0038：PX4 就绪门（等实体存在 + gz create 服务）的墙钟上界；
+        # 就绪即启动，不空等——本参数只表达"愿意等多久"。
+        DeclareLaunchArgument('px4_ready_timeout_s', default_value='240.0',
+                              description='PX4 就绪门墙钟上界（s；就绪即启动，不是等待时长）'),
     ]
 
     ld = LaunchDescription()

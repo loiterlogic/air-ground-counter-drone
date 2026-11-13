@@ -27,6 +27,11 @@ costmap:
     height: 40
     resolution: 0.25
     robot_radius: 0.6
+    # 未知格在 costmap 里保留为 NO_INFORMATION（255），**不**折叠成 free。
+    # 注意（2026-11-08 Q9）：`track_unknown_space: true` **单独不足以**表达
+    # "未知区不可走" —— Navfn 的 `allow_unknown` 默认是 true，两者互相抵消，
+    # 实际是"未知区随便穿"。真正的判据在 `planning_policy.hpp` 的端点检查里，
+    # 不依赖 Navfn 私有参数（项目正与 Nav2 解绑）。
     track_unknown_space: true
     plugins: ["static_layer", "obstacle_layer", "voxel_layer", "inflation_layer"]
     # ——static 层： 的 /agc/map——
@@ -34,6 +39,18 @@ costmap:
       plugin: "nav2_costmap_2d::StaticLayer"
       map_subscribe_transient_local: True
       map_topic: "/agc/map"
+      # **必须关掉 trinary（ADR-0041）**：`/agc/map` 自 ADR-0041 起输出**风险分档**，
+      # `1–98` 表示"有代价但可通行"（几何占据 + 米制膨胀的共同结果）。
+      #
+      # Nav2 `StaticLayer::interpretValue` 在 `trinary_costmap: true`（默认）下把
+      # `1–99` 一律折成 `FREE_SPACE` —— 于是我们精心算出来的"贴车半径有代价"
+      # 会被读成"完全可通行"，安全膨胀**静默失效**。
+      # 关掉它才走 `scale = value / lethal_threshold` 的比例代价分支（1→2、50→127、98→249）。
+      #
+      # `lethal_threshold` 保持 100：只有 `100` 才是致命占据（与 `planning_policy.hpp`
+      # 的 `classifyCell` 同口径：`>= 100` 才算 occupied）。
+      trinary_costmap: false
+      lethal_cost_threshold: 100
     # ——obstacle 层：2D 激光——
     obstacle_layer:
       plugin: "nav2_costmap_2d::ObstacleLayer"

@@ -2,11 +2,18 @@
 # run_demo.sh —— AGC 一键演示入口
 #
 # ./run_demo.sh # 默认：full 后端 + yard 地图 + 主场景 s04 + GUI
-# ./run_demo.sh --headless # 无头（快跑 / 服务器）
-# ./run_demo.sh --map open_field
+# ./run_demo.sh --headless # gz 无渲染客户端（-s）；RViz 语义层仍起（固定）
+# ./run_demo.sh --map open_field # yard（默认）| open_field | dense_map | minimal
+# ./run_demo.sh --scene s01_static_none_nominal_track # 场景 id（见 src/agc_task/config/scenarios.yaml）
+# ./run_demo.sh --backend lightweight # full（默认）| lightweight
+# ./run_demo.sh --duration 90 # 到时触发 stop（默认跟到终态）
 # ./run_demo.sh --escape # 显式启用目标逃逸
-# ./run_demo.sh --backend lightweight
 # ./run_demo.sh --gui-render-backend software # auto（默认）| d3d12 | software
+# ./run_demo.sh --px4-sim-model gz_agc_x500 # 换机型（默认已是带相机的 gz_agc_x500_nadir）
+# ./run_demo.sh --dry-run # 只落参数与证据，不启进程
+# ./run_demo.sh --ready-timeout 240 # 就绪门超时（s）；另有 --start-timeout / --follow-timeout
+# ./run_demo.sh --spawn-verify-timeout 180 # 世界实体就绪上界（s）；dense_map 需调大
+# ./run_demo.sh --reset-max-attempts 240 --reset-timeout 240 # 复位就绪门（取先到者）
 # ./run_demo.sh stop|status|doctor|test|compare # 见各子命令
 #
 # 薄封装：不复制 launch 编排，参数透传 main.launch.py（ADR-0020）。
@@ -37,7 +44,11 @@ fail() { # fail <标题> <第1行> [第2行…]
 }
 
 usage() {
-  sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
+  # 打印文件头注释块：第 2 行起，到**第二个空 `#` 行**之前（第一个空行紧跟标题，是分隔）。
+  # **不写死行号**——原先写死 `2,14p`，新增参数后帮助就静默漏项（实测 --scene 因此不可见）。
+  awk 'NR<2{next}
+       /^#$/ { blanks++; if (blanks >= 2) exit; next }
+       { sub(/^# ?/, ""); print }' "$0"
 }
 
 # ---------------------------- 解析参数 ----------------------------
@@ -61,15 +72,35 @@ while [ $# -gt 0 ]; do
     -h|--help) usage; exit 0 ;;
     --headless) HEADLESS=1; shift ;;
     --gui) HEADLESS=0; shift ;;
-    --map) WORLD_MAP="${2:-}"; [ -z "$WORLD_MAP" ] && { fail "--map 需要一个值" "可用：yard | open_field | minimal"; exit 2; }; shift 2 ;;
+    --map) WORLD_MAP="${2:-}"; [ -z "$WORLD_MAP" ] && { fail "--map 需要一个值" "可用：yard | open_field | dense_map | minimal"; exit 2; }; shift 2 ;;
     --scene) SCENE="${2:-}"; shift 2 ;;
     --duration) DURATION="${2:-}"; shift 2 ;;
     --backend) BACKEND="${2:-}"; shift 2 ;;
     --gui-render-backend) GUI_RENDER_BACKEND="${2:-}"; shift 2 ;;
+    # 透传既有 launch 参数 `px4_sim_model`（机型/资产选择，非路线分支）。
+    # 不新增 launch 参数、不改编排：经 EXTRA → main.py opts['extra'] → launch_argv 的
+    # argv.extend(extra) 原样成为 ros2 launch 实参。仅放行已知机型，拒绝乱传。
+    --px4-sim-model)
+      PX4_MODEL="${2:-}"
+      case "$PX4_MODEL" in
+        gz_agc_x500|gz_x500|gz_x500_mono_cam|gz_agc_x500_nadir) ;;
+        *) fail "--px4-sim-model 只接受已知机型" \
+             "可用：gz_agc_x500_nadir（默认，带相机）| gz_agc_x500（旧默认，无相机）| gz_x500 | gz_x500_mono_cam" \
+             "实际：${PX4_MODEL:-<空>}"; exit 2 ;;
+      esac
+      EXTRA+=("px4_sim_model:=${PX4_MODEL}"); shift 2 ;;
      --escape) EXTRA+=("escape"); shift ;;
      --dry-run) EXTRA+=("dry-run"); shift ;;
     --follow-timeout) EXTRA+=("follow-timeout:$2"); shift 2 ;;
     --ready-timeout) EXTRA+=("ready-timeout:$2"); shift 2 ;;
+    # 世界 spawn 门限（**上界，不是延时**）。密障碍地图（dense_map，620 个障碍）
+    # 实测 create 会连续超时约 50 s 才恢复应答，agc_car 需 +68 s —— 默认 60 s 不够。
+    # 这是数值参数，不是路线分支。
+    --spawn-verify-timeout) EXTRA+=("spawn-verify-timeout:$2"); shift 2 ;;
+    # 场景复位就绪门（**两个上界取先到者**）。dense_map 实测实体上线需 90 s+，
+    # 默认 60 次 × 1 s = 60 s 必然失败。数值参数，不是路线分支。
+    --reset-max-attempts) EXTRA+=("reset-max-attempts:$2"); shift 2 ;;
+    --reset-timeout) EXTRA+=("reset-timeout:$2"); shift 2 ;;
     --start-timeout) EXTRA+=("start-timeout:$2"); shift 2 ;;
     --inject-missing-env) EXTRA+=("inject-missing-env"); shift ;;
     *) fail "不认识的参数：$1" "见 ./run_demo.sh --help"; exit 2 ;;

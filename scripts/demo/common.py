@@ -382,6 +382,89 @@ STALE_RULES = (
 )
 
 
+def reap_orphan_processes(keep_pgids=(), sigkill_s=REAP_SIGKILL_S, on_tick=None):
+    """回收**本项目特征的孤儿进程**（不属于任何登记 PGID 的那些）。
+
+    ## 为什么需要它（2026-11-10 实测）
+
+    `stop` 只按 `current.json` 登记的 PGID 回收。但**外部终止**（工具宿主只杀 leader /
+    终端被关 / Ctrl-C 落在 supervisor 而非进程组）会留下两类东西：
+
+    * `ros2 launch` 的**子进程**（gz sim / parameter_bridge / 各节点）逃出登记 PGID；
+    * supervisor 本身卡在收尾（实测 39288 卡了 1 分 55 秒未退出）。
+
+    此时 `stop` 会幂等返回"上一次演示已结束，无进程组成员"——而 preflight 同时报
+    "有 34 个本项目残留进程"。两条信息互相打架，使用者只能手动 `kill` 一串 PID。
+
+    ## 边界（**不**扩大成全局清除）
+
+    * 只杀 `project_processes()` 命中的**本项目特征进程**（7 类规则，与 preflight 同一口径）；
+    * 显式**排除** `keep_pgids` 的成员——正在运行的实例绝不能被 `stop` 误杀；
+    * 只杀**本用户**的进程（`project_processes` 已按 uid 过滤）；
+    * 先 SIGTERM 再 SIGKILL（给 run_logger / PX4 落盘机会），并如实返回每一步结果。
+
+    返回 `{candidates, killed, survivors, wall_s}`。
+    """
+    t0 = time.monotonic()
+    keep = {int(g) for g in keep_pgids if g}
+    candidates = []
+    for p in project_processes():
+        st = read_stat(p['pid'])
+        if st is None:
+            continue
+        if st['pgrp'] in keep:
+            continue                      # 属于正在运行的实例 → 绝不动
+        candidates.append(p)
+
+    res = {'candidates': [{'pid': c['pid'], 'cmd': c['cmd']} for c in candidates],
+           'killed': [], 'survivors': [], 'wall_s': 0.0}
+    if not candidates:
+        res['wall_s'] = round(time.monotonic() - t0, 2)
+        return res
+
+    # ① SIGTERM：给节点落盘 / 优雅退出的机会
+    for c in candidates:
+        try:
+            os.kill(c['pid'], signal.SIGTERM)
+        except OSError:
+            pass
+    deadline = time.monotonic() + 5.0
+    while time.monotonic() < deadline:
+        alive = [c for c in candidates if _alive_non_zombie(c['pid'])]
+        if not alive:
+            break
+        time.sleep(0.2)
+        if on_tick is not None:
+            on_tick(len(alive), time.monotonic() - t0)
+
+    # ② SIGKILL：仍存活的（忽略 SIGTERM 的，实测 gz sim 常见）
+    alive = [c for c in candidates if _alive_non_zombie(c['pid'])]
+    for c in alive:
+        try:
+            os.kill(c['pid'], signal.SIGKILL)
+        except OSError:
+            pass
+    deadline = time.monotonic() + sigkill_s
+    while time.monotonic() < deadline:
+        if not any(_alive_non_zombie(c['pid']) for c in candidates):
+            break
+        time.sleep(0.2)
+
+    for c in candidates:
+        (res['killed'] if not _alive_non_zombie(c['pid']) else res['survivors']).append(
+            {'pid': c['pid'], 'cmd': c['cmd']})
+    res['wall_s'] = round(time.monotonic() - t0, 2)
+    return res
+
+
+def _alive_non_zombie(pid):
+    """存活且**不是僵尸**（僵尸已被回收、不再执行代码，算已清理）。"""
+    st = read_stat(pid)
+    if st is None or st['state'] == 'Z':
+        return False
+    return pid_alive(pid)
+
+
 def project_processes():
     """本项目的仿真相关进程 `[{pid, cmd, exe, rule}]`（**只读**扫描，不杀）。"""
     me = os.getpid()

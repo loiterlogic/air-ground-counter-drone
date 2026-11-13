@@ -29,4 +29,9 @@ install(TARGETS agc_cmd_deadman DESTINATION lib)
 install(DIRECTORY worlds models config launch materials
   DESTINATION share/${PROJECT_NAME})
 
+# ADR-0038：事务式 spawn 就绪门（世界就绪判据 + 实体创建 + 存在校验）。
+# 由 launch 以 `python3 <share>/scripts/scene_spawn_gate.py` 起进程；
+# 装进 share（保持源码可读、可被静态闸门检查），不装进 lib。
+install(DIRECTORY scripts DESTINATION share/${PROJECT_NAME})
+
 ament_package()

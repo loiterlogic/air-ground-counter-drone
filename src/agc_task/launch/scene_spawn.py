@@ -17,10 +17,69 @@ import yaml
 SPAWN_LAYOUT_FILE = 'spawn_layout.yaml'
 
 
-def load_spawn_layout(task_share, path=None):
+def _validate_per_map(per_map, path):
+    """**无条件**校验整张 `per_map` 表的结构（与"本次选了哪张图"无关）。
+
+ 为什么无条件：拼错实体段（`cars`）只有在该图**被选中**时才暴露，等于让一个拼写错误
+ 潜伏到"某天刚好跑那张图"。结构错误是**文件级**错误，应当在任何一次加载时都拒绝。
+    """
+    if per_map is None:
+        return
+    if not isinstance(per_map, dict):
+        raise RuntimeError(
+            '出生布局文件 %s 的 `spawn_layout.per_map` 非映射 → 拒绝运行' % path)
+    for name, over in per_map.items():
+        if not isinstance(over, dict):
+            raise RuntimeError(
+                '出生布局文件 %s 的 `spawn_layout.per_map.%s` 非映射 → 拒绝运行'
+                % (path, name))
+        for entity, sec in over.items():
+            if entity not in ('car', 'target', 'own_uav'):
+                raise RuntimeError(
+                    '出生布局文件 %s 的 `spawn_layout.per_map.%s` 含未知实体段 %r'
+                    '（只允许 car / target / own_uav）→ 拒绝运行' % (path, name, entity))
+            if not isinstance(sec, dict):
+                raise RuntimeError(
+                    '出生布局文件 %s 的 `spawn_layout.per_map.%s.%s` 非映射 → 拒绝运行'
+                    % (path, name, entity))
+
+
+def _merge_map_override(layout, world_map, path):
+    """把 `spawn_layout.per_map.<world_map>` 的键**深合并一层**到顶层实体段上。
+
+ ADR-0036：出生位是**地图属性**（与 `flight_altitude` 同款论证）。顶层段提供**完整缺省**，
+ `per_map.<map>` 只写要覆盖的键 —— 这样 `minimal` / `yard` / `open_field` 三图逐值不变，
+ 新增地图只需加一段，不必复制整份布局。
+
+ 纪律：
+ * `world_map` 为 `None` / 空 → 不合并（顶层缺省，即历史行为逐值不变）；
+ * `world_map` **未在 `per_map` 登记** → 不合并（回落到顶层缺省）；**这是刻意**：
+   登记表只描述"与缺省不同"的图，未登记 = 用缺省，而不是拒绝运行——否则每加一张图
+   都要先改本文件才能跑。真正需要拒绝的是"地图名本身非法"，那由 `world_map.resolve` 管。
+ * `per_map` 的**结构**由 `_validate_per_map` **无条件**校验（拼错实体名一律拒绝运行）。
+    """
+    per_map = layout.get('per_map')
+    _validate_per_map(per_map, path)
+    if per_map is None:
+        return layout
+    name = (world_map or '').strip()
+    if not name:
+        return layout
+    over = per_map.get(name)
+    if over is None:
+        return layout
+    merged = {k: (dict(v) if isinstance(v, dict) else v) for k, v in layout.items()}
+    for entity, sec in over.items():
+        merged.setdefault(entity, {}).update(sec)
+    return merged
+
+
+def load_spawn_layout(task_share, path=None, world_map=None):
     """读出生布局文件；缺键 / 非数值 / **非有限值（NaN·±Inf）** → `RuntimeError`（拒绝运行）。
 
  `path` 仅供测试注入（缺省即配置文件文件），避免测试为造非法值去改配置文件。
+ `world_map` 非空时先按 `spawn_layout.per_map.<world_map>` 覆盖（ADR-0036，见
+ `_merge_map_override`）；缺省 `None` = 只用顶层布局（历史行为逐值不变）。
 
     为什么必须查 `isfinite`：`float('nan')` / `float('inf')` 都能通过 `float()` 转换，但一旦注入
  世界 `create` 或 `scenario_reset`，位姿校验的比较式（`< min` / `> max`）对 NaN **恒为假**，
@@ -33,6 +92,7 @@ def load_spawn_layout(task_share, path=None):
     layout = doc.get('spawn_layout')
     if not isinstance(layout, dict):
         raise RuntimeError('出生布局文件 %s 缺少顶层 `spawn_layout` → 拒绝运行' % path)
+    layout = _merge_map_override(layout, world_map, path)
     out = {}
     for entity, keys in (
             ('car', ('x', 'y', 'yaw', 'world_z', 'reset_z')),

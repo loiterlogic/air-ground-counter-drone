@@ -25,6 +25,29 @@ import common          # noqa: E402
 import doctor          # noqa: E402
 
 
+def _world_maps():
+    """可用地图名——取自 `agc_sim/launch/world_map.py` 的**单一清单**（ADR-0007）。
+
+ 为什么不在本文件里自持白名单：`MAP_GEOMETRY_FILES` 是地图登记的唯一家（核查 (m) 守着
+ "消费方不得各写一份文件名表"）。此前这里写死 `('yard','open_field','minimal')`，
+ 每加一张图都要改两处，且漂移不会被任何断言抓到（ADR-0036 起 dense_map 暴露了这一点）。
+ 解析失败时**退回**旧白名单并如实报错，不静默放行任意字符串。
+    """
+    import importlib.util
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+    path = os.path.join(root, 'src', 'agc_sim', 'launch', 'world_map.py')
+    try:
+        spec = importlib.util.spec_from_file_location('_world_map_registry', path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        names = list(mod.WORLD_MAPS)
+        if names:
+            return names
+    except Exception:  # noqa: BLE001
+        pass
+    return ['minimal', 'yard', 'open_field']
+
+
 # --------------------------------------------------------------------------------------
 # preflight（start 前的阻断性检查）
 # --------------------------------------------------------------------------------------
@@ -87,9 +110,19 @@ def cmd_start(args):
     backend = (args.backend or common.DEFAULT_BACKEND).strip()
     if backend not in ('full', 'lightweight'):
         return common.fail('未知 backend：%s' % backend, ['可用：full（默认）| lightweight'])
-    wmap = (args.map or '').strip() or common.DEFAULT_MAP
-    if wmap not in ('yard', 'open_field', 'minimal'):
-        return common.fail('未知地图：%s' % wmap, ['可用：yard（默认）| open_field | minimal'])
+    # **空串 = 用户没指定**，必须保持空串往上传（2026-11-11 实测 bug）。
+    #
+    # 改造前这里把空串折成 `common.DEFAULT_MAP`（yard），于是 `launch_argv` 永远收到
+    # 非空值、永远传 `world_map:=yard` —— 场景登记的地图（如 `dense_scene` → `dense_map`）
+    # **永远不生效**，而且没有任何提示。实测后果：`--scene dense_scene` 跑在 `yard` 上，
+    # 感知帧数 0 而场景名与期望终态看起来都"正常"。
+    #
+    # 现在空串一路传到底 ⇒ `main.launch.py` 走"场景登记 > 缺省"那两级；
+    # 显式给 `--map` 仍然是最高优先级（覆盖场景登记）。
+    wmap = (args.map or '').strip()
+    _available = _world_maps()
+    if wmap and wmap not in _available:
+        return common.fail('未知地图：%s' % wmap, ['可用：%s' % ' | '.join(_available)])
     scene = (args.scene or '').strip() or common.DEFAULT_SCENE
     # GUI 渲染后端（ADR-0021(d)）：空 → auto。取值校验交给 gui_render_backend 模块的
     # 配置文件（它 raise ValueError），此处只做早失败，避免把非法值传到 launch 才炸。
@@ -118,6 +151,16 @@ def cmd_start(args):
             opts['dry_run'] = True
         elif e.startswith('ready-timeout:'):
             opts['ready_timeout_s'] = float(e.split(':', 1)[1])
+        elif e.startswith('spawn-verify-timeout:'):
+            # 世界 spawn 门限（**上界，不是延时**）。密障碍地图（dense_map，数百个）
+            # 实测 create 连续超时约 50 s 后才恢复应答，agc_car 需 +68 s。
+            opts['spawn_verify_timeout_s'] = float(e.split(':', 1)[1])
+        elif e.startswith('reset-max-attempts:'):
+            # 复位就绪门次数上界（与 reset-timeout 取先到者）
+            opts['startup_reset_max_attempts'] = int(e.split(':', 1)[1])
+        elif e.startswith('reset-timeout:'):
+            # 复位就绪门时间上界（秒）
+            opts['startup_reset_timeout_s'] = float(e.split(':', 1)[1])
         elif e.startswith('start-timeout:'):
             opts['start_timeout_s'] = float(e.split(':', 1)[1])
         elif e.startswith('follow-timeout:'):
@@ -143,7 +186,9 @@ def cmd_start(args):
     # 横幅：**必须**如实打出观测指向臂（实际由场景覆盖决定，不是 CLI 传入）
     print('=' * 74)
     print('[run_demo] AGC 一键演示 · 后端=%s 地图=%s 场景=%s 形态=%s'
-          % (backend, wmap, scene, 'headless' if opts['headless'] else 'GUI'))
+          % (backend, wmap or '(场景登记)', scene,
+             'headless' if opts['headless'] else 'GUI'))
+    print('[run_demo] 形态口径：headless = gz 无渲染客户端（-s）；RViz 语义层两种形态都起（固定）')
     print('[run_demo] 观测指向臂：observe_yaw_mode=%s（场景覆盖值：机头对准 /agc/targets 感知航迹）'
           % common.DEFAULT_OBSERVE_YAW_MODE)
     print('[run_demo]   **非** oracle 臂（不读 /agc/gt/*）；目标测量由 gt_adapter 直取真值')

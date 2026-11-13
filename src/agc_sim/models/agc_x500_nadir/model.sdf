@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  agc_x500_nadir —— 己方无人机 + **正下视（nadir）**机载相机（opt-in，ADR-0030）
+  agc_x500_nadir —— 己方无人机 + **正下视（nadir）RGBD** 机载相机（ADR-0030）
 
-  用途：视觉测绘 / 取证能力。**无消费者**—— 目标识别仍靠真值（`gt_adapter`），
-  图像**不**接入任务链。默认机型 `gz_x500` 不含本模型，行为逐字不变。
+  用途：感知地图链的**唯一障碍来源**（2026-11-08 起为**默认机型**，不再是 opt-in）：
+  分割标签 → 深度反投影 → 障碍 3D 点 → XY 包络 + 高度 → `/agc/obstacles` → `/agc/map`。
+  目标识别仍靠真值（`gt_adapter`），**RGB 原图不进识别链**（仅取证/测绘）。
+
+  历史：2026-11-04 立项时是 opt-in 且"零消费者"；2026-11-08 用户裁定相机是平台基本能力
+  （默认机型即本模型），并因"投影到地面平面会把侧墙糊成影子"而把 `camera` 换成 `rgbd_camera`。
+  ADR-0030 的三条旧结论已由此推翻，supersession 挂起（见 docs/paper/ 的私人记录）。
 
   怎么被选中（机型解析**不改工具链**，见 ADR-0030）：
     己方 PX4 进程注入 `PX4_SYS_AUTOSTART=4001`（rcS:41-44 优先于按名匹配）+ `PX4_SIM_MODEL=gz_agc_x500_nadir`
@@ -28,13 +33,42 @@
       θ = −90° → (0, 0, +1) = 正上方（拍天空，**错**）
     ⇒ `pitch = +1.5708 rad`。"90°" 是**下俯量**，SDF `pitch` 字段是 **+1.5708**（ADR-0030 写明此区分）。
 
-  **相机参数**（取值理由见 ADR-0030）：
-    hfov 100°（1.745 rad）：与飞行高度规范里的 GSD 验算口径一致；640×480：与 mono_cam 同档，640/2/tan(50°)=268.5 px 焦距；
-    clip near 0.1 / far 3000：near 取 mono_cam 同值，far 覆盖 14 m 高度下的地平线以远（虽正下视用不到）；
-    update_rate 30：与 mono_cam 同档，实测桥侧可达 ≥10 Hz。
+  **相机参数**（2026-11-08 用户裁定 Q22/Q34 扩覆盖；2026-11-09 定为 1152²@130°@10Hz）：
+    hfov **130°（2.2689 rad）+ 1152×1152 正方形**：
+      * 正下视透视恒等式 **GSD = 2R/N**（与高度、FOV 都无关）⇒ 给定像素数，
+        "覆盖半径 / 最小可测尺寸"的比值恒定；**FOV 只决定在哪个高度上拿到它**。
+      * 原 640×480@100° 的实际覆盖是 **33.9 × 25.5 m 矩形**（垂直半高仅 12.73 m），
+        README 里"半径 17 m"是**水平半宽**、一直偏乐观。改正方形后各向同性。
+      * 现参数（1152²）：f=268.6 px、GSD=**5.30 cm/px**、14 m 高度下**保证半径 30.5 m**、
+        min_obstacle_side_m=0.24 m 换算成 **20 px**（与改造前的像素门限口径一致）。
+      * 为什么不用鱼眼：正下视透视的地面与像面**平行**，GSD 全场均匀；
+        鱼眼（equidistant）反而让边缘 GSD 恶化 1/cosθ（130° 时 2.4×）。
+    clip near 0.1 / far 3000：near 取 mono_cam 同值，far 覆盖斜距以远；
+    update_rate **10**、分辨率 **1152×1152**（2026-11-09 定稿，经整链实测修正）：
+      * **为什么不是 2048²**：整链实测 2048²@30Hz RTF 0.191、@10Hz 仍 0.322 且
+        **map_adapter 的地图重建只打了 1 行**（640² 时 1114 行）—— 感知链基本不出结果，
+        终态 INFRA_FAILURE。早期"2048²@30Hz RTF=1.00"的压测是**裸 gz 无订阅者**，不代表整链。
+        ⚠ 该行数口径更正：它是 `map_adapter` 的**地图内容变化次数**，不是帧率
+        （`rebuild()` 在栅格无变化时不打印，地图收敛后自然下降）。此处只用它证明
+        "感知链在 2048² 下几乎不产出"，不能当作帧率证据。
+      * **为什么选 1152²@130°**：GSD = H/f = 5.30 cm/px，**恰好保持改造前的精度口径**
+        （min_area_px=20 ↔ 0.24 m 不变），而覆盖半径从 12.73 m 提到 **30.5 m**。
+        带宽 10 Hz 下 74 MB/s，远低于 SHM 实测上限 291 MB/s。
+      * **为什么 10 Hz 够**：下游 `map_adapter` 发布 `/agc/map` 是 **2 Hz**、
+        costmap `update_frequency` 是 **5 Hz**，10 Hz 已是需求的两倍；
+        渲染量 1152²×10 = 13.3 MP/s 已高于改造前 640×480×30 = 9.2 MP/s（RTF 0.655→0.546 对得上）。
+        再提帧率只会压 RTF，没有消费者。
+      * **恒等式**：正下视透视 GSD = 2R/N（与高度、FOV 无关）⇒ 给定 N，
+        "覆盖半径/最小可测"的比值恒定；FOV 只决定在哪个高度拿到它。
+      * **整链实测对照**（同环境同命令，只换相机）：
+        | 相机 | RTF | 终态 |
+        | 640×480@100°@30Hz | 0.655 | TRACKING_SUCCESS |
+        | 2048²@130°@30Hz   | 0.191 | INFRA_FAILURE |
+        | 2048²@130°@10Hz   | 0.322 | INFRA_FAILURE（感知链几乎不产出）|
+        | 1152²@130°@10Hz   | 0.546 | GROUND_APPROACH（被 --duration 90 截断，非失败）|
   **话题命名**：不复用 PX4 的 `camera`（避免与将来 mono_cam 冲突）。gz 侧 `/agc/air/nadir`。
-  `camera_info` 默认按 `<topic>_info` 派生（会得到 `/agc/air/nadir_info`，与期望的 `/agc/air/nadir/camera_info`
-  不符）⇒ **显式** 写 `<camera_info_topic>`，使桥两侧逐字一致（ADR-0030）。
+  `camera_info`：rgbd 实测按 `<topic>/camera_info` 派生（正是期望的名字），**不需要**显式写；
+  旧 `camera` 的 `_info` 派生坑在 rgbd 上不成立（实测四个话题名见下方 sensor 注释）。
 -->
 <sdf version="1.9">
   <model name="agc_x500_nadir">
@@ -60,18 +94,63 @@
       <gravity>true</gravity>
       <velocity_decay/>
 
-      <sensor name="nadir_camera" type="camera">
+      <!-- **rgbd_camera**（2026-11-08 用户裁定，原 `camera`）：正下视 RGB **+ 深度**。
+           为什么必须是深度而不是纯 RGB：分割标签只能说明"这个像素是障碍"，
+           说明不了"它在多高"。只有把标签像素投到地面平面（z=0）时，高层建筑的**侧墙**
+           会被当成地面点，按 H/(H−h) 向外放大 —— 实测 yard 的 admin_block（h=10.55 m、
+           H=14.24 m）会糊成 3.86 倍面积，罐区 2.28 倍、仓库 1.84 倍，
+           整图 IoU 仅 0.363。有了深度就能直接反投影出每个像素的真实 3D 点，
+           障碍足迹取"这些点的 XY 包络"，视差误差归零，并顺带得到高度。
+
+           **为什么是 rgbd 而不是"另加一个 depth_camera"**：rgbd 的 color 与 depth
+           由同一次渲染产出，像素严格对齐；两个独立传感器要靠"同一 step 内渲染"这个
+           隐含假设对齐，错一行就会把墙的深度套到隔壁地面像素上。且 rgbd 只占
+           2 个渲染 pass（color+depth），另加 depth 会变 3 个。
+
+           **话题命名与 `camera` 不同**（gz-sim8 实测）：rgbd 在 `<topic>` 后**加后缀**，
+           而不是直接用它本身 ——  `agc/air/nadir` ⇒
+             /agc/air/nadir/image、/agc/air/nadir/depth_image、
+             /agc/air/nadir/points、/agc/air/nadir/camera_info。
+           `camera_info_topic` 在这里**不需要**显式写（rgbd 自己按 <topic>/camera_info 派生，
+           实测正是我们要的名字）；写了反而可能与派生值冲突。 -->
+      <sensor name="nadir_rgbd_camera" type="rgbd_camera">
         <!-- 传感器相对本 link：只加 pitch = +90°（光轴 +X → −Z） -->
         <pose>0 0 0 0 1.5708 0</pose>
         <camera>
-          <!-- camera_info 默认按 <topic>_info 派生（→ /agc/air/nadir_info，不符期望）；
-               显式指定使 gz 侧与 bridge.yaml 逐字一致。注意：本元素是 <camera> 的子元素，
-               **不是** <sensor> 的子元素（sdformat14 spec：camera 元素下 camera_info_topic）。 -->
-          <camera_info_topic>agc/air/nadir/camera_info</camera_info_topic>
-          <horizontal_fov>1.745</horizontal_fov>
+          <horizontal_fov>2.2689</horizontal_fov>
           <image>
-            <width>640</width>
-            <height>480</height>
+            <width>1152</width>
+            <height>1152</height>
+          </image>
+          <clip>
+            <!-- far 必须覆盖「相机到地面的斜距」：14.24 m 高度、半视场 50° 处斜距约 22 m，
+                 留到 3000 m 与旧口径一致（不因深度而缩，避免远处地面被截断成 0 深度）。 -->
+            <near>0.1</near>
+            <far>3000</far>
+          </clip>
+        </camera>
+        <always_on>1</always_on>
+        <update_rate>10</update_rate>
+        <visualize>true</visualize>
+        <topic>agc/air/nadir</topic>
+      </sensor>
+
+      <!-- 语义分割传感器：与 RGBD 相机**共 link、共姿态、共内参**，只输出像素级障碍标签。
+           障碍模型由世界生成链打 gz-sim-label-system 的 <label>，地面为背景（不显影）。
+           gz 按 <topic> 派生 /agc/air/nadir/seg/labels_map（B 通道 = label id）与
+           /agc/air/nadir/seg/colored_map；内参复用上面 RGBD 相机的 camera_info
+           （两者 pose / fov / 分辨率逐字相同 ⇒ 内参必然一致，标签像素可直接查深度）。 -->
+      <sensor name="nadir_seg_camera" type="segmentation">
+        <pose>0 0 0 0 1.5708 0</pose>
+        <camera>
+          <segmentation_type>semantic</segmentation_type>
+          <!-- 分割相机自身发布 camera_info（gz 实测有 /agc/air/nadir/seg/camera_info），
+               显式命名使桥两侧逐字一致；与 RGB 相机共位姿共内参，值由 SDF 派生。 -->
+          <camera_info_topic>agc/air/nadir/seg/camera_info</camera_info_topic>
+          <horizontal_fov>2.2689</horizontal_fov>
+          <image>
+            <width>1152</width>
+            <height>1152</height>
           </image>
           <clip>
             <near>0.1</near>
@@ -79,9 +158,9 @@
           </clip>
         </camera>
         <always_on>1</always_on>
-        <update_rate>30</update_rate>
-        <visualize>true</visualize>
-        <topic>agc/air/nadir</topic>
+        <update_rate>10</update_rate>
+        <visualize>false</visualize>
+        <topic>agc/air/nadir/seg</topic>
       </sensor>
     </link>
 

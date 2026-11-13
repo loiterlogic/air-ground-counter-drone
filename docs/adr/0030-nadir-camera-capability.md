@@ -3,7 +3,14 @@
 
 ## Status
 
-accepted（2026-11-04）
+accepted（2026-11-04）；**部分 superseded by [ADR-0035](0035-perception-map-representation-and-unknown-policy.md#top)（2026-11-09）**
+
+> **被取代的部分**：本篇「决策 4」的相机参数表（`horizontal_fov 1.745`、`640×480`、
+> `update_rate 30`）、「几何：地面足迹与 GSD」的足迹/GSD 数值表，以及「决策 6：为什么**不接**任务链」
+> 的结论 —— 相机自 2026-11-08 起已接任务链，2026-11-09 定为 **1152×1152 @130° @10 Hz**。
+> **仍有效的部分**：挂载范式（独立 link + fixed joint）、`pitch = +1.5708 rad` 的姿态推导、
+> `camera_info` 必须显式命名、能力是 opt-in、`gz_x500_mono_cam` 保留不退休。
+> 正文按下文原样保留，仅追加本演进记录（[ADR-0002](../adr/0002-docs-source-of-truth-and-reference-discipline.md#top) (c)）。
 
 ## 相关
 
@@ -95,6 +102,7 @@ sdformat14 的该元素在 **`<camera>` 下**（不是 `<sensor>` 下），写�
 相机 link `nadir_cam_link`：**无 `<collision>`**（不参与接触/测距/物理求解）、
 `mass 0.050 kg` + `inertia 4e-5`（同 mono_cam）。相对 `x500_base` 的 2.0 kg 机体占 2.5%。
 
+<a id="no-task-chain"></a>
 ### 6. 为什么 **不接**任务链
 
 识别**仍靠真值**（`gt_adapter` → `/agc/targets`），视觉定位路径已于 2026-11-04 退役

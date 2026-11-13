@@ -40,7 +40,8 @@ protected:
   CallbackReturn on_configure_impl() override
   {
     odom_in_ = declare_param_idempotent<std::string>("odom_in_topic", "/fmu/out/vehicle_odometry");
-    status_in_ = declare_param_idempotent<std::string>("status_in_topic", "/fmu/out/vehicle_status");
+    status_in_ = declare_param_idempotent<std::string>("status_in_topic",
+      "/fmu/out/vehicle_status");
     odom_out_ = declare_param_idempotent<std::string>("odom_out_topic", kOdomOut);
     status_out_ = declare_param_idempotent<std::string>("status_out_topic", kStatusOut);
     world_frame_ = declare_param_idempotent<std::string>("world_frame", "world");

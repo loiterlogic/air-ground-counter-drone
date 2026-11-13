@@ -47,6 +47,7 @@ TOP_LEVEL = frozenset({
     'dep_audit.py',             # 包依赖审计
     'episode_runner.py',        # 批量 episode + 三层验收（唯一执行口）
     'evidence_archive.py',      # 证据不可变归档
+    'gen_dense_map.py',   # 高密度地图作者工具（一次性生成，ADR-0036）
     'gui_renderer_evidence.py',  # GUI 渲染后端证据（库，无 __main__；episode_runner 导入）
     'lock_px4_failsafe_params.sh',  # PX4 失效安全参数锁定
     'reclaim_evidence.py',          # experiments/ + log/ 保留策略执行器（dry-run 默认，ADR-0006）

@@ -25,7 +25,8 @@
 [路线分支治理](../conventions/路线分支治理.md#retire) 5.2 台账。
 
 **结果（当前唯一行为）**：`/agc/targets` 的唯一发布者是 `gt_adapter`（**无几何门控，
-不分远近**）；`/agc/obstacles` 无发布者，`obstacles_source` 恒为 `config`（静态先验）。
+不分远近**）；`/agc/obstacles` 由 `nadir_projection` 发布（正下视语义分割 → 地面 OBB），
+`map_adapter` 以感知观测为 `/agc/map` 的唯一障碍来源，`obstacles_source` 只折入内容身份 hash。
 下游不得据任何"传感器量程 / FOV / 丢包"配置宣称本仓当前存在感知质量差异。
 
 `/agc/map` 链（map_adapter → /agc/map → costmap）**不在本次清退范围**：它是 `baseline`
@@ -115,10 +116,19 @@ def generate_launch_description():
                     name='map_adapter',
                     parameters=common + [{'map_file': map_file,
                                           'obstacles_file': obstacles_file,
-                                          # 2026-11-04：恒 config（air_fusion 已退役，参数已删）
-                                          'obstacles_source': 'config',
+                                          # 障碍唯一来源 = 感知观测；该值只折入内容身份 hash，
+                                          # 不控制任何加载分支（无路线分支）。
+                                          'obstacles_source': 'nadir_segmentation',
                                           'scenario_version': scenario_version}],
                     output='screen')
+
+    # ---- 正下视语义分割 → 地面 2D 占据观测 ----
+    # 节点常驻；opt-in nadir 机型下才有 labels_map 帧，有帧才出 /agc/obstacles。
+    # 默认机型无帧 → map_adapter 收不到感知源 → /agc/map/valid=false（知识不新鲜），
+    # 栅格在无障碍场景下仍为全 free；这是「完全替代静态先验」的既定行为，非静默回退。
+    # 不新增 launch 参数、不由参数在「感知 / 静态先验」间二选一（无路线分支）。
+    nadir_node = Node(package='agc_perception', executable='nadir_projection',
+                      name='nadir_projection', parameters=common, output='screen')
 
     # ---- 真值链：唯一发布者 gt_adapter ----
     # `air_fusion` 已于 2026-11-04 退役；`air_perception`（agc/air/obs）及其无消费者的
@@ -136,4 +146,5 @@ def generate_launch_description():
         ld.add_action(n)
     ld.add_action(gt_node)
     ld.add_action(map_node)
+    ld.add_action(nadir_node)
     return ld

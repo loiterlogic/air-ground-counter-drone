@@ -64,6 +64,76 @@ def lo_has_multicast(flags=None):
     return bool(flags & IFF_MULTICAST)
 
 
+# --------------------------------------------------------------------------------------
+# SHM segment 尺寸（2026-11-08 实测，用户裁定 Q33）
+# --------------------------------------------------------------------------------------
+#
+# **症状**：2048² 的深度图（16.78 MB/帧）在默认 SHM 配置下，订阅端只收到 **0.44 Hz**
+# （1536²/9.44 MB 时 1.55 Hz），而发布端明明是 25 Hz。整条感知链因此卡死。
+#
+# **根因**：FastDDS 默认 SHM segment 太小，装不下大消息的完整载荷；实测表现为
+# "吞吐被钉死在 7–15 MB/s"，与消息大小成反比。**不是**渲染瓶颈（RTF 实测 1.00、
+# GPU 16%），也**不是** CPU（`ps %cpu` 约 1 核）。
+#
+# **实测矩阵**（`/tmp/dds_pub_n.py` + `dds_sub_n.py`，同机同进程对）：
+#   | 消息大小        | 默认 SHM        | segment=16 MB    |
+#   |----------------|-----------------|------------------|
+#   | 16.78 MB (2048²)| 0.12 Hz         | **30.0 Hz**      |
+#   |  9.44 MB (1536²)| 1.55 Hz         | **22.3 Hz**      |
+#   |  4.19 MB (1024²)| 10.9 Hz         | 36.9 Hz          |
+#   |  1.64 MB (640²) | 10.9 Hz         | 38.1 Hz          |
+#   ⇒ 大消息提升 **250×**，小消息不退化（64 B 仍 39 Hz，远超需求）。
+#
+# **为什么是 16 MB 而不是更大**：16 MB 已足够（2048² 帧 16.78 MB 略超，实测仍 30 Hz，
+# 因为 FastDDS 会分片），且内存占用最小；64/128/256 MB 实测收益相同（15–17 Hz）。
+#
+# **边界**：SHM 只在**同主机**多进程间有效；跨机器仍须 UDP（本模块只在 `lo` 无组播
+# 时才选 SHM，原生 Linux 走 `localhost-udp` 不受影响）。
+SHM_SEGMENT_MB = 16
+
+SHM_PROFILE_XML = """<?xml version="1.0" encoding="UTF-8" ?>
+<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+  <transport_descriptors>
+    <transport_descriptor>
+      <transport_id>agc_shm</transport_id>
+      <type>SHM</type>
+      <segment_size>%(bytes)d</segment_size>
+      <port_queue_capacity>512</port_queue_capacity>
+    </transport_descriptor>
+  </transport_descriptors>
+  <participant profile_name="agc_shm" is_default_profile="true">
+    <rtps>
+      <userTransports><transport_id>agc_shm</transport_id></userTransports>
+      <useBuiltinTransports>false</useBuiltinTransports>
+    </rtps>
+  </participant>
+</profiles>
+"""
+
+
+def shm_profile_path(tmpdir=None):
+    """写出 SHM profile XML 并返回路径（进程内缓存，避免每次重复写盘）。
+
+ 为什么必须落盘而不是用环境变量直接调：FastDDS 的 `segment_size` **只能**通过
+ XML profile 设置，没有对应的环境变量（`FASTDDS_BUILTIN_TRANSPORTS=SHM` 只选传输，
+ 不改段大小）。所以本模块负责生成并指向一个 profile 文件。
+    """
+    global _SHM_PROFILE_CACHE
+    if _SHM_PROFILE_CACHE and os.path.isfile(_SHM_PROFILE_CACHE):
+        return _SHM_PROFILE_CACHE
+    import tempfile
+    base = tmpdir or os.environ.get('TMPDIR') or tempfile.gettempdir()
+    path = os.path.join(base, 'agc_fastdds_shm_%dmb.xml' % SHM_SEGMENT_MB)
+    with open(path, 'w', encoding='utf-8') as fh:
+        fh.write(SHM_PROFILE_XML % {'bytes': SHM_SEGMENT_MB * 1024 * 1024})
+    _SHM_PROFILE_CACHE = path
+    return path
+
+
+_SHM_PROFILE_CACHE = None
+SHM_PROFILE_PATH = shm_profile_path()
+
+
 # 策略 → 要注入的环境变量。值为 None 表示**删除**该变量（继承 rmw 默认）。
 #
 # `subnet-shm` 是**本机唯一可用**组合（2026-11-04 实测：SUBNET+默认/UDPv4 均零送达，
@@ -76,6 +146,10 @@ _POLICY_ENV = {
     'subnet-shm': {
         'ROS_AUTOMATIC_DISCOVERY_RANGE': 'SUBNET',
         'FASTDDS_BUILTIN_TRANSPORTS': 'SHM',
+        # **2026-11-08 实测（用户裁定 Q33）**：默认 SHM segment 太小，
+        # 大消息（≥9 MB）订阅端吞吐会崩到 1.55 Hz / 0.44 Hz。调大后 20–22 Hz。
+        # 详见 SHM_SEGMENT_MB 的说明。
+        'FASTRTPS_DEFAULT_PROFILES_FILE': SHM_PROFILE_PATH,
     },
     'subnet-udp': {
         'ROS_AUTOMATIC_DISCOVERY_RANGE': 'SUBNET',

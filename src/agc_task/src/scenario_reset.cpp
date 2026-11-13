@@ -10,7 +10,9 @@
 // **绝不留「车已移动、目标未复位」中间态。**
 // - car_start（agc/scenario/car_start）**仅在完整成功后**发布。
 // - 每次成功复位 reset_epoch_++ 并发布 /agc/scenario/reset_epoch（Int32，transient_local）；应答含 epoch=N。
-// * 启动初始复位**走同一门控**（不 bypass），保留 4 s 延迟等 gz / 桥就绪。
+// * 启动初始复位**走同一门控**（不 bypass）：绑定"实体已存在 + GT 新鲜 + set_pose 可用"，
+// 失败**有界重试**，成功发布 `/agc/scenario/ready=true`（latched），超限发布 false 并 ERROR
+// （ADR-0038：不再用固定 4 s 定时器猜实体何时创建完）。
 //
 // 统一执行口（ADR-0020 的 #execution-port）：本节点**禁止**发布任何 cmd_vel；「停止执行」以门控 + 车静止证据实现。
 
@@ -29,6 +31,7 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <ros_gz_interfaces/srv/set_entity_pose.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/int32.hpp>
 #include <std_srvs/srv/trigger.hpp>
 
@@ -94,6 +97,8 @@ public:
     target_gt_topic_ = declare_parameter<std::string>("target_gt_topic", "/agc/gt/intruder_uav");
     reset_epoch_topic_ =
       declare_parameter<std::string>("reset_epoch_topic", "/agc/scenario/reset_epoch");
+    startup_ready_topic_ =
+      declare_parameter<std::string>("startup_ready_topic", "/agc/scenario/ready");
     readback_tolerance_m_ = declare_parameter<double>("readback_tolerance_m", 0.25);
     readback_timeout_s_ = declare_parameter<double>("readback_timeout_s", 1.0);
     readback_max_age_s_ = declare_parameter<double>("readback_max_age_s", 0.5);
@@ -150,12 +155,21 @@ public:
       std::bind(&ScenarioReset::onReset, this, std::placeholders::_1, std::placeholders::_2),
       rclcpp::ServicesQoS(), txn_cb_group_);
 
-    // 启动初始复位（延迟等待 gz / 桥就绪）；**经同一门控**（tasks 3.4：不 bypass）。
+    // 启动初始复位（ADR-0038）：**绑定实体就绪 + GT 新鲜**，不再固定 4 s 盲等。
+    //
+    // 旧实现是 `create_wall_timer(4 s)` 单次触发：实体要到 gz+15 s 才 spawn，故第 4 秒的
+    // set_pose 面对尚不存在的模型 → 失败只打印一次 → 定时器已 cancel → **永不重试** →
+    // 任务层对着一个"从未复位过"的场景启动。现在改为**周期重试直到成功或超限**：
+    // 每次尝试仍走同一门控（doReset 内部会检查 gt 新鲜 / set_pose 服务 / 读回），
+    // 失败原因记入 last_reason_ 并节流打印；超过 startup_reset_max_attempts_ 次或
+    // startup_reset_timeout_s_ 秒后**显式失败**（ERROR + latched false），不再静默。
+    startup_reset_max_attempts_ = declare_parameter<int>("startup_reset_max_attempts", 60);
+    startup_reset_timeout_s_ = declare_parameter<double>("startup_reset_timeout_s", 120.0);
+    startup_reset_period_ms_ = declare_parameter<int>("startup_reset_period_ms", 1000);
+    ready_pub_ = create_publisher<std_msgs::msg::Bool>(
+      startup_ready_topic_, rclcpp::QoS(1).transient_local());
     startup_timer_ = create_wall_timer(
-      std::chrono::seconds(4), [this]() {
-        startup_timer_->cancel();
-        RCLCPP_INFO(get_logger(), "initial reset (gated): %s", doReset() ? "ok" : "FAILED");
-      },
+      std::chrono::milliseconds(startup_reset_period_ms_), [this]() {onStartupTick();},
       txn_cb_group_);
   }
 
@@ -457,6 +471,58 @@ private:
     reset_epoch_pub_->publish(msg);
   }
 
+  // ADR-0038：启动初始复位的**有界重试**。每次 tick 尝试一次 doReset()：
+  // * 成功 → 取消定时器 + 发布 ready=true（latched），此后不再重试；
+  // * 失败 → 记次数并**节流**打印原因（gt_stale / car_set_pose_failed … 都在重试窗口内正常），
+  // 继续下一拍；超过次数或墙钟上界 → 取消定时器 + 发布 ready=false + ERROR。
+  // 为什么不用一次性定时器：实体就绪时刻不可预测（取决于世界大小与机器负载），
+  // 一次性触发必然在慢机器上落在实体创建之前，而失败后无人重试 = 静默半启动。
+  void onStartupTick()
+  {
+    if (startup_done_) {return;}
+    if (startup_t0_ == std::chrono::steady_clock::time_point{}) {
+      startup_t0_ = std::chrono::steady_clock::now();
+    }
+    const double elapsed = std::chrono::duration<double>(
+      std::chrono::steady_clock::now() - startup_t0_).count();
+    ++startup_attempts_;
+
+    if (doReset()) {
+      startup_done_ = true;
+      startup_timer_->cancel();
+      publishStartupReady(true);
+      RCLCPP_INFO(
+        get_logger(), "initial reset ok（第 %d 次尝试，%.1f s，epoch=%d）",
+        startup_attempts_, elapsed, reset_epoch_);
+      return;
+    }
+
+    const bool exhausted = (startup_attempts_ >= startup_reset_max_attempts_) ||
+      (elapsed >= startup_reset_timeout_s_);
+    if (exhausted) {
+      startup_done_ = true;
+      startup_timer_->cancel();
+      publishStartupReady(false);
+      RCLCPP_ERROR(
+        get_logger(),
+        "initial reset FAILED：%d 次尝试 / %.1f s 内未成功（最后原因：%s）→ 场景未就绪，"
+        "任务层不得假装正常启动", startup_attempts_, elapsed, last_reason_.c_str());
+      return;
+    }
+    // 失败是重试窗口内的**正常**状态（实体/GT 尚未就绪）：节流打印，不刷屏。
+    RCLCPP_INFO_THROTTLE(
+      get_logger(), *get_clock(), 3000,
+      "initial reset 重试中（第 %d 次，%.1f s）：%s",
+      startup_attempts_, elapsed, last_reason_.c_str());
+  }
+
+  void publishStartupReady(bool ok)
+  {
+    std_msgs::msg::Bool msg;
+    msg.data = ok;
+    ready_pub_->publish(msg);
+  }
+
   void publishCarStart(double x, double y)
   {
     PoseStamped msg;
@@ -497,12 +563,18 @@ private:
   int spawn_seed_{0}, spawn_internal_retry_{8};
   // （ADR-0014）：受控事务
   std::string car_entity_name_, target_entity_name_, car_gt_topic_, target_gt_topic_;
-  std::string reset_epoch_topic_;
+  std::string reset_epoch_topic_, startup_ready_topic_;
   double readback_tolerance_m_{0.25}, readback_timeout_s_{1.0}, readback_max_age_s_{0.5};
   double stop_exec_max_s_{0.5}, quiescence_eps_{0.05};
   int reset_epoch_{0};
   bool env_needs_rebuild_{false};
   uint8_t state_{agc_msgs::msg::AgcTaskState::IDLE};
+  // （ADR-0038）：启动初始复位的重试状态
+  int startup_reset_max_attempts_{60}, startup_reset_period_ms_{1000};
+  double startup_reset_timeout_s_{120.0};
+  int startup_attempts_{0};
+  bool startup_done_{false};
+  std::chrono::steady_clock::time_point startup_t0_{};
 
   PoseStamped car_gt_, target_gt_;
   rclcpp::Time car_gt_rx_{0, 0, RCL_ROS_TIME}, target_gt_rx_{0, 0, RCL_ROS_TIME};
@@ -515,6 +587,8 @@ private:
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr ground_odom_sub_;
   rclcpp::Publisher<PoseStamped>::SharedPtr car_start_pub_;
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr reset_epoch_pub_;
+  // （ADR-0038）：场景就绪状态（latched）——初始复位成功才为 true，超限失败为 false。
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr ready_pub_;
   std::shared_ptr<rclcpp::Node> client_node_;
   rclcpp::Client<SetEntityPose>::SharedPtr set_pose_client_;
   rclcpp::Service<Trigger>::SharedPtr reset_srv_;

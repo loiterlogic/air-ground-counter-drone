@@ -27,7 +27,7 @@
   - **授权写清"可做/不可做"**：明确 0 或未写的档位 **一次都不能启动**；只写"构建+运行合计 3600 s"这类**正向时长授权也合法**，不得被当成"没写次数 = 0"（[两种写法](../README.md#run-tiers)）。
 
 1. **创建**：与用户讨论完任务、写完本轮 `request.md`、把 CURRENT 置为 `待执行` 后，用 **`worker`** 工具创建 Worker：
-   - `worker` 是钉死路由的执行者：Host 侧 `agentOptions` 固定 `@huai_xin/dsh-workbuddy/intl` / `deepseek-v4.1-flash` / `reasoningEffort: high`（`intl` 不可用时由 `worker-route-fallback` 自动回退到 `/cn`，Leader 不干预），**不随 Leader 当下选的模型漂移**，也不需要每次传模型参数。
+   - `worker` 是钉死路由的执行者：Host 侧 `agentOptions` 固定 `@huai_xin/dsh-workbuddy/intl` / `hy4free` / `reasoningEffort: high`（与 Leader 同款）；`intl` 不可用时由 `worker-route-fallback` 自动回退到 `/cn`（`hy4free`），再不行才到 trae（`deepseek-v4.1-flash`，有意保留的混模型例外），Leader 不干预。**不随 Leader 当下选的模型漂移**，也不需要每次传模型参数。换 Worker 模型只改 `~/.dsh/profiles/web/cordis.patch.yml` 的 `&WORKER_MODEL` 一行（[宏定义](../README.md#worker-model-macro)）。
    - **Leader 不得用 `subagent` 派工**（用户 2026-11-02 裁定）：`subagent` 继承 Leader 当下模型，会把一般模型 Worker 换成高质量模型，既破坏双模型分层也绕过钉死路由（实测视觉最小闭环的子会话因此跑在 `totokens/gpt-6.1-sol` 并撞余额不足）。需要一次性只读调研时，开一个**临时 `worker`**（`prompt` 限定范围与“不改文件/不跑仿真”），用完不续。
    - `prompt` 写完整首轮任务（Worker 看不到本会话历史）。
    - 记下返回的子会话 ID，写入本轮 `report.md` 的"执行者"字段旁。

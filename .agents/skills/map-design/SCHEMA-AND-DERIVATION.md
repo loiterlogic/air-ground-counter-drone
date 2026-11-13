@@ -94,11 +94,25 @@ cylinder / sphere → r
 
 ## 5. 新增一张地图
 
-**只有三处**，缺一不可：
+**只有四处**，缺一不可：
 
 1. 在 `world_map.MAP_GEOMETRY_FILES` 加一行（**单一清单**，消费方禁止各写一份文件名表）；
 2. 新增对应 yaml；
-3. 需要时在 `scenarios.yaml` 的**场景级** `world_map` 登记，否则缺省仍是 minimal。
+3. 需要时在 `scenarios.yaml` 的**场景级** `world_map` 登记，否则缺省仍是 minimal；
+4. **出生位**：若这张图的出生位与缺省不同，在 `spawn_layout.yaml` 的 `per_map.<map>` 加一段
+   （[ADR-0036](../../../docs/adr/0036-dense-obstacle-map-and-per-map-spawn.md#top) (b)）。
+   只写**要覆盖的键**，顶层仍是完整缺省；未登记 = 回落顶层（旧图逐值不变）。
+   拼错实体段（如 `cars`）**加载时即拒绝运行** —— 不必等到选中那张图。
+
+**不用改的**：`scripts/demo` 与场景不变量测试的地图白名单**已改为遍历清单**
+（[ADR-0036](../../../docs/adr/0036-dense-obstacle-map-and-per-map-spawn.md#top) (f)）；
+`agc_perception` 的回退副本只服务 minimal，新图不需要副本。
+
+**"高密度"类地图另需一条按图断言**：核查 (o) 是 `yard` 专属（≤46 实体 / 覆盖率 5–12%），
+套到密排图会直接判超标。按图立独立断言，判据见
+[ADR-0036](../../../docs/adr/0036-dense-obstacle-map-and-per-map-spawn.md#top) (e)
+（实体数 / **最近邻中位数** / **最小间距下限** / 尺寸上限 / 高度上限）。注意**密度 ≠ 覆盖率**：
+数百个 0.6–1.2 m 小件的并集覆盖只有几个百分点（现行值跑核查读 JSON），低于 `yard` 的 11.48%。
 
 地图选择优先级（`load_scene` 单一实现，**不要**在别处再解析一遍）：
 

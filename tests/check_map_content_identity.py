@@ -219,7 +219,12 @@ def case_f_r006_preserved(bench):
     src = _read(os.path.join(ROOT, 'src/agc_perception/src/map_adapter.cpp')) or ''
     code = _code_only(src)
     res['source_valid_semantics_kept'] = ('geometry_ok_ && knowledge_current()' in code)
-    res['source_static_prior_kept'] = ('static_prior_' in code and 'loadStaticObstacles' in code)
+    # **判据反转（ADR-0035 (b)）**：静态先验与动态轨集合已整体退役 ——
+    # 栅格内容只来自 log-odds 累积层，`static_prior_` / `live_` / `unknown_idx_`
+    # 不再决定任何栅格内容，保留成员等于留一个"顺手接回来"的入口。
+    # 因此这里从"必须先验仍在"改为"必须**没有**先验加载路径"。
+    res['source_static_prior_retired'] = (
+        'static_prior_' not in code and 'loadStaticObstacles' not in code)
     res['pass'] = all(v for v in res.values() if isinstance(v, bool))
     return res
 

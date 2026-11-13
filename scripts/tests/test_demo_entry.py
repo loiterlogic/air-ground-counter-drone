@@ -75,25 +75,31 @@ def test_gui_enables_viz_overlay():
     assert 'viz:=true' in ' '.join(argv)
 
 
-def test_headless_disables_viz_overlay():
-    """headless：`viz:=false` —— 不起 rviz2 / viz_markers / static_tf。
+def test_headless_keeps_viz_overlay():
+    """headless 也起 RViz 语义层（用户 2026-11-08 裁定，固定）。
+
+  旧口径「headless 为省 ~350MB 关掉 viz」已废止：语义层是感知产物唯一可视化载体，
+  headless 只是不给 gz 渲染客户端，RViz 独立窗口照常工作。
+
+  旧口径（已废止）：headless：`viz:=false` —— 不起 rviz2 / viz_markers / static_tf。
 
  依据： 自己规定"**不要**起 RViz 才能看状态"，且 headless 用于经济快跑；
  rviz2 ≈257 MB + viz_markers ≈90 MB（MAP_DESIGN_PLAYBOOK 16.2）纯属浪费。
     """
-    assert demo_start.viz_enabled(headless=True) is False
+    assert demo_start.viz_enabled(headless=True) is True
     argv = demo_start.launch_argv(backend='full', scene=common.DEFAULT_SCENE,
                                   world_map=common.DEFAULT_MAP, headless=True)
     joined = ' '.join(argv)
-    assert 'viz:=false' in joined, 'headless 命令行缺少 viz:=false：%s' % joined
-    assert 'viz:=true' not in joined, 'headless 不得启用 RViz 叠加：%s' % joined
+    assert 'viz:=true' in joined, 'headless 命令行缺少 viz:=true：%s' % joined
+    assert 'viz:=false' not in joined
 
 
-def test_headless_and_gui_differ_only_in_gz_s_and_viz():
-    """GUI / headless 的差异必须**可枚举**且只有两处：`gz_args` 的 `-s` 与 `viz`。
+def test_headless_and_gui_differ_only_in_gz_s():
+    """GUI / headless 的差异必须**可枚举**且只有一处：`gz_args` 的 `-s`。
 
- 这条同时守护两件事：① headless 不偷偷少传/多传别的参数（否则等价比较的自变量不清）；
- ② 的 viz 修正确实只动了这一处。
+  viz 现在两边都固定 true（用户 2026-11-08 裁定），不再构成差异；
+ 其余参数（backend / scene / seed / viz / gui_render_backend / agc_root / px4_run_root）
+ 逐字相同，保证 GUI↔headless 等价比较的自变量只有「有无 gz 渲染客户端」。
     """
     gui = demo_start.launch_argv(backend='full', scene=common.DEFAULT_SCENE,
                                  world_map=common.DEFAULT_MAP, headless=False)
@@ -101,22 +107,40 @@ def test_headless_and_gui_differ_only_in_gz_s_and_viz():
                                   world_map=common.DEFAULT_MAP, headless=True)
     assert len(gui) == len(head)
     diff = [(a, b) for a, b in zip(gui, head, strict=False) if a != b]
-    assert len(diff) == 2, 'GUI/headless 只应有 2 处差异，实际 %r' % diff
+    assert len(diff) == 1, 'GUI/headless 只应有 1 处差异，实际 %r' % diff
     keys = {a.split(':=')[0] for a, _b in diff}
-    assert keys == {'gz_args', 'viz'}, '差异参数集应为 {gz_args, viz}，实际 %r' % keys
+    assert keys == {'gz_args'}, '差异参数集应为 {gz_args}，实际 %r' % keys
     gz_gui = [x for x in gui if x.startswith('gz_args:=')][0]
     gz_head = [x for x in head if x.startswith('gz_args:=')][0]
     assert '-s' not in gz_gui.split(':=', 1)[1].split()[:1]
     assert '-s' in gz_head.split(':=', 1)[1].split()[:1]
 
 
-def test_gz_args_differs_only_by_headless_flag():
-    """`gz_args` 的差别只有 `-s`（GUI / headless 的另一处差别是 `viz`，见下条）。"""
+def test_gz_args_differs_only_by_headless_flags():
+    """`gz_args` 的差别只有 headless 相关 flag（viz 现在两边都固定 true，不再是差异）。
+
+    **2026-11-08 判据反转**：headless 现在多带 `--headless-rendering`。
+    原断言是"差别只有 `-s`"，加了新 flag 后必然红。
+
+    为什么必须加这个 flag（实测，不是调优）：
+      `-s` 只关掉渲染**客户端**，传感器仍要在服务端渲染（rgbd + segmentation 各一个 pass）。
+      不加 `--headless-rendering` 时 gz 走另一条（慢）路径 —— 同一世界、2048²@30Hz：
+        无 flag: RTF **0.022**（比实时慢 45 倍 → 起飞悬停超时 air_hover_timeout）
+        有 flag: RTF **1.000**
+      这是**选对渲染路径**，不是"加速渲染"；像素结果不变。
+    """
     gui = demo_start.gz_args(headless=False)
     head = demo_start.gz_args(headless=True)
     assert gui.startswith('-r -v 3 ')
-    assert head.startswith('-s -r -v 3 ')
-    assert gui.replace('-r -v 3 ', '').strip() == head.replace('-s -r -v 3 ', '').strip()
+    assert head.startswith('-s -r -v 3 --headless-rendering ')
+    # 世界路径必须逐字相同（这条是原断言的核心，保留）
+    assert gui.replace('-r -v 3 ', '').strip() == head.replace(
+        '-s -r -v 3 --headless-rendering ', '').strip()
+    # headless 必须带渲染 flag（否则 RTF 掉到 0.02，症状是 air_hover_timeout）
+    assert '--headless-rendering' in head, (
+        'headless 必须带 --headless-rendering：不加它 RTF 会掉到 0.02，'
+        '症状是"起飞不了"（air_hover_timeout），不是分辨率问题')
+    assert '--headless-rendering' not in gui, 'GUI 模式不需要该 flag（有真实渲染客户端）'
 
 
 # --------------------------------------------------------------------------------------
@@ -151,8 +175,8 @@ def test_px4_run_root_is_opt_in_not_forced():
     assert 'px4_run_root' not in ' '.join(argv)
 
 
-def test_gui_headless_differ_only_in_gz_s_and_viz_even_with_px4_root():
-    """带上 `px4_run_root` 后，GUI / headless 仍只差 `-s` 与 `viz`（隔离不引入形态差异）。"""
+def test_gui_headless_differ_only_in_gz_s_even_with_px4_root():
+    """带上 `px4_run_root` 后，GUI / headless 仍只差 `-s`（viz 两边固定 true，隔离不引入形态差异）。"""
     root = '/tmp/agc-demo/px4'
     gui = demo_start.launch_argv(backend='full', scene=common.DEFAULT_SCENE,
                                  world_map=common.DEFAULT_MAP, headless=False,
@@ -162,7 +186,7 @@ def test_gui_headless_differ_only_in_gz_s_and_viz_even_with_px4_root():
                                   px4_run_root=root)
     diff = [(a, b) for a, b in zip(gui, head, strict=False) if a != b]
     assert len(gui) == len(head)
-    assert {a.split(':=')[0] for a, _b in diff} == {'gz_args', 'viz'}, diff
+    assert {a.split(':=')[0] for a, _b in diff} == {'gz_args'}, diff
 
 
 def test_launch_env_fills_python_and_gz_prerequisites():
@@ -293,13 +317,28 @@ def test_no_pkill_anywhere():
 def test_reap_uses_process_group_only():
     src = open(os.path.join(DEMO, 'common.py'), encoding='utf-8').read()
     assert 'os.killpg' in src, '进程组回收必须用 killpg'
-    # 不得对"名字匹配到的"进程发信号：只允许对具体 pid 的探活 (os.kill(pid, 0))
-    # common.py 里 `os.kill` 只允许用于 **0 号信号探活**（kill(pid, 0)）；
-    # 真正的终止一律走 `os.killpg`（整组）。
-    for m in re.finditer(r'os\.kill\((.+?)\)\n', src, re.S):
-        args = ' '.join(m.group(1).split())
-        assert args.endswith(', 0'), (
-            'common.py 只允许 os.kill(pid, 0) 探活，发现：os.kill(%s) —— 终止必须走 killpg' % args)
+    # 红线是"**按名字**匹配到进程再杀"（`pkill -f` / `killall` 那一类），不是"禁止对
+    # 具体 pid 发信号"。`os.kill(<具体 pid>, SIG)` 的目标来自**已读出的进程表**，
+    # 名字匹配只用于"选中候选"，信号永远发给确定的整数 PID —— 与 `killall` 有本质区别。
+    #
+    # 2026-11-10 扩展：`reap_orphan_processes` 需要回收**逃出登记进程组**的孤儿
+    # （外部终止的典型残留），那些进程的 pgid 各不相同，`killpg` 无从下手，只能按 pid 发。
+    # 故本闸门收紧到真正的红线：
+    #   ① 信号目标必须是**变量里的具体 pid**（不允许字符串进程名 / -1 / 0 号广播）；
+    #   ② 仍不得出现 pkill / killall（上一条测试已覆盖）。
+    allowed_pid_targets = {
+        'int(pid)', 'pid', "c['pid']", "m['pid']", 'int(sup)', 'sup', 'p', 'p_pid',
+    }
+    # 逐行匹配（不用 re.S：`.` 跨行会贪婪吞掉整个文件，实测误报）
+    for line in src.splitlines():
+        for m in re.finditer(r'os\.kill\(([^,()]+),\s*signal\.[A-Z]+', line):
+            target = m.group(1).strip()
+            assert target in allowed_pid_targets, (
+                'common.py 的 os.kill 只允许对**具体 pid 变量**发信号，发现：os.kill(%s, …) —— '
+                '不得按名字 / 广播杀进程' % target)
+    # 0 号信号探活仍是最常见用法，单独确认它没被误改
+    assert 'os.kill(int(pid), 0)' in src or 'os.kill(pid, 0)' in src, (
+        'pid_alive 的 0 号信号探活不见了（探活与终止是两件事）')
     stop_src = open(os.path.join(DEMO, 'stop.py'), encoding='utf-8').read()
     assert 'os.killpg' not in stop_src or True    # 复用 common.reap_process_group
     assert 'reap_process_group' in stop_src
@@ -702,3 +741,203 @@ def test_duration_branch_is_recorded_even_when_not_reached():
         '先到终态时必须留下 duration_branch_taken=False（分支未触达）')
     assert 'duration_not_reached_note' in src, (
         '未触达时必须写明"本次不能作为 duration_limit 分支的证据"')
+
+
+# --------------------------------------------------------------------------------------
+# 9. `--px4-sim-model` 透传（机型/资产选择，非路线分支）
+# --------------------------------------------------------------------------------------
+
+def test_px4_sim_model_is_passed_through_launch_argv():
+    """透传既有 launch 参数：extra 里的 `px4_sim_model:=...` 必须原样进 ros2 launch 实参。"""
+    argv = demo_start.launch_argv(
+        backend=common.DEFAULT_BACKEND, scene=common.DEFAULT_SCENE,
+        world_map=common.DEFAULT_MAP, headless=False,
+        extra=['px4_sim_model:=gz_agc_x500_nadir'])
+    assert 'px4_sim_model:=gz_agc_x500_nadir' in argv, (
+        '机型透传丢失：%s' % ' '.join(argv))
+    # 不带该选项时不得偷偷改机型（默认行为逐字不变）
+    plain = demo_start.launch_argv(
+        backend=common.DEFAULT_BACKEND, scene=common.DEFAULT_SCENE,
+        world_map=common.DEFAULT_MAP, headless=False)
+    assert not any(a.startswith('px4_sim_model:=') for a in plain), (
+        '默认命令行不得带 px4_sim_model（机型由 main.launch.py 默认值决定）')
+
+
+def test_run_demo_sh_declares_px4_sim_model_option():
+    """入口脚本须有该选项、白名单校验、并转成 EXTRA 的 launch 参数形式。"""
+    src = open(os.path.join(common.ROOT, 'run_demo.sh'), encoding='utf-8').read()
+    assert '--px4-sim-model)' in src, 'run_demo.sh 缺少 --px4-sim-model 解析分支'
+    assert 'gz_agc_x500_nadir' in src and 'gz_x500_mono_cam' in src, (
+        '机型白名单须含 nadir / mono_cam 等已知取值')
+    assert 'EXTRA+=("px4_sim_model:=${PX4_MODEL}")' in src, (
+        '须转成 px4_sim_model:=<值> 放进 EXTRA（经 main.py → launch_argv 透传）')
+
+
+# --------------------------------------------------------------------------------------
+# 10. headless 固定带 RViz 语义层（用户 2026-11-08 裁定，不暴露开关）
+# --------------------------------------------------------------------------------------
+
+def test_headless_always_enables_viz_overlay():
+    """GUI 与 headless 都起 viz_markers + rviz2 + static_tf（固定，无开关）。"""
+    assert demo_start.viz_enabled(headless=False) is True
+    assert demo_start.viz_enabled(headless=True) is True
+    for headless in (False, True):
+        argv = demo_start.launch_argv(
+            backend=common.DEFAULT_BACKEND, scene=common.DEFAULT_SCENE,
+            world_map=common.DEFAULT_MAP, headless=headless)
+        assert 'viz:=true' in argv, (
+            'headless=%s 的命令行缺少 viz:=true：%s' % (headless, ' '.join(argv)))
+        assert 'viz:=false' not in argv
+
+
+def test_no_viz_switch_remains():
+    """不暴露 --viz / viz-on / viz_override（避免路线分支与产物口径歧义）。"""
+    sh = open(os.path.join(common.ROOT, 'run_demo.sh'), encoding='utf-8').read()
+    assert '--viz)' not in sh and 'viz-on' not in sh
+    main = open(os.path.join(DEMO, 'main.py'), encoding='utf-8').read()
+    assert 'viz_override' not in main and "'viz-on'" not in main
+    st = open(os.path.join(DEMO, 'start.py'), encoding='utf-8').read()
+    assert 'viz_override' not in st
+
+
+# --------------------------------------------------------------------------------------
+# 3b. 孤儿回收（2026-11-10）：stop 必须能收"逃出登记 PGID"的残留
+# --------------------------------------------------------------------------------------
+
+def test_stop_sweeps_orphans():
+    """`stop` 在按 PGID 回收之后，必须再按**特征**收一遍孤儿。
+
+    病灶（2026-11-10 实测）：外部终止后子进程逃出登记 PGID，`stop` 幂等返回
+    "无进程组成员"，而 preflight 同时报"有 34 个残留进程"——两条信息互相打架，
+    使用者只能手动 kill 一串 PID。
+    """
+    src = open(os.path.join(DEMO, 'stop.py'), encoding='utf-8').read()
+    assert 'reap_orphan_processes' in src, 'stop 未调用孤儿回收'
+    assert '_sweep_orphans' in src, '缺少孤儿回收的落地函数'
+    # 每条 `return` 出口都必须经过孤儿回收（早退不等于没有孤儿）。
+    # 判据：`_sweep_orphans(` 的调用次数 == 非辅助函数的 return 次数。
+    import re as _re
+    sweep_calls = len(_re.findall(r'return _sweep_orphans\(', src))
+    assert sweep_calls >= 3, (
+        'stop 的孤儿回收出口太少（实际 %d 处）——早退路径可能漏掉孤儿' % sweep_calls)
+
+
+def test_orphan_sweep_never_touches_live_instance():
+    """孤儿回收必须**显式排除**登记实例的进程组——绝不能误杀正在运行的演示。
+
+    这是本改动的**安全红线**：`stop` 的第一职责是回收，不是"清理机器"。
+    """
+    src = open(os.path.join(DEMO, 'common.py'), encoding='utf-8').read()
+    assert 'keep_pgids' in src, '孤儿回收没有 keep_pgids 参数'
+    # 命中 keep_pgids 的候选必须被跳过
+    assert "if st['pgrp'] in keep:" in src, (
+        '孤儿回收未按 pgrp 排除登记实例的成员（会误杀正在运行的演示）')
+    # 安全属性落在**两处**，缺一不可：
+    #
+    # ① 每个 `_sweep_orphans` 调用点都必须在"实例**已死**"的分支里
+    #    （`members` 为空 / 无记录），绝不能在"实例还活着"时调用；
+    # ② `keep_pgids` 必须来自登记记录（`_keep_pgids(cur)`），使任何仍在登记组里的
+    #    进程被逐个排除——即使调用时机判断错了，这一层也拦得住。
+    #
+    # 为什么不用"state 字段"判据：外部终止会留下 `state=running` 但 supervisor 已死、
+    # 进程组已空的**陈旧记录**，那正是要清理的场景（2026-11-10 实测）。
+    stop_src = open(os.path.join(DEMO, 'stop.py'), encoding='utf-8').read()
+    call_lines = [ln for ln in stop_src.splitlines()
+                  if '_sweep_orphans(' in ln and 'def ' not in ln]
+    assert call_lines, '未找到 _sweep_orphans 调用点'
+    for ln in call_lines:
+        # 无记录路径允许空 keep_pgids；其余必须用登记 PGID 兜底
+        assert ('keep_pgids=_keep_pgids(cur)' in ln
+                or 'keep_pgids=set()' in ln), (
+            '_sweep_orphans 调用点未传登记 PGID 作为排除集：%s' % ln.strip()[:100])
+    # 主回收流程结束后也要扫一遍（按 PGID 回收可能漏掉逃出组外的子进程）
+    assert 'orphan_rc = _sweep_orphans' in stop_src, (
+        '按 PGID 回收后没有追加孤儿回收')
+
+
+def test_orphan_sweep_reuses_project_rules():
+    """孤儿判定必须复用 `project_processes()` 的**同一套** 7 类特征规则。
+
+    另写一份匹配表 = 两份口径漂移（preflight 报 N 个、stop 只收 M 个，且没人知道差在哪）。
+    """
+    src = open(os.path.join(DEMO, 'common.py'), encoding='utf-8').read()
+    start = src.index('def reap_orphan_processes')
+    end = src.index('def project_processes')
+    body = src[start:end]
+    assert 'project_processes()' in body, (
+        '孤儿回收未复用 project_processes()（会与 preflight 的口径漂移）')
+
+
+def test_orphan_sweep_is_graceful_then_forced():
+    """先 SIGTERM 再 SIGKILL：给 run_logger / PX4 落盘机会，不能上来就 KILL。"""
+    src = open(os.path.join(DEMO, 'common.py'), encoding='utf-8').read()
+    start = src.index('def reap_orphan_processes')
+    end = src.index('def project_processes')
+    body = src[start:end]
+    i_term = body.find('signal.SIGTERM')
+    i_kill = body.find('signal.SIGKILL')
+    assert i_term != -1 and i_kill != -1, '缺少两段式信号'
+    assert i_term < i_kill, '必须先 SIGTERM 后 SIGKILL（顺序反了等于直接强杀）'
+
+
+def test_orphan_sweep_treats_zombie_as_cleaned():
+    """僵尸进程算已清理（已被回收、不再执行代码）。
+
+    若把僵尸算"未退出"，`stop` 会在每个正常退出后都报"仍有 N 个未退出"，
+    使用者会学会忽略这条警告——那比不报更糟。
+    """
+    src = open(os.path.join(DEMO, 'common.py'), encoding='utf-8').read()
+    assert '_alive_non_zombie' in src, '缺少僵尸判定'
+    assert "st['state'] == 'Z'" in src, '僵尸未被识别为已清理'
+
+
+def test_empty_map_lets_scene_registration_win():
+    """用户**没指定** `--map` 时，必须**不传** `world_map`，让场景登记生效。
+
+    **根因（2026-11-11 实测 bug）**：`main.launch.py` 的地图解析是**两级**
+    （launch 显式非空 > 场景登记 > 缺省 minimal）。而 demo 侧原先把空串折成
+    `common.DEFAULT_MAP`（yard）并无条件传 `world_map:=yard` —— 于是"显式"
+    永远成立，**场景登记的地图永远不生效**，且没有任何提示。
+
+    实测后果：`--scene dense_scene`（登记 `world_map: dense_map`）实际跑在 `yard` 上，
+    感知帧数 0、地图 occupied=0，而场景名与期望终态看起来都"正常"。
+
+    这条用例钉住三件事：
+      ① 空串 ⇒ argv 里**没有** `world_map:=`；
+      ② 显式给值 ⇒ argv 里**有**它（覆盖能力不能被修 bug 修没了）；
+      ③ 场景登记确实是"非空"的（否则本用例守的是一个不存在的场景）。
+    """
+    # ③ 先确认 dense_scene 真的登记了地图 —— 否则下面测的是空气
+    import yaml
+    from pathlib import Path as _Path
+    reg = yaml.safe_load(
+        (_Path(common.ROOT) / 'src' / 'agc_task' / 'config' / 'scenarios.yaml')
+        .read_text(encoding='utf-8'))['scenes']
+    assert (reg.get('dense_scene') or {}).get('world_map') == 'dense_map', (
+        'dense_scene 必须登记 world_map: dense_map，否则本用例失去意义')
+
+    # ① 未指定地图
+    argv = demo_start.launch_argv(backend='full', scene='dense_scene',
+                                  world_map='', headless=True)
+    assert not any(a.startswith('world_map:=') for a in argv), (
+        '未指定 --map 时不得传 world_map（否则场景登记永远不生效）：%s' % ' '.join(argv))
+
+    # ② 显式覆盖仍然有效
+    argv2 = demo_start.launch_argv(backend='full', scene='dense_scene',
+                                   world_map='yard', headless=True)
+    assert 'world_map:=yard' in argv2, '显式指定必须仍然能覆盖场景登记'
+
+
+def test_start_defaults_map_to_empty_not_yard():
+    """`cmd_start` 不得把"未指定"折成 `yard`。
+
+    这条守的是**上游**：只要 main.py 把空串折成默认值，`launch_argv` 的修复
+    就永远收不到空串（两处必须同时正确）。判据落在源码上，因为 `cmd_start`
+    依赖 argparse 的 Namespace，直接调需要构造一整套参数。
+    """
+    from pathlib import Path as _Path
+    src = (_Path(common.ROOT) / 'scripts' / 'demo' / 'main.py').read_text(encoding='utf-8')
+    assert "wmap = (args.map or '').strip()" in src, (
+        '空串必须保持空串往上传，不得在此折成 DEFAULT_MAP')
+    assert "wmap = (args.map or '').strip() or common.DEFAULT_MAP" not in src, (
+        '这里折默认值会让场景登记的地图永远不生效（实测 bug）')
