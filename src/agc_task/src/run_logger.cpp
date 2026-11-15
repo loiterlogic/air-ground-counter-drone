@@ -65,7 +65,6 @@
 #include <agc_msgs/msg/agc_task_state.hpp>
 #include <agc_msgs/msg/target_track_array.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
-#include <nav2_msgs/msg/collision_monitor_state.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <ros_gz_interfaces/msg/contacts.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
@@ -81,6 +80,21 @@
 #include "agc_task/mission_fco_json.hpp"
 
 namespace fs = std::filesystem;
+
+// 从安全层 JSON 诊断里取 `"state":"X"`。只做这一件事：
+// 不解析整份 JSON（那会引入一个 JSON 依赖），也不猜"解析失败 = 未触发"。
+// 失败必须由调用方**显式计数**，否则介入会被静默记成 0（比缺数据更危险）。
+static bool parseSafetyState(const std::string & json, std::string * out)
+{
+  const std::string key = "\"state\":\"";
+  const auto k = json.find(key);
+  if (k == std::string::npos) {return false;}
+  const auto b = k + key.size();
+  const auto e = json.find('"', b);
+  if (e == std::string::npos || e <= b) {return false;}
+  *out = json.substr(b, e - b);
+  return !out->empty();
+}
 
 // 证据 JSON 的标量序列化（见 agc_task/json_value.hpp）：本类不在 agc_task 命名空间内，
 // 故在此做文件级 using，避免每个调用点写全限定名。
@@ -171,8 +185,13 @@ using agc_task::jsonString;
       declare_parameter<std::string>("ground_odom_topic", "/agc/ground/odom");
     const auto scan_topic =
       declare_parameter<std::string>("scan_topic", "/agc/ground/scan");
-    const auto cm_state_topic =
-      declare_parameter<std::string>("collision_monitor_state_topic", "/collision_monitor_state");
+    // 安全层诊断话题（自研 ground_safety_filter 的状态流；ADR-0045）。
+    // 旧参数名 `collision_monitor_state_topic` 已退役 —— 保留旧名等于留一个"顺手接回来"的入口。
+    const auto safety_status_topic =
+      declare_parameter<std::string>("safety_status_topic", "/agc/ground/safety_status");
+    // 触发判定读 `state` 字段：STOP_* / SLOW 均属"安全层介入"（与 proxy_v1 的
+    // STOP+SLOWDOWN 口径**语义**一致，但来源与消息类型已换，故 definition_version 必须换）。
+    const auto safety_slow_state = declare_parameter<std::string>("safety_slow_state", "SLOW");
     const auto reset_retries_topic =
       declare_parameter<std::string>("reset_retries_topic", "/agc/task/reset_retries");
     const auto reset_failed_topic =
@@ -266,10 +285,21 @@ using agc_task::jsonString;
     scan_sub_ = create_subscription<sensor_msgs::msg::LaserScan>(
       scan_topic, rclcpp::SensorDataQoS(),
       [this](sensor_msgs::msg::LaserScan::SharedPtr m) {onScan(*m);});
-    cm_sub_ = create_subscription<nav2_msgs::msg::CollisionMonitorState>(
-      cm_state_topic, 20, [this](nav2_msgs::msg::CollisionMonitorState::SharedPtr m) {
-        cm_action_ = m->action_type;
-        have_cm_state_ = true;   // action 快照到达（有效样本掩码：**状态已知**即可，见 evaluateTick）（ADR-0016）
+    safety_sub_ = create_subscription<std_msgs::msg::String>(
+      safety_status_topic, 20, [this, safety_slow_state](std_msgs::msg::String::SharedPtr m) {
+        // 安全层状态是**逐拍心跳**（自研层定时器无条件发布），不再有 Nav2 那种"边沿发布"问题。
+        // 解析只认 `"state":"X"` 这一段；解析失败即保持上一个已知值并记诊断计数，
+        // **不得**把"解析不出"当成"未触发"（那会把介入静默记成 0）。
+        std::string st;
+        if (parseSafetyState(m->data, &st)) {
+          safety_state_ = st;
+          have_safety_state_ = true;
+          safety_rx_s_ = now().seconds();
+          cm_action_ = (st == safety_slow_state) ? 2 : (st.rfind("STOP_", 0) == 0 ? 1 : 0);
+          have_cm_state_ = true;
+        } else {
+          ++safety_parse_failures_;
+        }
       });
     // 复位记账（task_manager 以 transient_local 发布，晚订阅可获最后值）
     reset_retries_sub_ = create_subscription<std_msgs::msg::Int32>(
@@ -592,6 +622,7 @@ void RunLogger::onContacts(const ros_gz_interfaces::msg::Contacts & m)
     contact_pairs_prev_ = std::move(frame_pairs);
   }
 
+
 void RunLogger::noteSim()
   {
     if (!have_sim_ && now().seconds() > 0.0) {
@@ -612,15 +643,15 @@ void RunLogger::evaluateTick()
     const bool scan_fresh = have_scan_frame_ && (t_now - scan_rx_s_) <= scan_max_age_s_;
     // ：无 shield 对照臂（shield_layer_enabled_=false）**无** collision_monitor →
     // action 档**不适用**（否则整窗判为无效样本，污染评价）。默认 true → 行为不变。
-    // 修订二（window_valid_v2，ADR-0016）：action 档**不再**要求 `collision_monitor_state`
-    // **逐拍新鲜**——Nav2 的 `state_topic` 是**边沿（动作变化）发布**、**非心跳**：动作长期不变
-    // （如整场 DO_NOTHING）时一条都不发；实测 full 无障碍场景整窗 0 条 → 逐拍新鲜门把**有效知识**
-    // 误判为**缺数据**（轻量栈有障碍场景因动作频繁跳变而侥幸命中，掩盖了该缺陷）。
-    // 改为「**状态已知**（曾收到过 state，其值即当前动作）**且安全层存活**（唯一执行口
-    // `/agc/ground/cmd_vel` = collision_monitor 的 `cmd_vel_out` 仍新鲜）」；`triggered` 判定继续
-    // 用**最近一次** `cm_action_`（边沿语义下该值等于当前动作）。
+    // 修订三（ADR-0045）：安全层改自研后，状态话题是**逐拍心跳**（定时器无条件发布），
+    // 不再是 Nav2 那种"边沿发布"。因此 action 档可以直接要求**逐拍新鲜**——
+    // 比 window_valid_v2 的"状态已知即可"更强，且不会再有"整窗 0 条"的问题。
+    // 仍保留 `eff_fresh`（唯一执行口 /agc/ground/cmd_vel 新鲜）作为**安全层存活**的独立证据：
+    // 状态话题在、但输出断流 = 缺"执行层存活"，两个条件问的是不同的东西。
+    // 触发判定读 `safety_state_`：`SLOW` 与 `STOP_*` 都算"介入"。
     const bool eff_fresh = have_eff_ && (t_now - eff_rx_s_) <= action_max_age_s_;
-    const bool action_known = !shield_layer_enabled_ || (have_cm_state_ && eff_fresh);
+    const bool safety_fresh = have_cm_state_ && (t_now - safety_rx_s_) <= action_max_age_s_;
+    const bool action_known = !shield_layer_enabled_ || (safety_fresh && eff_fresh);
     const bool tick_valid = scan_fresh && action_known;
 
     // 触发事件计数（上升沿 triggered && !prev_triggered_）；进入触发期时重置「本触发期是否有真实接触」。

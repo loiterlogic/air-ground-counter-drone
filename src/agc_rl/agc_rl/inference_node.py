@@ -81,7 +81,7 @@ class GroundPolicyRL(Node):
             'reference_speed': self.declare_parameter('control.reference_speed', 1.0).value,
             'fast_speed': self.declare_parameter('control.fast_speed', 1.3).value,
             'min_offset': self.declare_parameter('control.min_offset', 0.3).value,
-            'max_offset': self.declare_parameter('control.max_offset', 1.0).value,
+            'max_offset': self.declare_parameter('control.max_offset', 0.65).value,
             'k_heading': self.declare_parameter('control.k_heading', 1.5).value,
             'k_lateral': self.declare_parameter('control.k_lateral', 0.8).value,
             'max_yaw_rate': self.declare_parameter('control.max_yaw_rate', 1.0).value,

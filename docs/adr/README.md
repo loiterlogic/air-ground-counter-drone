@@ -6,7 +6,7 @@
 > 用法：查历史决策先扫本表 → 只打开命中的 1–2 篇；**不要**靠 `grep` 全目录。
 > 全量决策仍以各 ADR 正文为准；本表只是索引。状态说明见 [目录与命名规范](../conventions/目录与命名规范.md#10-产物分类与生命周期)。
 > **旧编号体系已退役**：各篇正文里「由 ADR-00xx 合并」的编号属 2026-11-02 重写前的旧体系，
-> 对应文件已删除；现行有效编号只有本表 0001–0044（见 [引用与注释纪律](../conventions/引用与注释纪律.md#rule)）。
+> 对应文件已删除；现行有效编号只有本表 0001–0049（见 [引用与注释纪律](../conventions/引用与注释纪律.md#rule)）。
 > ⚠ **编号会被复用的坑**：旧体系的 0035（拦截口径，已合并进 [0011](./0011-interception-and-fire-control.md)）
 > 与新体系的 [0035](./0035-perception-map-representation-and-unknown-policy.md) **编号相同、含义无关**。
 > 读正文遇到 `ADR-0035` 时须先判断它出现在「由 … 合并」的历史句里（= 旧体系）还是普通引用里（= 新体系）。
@@ -32,7 +32,7 @@
 
 ## 统计
 
-- 合计 **44** 篇：`accepted` 43 篇、`deferred` 0 篇、其它 1 篇
+- 合计 **49** 篇：`accepted` 48 篇、`deferred` 0 篇、其它 1 篇
 
 ## 索引表
 
@@ -40,8 +40,8 @@
 |---|---|---|---|
 | [0001](./0001-project-positioning-and-execution-scope.md) | 项目定位：全新重写、纯仿真交付与研究主线 | accepted（2026-11-02 由 ADR-0001 / 0006 / 0009 / 0013 / 0014 / 0016 / 0017 合并；各条结论均未被后续决策推翻， 仅执行范围一项已随时间失效，见「已失效的部分」） | **软著登记对象** = `src/` 下的包； **「平台搭建」交付物** = 本**仿真**平台（世界 + 车 + 无人机 + 协同栈），不是实物平台； **论文素材** = 本仓库仿真实验产物（`experiments/`），论文在本仓库内完成。 |
 | [0002](./0002-docs-source-of-truth-and-reference-discipline.md) | 文档真源分层与引用纪律 | accepted（2026-11-02 由 0002 / 0066 合并；结论未变） | 不可变约束（硬约束 / 坐标系 / 终态 / 接口语义） · [契约真源](0020-package-boundaries-and-runtime-topology.md#hard-constraints) 当前方向 / 进度 · [`docs/plan/`](../plan/README.md#… |
-| [0003](./0003-nav2-paradigm-absorption.md) | Nav2 范式吸收：模式全覆盖、按命令源裁剪 | accepted（2026-11-02 由 ADR-0003 / 0008 / 0060 合并；结论未变） | **地面域**真跑 Nav2 本体组件；**空中域不引入 Nav2 运行时进程**，但重写时全面采纳其架构范式（costmap 分层语义、lifecycle 节点、planner / controller server 抽象、行为树），并保留 / 优化 LQR 与自研避障。唯一执行口 `/agc/… |
-| [0004](./0004-ground-control-rl-primary-and-nav2-safety.md) | 地面控制栈：RL 主控、Nav2 安全层与共享控制库 | accepted（2026-11-02 由 0004 / 0018 / 0026 合并；分层口径、`agc_control` 归属与标定值均未变） | **RL 主控**：RL 直接输出 `cmd_vel`，经 Nav2 `collision_monitor`（按多边形区域缩放 / 急停）收敛到唯一执行口 `/agc/ground/cmd_vel`。链路顺序固定为 `RL → cmd_vel_raw → collision_monitor → 唯… |
+| [0003](./0003-nav2-paradigm-absorption.md) | Nav2 范式吸收：模式全覆盖、按命令源裁剪 | accepted（2026-11-02 由 ADR-0003 / 0008 / 0060 合并；结论未变）； **部分 superseded by [ADR-0045](0045-ground-safety-layer-self-owned.md#top)（2026-11-13）** | **地面域**真跑 Nav2 本体组件；**空中域不引入 Nav2 运行时进程**，但重写时全面采纳其架构范式（costmap 分层语义、lifecycle 节点、planner / controller server 抽象、行为树），并保留 / 优化 LQR 与自研避障。唯一执行口 `/agc/… |
+| [0004](./0004-ground-control-rl-primary-and-nav2-safety.md) | 地面控制栈：RL 主控、Nav2 安全层与共享控制库 | accepted（2026-11-02 由 0004 / 0018 / 0026 合并；分层口径、`agc_control` 归属与标定值均未变）； **部分 superseded by [ADR-0045](0045-ground-safety-layer-self-owned.md#top)（2026-11-13）**； **部分 superseded by [ADR-0046](0046-lateral-escape-capability-narrowing.md#top)（2026-11-13）** | **RL 主控**：RL 直接输出 `cmd_vel`，经 Nav2 `collision_monitor`（按多边形区域缩放 / 急停）收敛到唯一执行口 `/agc/ground/cmd_vel`。链路顺序固定为 `RL → cmd_vel_raw → collision_monitor → 唯… |
 | [0005](./0005-px4-toolchain-and-link.md) | PX4 工具链：uXRCE-DDS 链路、本体依赖与 pin 清单 | accepted（2026-11-02 由 0005 / 0012 / 0065 / 0067 / 0068 合并；链路协议、本体形态与 pin 纪律结论未变，agent 版本适用值统一为 v2.4.3） | 空中链路以 Micro-XRCE-DDS Agent + `px4_msgs`（`release/1.15`，与固件 v1.15.4 同版）直连 PX4 uORB，弃用 MAVROS / MAVLink 中间层。节点需自行处理 uORB 语义：微秒时间戳、NED/FRD 与 ENU 的换算、QoS… |
 | [0006](./0006-experiment-artifacts-and-evidence-discipline.md) | 实验产物与证据纪律 | accepted（2026-11-02 由 0007 / 0044 / 0045 / 0063 / 0064 合并；结论未变，其中一次真实证据丢失事故的 登记与重做义务一并保留；2026-11-06 增补 (h) 产物保留策略与回收，用户裁定日期 2026-11-06、 `demo/` 定位口径 2026-11-07） | 所有实验产物只落一个根，按 campaign → run 两层组织： |
 | [0007](./0007-scene-geometry-single-source-and-layout.md) | 场景几何单一真源、布局范式与物理驱动 | accepted（2026-11-02 由 ADR-0010 / 0055 / 0062 / 0106 / 0112 合并；结论未变）； **部分 superseded by [ADR-0035](0035-perception-map-representation-and-unknown-policy.md#top)（2026-11-09）** | `agc_car` 重设为差速两驱动轮 + 2 caster，挂 `gz::sim::systems::DiffDrive`；`wheel_separation` / `wheel_radius` / `max_wheel_torque` / `max_wheel_accel` 落 `agc_si… |
@@ -50,7 +50,7 @@
 | [0010](./0010-safety-thresholds-and-failsafe.md) | 安全阈值、末端失效停车与安全屏障 | accepted（2026-11-02 由 ADR-0021 / 0025 / 0042 / 0048 / 0050 合并；结论未变） | 硬约束 **** 保留的是**顺序不变量** `紧急 < 碰撞 < 安全`；三档**绝对值**由地面安全层按实测动力学标定，属契约真源的可标定量。旧值 `0.7 / 0.9 / 2.4 m`（源自旧树无人机避障配置、为小场地慢速设定）**作废**，文档 / 报告不得再引用。 |
 | [0011](./0011-interception-and-fire-control.md) | 拦截口径与火控：发射式网、交战门与在飞生命周期 | accepted（2026-11-02 由 ADR-0015 / ADR-0022 / ADR-0024 / ADR-0035 / ADR-0058 / ADR-0079 / ADR-0091 / ADR-0111 合并；结论未变。其中「入包络即命中」的占位裁决口径已被后续「预演弹道能命中才开火」替换，旧口径作废） | **物理捕获**：以发射式网的物理模型判定，终态 `INTERCEPT_CONFIRMED` + `reason_code = CAPTURE_NET`。 **电子干扰**：**行为级等价**—— 对入侵者强制 `RTL` / `LAND` / `HOLD`，或用「停发 Offboard 指令」触… |
 | [0012](./0012-spawn-clearance-and-reset-transaction.md) | 出生净空与场景复位事务 | accepted（2026-11-02 由 0023 / 0029 合并；出生净空下限为可标定量、候选校验为「实体对 + 边界」的统一口径均未变） | 拆为两条**独立**语义： |
-| [0013](./0013-ground-planning-path-contract.md) | 地面规划：基线路径、重规划策略与外部规划器契约 | accepted（2026-11-02 由 ADR-0027 / 0056 / 0089 / 0092 / 0108 / 0109 合并；路径绑定、重规划触发口径与外部规划器契约的结论均未变，四项外部对接未决仍挂起）； **补充 by [ADR-0035](0035-perception-map-representation-and-unknown-policy.md#top)（2026-11-09，非取代）** | 每次**成功**规划记录绑定三元组，仅在绑定仍有效时继续使用既有路径：**目标身份**（规划时刻 goal，`last_plan_goal_`； 当前 goal 位移 > `replan_displacement_m` → 目标变）、**地图签名**（`last_plan_map_sig_`，见… |
+| [0013](./0013-ground-planning-path-contract.md) | 地面规划：基线路径、重规划策略与外部规划器契约 | accepted（2026-11-02 由 ADR-0027 / 0056 / 0089 / 0092 / 0108 / 0109 合并；路径绑定、重规划触发口径与外部规划器契约的结论均未变，四项外部对接未决仍挂起）； **补充 by [ADR-0035](0035-perception-map-representation-and-unknown-policy.md#top)（2026-11-09，非取代）**； **部分补充 by [ADR-0047](0047-directional-safety-tier-semantics.md#top)（2026-11-13）**； **占位实现已被 [ADR-0048](0048-ground-hybrid-astar-se2-planner.md#top) 替换（2026-11-14）**： (l) 的 `placeholder_path_planner` 退役，由 `hybrid_astar_se2_planner`（Hybrid A* on SE(2)）接替； 路径契约（话题 / 类型 / `frame_id` / 质量门 / 绑定语义）**不变**。 (l) 的占位规划器**形态不变**（仍是几何直连）—— ADR-0047 只改**安全层**的定档口径。 「在规划层栅格上选间隙」曾在本篇的占位器里试做，**已回退**：全局路径规划属主链任务 （[ADR-0032](0032-pending-directions.md#top) 方向 2），不在占位器里实现（见 ADR-0047 的 Considered Options） | 每次**成功**规划记录绑定三元组，仅在绑定仍有效时继续使用既有路径：**目标身份**（规划时刻 goal，`last_plan_goal_`； 当前 goal 位移 > `replan_displacement_m` → 目标变）、**地图签名**（`last_plan_map_sig_`，见… |
 | [0014](./0014-task-fsm-and-scenario-transaction.md) | 任务 FSM、起始事务与终态锁存 | accepted（2026-11-02 由 ADR-0028 / 0030 / 0031 / 0037 / 0076 合并；结论未变） | `main` 由 `rclcpp::spin` 改 `MultiThreadedExecutor`；`/agc/task/start` 与 `/agc/task/abort` 放专用 互斥回调组（`srv_cb_group_`），服务回调可在本线程阻塞等 `reset` / `reset_phas… |
 | [0015](./0015-jam-authorization-and-confirmation.md) | 干扰：单一授权、真实确认与因子分离 | accepted（2026-11-02 由 ADR-0032 / ADR-0033 / ADR-0034 合并；结论未变。其中「发送即确认」与「停流 ≡ `NAV_DLL_ACT`」两处旧口径作废） | **授权**：仅当「命令合法」（`key in JAM_MAP`）**且**「作用包络**新鲜**」才产出**已校验授权事件** `JAM_*`（发布到 `/agc/task/jam_state`）并 `_send_nav_state`；未知命令 / 包络外 / 包络过期（未就绪）一律**不产出事… |
 | [0016](./0016-episode-window-and-sample-validity.md) | episode 窗口统计与有效样本掩码 | accepted（2026-11-02 由 0036 / 0038 / 0043 / 0078 合并；结论未变，其中样本掩码已两次修订，正文只保留现行 `window_valid_v2` / `scan_frame_fresh_v2` 口径并注明旧口径作废） | 以 task 进入 / 离开 **active**（`AIR_SEARCH` / `TARGET_ACQUIRED` / `GROUND_APPROACH`）为事件边界： |
@@ -82,6 +82,11 @@
 | [0042](./0042-point-uncertainty-arbitrary-resolution-and-reachability.md) | ADR-0042 · 逐点不确定度、任意分辨率派生、实例轨迹历史与栅格可达率 | accepted（2026-11-11，用户裁定「ok，继续做完」并指定 `temp.md` 为实施依据； 上一轮如实登记为未做的 4 项） | `ObstacleFootprintArray` 增**四条并行数组**（与 `points` 等长）： `point_cov_xx` / `point_cov_xy` / `point_cov_yy` / `point_view_cos`。 |
 | [0043](./0043-instance-drift-percentile-and-stability-criteria.md) | ADR-0043 · 稳定性主判据的分位数选择：p50 而非 p90 | accepted（2026-11-11，用户裁定「同意」——采纳 [ADR-0042](0042-point-uncertainty-arbitrary-resolution-and-reachability.md#top) 登记的两个候选改法中的「改用 p50」） | `instance_drift` 主判据从 **p90 ≤ 0.25 m** 改为 **p50 ≤ 0.15 m**。 p90 保留为**诊断**（不进 verdict），与 `delta_p99` 同样处理。 |
 | [0044](./0044-dense-map-second-gap-widening.md) | `dense_map` 间距第二轮加宽 15%（2.3 → 2.645 m），区域不变、实体数降到 486 | accepted（2026-11-12，用户裁定：「我需要把 dense_map 的地图中障碍物的间隔再增加 15%， 现在太密集了，小车没有足够空间行驶」；并对"是否清走廊"另行裁定：「不要走廊，后面会做路径规划」； 文档与核查断言「全部同步」） | 生成器 `scripts/gen_dense_map.py`：`MIN_GAP = 2.645`、`CORE_HALF = 35.0`（不变）； 判据仍是**拒绝采样的下限**（不是均值），并额外保留"足迹不穿插"的保守外扩 0.05 m； 固定种子 `SEED = 20261110` **不变*… |
+| [0045](./0045-ground-safety-layer-self-owned.md) | 地面安全层自研：输入契约、判定模型与失效语义 | accepted（2026-11-13，用户裁定；实施前运行期仍由 Nav2 `collision_monitor` 承担） | 输入契约固定为**五项必需 + 一项可选**：原始速度意图、车体状态、规划层地图、地图知识时效、 任务许可缺一即零速；逐格元数据只供离线标定与 GUI 取证，**不进实时路径**。 |
+| [0046](./0046-lateral-escape-capability-narrowing.md) | 地面横向逃逸能力裁定：收窄 `max_offset`、冻结反应窗口、`SLOW` 不降速 | accepted（2026-11-13，用户裁定；收窄能力主张，**不改**反应窗口与安全层判据结构） | 取值依据 = **方法修正后的重复实测下沿**（3 批 / 6 轮，见下表）， 不是"取个整数好看"，也**不是**沿用改造前那批 `0.769 m`。 |
+| [0047](./0047-directional-safety-tier-semantics.md) | 地面安全层的**方向化**定档：`d_collision` 保留数值，取消"圆形禁行区"语义 | accepted（2026-11-13，用户裁定并给出方案） | 新增 `SweepResult::d_corridor_m` / `SafetyDiagnostics::d_corridor_m`：**只量**「沿当前运动方向、 车体宽度带内（`\|横向偏移\| ≤ footprint_half_width + cell_epsilon`）」的纵向间隙。 |
+| [0048](./0048-ground-hybrid-astar-se2-planner.md) | 地面全局路径规划：Hybrid A* on SE(2) 的四阶段链、双阻挡集与双判据重规划 | accepted（2026-11-14，用户逐条裁定；30 轮 grilling 定案） | `hybrid_astar_se2_planner`（节点名 / 可执行名 / `ground.yaml` 参数段名三者一致）。 |
+| [0049](./0049-sparse-map-and-dense-map-negative-control.md) | 地图几何的两极：`sparse_map` 作可通行正例，`dense_map` 作几何不可行负例 | accepted（2026-11-14，用户裁定） | 它的价值不是"证明车能过"，而是： |
 
 ## 合并映射（2026-11-02，112 → 27）
 

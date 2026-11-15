@@ -49,7 +49,7 @@ from agc_rl import termination
 
 # action → cmd_vel 映射默认参数（与 `agc_rl/config/rl.yaml` 的 control 段一致，[ADR-0004]）。
 DEFAULT_CONTROL = {
-    'reference_speed': 1.0, 'fast_speed': 1.3, 'min_offset': 0.3, 'max_offset': 1.0,
+    'reference_speed': 1.0, 'fast_speed': 1.3, 'min_offset': 0.3, 'max_offset': 0.65,
     'k_heading': 1.5, 'k_lateral': 0.8, 'max_yaw_rate': 1.0, 'clearance_ref_m': 1.0,
 }
 

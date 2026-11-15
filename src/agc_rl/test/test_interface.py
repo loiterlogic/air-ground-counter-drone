@@ -15,7 +15,7 @@ PARAMS = {
     'reference_speed': 1.0,
     'fast_speed': 1.3,
     'min_offset': 0.3,
-    'max_offset': 1.2,
+    'max_offset': 0.65,
     'k_heading': 1.5,
     'k_lateral': 0.8,
     'max_yaw_rate': 1.0,

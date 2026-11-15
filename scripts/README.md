@@ -32,7 +32,21 @@
 | `research/` | **暂停但未废弃**的研究期工具（/跑批、判定、诊断、取证的脚本）。当前阶段不用，但可复跑、可复核，**不删** | [research/README.md](research/README.md#research) |
 | `archive/` | **一次性**驱动 / 台架 / 探针：跑完即归档、证据归档后不再改动，保留供复核 | [archive/README.md](archive/README.md#archive) |
 | `tracking/` | 空中跟踪误差取证工具（只读订阅、只落盘；**不是**控制链一部分） | 见下节 |
+| `maps/` | 场景地图的**作者工具**（一次性生成几何 yaml；产物 yaml 才是唯一来源） | 见下节 |
 | `tests/` | 脚本自身的离线单测（不启仿真、不读 ROS 产物），含本索引的自动核对 | [tests/](../tests/README.md)（验收核查在项目根 `tests/`） |
+
+<a id="maps"></a>
+### `scripts/maps/`
+
+- [`gen_sparse_map.py`](maps/gen_sparse_map.py) —— 可通行正例地图 `sparse_map` 的作者工具
+  （[ADR-0049](../docs/adr/0049-sparse-map-and-dense-map-negative-control.md#top)）：
+  按 `2·r_vehicle + 2·r_inflation + δ_grid + δ_margin` 推导最小障碍中心距
+  （3.765 m → 取 4.0 m 留航向余量），一次性生成几何 yaml。
+  **默认拒绝覆盖**已有文件（`--force` 才写）；生成后 yaml 即唯一来源。
+
+> 为什么在 `maps/` 而不是顶层：`scripts/` 顶层有「≤12 个执行脚本」的治理上限
+> （防平铺）。地图作者工具是可分类的同类工具，归到子目录而不是放宽上限。
+> `gen_dense_map.py` 仍在顶层（历史遗留）；将来若再加地图工具，应一并迁入本目录。
 
 <a id="tracking"></a>
 ### `scripts/tracking/`

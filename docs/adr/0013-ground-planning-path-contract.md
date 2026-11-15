@@ -4,7 +4,14 @@
 ## Status
 
 accepted（2026-11-02 由 ADR-0027 / 0056 / 0089 / 0092 / 0108 / 0109 合并；路径绑定、重规划触发口径与外部规划器契约的结论均未变，四项外部对接未决仍挂起）；
-**补充 by [ADR-0035](0035-perception-map-representation-and-unknown-policy.md#top)（2026-11-09，非取代）**
+**补充 by [ADR-0035](0035-perception-map-representation-and-unknown-policy.md#top)（2026-11-09，非取代）**；
+**部分补充 by [ADR-0047](0047-directional-safety-tier-semantics.md#top)（2026-11-13）**；
+**占位实现已被 [ADR-0048](0048-ground-hybrid-astar-se2-planner.md#top) 替换（2026-11-14）**：
+(l) 的 `placeholder_path_planner` 退役，由 `hybrid_astar_se2_planner`（Hybrid A* on SE(2)）接替；
+路径契约（话题 / 类型 / `frame_id` / 质量门 / 绑定语义）**不变**。
+(l) 的占位规划器**形态不变**（仍是几何直连）—— ADR-0047 只改**安全层**的定档口径。
+「在规划层栅格上选间隙」曾在本篇的占位器里试做，**已回退**：全局路径规划属主链任务
+（[ADR-0032](0032-pending-directions.md#top) 方向 2），不在占位器里实现（见 ADR-0047 的 Considered Options）
 
 > 本篇 (b) 的地图签名口径（只计 `static_layer` 的 `cost == 254`）**仍然有效**：
 > `/agc/map` 现在输出 1–99 的量化概率，但 `static_layer` 按自己的阈值判 lethal，
@@ -134,8 +141,11 @@ Nav2 `collision_monitor` 的 `process` **只由 `cmd_vel_in` 回调触发**，�
 
 - 空中只提供**处理后的数据**（障碍物分布 / 全局 map），全局路径由**地面侧**规划—— 把规划抬到空中会削弱「地面自主
   规划」这一研究点。地面侧占位规划器**只发布路径，不发布速度**；速度仍只由局部策略出，经安全层到唯一执行口。
-- 占位发布方 `agc_ground/placeholder_path_planner`：几何直连，非 Navfn / 非 `planner_server` / 无 costmap；无授权 /
-  无目标 / 过期时**不发**（**不重发旧路径刷新 `header.stamp`**）。
+- ~~占位发布方 `agc_ground/placeholder_path_planner`：几何直连~~ —— **已退役**
+  （[ADR-0048](0048-ground-hybrid-astar-se2-planner.md#top)）。现行发布方是
+  `agc_ground/hybrid_astar_se2_planner`（Hybrid A* on SE(2)，四阶段链），
+  仍非 Navfn / 非 `planner_server` / 无 costmap、只发路径不发速度；
+  无授权 / 无目标 / 过期 / **规划失败**时**不发**（**不重发旧路径刷新 `header.stamp`**）。
 - 消费方是 `agc_rl` 侧的**确定性占位消费者**（五类质量门 + 限界最近点 + 前视参考），**只替换航向参考**，不改变
   `interface.py` 的 obs / action 空间。运行图证据：`path` 唯一发布者是该规划器、唯一订阅者是 `ground_policy_rl`。
 - **本组决策不等于"外部节点到货即可零改动直接替换"**：四项未决未填，上述参数只属当前占位阶段。

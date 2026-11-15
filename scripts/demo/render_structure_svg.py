@@ -254,7 +254,7 @@ EXT_RELATIONS = [
     ('px4_msgs', 'agc_air', 'link', '编译期 depend，pin a1045ec / release/1.15，不改造'),
     ('px4_msgs', 'agc_task', 'link', 'exec_depend：jammer / intruder_driver 导入'),
     ('Nav2 组件', 'agc_ground', 'link', '链接 nav2_core / nav2_costmap_2d / nav2_util'),
-    ('Nav2 组件', 'agc_ground', 'start', '起 collision_monitor / lifecycle_manager / navfn'),
+    ('Nav2 组件', 'agc_ground', 'start', '起 lifecycle_manager / navfn（安全层已自研，ADR-0045）'),
     ('Nav2 组件', 'agc_air', 'start', '起 lifecycle_manager（空中节点 configure→activate）'),
     ('Nav2 组件', 'agc_task', 'start', 'exec_depend：lifecycle_manager 编排'),
 ]

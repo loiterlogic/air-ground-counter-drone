@@ -36,7 +36,6 @@
 #include <agc_msgs/msg/agc_task_state.hpp>
 #include <agc_msgs/msg/target_track_array.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
-#include <nav2_msgs/msg/collision_monitor_state.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <ros_gz_interfaces/msg/contacts.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
@@ -209,6 +208,11 @@ private:
   int reset_retries_{0};
   bool reset_failed_{false};
   uint8_t cm_action_{0};
+  // 安全层状态字符串（自研层的逐拍心跳）+ 解析失败计数（诊断；解析失败**不得**当成未触发）。
+  std::string safety_state_;
+  uint64_t safety_parse_failures_{0};
+  bool have_safety_state_{false};
+  double safety_rx_s_{0.0};
   double vx_body_{0.0}, scan_min_forward_{0.0};
   // 修订（ADR-0016 scan_fresh_v2）：`have_scan_frame_` = **收到过 scan 帧**（有效样本掩码只看帧新鲜度）；
   // `have_scan_` = 前向锥**有有限回波**（无障碍物时全 inf → 无回波 ≠ 无数据）。
@@ -298,7 +302,10 @@ private:
   rclcpp::Subscription<agc_msgs::msg::AgcTaskState>::SharedPtr state_sub_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
-  rclcpp::Subscription<nav2_msgs::msg::CollisionMonitorState>::SharedPtr cm_sub_;
+  // 安全层状态（自研 ground_safety_filter 的 JSON 诊断话题，std_msgs/String）。
+  // **不再**依赖 nav2_msgs（ADR-0045）：安全层已自研，读它的消息类型等于把 Nav2 私有
+  // 接口变成持久依赖。
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr safety_sub_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr reset_retries_sub_;
   // 接触真值订阅（contact_topic 为空时不创建）
   rclcpp::Subscription<ros_gz_interfaces::msg::Contacts>::SharedPtr contact_sub_;

@@ -37,7 +37,7 @@
   <text x="54" y="664" font-size="12" fill="#3d4b59">px4_msgs（内联第三方，不改造）  ←  agc_air（依赖：编译期 depend，pin a1045ec / release/1.15，不改造）</text>
   <text x="54" y="681" font-size="12" fill="#3d4b59">px4_msgs（内联第三方，不改造）  ←  agc_task（依赖：exec_depend：jammer / intruder_driver 导入）</text>
   <text x="54" y="698" font-size="12" fill="#3d4b59">Nav2 组件  ←  agc_ground（依赖：链接 nav2_core / nav2_costmap_2d / nav2_util）</text>
-  <text x="54" y="715" font-size="12" fill="#3d4b59">Nav2 组件  ←  agc_ground（起进程：起 collision_monitor / lifecycle_manager / navfn）</text>
+  <text x="54" y="715" font-size="12" fill="#3d4b59">Nav2 组件  ←  agc_ground（起进程：起 lifecycle_manager / navfn（安全层已自研，ADR-0045））</text>
   <text x="54" y="732" font-size="12" fill="#3d4b59">Nav2 组件  ←  agc_air（起进程：起 lifecycle_manager（空中节点 configure→activate））</text>
   <text x="54" y="749" font-size="12" fill="#3d4b59">Nav2 组件  ←  agc_task（起进程：exec_depend：lifecycle_manager 编排）</text>
   <text x="54" y="766" font-size="12" fill="#3d4b59">uXRCE-DDS Agent ↔ PX4 SITL 是 XRCE-DDS ↔ uORB 桥接（外部↔外部），不构成包依赖。</text>

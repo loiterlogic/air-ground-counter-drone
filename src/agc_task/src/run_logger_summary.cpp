@@ -32,7 +32,6 @@
 #include <agc_msgs/msg/agc_task_state.hpp>
 #include <agc_msgs/msg/target_track_array.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
-#include <nav2_msgs/msg/collision_monitor_state.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <ros_gz_interfaces/msg/contacts.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
@@ -198,16 +197,17 @@ void RunLogger::finalize()
         // === 新增：口径版本 + 真实接触证据（gz_contact_v1）===
         << "  \"definition_version\": {\"shield_infeasible_rate\": \"proxy_v1\", "
            "\"collision_truth\": \"gz_contact_v1\", \"true_shield_infeasible\": \"gz_contact_v1\", "
-           "\"shield_infeasible_rate_window\": \"window_valid_v2\", "
+           "\"shield_infeasible_rate_window\": \"window_valid_v3_self_owned_safety\", "
            "\"terminal_state\": \"first_terminal_latch_v1\", "
            "\"scan_valid_mask\": \"scan_frame_fresh_v2\"},\n"
-        << "  \"metrics_comparability\": \"proxy_v1（进程全时长）与 window_valid_v2（episode 窗口）"
+        << "  \"metrics_comparability\": \"proxy_v1（进程全时长）与 window_valid_v3（episode 窗口，自研安全层）"
            "及 gz_contact_v1 三口径互不冒充，均不与旧 RL 安全集指标直接对照（口径/分母不同）；"
            "scan 有效样本掩码为 scan_frame_fresh_v2（帧新鲜即有效，**不**要求前向锥有回波）"
            "——无障碍场景的 ticks_invalid_scan 因此由 100% 降为 ~0，与 v1 不可逐值对照；"
-           "action 档自 window_valid_v2 起为『状态已知 + 安全层存活』（**不**要求 state 话题逐拍新鲜，"
-           "该话题是边沿发布）——动作长期不变的场景 ticks_invalid_action 因此由 100% 降为 ~0，"
-           "与 window_valid_v1 不可逐值对照\",\n"
+           "action 档自 window_valid_v3（自研安全层，ADR-0045）起为『安全层状态逐拍新鲜 + 安全层存活』；"
+           "**触发来源已从 Nav2 action_type(0/1/2) 换成自研状态机的 state 名（SLOW / STOP_*）** —— "
+           "语义相近但来源不同，故 ticks_triggered / shield_infeasible_rate 与 window_valid_v1 / v2 "
+           "的 run **不可逐值对照**（同一数值在两个版本下含义不同）\",\n"
         << "  \"collision_count\": " << collision_count_ << ",\n"
         << "  \"collision_events\": [";
     for (size_t i = 0; i < collision_events_.size(); ++i) {

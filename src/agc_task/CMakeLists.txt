@@ -13,7 +13,6 @@ find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(agc_msgs REQUIRED)
 find_package(ros_gz_interfaces REQUIRED)
-find_package(nav2_msgs REQUIRED)
 find_package(trajectory_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
@@ -29,7 +28,7 @@ ament_target_dependencies(scenario_reset
 
 add_executable(run_logger src/run_logger.cpp src/run_logger_summary.cpp)
 ament_target_dependencies(run_logger
-  rclcpp geometry_msgs nav_msgs sensor_msgs nav2_msgs trajectory_msgs std_msgs agc_msgs
+  rclcpp geometry_msgs nav_msgs sensor_msgs trajectory_msgs std_msgs agc_msgs
   ros_gz_interfaces)
 target_include_directories(run_logger PRIVATE include)
 

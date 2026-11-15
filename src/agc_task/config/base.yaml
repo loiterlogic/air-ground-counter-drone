@@ -109,7 +109,9 @@ run_logger:
     state_topic: "/agc/task/state"
     ground_odom_topic: "/agc/ground/odom"
     scan_topic: "/agc/ground/scan"
-    collision_monitor_state_topic: "/collision_monitor_state"
+    # 安全层诊断话题（自研 ground_safety_filter 的逐拍 JSON 心跳；ADR-0045）。
+    # 旧键 `collision_monitor_state_topic` 已退役（不保留旧名 = 不留复活入口）。
+    safety_status_topic: "/agc/ground/safety_status"
     contact_topic: "/agc/ground/contact"
     # 锁轮制动减速度，用于剩余停车裕度（ADR-0010）。
     a_brake_mps2: 0.9

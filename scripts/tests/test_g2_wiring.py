@@ -19,7 +19,8 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 GROUND = os.path.join(ROOT, 'src', 'agc_ground')
 RL = os.path.join(ROOT, 'src', 'agc_rl')
 
-PLANNER_SRC = os.path.join(GROUND, 'src', 'placeholder_path_planner.cpp')
+PLANNER_SRC = os.path.join(GROUND, 'src', 'hybrid_astar_se2_planner.cpp')
+PLANNER_NAME = 'hybrid_astar_se2_planner'
 GROUND_CMAKE = os.path.join(GROUND, 'CMakeLists.txt')
 GROUND_LAUNCH = os.path.join(GROUND, 'launch', 'ground_bringup.launch.py')
 GROUND_YAML = os.path.join(GROUND, 'config', 'ground.yaml')
@@ -43,9 +44,9 @@ def test_planner_does_not_link_nav2():
     """占位规划器不得链接 nav2_*：Navfn/costmap 都属离线基线，不是本链。"""
     cmake = _read(GROUND_CMAKE)
     block = re.search(
-        r'add_executable\(placeholder_path_planner[^)]*\)(.*?)(?=\nadd_executable|\ninstall\()',
+        r'add_executable\(hybrid_astar_se2_planner[^)]*\)(.*?)(?=\nadd_executable|\ninstall\()',
         cmake, flags=re.S)
-    assert block, '找不到 placeholder_path_planner 的构建块'
+    assert block, '找不到 hybrid_astar_se2_planner 的构建块'
     body = block.group(0)
     for banned in ('nav2_core', 'nav2_costmap_2d', 'nav2_planner',
                    'nav2_navfn_planner', 'nav2_util', 'planner_server'):
@@ -62,14 +63,21 @@ def test_planner_source_has_no_velocity_publisher():
     assert 'path_pub_->publish' in code
 
 
-def test_planner_is_geometric_direct_not_navfn():
-    """源码层面确证"几何直连"：按 spacing 采样直线，无 planner 插件加载。"""
+def test_planner_has_no_nav2_plugin_or_costmap():
+    """源码层面确证：不加载 planner 插件、不自建 costmap（ADR-0048）。"""
     code = _code_only(_read(PLANNER_SRC))
     assert 'pluginlib' not in code
     assert 'NavfnPlanner' not in code
     assert 'Costmap2DROS' not in code
-    assert 'path_spacing_m' in code          # 直线采样步长
-    assert 'car_x_' in code and 'goal_x_' in code
+    assert 'planner_server' not in code
+    # 唯一障碍输入是 /agc/map：不得订阅 scan / 点云 / costmap（ADR-0045 同源纪律）。
+    # 按**消息类型与话题**判，不按裸子串（`corridor_max_scan_m` 里有 "scan" 但那是距离参数）。
+    assert 'LaserScan' not in code
+    assert 'PointCloud2' not in code
+    assert 'scan_topic' not in code
+    assert '"/agc/ground/scan' not in code
+    # 必须走纯算法引擎（算法与 ROS 编排分离）
+    assert 'planner::createPlanner' in code or 'createPlanner()' in code
 
 
 def test_planner_does_not_republish_when_unauthorized():
@@ -79,7 +87,7 @@ def test_planner_does_not_republish_when_unauthorized():
     assert tick, '找不到 tick()'
     body = tick.group(1)
     assert 'authorized()' in body and 'return;' in body
-    # 无条件分支里不得出现 publish
+    # 授权/新鲜度检查之前不得发布路径
     guard = body.split('publishPath')[0]
     assert 'publishPath' not in guard, '授权/新鲜度检查之前不得发布路径'
 
@@ -90,14 +98,14 @@ def test_launch_starts_planner_only_in_rl_branch():
     # rl 分支（else）是最后一个 `else:`，规划器装配必须出现在它之后
     idx_else = src.rindex('\n    else:')
     before, after = src[:idx_else], src[idx_else:]
-    assert "executable='placeholder_path_planner'" not in before
-    assert "executable='placeholder_path_planner'" in after
+    assert "executable='hybrid_astar_se2_planner'" not in before
+    assert "executable='hybrid_astar_se2_planner'" in after
 
 
 def test_launch_has_no_path_planner_switch():
     """必须**没有** launch 级路径开关：对照只能用节点本地 path.enabled。"""
     src = _read(GROUND_LAUNCH)
-    assert 'path_planner' not in src.replace('placeholder_path_planner', ''), \
+    assert 'path_planner' not in src.replace('hybrid_astar_se2_planner', ''), \
         '不应存在 path_planner launch 参数'
     assert 'planner_enabled' not in src
 
@@ -105,12 +113,22 @@ def test_launch_has_no_path_planner_switch():
 def test_ground_yaml_has_planner_section_matching_node_name():
     import yaml
     data = yaml.safe_load(_read(GROUND_YAML))
-    assert 'placeholder_path_planner' in data
-    p = data['placeholder_path_planner']['ros__parameters']
+    assert 'hybrid_astar_se2_planner' in data
+    p = data['hybrid_astar_se2_planner']['ros__parameters']
     assert p['path_topic'] == '/agc/ground/path'
     assert p['world_frame'] == 'world'
-    # 安全阈值与既有 section 不得被本单改动（只做存在性/键不变校验）
-    assert 'collision_monitor' in data
+    # 安全层段已改为自研节点（ADR-0045）；`collision_monitor` 不再存在于主链配置。
+    # 断言改为**正向**：必须有 ground_safety_filter 段，且它的输入/输出与契约一致。
+    assert 'ground_safety_filter' in data
+    safety = data['ground_safety_filter']['ros__parameters']
+    assert safety['cmd_in_topic'] == '/agc/ground/cmd_vel_raw'
+    assert safety['cmd_out_topic'] == '/agc/ground/cmd_vel'
+    assert safety['map_topic'] == '/agc/map'
+    # 安全层的唯一障碍输入是地图：不得把 scan 接回来（那会是第二份障碍表示）。
+    assert 'scan_topic' not in safety, '安全层不得订阅 scan（ADR-0045 的 #inputs）'
+    # 档位顺序不变量（ADR-0010）：紧急 < 碰撞 < 安全，且恢复门槛严格更高。
+    assert safety['d_emergency'] < safety['d_collision'] < safety['d_safety']
+    assert safety['d_recover_pass'] > safety['d_safety']
 
 
 def test_search_dist_default_is_bounded_and_consistent():

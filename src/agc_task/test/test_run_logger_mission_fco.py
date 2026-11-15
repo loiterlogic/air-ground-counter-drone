@@ -71,7 +71,7 @@ def _run_logger(tmp_path):
         '-p', 'ground_odom_topic:=/agc_test/odom',
         '-p', 'odom_valid_topic:=/agc_test/odom_valid',
         '-p', 'scan_topic:=/agc_test/scan',
-        '-p', 'collision_monitor_state_topic:=/agc_test/cm_state',
+        '-p', 'safety_status_topic:=/agc_test/safety_status',
         '-p', 'cmd_topic:=/agc_test/cmd',
         '-p', 'cmd_raw_topic:=/agc_test/cmd_raw',
         '-p', 'episode_topic:=/agc_test/episode',
@@ -106,7 +106,7 @@ def _publish_case():
     from std_msgs.msg import Bool, Int32
     from nav_msgs.msg import Odometry
     from sensor_msgs.msg import LaserScan
-    from nav2_msgs.msg import CollisionMonitorState
+    from std_msgs.msg import String
     from geometry_msgs.msg import TwistStamped
     from agc_msgs.msg import AgcTaskState, TargetTrackArray, TargetTrack
 
@@ -123,7 +123,8 @@ def _publish_case():
         'odom': node.create_publisher(Odometry, '/agc_test/odom', 50),
         'odom_valid': node.create_publisher(Bool, '/agc_test/odom_valid', 10),
         'scan': node.create_publisher(LaserScan, '/agc_test/scan', 10),
-        'cm_state': node.create_publisher(CollisionMonitorState, '/agc_test/cm_state', 20),
+        # 安全层状态：自研层发布**逐拍心跳**的 JSON（std_msgs/String）。
+        'safety_status': node.create_publisher(String, '/agc_test/safety_status', 20),
         'cmd': node.create_publisher(TwistStamped, '/agc_test/cmd', 50),
         'cmd_raw': node.create_publisher(TwistStamped, '/agc_test/cmd_raw', 50),
         'episode': node.create_publisher(
@@ -175,10 +176,11 @@ def _publish_case():
         msg.ranges = [float('inf')] * 21
         pubs['scan'].publish(msg)
 
-    def cm_state():
-        msg = CollisionMonitorState()
-        msg.action_type = 0
-        pubs['cm_state'].publish(msg)
+    def safety_status():
+        # `PASS` = 未介入；`STOP_COLLISION` / `SLOW` 才计入 triggered。
+        msg = String()
+        msg.data = '{"state":"PASS","driving":true,"v_out":0.0}'
+        pubs['safety_status'].publish(msg)
 
     def twist(pub, t):
         msg = TwistStamped()
@@ -242,7 +244,7 @@ def _publish_case():
         if abs((t / 0.05) - round(t / 0.05)) < 1e-9:
             odom(t)
             scan(t)
-            cm_state()
+            safety_status()
             twist('cmd', t)
             twist('cmd_raw', t)
 

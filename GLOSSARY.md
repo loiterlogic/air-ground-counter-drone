@@ -28,8 +28,12 @@ _Avoid_: 合同、基线文档
 _Avoid_: 执行入口（与"Runbook"混淆）
 
 **安全层（Safety Layer）**:
-地面域中位于控制输出与唯一执行口之间的兜底屏障，按配置区域对速度强制缩放或急停；默认由 Nav2 `collision_monitor` 实现，空中域由自研避障/滤波器承担。它**不做绕行规划**，因此不等于**局部避障**；其感知可见性边界以 [ADR-0009](docs/adr/0009-perception-truth-derived-and-vision-path.md#top) 为准。
+地面域中位于控制输出与唯一执行口之间的兜底屏障，对速度**只裁不造**（按净空与可停性缩放或归零）；空中域由自研安全屏障承担。它**不做绕行规划**，因此不等于**局部避障**。地面侧的输入契约与实现见 [ADR-0045](docs/adr/0045-ground-safety-layer-self-owned.md#inputs)：**已自研**（`ground_safety_filter`，只消费感知规划层地图 `/agc/map`，不用 Nav2 安全层运行时）。因此它的感知可见性边界**不再**是激光单平面（[ADR-0009](docs/adr/0009-perception-truth-derived-and-vision-path.md#top) 讲的那个），而是**感知地图的边界**：约 `0.24 m` 最小可测、约 `30.5 m` 可信半径、有遮挡阴影、无动态层。
 _Avoid_: 保护层、shield（指标口径另见契约真源）、避障（会被误读为局部避障）
+
+**可停性（Stoppability）**:
+安全层的核心判据：以当前命令速度算出的**制动距离**内，车体 footprint 扫掠区不得出现阻挡格。它证明的是"能在进入之前停住"，**不是**"前方全部看过"——后者会把地图覆盖不足变成"不可通行"。口径见 [ADR-0045](docs/adr/0045-ground-safety-layer-self-owned.md#verdict)。
+_Avoid_: 净空充足（那是距离量，不是制动判据）、无碰撞（那是结果不是判据）
 
 **职责分层（Role Stratification）**:
 P2 的架构自变量：高层只出**决策目标**（拦截点 / 火控窗口 / 局部偏移），由成熟低层控制器执行；与"训练 RL"不同——P2 v1 的对照臂以**规则高层**承载（[ADR-0023](docs/adr/0023-adjudication-record-and-exit.md#top)）。

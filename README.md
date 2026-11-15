@@ -26,7 +26,7 @@
 | 角色 | 职责 | 包 |
 |---|---|---|
 | 空中平台（PX4 四旋翼） | 常开跟踪目标、保持安全间距、自身避障 | `agc_air` |
-| 地面平台（差速 UGV） | 自主规划接近、Nav2 安全层、RL 主控链路 | `agc_ground` |
+| 地面平台（差速 UGV） | 自主规划接近、**自研**安全层（见第 12 条）、RL 主控链路 | `agc_ground` |
 | 感知 | 真值派生（目标源：`gt_adapter`，**无几何门控、不分远近**） | `agc_perception` |
 | 任务 | 确定性状态机、终态裁决、指标落盘 | `agc_task` |
 
@@ -136,7 +136,7 @@ PX4 SITL + uXRCE-DDS Agent /agc/ground/cmd_vel（唯一执行口）
 | [`src/agc_control`](src/agc_control) | 共享控制库：pluginlib 轨迹生成器 + LQR 控制器插件 |
 | [`src/agc_air`](src/agc_air) | 空中链路：PX4 uXRCE-DDS、起飞 / 悬停 / 轨迹跟踪 |
 | [`src/agc_perception`](src/agc_perception) | 感知：odom / gt（含 bypass）/ map 适配节点 |
-| [`src/agc_ground`](src/agc_ground) | 地面导航与安全层：RL 主控、Nav2 `collision_monitor` |
+| [`src/agc_ground`](src/agc_ground) | 地面导航与安全层：RL 主控、**自研** `ground_safety_filter`（[ADR-0045](docs/adr/0045-ground-safety-layer-self-owned.md#top)） |
 | [`src/agc_task`](src/agc_task) | 任务与评估：`task_manager`、`run_logger`、场景、捕获裁决 |
 | [`src/agc_rl`](src/agc_rl) | RL 接口（obs / action）+ 策略加载与推理节点 |
 | [`run_demo.sh`](run_demo.sh) | 一键入口：`doctor` / 演示 / `stop` / `status` / `test` / `compare` |
@@ -158,8 +158,8 @@ PX4 SITL + uXRCE-DDS Agent /agc/ground/cmd_vel（唯一执行口）
 9 消息 ABI 字段序 / 文档断链与锚点 / 索引一致（ADR + 脚本）/ `scripts/tests` 全部离线单测 /
 DDS 契约 / 工具链 pin。实测 **36 s** 全绿（2026-11-07，本机）。
 
-> **它才是回归防线**：`tests/` 下另有 62 个 `check_*.py`，但其中 **约 89% 在新 clone 上跑不动**
-> （22 个要 `experiments/` 历史证据、33 个要活仿真，只有 7 个纯静态）。
+> **它才是回归防线**：`tests/` 下另有 70 个 `check_*.py`，但其中 **约 81% 在新 clone 上跑不动**
+> （22 个要 `experiments/` 历史证据、35 个要活仿真，只有 13 个纯静态）。
 > 它们是一次性取证档案，不是"每次提交都跑"的测试套件——把两者混为一谈会得出
 > "新 clone 跑不动测试 ⇒ 代码坏了"的错误结论。比例与依据见
 > [tests/README](tests/README.md#categories)，由 `tests/check_doc_counts.py` 判据 f 对账。
@@ -316,6 +316,34 @@ DDS 契约 / 工具链 pin。实测 **36 s** 全绿（2026-11-07，本机）。
    **仅取证/测绘，无消费者**—— 识别仍靠真值（`gt_adapter`），图像**不**接入任务链；
    默认 `gz_x500` 行为逐字不变（无相机）。实测 `yard` 14 m 下中心 GSD 5.30 cm/px、画幅 33.9×25.5 m。
    单目正俯视只能拿 **XY 足迹**，**拿不到高度 Z**（需双视差 + 专门航线）。
+
+12. **地面安全层已自研，但能力边界换了一套**（[ADR-0045](docs/adr/0045-ground-safety-layer-self-owned.md#top)）：
+   地面安全层已改为自研 `ground_safety_filter`（消费 `/agc/map`，不再用 Nav2 `collision_monitor`）。
+   整链已跑通（headless `full` + `yard` + `s04` → `TRACKING_SUCCESS`），
+   三档与启动零速有节点级实跑证据。三处**能力退化**须如实解读，不得表述为等价替换：
+   - **细杆不再进安全层视野**：地图最小可测尺寸约 `0.24 m`，而 Nav2 `scan`（`z≈0.48 m` 水平切面）
+     曾能看到灯杆（0.12 m）/ 门柱（0.18）/ 消防栓（0.16）；
+   - **不覆盖动态障碍**：`/agc/map` 无动态层；
+   - **判据依赖地图新鲜度**：地图链断流 / `valid=false` 期间只能停车（fail-closed）。
+   另外它**继承感知地图链的未达标项**（见第 10 条：误覆盖率 / IoU / 稳定性 p99 仍未通过），
+   故其误停与漏停率不能优于地图本身。
+   还有一条**必要条件**（读结果时必须知道）：**没有空中链路就没有地图** ——
+   `safety_scenario` 这类只起 `skeleton` 的台架没有 nadir 相机 ⇒ 地图恒空 ⇒ 安全层只能停。
+   旧 Nav2 层用激光，所以那些台架以前能跑；现在不能，这是输入契约的必然结果而非缺陷。
+   动力学阈值已按真实差速车重标（`a_brake = 3.2754` / `t_react = 0.1841` / `cell_epsilon = 0.3536`），
+   但**横向逃逸能力的主张已收窄**（[ADR-0046](docs/adr/0046-lateral-escape-capability-narrowing.md#top)）：
+   - **能力主张 `max_offset = 0.65 m`**（原 1.0 m）：方法修正后的重复实测（3 批 / 6 轮）
+     为 `0.6888–0.8769 m`，原值 `1.0 m` 的余量只有 1.7%；`0.65` 在实测下沿之下留 5.6% 余量，
+     是**保守取值**而不是"平均能力"。曾一度取 `0.75 m`，但 6 轮里有 2 轮达不到，故再收窄。
+   - **反应窗口 `T = 2.0 s` 不变**，三档距离（4.0 / 2.0 / 1.0 m）不变。
+   - **`SLOW` 档终值仍不降速**（`slow_min_ratio = 1.0`）：按**最坏折扣 0.49** 反解，
+     满速都达不到"打折扣后仍 ≥ 0.65 m"，故不得靠降速去凑能力。⇒ **安全带内没有减速缓冲**，
+     该风险由三档距离承担，不得再声称"安全带内会减速"。
+   - **局部横向逃逸属 RL / 策略能力，不是安全层承诺**：安全层只承诺
+     "在 `/agc/map` 覆盖范围内能在进入障碍之前停住"。
+   - 三档整链证据的形式：独立场景 `s19_static_static_safety_tiers`（`PASS → SLOW → STOP_COLLISION`
+     取自安全层自己的 `state`），且必须先过**几何可行性闸门**（`tests/check_safety_scene_geometry.py`）。
+     `STOP_EMERGENCY` 属故障注入（活节点核查覆盖），**不要求**在逐渐逼近中自然触发。
 
 ## 文档
 

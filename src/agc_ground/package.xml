@@ -3,7 +3,7 @@
 <package format="3">
   <name>agc_ground</name>
   <version>0.0.0</version>
-  <description>AGC 地面导航与安全层：Nav2 collision_monitor 安全层、RL 主控链路、离线对照基线</description>
+  <description>AGC 地面导航与安全层：自研 ground_safety_filter 安全层（ADR-0045）、RL 主控链路、离线对照基线</description>
   <maintainer email="agc@example.com">AGC Dev</maintainer>
   <license>Proprietary</license>
 
@@ -29,8 +29,6 @@
   <depend>nav2_costmap_2d</depend>
   <depend>nav2_util</depend>
 
-  <exec_depend>nav2_collision_monitor</exec_depend>
-  <exec_depend>nav2_lifecycle_manager</exec_depend>
   <exec_depend>nav2_navfn_planner</exec_depend>
   <exec_depend>agc_rl</exec_depend>
   <exec_depend>launch</exec_depend>

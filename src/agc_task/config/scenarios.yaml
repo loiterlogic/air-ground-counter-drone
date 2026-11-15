@@ -159,6 +159,45 @@ scenes:
       run_logger: {scenario: "s11_static_static_none_unreachable"}
       intruder_driver: {motion: static}
 
+  # ---- 地面安全层三档整链取证场景（2026-11-13；ADR-0046）----
+  # 为什么必须新造一个场景（不是改既有格）：三档 `PASS → SLOW → STOP_COLLISION` 需要在
+  # **`backend:=full` 整链**上，由安全层自己的 `state` 证据产生。既有格里没有一个能同时满足：
+  # ① 障碍必须真的进 `/agc/map`（安全层的唯一障碍输入，ADR-0045）；
+  # ② 任务 goal 必须真的在障碍**另一侧**，否则占位规划器的直连路径不会逼近它。
+  # `s04` 的路径本身无遮挡（安全层正确地不介入）；`s11` 用的是 `minimal` 的 pole（0.3 m 见方），
+  # 在相机高度 3.39 m 下顶面只有 24 px、余量 5 px ⇒ 拿不到连通域 ⇒ 旧层能测、新层不能（几何不合）。
+  #
+  # 几何（算术核查见 `tests/check_safety_scene_geometry.py`，不靠估算）：
+  # * 障碍取 `yard` 的 `container_yard_b`（三只集装箱，足迹 12.3 × 6.4 m、顶面 2.59 m）：
+  #   顶面短边远超像素门限的 3 倍余量，且 `yard` 该区历史 `/agc/map` 实测整片 100/99；
+  # * 车放 `(14, 0)`、朝 **−y**（对着柜组）；goal 放 `(14, -30)` —— **越过柜组**，
+  #   直连路径穿柜。出生点距柜近边 16.78 m。
+  #   **必须留这么远**：感知地图把 0.5 m 格与实例椭圆一起膨胀，配置上 4.35 m 的
+  #   `planter_row` 在地图里会落进 `d_safety` 带 ⇒ 出生即 `SLOW`、整条序列缺 `PASS`
+  #   （实测：出生点 `(14,-8)` 时全程从 `SLOW` 起）。
+  # * 选 `container_yard_b` 而不是 `slab_s`：后者的足迹太窄，车贴着它走时**起点就落在
+  #   另一个障碍（`silo_s`）里**（实测 `collision_count=1; silo_s::link::link_collision@t=0.15s`，
+  #   整链一开跑就 `STOP_COLLISION`）。几何闸门的"起终点净空"判据就是为了拦住这种构造。
+  # * `t_max_s: 60`：本场景的价值是"安全层在障碍前定档"，不是跑完跟踪；
+  #   60 s 足够走完这段并在碰撞档停住，且留出观测余量。
+  # * 期望终态仍是 `MISSION_FAILED / TIMEOUT`（被障碍挡住 ⇒ 到不了 3 m 跟踪圈），
+  #   与 `s11` 同结局语义：**不是缺陷**，是"车正确地停在障碍前"。
+  s19_static_static_safety_tiers:
+    axes: {target_motion: static, obstacle: static, outcome: unreachable}
+    support_status: supported
+    expected_terminal: MISSION_FAILED
+    expected_reason: TIMEOUT
+    world_map: yard
+    params:
+      # 出生位**写在场景层**（与 s11 同法）：它承载本场景的几何语义（柜组在车与 goal 之间），
+      # 放进 `spawn_layout.per_map.yard` 会改掉 s04 等既有 yard 场景的出生位。
+      scenario_reset: {car_x: 14.0, car_y: 4.0, car_yaw: 3.141592653589793,
+                       target_x: 24.0, target_y: 14.0}
+      task_manager: {goal_follow_target: false, goal_x: 14.0, goal_y: -30.0,
+                     t_max_s: 90.0}
+      run_logger: {scenario: "s19_static_static_safety_tiers"}
+      intruder_driver: {motion: static}
+
   s12_linear_dynamic_nominal_capture:
     axes: {target_motion: linear, obstacle: dynamic, outcome: capture}
     support_status: "unsupported:obstacle"
@@ -284,4 +323,28 @@ scenes:
     world_map: dense_map
     params:
       run_logger: {scenario: "dense_scene"}
+      intruder_driver: {motion: static}
+
+  # ---- `sparse_scene`（ADR-0049）：可通行正例 ----
+  # 与 `dense_scene` **逐值相同**的出生位与任务参数，唯一变量是地图障碍密度
+  # （`sparse_map` 最小中心距 4.0 m vs `dense_map` 2.645 m）。两图构成正/负对照：
+  #   * `dense_map`  = 高密度感知压力图 + **几何不可行负例**（规划器应显式失败）
+  #   * `sparse_map` = **可通行正例**（规划器应规划出绕障路径并到达）
+  #
+  # **为什么需要它**：`yard` 的主场景（`s04`）车位到目标 12.5 m 直线上**没有任何
+  # 障碍物**，测不到搜索与绕障；`s19` 的 goal 距己方机 39.8 m > 可信半径 28.28 m
+  # ⇒ goal 恒为 unknown，规划器按「未知禁入」正确失败（44 次 `goal_not_free`）。
+  # 两者都**无法**提供整链绕障证据。本场景的 goal 在感知覆盖内（距己方机 34.06 m
+  # 仍在覆盖外，但车会先向目标移动，覆盖随己方机推进而扩展）。
+  sparse_scene:
+    axes: {target_motion: static, obstacle: static, outcome: tracking}
+    support_status: supported
+    # 期望终态：规划器能绕障，车应能推进到跟踪圈。
+    # **若实测未到达，须如实改回 MISSION_FAILED 并在 ADR-0049 登记** ——
+    # 不得为了让场景"看起来成功"而放宽判据。
+    expected_terminal: MISSION_FAILED
+    expected_reason: TIMEOUT
+    world_map: sparse_map
+    params:
+      run_logger: {scenario: "sparse_scene"}
       intruder_driver: {motion: static}

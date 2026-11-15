@@ -267,7 +267,7 @@ def test_text_width_model_matches_real_font(qt):
     samples = ['agc_perception', 'ament_cmake + rosidl', '仿真世界与模型',
                '世界 · 车/UAV/目标模型 · ros_gz 桥', 'obs/action 接口 · 策略推理',
                '9 条 msg：AgcTaskState', '③ 运行组合', '② 库链接依赖（2 条 · 唯一例外）',
-               'Nav2 collision_monitor 安全层', '④ Gazebo Harmonic（gz-sim 8）']
+               '自研 ground_safety_filter 安全层', '④ Gazebo Harmonic（gz-sim 8）']
     for px in (10, 12):
         f = QtGui.QFont('DejaVu Sans')
         f.setPixelSize(px)

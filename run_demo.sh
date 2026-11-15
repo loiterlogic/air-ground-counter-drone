@@ -3,7 +3,7 @@
 #
 # ./run_demo.sh # 默认：full 后端 + yard 地图 + 主场景 s04 + GUI
 # ./run_demo.sh --headless # gz 无渲染客户端（-s）；RViz 语义层仍起（固定）
-# ./run_demo.sh --map open_field # yard（默认）| open_field | dense_map | minimal
+# ./run_demo.sh --map sparse_map # 地图名（默认 yard）。清单唯一来源 = agc_sim/launch/world_map.py 的 MAP_GEOMETRY_FILES；写错时错误提示会列出全部可用值
 # ./run_demo.sh --scene s01_static_none_nominal_track # 场景 id（见 src/agc_task/config/scenarios.yaml）
 # ./run_demo.sh --backend lightweight # full（默认）| lightweight
 # ./run_demo.sh --duration 90 # 到时触发 stop（默认跟到终态）
@@ -72,7 +72,7 @@ while [ $# -gt 0 ]; do
     -h|--help) usage; exit 0 ;;
     --headless) HEADLESS=1; shift ;;
     --gui) HEADLESS=0; shift ;;
-    --map) WORLD_MAP="${2:-}"; [ -z "$WORLD_MAP" ] && { fail "--map 需要一个值" "可用：yard | open_field | dense_map | minimal"; exit 2; }; shift 2 ;;
+    --map) WORLD_MAP="${2:-}"; [ -z "$WORLD_MAP" ] && { fail "--map 需要一个值" "可用：见 agc_sim/launch/world_map.py 的 MAP_GEOMETRY_FILES"; exit 2; }; shift 2 ;;
     --scene) SCENE="${2:-}"; shift 2 ;;
     --duration) DURATION="${2:-}"; shift 2 ;;
     --backend) BACKEND="${2:-}"; shift 2 ;;

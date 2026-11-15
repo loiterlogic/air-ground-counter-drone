@@ -1,0 +1,1946 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AGC 感知层 · 一帧数据如何变成一张地图</title>
+<!-- 面向观众的讲解页：以代码实际实现为准。单文件、离线、自包含，无外部资源。 -->
+<style>
+:root{
+  --ink:#111214; --ink2:#24262a; --paper:#ffffff; --paper2:#f7f7f5;
+  --gray:#6b6f74; --gray2:#9a9ea2; --hair:#e4e4e1; --hair2:#efefec;
+  /* 唯一强调色：暖赭。只用于"当前这一步要看的地方" */
+  --accent:#b45309; --accent-soft:#fdf3e7; --accent-line:#e7b787;
+  --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK SC","Source Han Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --serif:"Songti SC","Noto Serif CJK SC","Source Han Serif SC",Georgia,serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:28px}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-size:15.5px;line-height:1.9;letter-spacing:.01em;-webkit-font-smoothing:antialiased}
+::selection{background:var(--accent);color:#fff}
+a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--gray2)}
+a:hover{border-bottom-color:var(--accent);color:var(--accent)}
+code{font-family:var(--mono);font-size:.86em;background:var(--paper2);
+  border:1px solid var(--hair);border-radius:3px;padding:.08em .36em;color:var(--ink2)}
+pre{background:var(--paper2);border:1px solid var(--hair);padding:14px 16px;
+  font-family:var(--mono);font-size:12.6px;line-height:1.75;overflow:auto;color:var(--ink2)}
+pre code{background:none;border:none;padding:0}
+
+#progress{position:fixed;top:0;left:0;height:2px;width:0;z-index:80;background:var(--accent);transition:width .08s linear}
+#top-btn{position:fixed;right:26px;bottom:26px;width:40px;height:40px;border-radius:50%;
+  background:var(--paper);border:1px solid var(--hair);color:var(--ink);cursor:pointer;
+  font-size:16px;z-index:70;opacity:0;pointer-events:none;transition:.25s}
+#top-btn.show{opacity:1;pointer-events:auto}
+#top-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+.wrap{max-width:1120px;margin:0 auto;padding:0 40px}
+section{padding:64px 0;border-bottom:1px solid var(--hair)}
+section:last-of-type{border-bottom:none}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--gray);
+  text-transform:uppercase;margin:0 0 14px}
+h2{font-family:var(--serif);font-size:34px;font-weight:600;letter-spacing:.01em;line-height:1.3;margin:0 0 10px}
+h2 .num{font-family:var(--mono);font-size:13px;color:var(--accent);font-weight:400;
+  vertical-align:6px;margin-right:14px;letter-spacing:0}
+h3{font-size:18px;font-weight:650;margin:38px 0 10px}
+h4{font-size:14px;font-weight:650;margin:24px 0 8px}
+p{margin:12px 0}
+.lead{font-size:17.5px;color:var(--ink2);line-height:1.95;max-width:760px}
+strong,b{font-weight:650}
+hr{border:none;border-top:1px solid var(--hair);margin:34px 0}
+
+#hero{padding:92px 0 60px;border-bottom:1px solid var(--hair)}
+#hero .kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.28em;color:var(--gray);text-transform:uppercase}
+#hero h1{font-family:var(--serif);font-size:60px;line-height:1.14;font-weight:600;letter-spacing:-.01em;margin:22px 0 18px}
+#hero h1 em{font-style:normal;border-bottom:3px solid var(--accent);padding-bottom:2px}
+#hero .desc{font-size:19px;color:var(--ink2);max-width:720px;line-height:1.9}
+.hero-meta{display:flex;flex-wrap:wrap;gap:26px;margin-top:34px;padding-top:22px;border-top:1px solid var(--hair)}
+.hero-meta .v{font-family:var(--mono);font-size:22px;font-weight:600}
+.hero-meta .v em{font-style:normal;color:var(--accent)}
+.hero-meta .l{font-size:12px;color:var(--gray);margin-top:2px;letter-spacing:.04em}
+.scroll-hint{margin-top:40px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--gray2)}
+
+.card{border:1px solid var(--hair);padding:22px 24px;margin:18px 0;background:var(--paper)}
+.card.flat{background:var(--paper2)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.card h4{margin-top:0}
+.note{border-left:2px solid var(--ink);padding:4px 0 4px 18px;margin:20px 0;color:var(--ink2);font-size:14.5px}
+.note.soft{border-left-color:var(--gray2)}
+.note.accent{border-left-color:var(--accent);background:var(--accent-soft);padding:14px 18px}
+.pill{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;
+  padding:2px 9px;border:1px solid var(--hair);border-radius:2px;color:var(--gray);background:var(--paper2);vertical-align:2px;margin-left:6px}
+.pill.dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pill.acc{background:var(--accent);color:#fff;border-color:var(--accent)}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:6px 18px;font-size:14px;margin:12px 0}
+.kv dt{font-family:var(--mono);font-size:12.5px;color:var(--gray)}
+.kv dd{margin:0;color:var(--ink2)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.chip{font-family:var(--mono);font-size:11.5px;padding:5px 11px;border:1px solid var(--hair);color:var(--ink2)}
+.steps{counter-reset:st;list-style:none;padding:0;margin:18px 0}
+.steps li{counter-increment:st;position:relative;padding:12px 0 12px 48px;border-bottom:1px solid var(--hair2)}
+.steps li:last-child{border-bottom:none}
+.steps li::before{content:counter(st,decimal-leading-zero);position:absolute;left:0;top:11px;
+  font-family:var(--mono);font-size:12px;color:var(--accent)}
+
+.tw{overflow-x:auto;margin:18px 0;border:1px solid var(--hair)}
+table{border-collapse:collapse;width:100%;font-size:13.4px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--hair2);vertical-align:top}
+th{background:var(--paper2);font-weight:600;font-size:12.5px;letter-spacing:.04em;color:var(--ink2);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.num{font-family:var(--mono);text-align:right;white-space:nowrap}
+th.num{text-align:right}
+caption{caption-side:bottom;text-align:left;padding:9px 14px;color:var(--gray);font-size:11.5px}
+
+.eq{background:var(--paper2);border-left:2px solid var(--accent);padding:14px 18px;
+  margin:14px 0;font-family:var(--mono);font-size:13.2px;line-height:2;color:var(--ink2);overflow-x:auto}
+.eq .cm{color:var(--gray);font-family:var(--sans);font-size:12px}
+.eq b{font-weight:600;color:var(--ink)}
+.formula-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin:16px 0}
+
+/* ---------- figure shell ---------- */
+.fig{border:1px solid var(--hair);margin:26px 0;background:var(--paper)}
+.fig .fig-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px 18px;border-bottom:1px solid var(--hair);flex-wrap:wrap;background:var(--paper2)}
+.fig .fig-title{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray)}
+.fig .fig-stage{padding:20px 18px 10px}
+.fig svg{width:100%;height:auto;display:block}
+.fig .fig-foot{padding:11px 18px;border-top:1px solid var(--hair);font-size:12px;color:var(--gray);line-height:1.7}
+.fig .fig-foot b{color:var(--ink2)}
+
+/* SVG vocabulary */
+.sv-t{font-family:var(--sans);font-size:12.5px;font-weight:600;fill:var(--ink)}
+.sv-t.inv{fill:#fff}
+.sv-s{font-family:var(--mono);font-size:10.5px;fill:var(--gray)}
+.sv-s.inv{fill:#cfcfcb}
+.sv-num{font-family:var(--mono);font-size:11px;fill:var(--gray)}
+.sv-box{fill:var(--paper);stroke:var(--ink);stroke-width:1.2}
+.sv-box.fill{fill:var(--ink)}
+.sv-box.ghost{fill:none;stroke:var(--gray2);stroke-width:1;stroke-dasharray:3 3}
+.sv-line{stroke:var(--ink);stroke-width:1.3;fill:none}
+.sv-line.thin{stroke:var(--gray2);stroke-width:1}
+.sv-line.dash{stroke-dasharray:4 4}
+.sv-cell{stroke:var(--hair);stroke-width:1;fill:var(--paper)}
+.sv-ray{stroke:var(--gray2);stroke-width:1.1;fill:none}
+.sv-dot{fill:var(--ink)}
+.sv-dot.hollow{fill:var(--paper);stroke:var(--ink);stroke-width:1.2}
+.sv-hl{stroke:var(--ink);stroke-width:2;fill:none}
+/* 当前步骤：强调色只落在描边与文字上 */
+.is-active .sv-line,.is-active .sv-line.thin,.is-active .sv-ray{stroke:var(--accent)!important}
+.is-active .sv-box{stroke:var(--accent)!important}
+.is-active .sv-t,.is-active .sv-s,.is-active .sv-num{fill:var(--accent)!important}
+.is-active .sv-dot,.is-active .sv-dot.hollow{fill:var(--accent)!important;stroke:var(--accent)!important}
+.is-active .sv-cell{stroke:var(--accent)!important}
+.is-active .sv-hl{stroke:var(--accent)!important}
+.is-active .sv-line{stroke-width:1.8!important}
+
+
+/* 强调色：只在"这一步"出现 */
+.acc{stroke:var(--accent)!important;fill:none}
+.acc-f{fill:var(--accent)!important;stroke:none}
+.acc-t{fill:var(--accent)!important}
+.acc-box{stroke:var(--accent)!important;stroke-width:1.8!important;fill:var(--accent-soft)!important}
+.acc-cell{fill:var(--accent)!important;stroke:var(--accent)!important}
+.acc-glow{filter:drop-shadow(0 0 5px rgba(180,83,9,.45))}
+
+/* 步骤淡入（可被引擎覆盖为描边动画） */
+.sv-fade{opacity:0;transition:opacity .5s ease}
+.fig svg [data-step]{opacity:.14;transition:opacity .45s ease}
+.sv-fade.on{opacity:1}
+
+/* 描边自绘：给"这一步"的线条做 draw-on 效果 */
+.draw{stroke-dasharray:var(--len,600);stroke-dashoffset:var(--len,600);
+  transition:stroke-dashoffset 1.1s cubic-bezier(.4,0,.2,1)}
+.draw.on{stroke-dashoffset:0}
+
+/* 沿路径移动的光点 */
+.runner{offset-path:none}
+
+/* ---------- controls ---------- */
+.ctrl{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ctrl button{font-family:var(--mono);font-size:11px;letter-spacing:.06em;padding:6px 13px;
+  border:1px solid var(--ink);background:var(--paper);color:var(--ink);cursor:pointer;transition:.18s}
+.ctrl button:hover{background:var(--ink);color:#fff}
+.ctrl button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.ctrl button.primary:hover{background:var(--paper);color:var(--accent)}
+.ctrl .speed{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--gray)}
+.ctrl input[type=range]{-webkit-appearance:none;appearance:none;width:88px;height:2px;background:var(--hair);outline:none}
+.ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--accent);cursor:pointer}
+.ctrl input[type=range]::-moz-range-thumb{width:11px;height:11px;border-radius:50%;background:var(--accent);cursor:pointer;border:none}
+.step-label{font-family:var(--mono);font-size:11px;color:var(--accent);min-width:92px}
+.dots{display:flex;gap:5px;align-items:center}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--hair);display:block;transition:.2s}
+.dots i.on{background:var(--accent)}
+.stage-desc{margin:6px 18px 16px;padding:13px 16px;background:var(--accent-soft);
+  border-left:2px solid var(--accent);font-size:13.6px;color:var(--ink2);min-height:52px;line-height:1.8}
+.stage-desc .step-n{font-family:var(--mono);font-size:11px;color:var(--accent);margin-right:10px;font-weight:600}
+.stage-desc b{font-weight:650;color:var(--ink)}
+
+.big-quote{font-family:var(--serif);font-size:27px;line-height:1.6;margin:26px 0;
+  padding:22px 26px;border-top:1px solid var(--ink);border-bottom:1px solid var(--ink)}
+.big-quote .who{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  color:var(--gray);margin-top:14px;text-transform:uppercase}
+
+.toc{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:0;margin:24px 0;border-top:1px solid var(--hair)}
+.toc a{display:block;padding:14px 4px;border-bottom:1px solid var(--hair);font-size:14px;color:var(--ink2)}
+.toc a:hover{color:var(--accent);padding-left:10px;border-bottom-color:var(--accent)}
+.toc a b{font-family:var(--mono);font-size:11px;color:var(--accent);margin-right:12px;font-weight:400}
+
+.tl{position:relative;margin:22px 0;padding-left:24px}
+.tl::before{content:"";position:absolute;left:4px;top:8px;bottom:8px;width:1px;background:var(--hair)}
+.tl .it{position:relative;margin:0 0 20px}
+.tl .it::before{content:"";position:absolute;left:-24px;top:8px;width:9px;height:9px;border-radius:50%;
+  background:var(--paper);border:1.5px solid var(--accent)}
+.tl .it .h{font-family:var(--mono);font-size:12px;letter-spacing:.04em}
+.tl .it .h span{color:var(--gray);margin-left:8px}
+.tl .it .b{font-size:13.5px;color:var(--ink2);margin-top:3px}
+
+.tabs{margin:22px 0}
+.tabbar{display:flex;flex-wrap:wrap;gap:0;border-bottom:1px solid var(--ink)}
+.tabbar button{font-family:var(--sans);font-size:13px;padding:9px 16px;border:1px solid var(--hair);
+  border-bottom:none;background:var(--paper2);color:var(--gray);cursor:pointer;margin-right:4px}
+.tabbar button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.panel{display:none;padding-top:18px}
+.panel.on{display:block;animation:fade .3s ease}
+@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+#side{position:fixed;left:0;top:0;width:210px;height:100vh;overflow-y:auto;
+  border-right:1px solid var(--hair);padding:26px 18px;background:var(--paper);z-index:40}
+#side .brand{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;margin-bottom:4px}
+#side .bt{font-family:var(--serif);font-size:17px;font-weight:600;margin-bottom:20px}
+#nav{list-style:none;margin:0;padding:0}
+#nav a{display:block;padding:5px 8px;font-size:12.5px;color:var(--gray);border:none;border-left:2px solid transparent}
+#nav a .n{font-family:var(--mono);font-size:10.5px;margin-right:8px;color:var(--gray2)}
+#nav a:hover{color:var(--ink)}
+#nav a.active{color:var(--ink);border-left-color:var(--accent);background:var(--accent-soft)}
+#side .foot{margin-top:20px;padding-top:14px;border-top:1px solid var(--hair);font-size:10.5px;color:var(--gray2);line-height:1.7}
+#main{margin-left:210px}
+@media (max-width:1080px){#side{display:none}#main{margin-left:0}.wrap{padding:0 24px}#hero h1{font-size:40px}}
+@media (max-width:640px){#hero h1{font-size:32px}h2{font-size:26px}.wrap{padding:0 18px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<aside id="side">
+  <div class="brand">AGC · PERCEPTION</div>
+  <div class="bt">一帧数据<br>如何变成一张地图</div>
+  <ul id="nav">
+    <li><a href="#s1"><span class="n">01</span>两条链，一个世界</a></li>
+    <li><a href="#s2"><span class="n">02</span>先看一台相机</a></li>
+    <li><a href="#s3"><span class="n">03</span>像素落在哪</a></li>
+    <li><a href="#s4"><span class="n">04</span>三个流，一个时刻</a></li>
+    <li><a href="#s5"><span class="n">05</span>从点里挑出屋顶</a></li>
+    <li><a href="#s6"><span class="n">06</span>证据是"攒"出来的</a></li>
+    <li><a href="#s7"><span class="n">07</span>把看不见的擦掉</a></li>
+    <li><a href="#s8"><span class="n">08</span>谁被挡住了</a></li>
+    <li><a href="#s9"><span class="n">09</span>两层地图</a></li>
+    <li><a href="#s10"><span class="n">10</span>从"看到"到"能走"</a></li>
+    <li><a href="#s11"><span class="n">11</span>目标在哪里</a></li>
+    <li><a href="#s12"><span class="n">12</span>整条链动起来</a></li>
+    <li><a href="#s13"><span class="n">13</span>边界与分寸</a></li>
+    <li><a href="#s14"><span class="n">14</span>谁在用它</a></li>
+    <li><a href="#s15"><span class="n">15</span>结语与索引</a></li>
+  </ul>
+  <div class="foot">只读讲解 · 未改代码 · 未跑实验<br>以源码实现为准</div>
+</aside>
+
+<div id="main">
+<div class="wrap">
+
+<!-- HERO -->
+<section id="hero">
+  <div class="kicker">Air-Ground Collaboration / Perception Layer</div>
+  <h1>一帧数据<br>如何变成<em>一张地图</em></h1>
+  <p class="desc">
+    无人机在天上飞，地面车在地上跑。车要避障，得先知道自己周围有什么。
+    这份讲解只跟一件事：<b>机载相机拍下的一帧画面，怎样一步步变成车真正用来判断"能不能走"的那张栅格图</b>。
+  </p>
+  <div class="hero-meta">
+    <div><div class="v">1152²</div><div class="l">一帧画面</div></div>
+    <div><div class="v">10 Hz</div><div class="l">成像频率</div></div>
+    <div><div class="v">0.25 → 0.5 m</div><div class="l">两层栅格</div></div>
+    <div><div class="v">2 Hz</div><div class="l">对外发布</div></div>
+  </div>
+  <div class="scroll-hint">↓ 向下滚动 · 所有图示都可播放</div>
+</section>
+
+<!-- S1 -->
+<section id="s1">
+  <div class="eyebrow">01 / Overview</div>
+  <h2><span class="num">01</span>两条链，一个世界</h2>
+  <p class="lead">感知层同时做两件互不混淆的事。先把它们分开，后面每一步才不会读错。</p>
+
+  <div class="fig" data-fig="overview">
+    <div class="fig-head">
+      <div class="fig-title">图 1 · 全景数据流</div>
+      <div class="ctrl">
+        <button class="ac-play primary">▶ 播放</button>
+        <button class="ac-reset">↺ 重置</button>
+        <span class="step-label">—</span>
+        <span class="dots"></span>
+      </div>
+    </div>
+    <div class="fig-stage">
+      <svg viewBox="0 0 1000 360" role="img" aria-label="感知层全景数据流">
+        <defs>
+          <marker id="ov-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#111214"/></marker>
+        </defs>
+        <!-- world lane -->
+        <text class="sv-s" x="18" y="24">GAZEBO 世界 · 同一时钟</text>
+        <rect class="sv-box" x="18" y="36" width="150" height="46" rx="2"/>
+        <text class="sv-t" x="30" y="57">无人机 + 正下视相机</text><text class="sv-s" x="30" y="74">rgbd + 语义分割</text>
+        <rect class="sv-box" x="18" y="100" width="150" height="46" rx="2"/>
+        <text class="sv-t" x="30" y="121">地面车 / 目标</text><text class="sv-s" x="30" y="138">物理引擎给出真值</text>
+
+        <!-- perception lane -->
+        <text class="sv-s" x="230" y="24">agc_perception</text>
+        <rect class="sv-box ghost" x="230" y="36" width="330" height="110" rx="2"/>
+        <rect class="sv-box" x="244" y="50" width="140" height="38" rx="2"/>
+        <text class="sv-t" x="256" y="68" style="font-size:11.5px">nadir_projection</text><text class="sv-s" x="256" y="82">分割 → 3D 足迹点</text>
+        <rect class="sv-box" x="244" y="98" width="140" height="38" rx="2"/>
+        <text class="sv-t" x="256" y="116" style="font-size:11.5px">map_adapter</text><text class="sv-s" x="256" y="130">证据 → 规划层</text>
+        <rect class="sv-box" x="400" y="50" width="146" height="38" rx="2"/>
+        <text class="sv-t" x="412" y="68" style="font-size:11.5px">gt_adapter</text><text class="sv-s" x="412" y="82">/agc/targets 唯一发布者</text>
+        <rect class="sv-box" x="400" y="98" width="146" height="38" rx="2"/>
+        <text class="sv-t" x="412" y="116" style="font-size:11.5px">odom / gt 适配</text><text class="sv-s" x="412" y="130">位姿与时基</text>
+
+        <!-- outputs -->
+        <text class="sv-s" x="620" y="24">消息总线 · agc_msgs</text>
+        <rect class="sv-box fill" x="620" y="50" width="160" height="38" rx="2"/>
+        <text class="sv-t inv" x="632" y="68" style="font-size:11.5px">/agc/map</text><text class="sv-s inv" x="632" y="82">车用的障碍图</text>
+        <rect class="sv-box" x="620" y="98" width="160" height="38" rx="2"/>
+        <text class="sv-t" x="632" y="116" style="font-size:11.5px">/agc/targets</text><text class="sv-s" x="632" y="130">目标航迹</text>
+        <rect class="sv-box ghost" x="620" y="146" width="160" height="34" rx="2"/>
+        <text class="sv-t" x="632" y="167" style="font-size:11px">/agc/map/evidence 等</text>
+
+        <!-- consumers -->
+        <text class="sv-s" x="840" y="24">下游</text>
+        <rect class="sv-box" x="840" y="50" width="142" height="38" rx="2"/>
+        <text class="sv-t" x="852" y="68" style="font-size:11.5px">ground_safety_filter</text><text class="sv-s" x="852" y="82">只裁不造</text>
+        <rect class="sv-box" x="840" y="98" width="142" height="38" rx="2"/>
+        <text class="sv-t" x="852" y="116" style="font-size:11.5px">task_manager / 空中跟踪</text><text class="sv-s" x="852" y="130">目标新鲜 + 可信度</text>
+
+        <!-- arrows (staged) -->
+        <g class="ov-step" data-step="0">
+          <path class="sv-line" d="M168 59 C200 59 210 69 244 69" marker-end="url(#ov-a)"/>
+          <path class="sv-line" d="M168 123 C200 123 210 117 244 117" marker-end="url(#ov-a)"/>
+          <text class="sv-num" x="176" y="50">图像 + 深度</text>
+          <text class="sv-num" x="176" y="112">真值位姿</text>
+        </g>
+        <g class="ov-step" data-step="1">
+          <path class="sv-line" d="M384 69 C392 69 392 117 400 117" marker-end="url(#ov-a)" style="display:none"/>
+          <path class="sv-line" d="M384 117 C470 117 500 69 620 69" marker-end="url(#ov-a)"/>
+          <text class="sv-num" x="470" y="108">足迹点 → 证据 → 派生</text>
+        </g>
+        <g class="ov-step" data-step="2">
+          <path class="sv-line" d="M546 69 C580 69 590 69 620 69" marker-end="url(#ov-a)"/>
+          <path class="sv-line" d="M546 117 C580 117 590 117 620 117" marker-end="url(#ov-a)"/>
+          <text class="sv-num" x="552" y="60">目标航迹</text>
+        </g>
+        <g class="ov-step" data-step="3">
+          <path class="sv-line" d="M780 69 C810 69 815 69 840 69" marker-end="url(#ov-a)"/>
+          <path class="sv-line" d="M780 117 C810 117 815 117 840 117" marker-end="url(#ov-a)"/>
+          <text class="sv-num" x="784" y="60">车用它判断能不能走</text>
+        </g>
+      </svg>
+    </div>
+    <div class="stage-desc" data-desc>点「播放」，看一帧数据怎样从世界走进车里。</div>
+    <div class="fig-foot">图 1 · 青色/彩色不是重点：请只看箭头与方框。地图链与目标链<b>互不共源</b>。</div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>链路 A · 障碍地图</h4>
+      <p>机载正下视相机给出标签与深度，反投影成世界系 3D 足迹点，再累积成
+      <code>/agc/map</code>。<b>车用它判断能不能走。</b></p>
+    </div>
+    <div class="card">
+      <h4>链路 B · 目标航迹</h4>
+      <p>目标位置由仿真真值给出，经 <code>gt_adapter</code> 加上噪声、延迟、丢包与滤波速度，
+      发布 <code>/agc/targets</code>。<b>空中与任务状态机用它保持跟踪。</b></p>
+    </div>
+  </div>
+  <div class="note"><b>一句话记住：</b>项目不做"从像素里认出目标"。
+  目标始终由真值给出；相机只负责把地面障碍画成地图。两者不共用数据源，也不互相冒充。</div>
+</section>
+
+<!-- S2 -->
+<section id="s2">
+  <div class="eyebrow">02 / The camera</div>
+  <h2><span class="num">02</span>先看一台相机</h2>
+  <p class="lead">地图链的全部输入，来自无人机肚子底下那台朝正下方看的相机。它一次曝光给出两样东西：
+  <b>哪里的像素是障碍</b>，以及<b>那里有多远</b>。</p>
+
+  <div class="fig" data-fig="camera">
+    <div class="fig-head">
+      <div class="fig-title">图 2 · 正下视相机的剖面</div>
+      <div class="ctrl">
+        <button class="ac-play primary">▶ 播放</button>
+        <button class="ac-reset">↺ 重置</button>
+        <span class="step-label">—</span>
+        <span class="dots"></span>
+        <span class="speed">速度 <input class="ac-speed" type="range" min="0.5" max="3" step="0.5" value="1"></span>
+      </div>
+    </div>
+    <div class="fig-stage">
+      <svg viewBox="0 0 1000 420" role="img" aria-label="正下视相机剖面">
+        <defs>
+          <marker id="cm-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="#b45309"/></marker>
+          <pattern id="hatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="0" x2="0" y2="6" stroke="#c9c9c6" stroke-width="1.6"/></pattern>
+        </defs>
+
+        <!-- 地面 -->
+        <line class="sv-line thin" x1="40" y1="330" x2="960" y2="330"/>
+        <text class="sv-num" x="42" y="348">地面 z = 0</text>
+
+        <!-- step 0: 无人机与相机 -->
+        <g data-step="0">
+          <rect class="sv-box fill" x="450" y="42" width="100" height="24" rx="2"/>
+          <text class="sv-t inv" x="462" y="59" style="font-size:11px">无人机</text>
+          <line class="sv-line thin" x1="470" y1="66" x2="470" y2="86"/>
+          <circle class="acc-f" cx="470" cy="92" r="5"/>
+          <text class="acc-t" x="484" y="96" style="font-size:11px;font-family:var(--mono)">相机（朝正下方）</text>
+          <!-- 高度标注 -->
+          <line class="sv-line thin" x1="418" y1="92" x2="418" y2="330"/>
+          <line class="sv-line thin" x1="412" y1="92" x2="424" y2="92"/>
+          <line class="sv-line thin" x1="412" y1="330" x2="424" y2="330"/>
+          <text class="sv-s" x="300" y="216">H = 14.24 m</text>
+          <text class="sv-s" x="300" y="234">（机体高度 + 相机安装 0.242 m）</text>
+        </g>
+
+        <!-- step 1: 视场角 -->
+        <g data-step="1">
+          <path class="acc" d="M470 92 L188 330" stroke-width="1.6"/>
+          <path class="acc" d="M470 92 L752 330" stroke-width="1.6"/>
+          <path class="sv-line thin dash" d="M188 330 L752 330"/>
+          <text class="acc-t" x="392" y="150" style="font-size:11px;font-family:var(--mono)">130° 视场</text>
+          <text class="sv-num" x="196" y="322">← 30.5 m →</text>
+          <text class="sv-num" x="600" y="322">← 30.5 m →</text>
+          <text class="sv-s" x="620" y="150">地面覆盖半径</text>
+          <text class="sv-s" x="620" y="168">H · tan(65°) ≈ 30.5 m</text>
+        </g>
+
+        <!-- step 2: 场景里的障碍（剖面） -->
+        <g data-step="2">
+          <!-- 高楼 -->
+          <rect class="sv-box" x="250" y="200" width="86" height="130"/>
+          <rect x="250" y="200" width="86" height="130" fill="url(#hatch)" opacity="0.5"/>
+          <text class="sv-t" x="262" y="192" style="font-size:11px">高楼 10.55 m</text>
+          <!-- 矮台 -->
+          <rect class="sv-box" x="600" y="286" width="70" height="44"/>
+          <text class="sv-t" x="606" y="278" style="font-size:11px">矮台 0.5 m</text>
+          <!-- 屋顶与侧墙标注 -->
+          <line class="acc" x1="250" y1="200" x2="336" y2="200" stroke-width="2.4"/>
+          <text class="acc-t" x="344" y="196" style="font-size:11px">屋顶 → 真实足迹</text>
+          <line class="sv-line thin" x1="238" y1="212" x2="238" y2="318"/>
+          <text class="sv-num" x="196" y="270">侧墙</text>
+        </g>
+
+        <!-- step 3: 两路输出 -->
+        <g data-step="3">
+          <path class="acc" d="M470 92 L300 200" stroke-width="1.5" marker-end="url(#cm-ar)"/>
+          <path class="acc" d="M470 92 L620 288" stroke-width="1.5" marker-end="url(#cm-ar)"/>
+          <text class="sv-s" x="470" y="140" fill="#b45309">射线①：落在屋顶</text>
+          <text class="sv-s" x="530" y="230" fill="#b45309">射线②：落在矮台</text>
+          <text class="sv-s" x="470" y="262">每条射线带回一个深度值</text>
+        </g>
+
+        <!-- step 4: 两张图 -->
+        <g data-step="4">
+          <rect class="sv-box" x="40" y="362" width="440" height="46" rx="2"/>
+          <text class="sv-t" x="52" y="382" style="font-size:11.5px">① 语义分割图</text>
+          <text class="sv-s" x="52" y="398">每个像素标"是障碍 / 是地面"</text>
+          <rect class="sv-box" x="520" y="362" width="440" height="46" rx="2"/>
+          <text class="sv-t" x="532" y="382" style="font-size:11.5px">② 深度图</text>
+          <text class="sv-s" x="532" y="398">每个像素标"多远"（轴向深度）</text>
+        </g>
+
+        <!-- step 5: 合成 -->
+        <g data-step="5">
+          <rect class="acc-box" x="280" y="418" width="440" height="0" rx="2"/>
+          <text class="acc-t" x="300" y="414" style="font-size:11px">两张图叠在一起：知道"哪个像素"+"多远" → 可以算 3D 坐标</text>
+        </g>
+      </svg>
+    </div>
+    <div class="stage-desc" data-desc></div>
+    <div class="fig-foot">图 2 · 地面与像面平行，所以每个像素对应的地面尺寸全场一致（中心 5.30 cm/px）。这是后面所有几何的起点。</div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>为什么必须有深度</h4>
+      <p>标签只说"这个像素是障碍"，不说"它有多高"。如果一律把标签像素投到地面平面 <code>z=0</code>，
+      高层建筑的<b>侧墙</b>会按 <code>H/(H−h)</code> 向外放大 —— 实测整图 IoU 只有 0.363，视觉上就是一片"影子"。
+      有了深度，每个像素的真实 3D 位置直接可测。</p>
+    </div>
+    <div class="card">
+      <h4>为什么必须是 rgbd</h4>
+      <p>分割相机与深度相机<b>共 link、共姿态、共内参</b>，像素严格对齐。
+      拆成两个独立传感器就要靠"同一 step 内渲染"这个隐含假设，错一行就会把墙的深度套到隔壁地面像素上。</p>
+    </div>
+  </div>
+
+  <div class="note accent"><b>观众需要知道的能力边界：</b>正下视只能拿到障碍的 XY 足迹，<b>拿不到高度 Z</b>。
+  横截面小于 <b>0.24 m</b> 的细杆（灯杆 0.12 / 门柱 0.18 / 消防栓 0.16）不会进地图 ——
+  它们由车的激光在近处局部感知。<b>"小障碍靠车、大障碍靠机"是平台分工，不是能力丢失。</b></div>
+</section>
+
+<section id="s3">
+  <div class="eyebrow">03 / From pixel to world</div>
+  <h2><span class="num">03</span>一个像素，落在地上的哪一点</h2>
+  <p class="lead">相机在动、机体在倾斜。所以每个像素都要借<b>那一瞬间的位姿</b>换算成世界坐标。
+  下图把一次换算拆成四步，光点会沿着实际的光路走。</p>
+
+  <div class="fig" data-fig="projection">
+    <div class="fig-head">
+      <div class="fig-title">图 3 · 针孔成像与反投影</div>
+      <div class="ctrl">
+        <button class="ac-play primary">▶ 播放</button>
+        <button class="ac-reset">↺ 重置</button>
+        <span class="step-label">—</span>
+        <span class="dots"></span>
+        <span class="speed">速度 <input class="ac-speed" type="range" min="0.5" max="3" step="0.5" value="1"></span>
+      </div>
+    </div>
+    <div class="fig-stage">
+      <svg viewBox="0 0 1000 440" role="img" aria-label="针孔成像与反投影">
+        <defs>
+          <marker id="pj-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="#b45309"/></marker>
+        </defs>
+
+        <!-- 地面 -->
+        <line class="sv-line thin" x1="40" y1="356" x2="960" y2="356"/>
+        <text class="sv-num" x="42" y="374">地面</text>
+
+        <!-- 相机（机身 + 像平面） -->
+        <g>
+          <rect class="sv-box fill" x="120" y="60" width="92" height="22" rx="2"/>
+          <text class="sv-t inv" x="132" y="76" style="font-size:10.5px">相机</text>
+          <!-- 像平面：竖直一条 -->
+          <line class="sv-line" x1="212" y1="40" x2="212" y2="150"/>
+          <text class="sv-num" x="176" y="34">像平面</text>
+        </g>
+
+        <!-- step0: 像素点 -->
+        <g data-step="0">
+          <circle class="acc-f" cx="212" cy="104" r="5"/>
+          <text class="acc-t" x="224" y="100" style="font-size:11px;font-family:var(--mono)">像素 (u, v)</text>
+          <text class="sv-s" x="224" y="118">标签图上被标为障碍的那一个点</text>
+        </g>
+
+        <!-- step1: 内参 → 射线方向 -->
+        <g data-step="1">
+          <path class="acc" d="M212 104 L760 356" stroke-width="1.8" marker-end="url(#pj-ar)"/>
+          <text class="acc-t" x="380" y="196" style="font-size:11px;font-family:var(--mono)">方向 = ((u−cx)/fx, (v−cy)/fy, 1)</text>
+          <text class="sv-s" x="380" y="214">fx / fy / cx / cy 来自 camera_info（相机自己报的）</text>
+          <circle class="acc-f" cx="470" cy="226" r="4"/>
+        </g>
+
+        <!-- step2: 深度决定走多远 -->
+        <g data-step="2">
+          <line class="sv-line thin dash" x1="212" y1="104" x2="760" y2="356"/>
+          <circle class="acc-f" cx="612" cy="282" r="6"/>
+          <text class="acc-t" x="624" y="278" style="font-size:11px;font-family:var(--mono)">沿射线走到深度 d 处</text>
+          <text class="sv-s" x="624" y="296">d 从深度图的同一像素取</text>
+          <!-- 深度标尺 -->
+          <line class="acc" x1="212" y1="104" x2="612" y2="282" stroke-width="3"/>
+        </g>
+
+        <!-- step3: 转到世界坐标 -->
+        <g data-step="3">
+          <circle class="acc-f" cx="612" cy="282" r="7" class="acc-glow"/>
+          <text class="acc-t" x="470" y="330" style="font-size:11px;font-family:var(--mono)">p_world = 相机原点 + R(q)·(相机系坐标)</text>
+          <text class="sv-s" x="470" y="348">R(q) 是那一刻的机体姿态；原点含安装偏移 0.242 m</text>
+          <!-- 机体倾斜示意 -->
+          <g transform="translate(120,60) rotate(-12)">
+            <rect class="sv-box ghost" x="0" y="0" width="92" height="22" rx="2"/>
+          </g>
+          <text class="sv-s" x="60" y="56">机体是倾斜的 →</text>
+        </g>
+
+        <!-- step4: 落地结果 -->
+        <g data-step="4">
+          <rect class="acc-box" x="560" y="378" width="400" height="48" rx="2"/>
+          <text class="sv-t" x="574" y="398" style="font-size:11.5px">得到世界系 3D 点 (x, y, z)</text>
+          <text class="sv-s" x="574" y="416">z 是高度；xy 才是障碍落在地上的足迹</text>
+          <line class="sv-line" x1="612" y1="290" x2="612" y2="376" marker-end="url(#pj-ar)"/>
+        </g>
+
+        <!-- step5: 十万量级的点 -->
+        <g data-step="5">
+          <g class="acc-f">
+            <circle cx="300" cy="356" r="2.6"/><circle cx="330" cy="356" r="2.6"/><circle cx="360" cy="356" r="2.6"/>
+            <circle cx="390" cy="356" r="2.6"/><circle cx="420" cy="356" r="2.6"/><circle cx="450" cy="356" r="2.6"/>
+            <circle cx="480" cy="356" r="2.6"/><circle cx="510" cy="356" r="2.6"/><circle cx="540" cy="356" r="2.6"/>
+          </g>
+          <text class="acc-t" x="300" y="342" style="font-size:11px">一帧里十万个点，每个都这样算</text>
+          <text class="sv-s" x="300" y="404">整套几何只写在一个文件里（camera_geometry.hpp），投影端与地图端共用</text>
+        </g>
+      </svg>
+    </div>
+    <div class="stage-desc" data-desc></div>
+    <div class="fig-foot">图 3 · "算点"和"算这个点有多准"用的是同一组量（内参 / 像素 / 深度 / 位姿），所以不会分裂成两套几何。</div>
+  </div>
+
+  <div class="eq">
+    <b>p_world</b> = [ body_pos + R(q)·(0,0,0.242) ] + R(q) · ( −(v−cy)/fy · d , −(u−cx)/fx · d , −d )<br>
+    <span class="cm">GSD = H / f　·　可信半径 r = H·(N/2)/f × 0.95　·　地面半宽 = H·tan(65°) ≈ 30.5 m</span>
+  </div>
+
+  <div class="note"><b>两个容易混淆的"位置"：</b>
+  相机原点 = 机体位置 + 姿态旋转后的安装偏移；而 carving 射线的起点是<b>光轴与地面的交点</b>
+  （机体倾斜时它不等于机体 x/y）。后者才是"视线"真正出发的地方。</div>
+
+  <h3>这一帧算得完吗</h3>
+  <p>算得完，而且余量不小。但"上万"这个说法把量级说小了一个数量级 ——
+  实测一帧是 <b>9.4–10.6 万个点</b>（<code>帧统计</code> 日志；障碍像素 20 万上下、峰值 28 万，连通域 31–38 个）。
+  真正的成本也不在"逐点算"，而在整幅扫描、连通域，以及把点搬进消息。</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>单帧环节</th><th>在做什么</th><th class="num">耗时</th></tr></thead>
+    <tbody>
+      <tr><td>四张中间矩阵</td><td>掩码 + x / y / z 各一张 1152²</td><td class="num">2.0 ms</td></tr>
+      <tr><td>全图扫描</td><td>133 万像素过一遍，障碍像素做反投影</td><td class="num">1.9 ms</td></tr>
+      <tr><td>连通域 + 点池</td><td><code>collectComponentPoints</code></td><td class="num">7.5 ms</td></tr>
+      <tr><td>OBB 聚合</td><td><code>aggregateObbs</code>，与连通域个数解耦</td><td class="num">3.2 ms</td></tr>
+      <tr><td>组消息 + 逐点协方差</td><td>发布 10.7 万点 → 5.7 MB/帧（≈ 56 B/点）</td><td class="num">8.0 ms</td></tr>
+      <tr><td>序列化</td><td>→ DDS</td><td class="num">7.0 ms</td></tr>
+      <tr><td><b>合计</b></td><td>10 Hz 的预算是 100 ms</td><td class="num"><b>≈ 30 ms</b></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note"><b>单点到底多贵：</b>一次反投影 <b>4 ns</b>；连"这个点有多准"（协方差 + 观测视角）一起算 <b>34 ns</b>。
+  一万个点连协方差一起算，<b>0.34 ms</b> —— 逐点几何从来不是瓶颈，
+  所以把预算花在"少扫几遍全图"上，比花在"少算几个点"上划算得多。</div>
+
+  <div class="tw"><table>
+    <thead><tr><th>障碍占画面</th><th class="num">5%</th><th class="num">15%</th><th class="num">30%</th><th class="num">50%</th><th class="num">80%</th></tr></thead>
+    <tbody>
+      <tr><td>发布点数</td><td class="num">3.7 万</td><td class="num">7.6 万</td><td class="num">13 万</td><td class="num">20 万</td><td class="num">27 万</td></tr>
+      <tr><td>单帧合计</td><td class="num">18 ms</td><td class="num">37 ms</td><td class="num">58 ms</td><td class="num">77 ms</td><td class="num">116 ms</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note accent"><b>负荷随"障碍占画面多少"涨，不随"点数"涨。</b>
+  覆盖率到 80% 时单帧 ≈ 116 ms，越过 10 Hz 的 100 ms 预算。
+  现在能稳住，靠的是场景本身不满屏障碍，再加上面积门限（<code>min_obstacle_side_m</code>）
+  和屋顶带过滤在控点数 —— 不是算法本身没有成本。
+  这也是"正下视只看 XY 足迹、不做三维重建"这份能力边界背后的一笔性能账。</div>
+
+  <div class="note soft"><b>口径：</b>两张表都是本机（WSL2 / Ryzen 9 7945HX）跑的离线微基准，
+  按 <code>nadir_projection</code> 热路径的顺序逐段计时，<b>不是整链实测</b>。
+  场景是合成的：每个障碍 = 屋顶平面 + 右半侧墙斜坡，所以屋顶带过滤真的在起作用；
+  生成的点数（10.7 万）、消息大小（5.7 MB）与连通域数都落在 <code>帧统计</code> 的实测区间内。
+  整链 9.65 Hz 不是这段代码拖下来的 —— 瓶颈在 gz 渲染（RTF 0.546），
+  感知节点自身 10 Hz 稳定跑满，而下游只要 2 Hz 发布、5 Hz costmap。</div>
+</section>
+
+<section id="s4">
+  <div class="eyebrow">04 / Timing</div>
+  <h2><span class="num">04</span>三个流，对齐到同一个时刻</h2>
+  <p class="lead">标签图、深度图、机体位姿来自三个独立传感器：图像 10 Hz、odom 30 Hz。
+  实测时间偏差中位数 32 ms、最大 364 ms —— 不能假设它们"同一次渲染"。</p>
+
+  <div class="fig" data-fig="timeline">
+    <div class="fig-head">
+      <div class="fig-title">图 4 · 按标签时间戳把三条流对齐</div>
+      <div class="ctrl">
+        <button class="ac-play primary">▶ 播放</button>
+        <button class="ac-reset">↺ 重置</button>
+        <span class="step-label">—</span>
+        <span class="dots"></span>
+        <span class="speed">速度 <input class="ac-speed" type="range" min="0.5" max="3" step="0.5" value="1"></span>
+      </div>
+    </div>
+    <div class="fig-stage">
+      <svg viewBox="0 0 1000 300" role="img" aria-label="三流时间同步">
+        <defs><marker id="tm-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#111214"/></marker></defs>
+        <!-- lanes -->
+        <text class="sv-s" x="20" y="34">标签帧 10 Hz</text>
+        <text class="sv-s" x="20" y="104">深度帧 10 Hz</text>
+        <text class="sv-s" x="20" y="174">odom 30 Hz</text>
+        <line class="sv-line thin" x1="150" y1="44" x2="960" y2="44"/>
+        <line class="sv-line thin" x1="150" y1="114" x2="960" y2="114"/>
+        <line class="sv-line thin" x1="150" y1="184" x2="960" y2="184"/>
+        <!-- ticks depth -->
+        <g class="sv-fade" data-step="0">
+          <circle class="sv-dot" cx="500" cy="44" r="5"/>
+          <text class="sv-num" x="488" y="30">t_label</text>
+          <circle class="sv-dot hollow" cx="464" cy="114" r="5"/>
+          <circle class="sv-dot hollow" cx="536" cy="114" r="5"/>
+          <text class="sv-num" x="440" y="100">前一张</text><text class="sv-num" x="520" y="100">后一张</text>
+        </g>
+        <!-- odom samples -->
+        <g class="sv-fade" data-step="1">
+          <circle class="sv-dot hollow" cx="440" cy="184" r="4"/><circle class="sv-dot hollow" cx="470" cy="184" r="4"/>
+          <circle class="sv-dot hollow" cx="530" cy="184" r="4"/><circle class="sv-dot hollow" cx="560" cy="184" r="4"/>
+        </g>
+        <!-- interpolation -->
+        <g class="sv-fade" data-step="2">
+          <line class="sv-line" x1="470" y1="184" x2="530" y2="184"/>
+          <path class="sv-line" d="M500 44 L500 184" stroke-dasharray="3 3"/>
+          <circle class="sv-dot" cx="500" cy="184" r="5"/>
+          <text class="sv-num" x="512" y="176">按 t_label 插值出的位姿</text>
+          <text class="sv-s" x="330" y="230">位置线性插值 · 姿态球面插值（slerp）· 超出 0.15 s 容差即丢帧</text>
+        </g>
+        <!-- depth choice -->
+        <g class="sv-fade" data-step="3">
+          <path class="sv-line" d="M464 114 C480 114 486 60 500 44" marker-end="url(#tm-a)" stroke-dasharray="3 3"/>
+          <text class="sv-num" x="300" y="258">深度取"时间上最近"的一帧（不是最新一张）· 差 ≤ 0.15 s</text>
+        </g>
+        <!-- compensation -->
+        <g class="sv-fade" data-step="4">
+          <rect class="sv-box fill" x="620" y="222" width="340" height="60" rx="2"/>
+          <text class="sv-t inv" x="632" y="244" style="font-size:11.5px">⑤ 再做一次位移补偿</text>
+          <text class="sv-s inv" x="632" y="264">两帧间机体移动 v·Δt（2 m/s × 0.15 s = 0.30 m）</text>
+          <text class="sv-s inv" x="632" y="278">把点平移回"标签时刻"的位置，避免推到相邻格</text>
+        </g>
+      </svg>
+    </div>
+    <div class="stage-desc" data-desc></div>
+    <div class="fig-foot">图 4 · 这是"系统性错位"，每帧同向、可以算出来，所以应当补偿，而不是当随机噪声靠过滤吸收。</div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>丢帧，不凑</h4>
+      <p>拿不到对应时刻的位姿、内参与图像分辨率对不上、四元数不是单位四元数 ——
+      一律<b>跳过这一帧</b>并计数，不拿"最新一条"凑。宁可少画一格 unknown，也不要发布一帧系统性偏移的地图。</p>
+    </div>
+    <div class="card">
+      <h4>只信到可信半径</h4>
+      <p>几何视场 ≠ 测得到的范围。悬停时 1–2° 倾斜就能把画幅边界拉到 46 m，而真实可信半宽只有 30 m。
+      代码用 <code>trustedRadius()</code> 按高度与内参实时算，<b>hit 和 carving 共用这一道闸</b>。</p>
+    </div>
+  </div>
+</section>
+
+<!-- S5 -->
+<section id="s5">
+  <div class="eyebrow">05 / Points to footprint</div>
+  <h2><span class="num">05</span>从十万个点里，挑出真正的屋顶</h2>
+  <p class="lead">一帧里有十万量级的障碍像素。但正下视看一栋楼，会同时看到<b>屋顶</b>和<b>侧墙</b> ——
+  只有屋顶才是它落在地上的真实足迹。</p>
+
+  <div class="fig" data-fig="roof">
+    <div class="fig-head">
+      <div class="fig-title">图 5 · 屋顶带过滤（侧视）</div>
+      <div class="ctrl">
+        <button class="ac-play primary">▶ 播放</button>
+        <button class="ac-reset">↺ 重置</button>
+        <span class="step-label">—</span>
+        <span class="dots"></span>
+        <span class="speed">速度 <input class="ac-speed" type="range" min="0.5" max="3" step="0.5" value="1"></span>
+      </div>
+    </div>
+    <div class="fig-stage">
+      <svg viewBox="0 0 1000 330" role="img" aria-label="屋顶带过滤">
+        <!-- building cross-section -->
+        <g class="sv-fade" data-step="0">
+          <rect class="sv-box" x="300" y="90" width="220" height="150" rx="0"/>
+          <rect class="sv-hatch" x="300" y="90" width="26" height="150"/>
+          <text class="sv-t" x="360" y="170" style="font-size:12px">一栋楼</text>
+          <text class="sv-s" x="312" y="82">顶（屋顶）</text>
+          <text class="sv-s" x="326" y="258">侧墙</text>
+          <line class="sv-line thin" x1="180" y1="240" x2="820" y2="240"/>
+          <text class="sv-num" x="182" y="256">地面</text>
+        </g>
+        <!-- 3D points scattered along roof and wall -->
+        <g class="sv-fade" data-step="1">
+          <g class="sv-dot" data-roof="1">
+            <circle cx="332" cy="90" r="3"/><circle cx="360" cy="90" r="3"/><circle cx="388" cy="90" r="3"/>
+            <circle cx="416" cy="90" r="3"/><circle cx="444" cy="90" r="3"/><circle cx="472" cy="90" r="3"/>
+            <circle cx="500" cy="90" r="3"/>
+          </g>
+          <g class="sv-dot" data-wall="1">
+            <circle cx="306" cy="120" r="3"/><circle cx="306" cy="148" r="3"/><circle cx="306" cy="176" r="3"/>
+            <circle cx="306" cy="204" r="3"/><circle cx="306" cy="228" r="3"/>
+          </g>
+          <text class="sv-num" x="540" y="94">屋顶点（z 高、稳定）</text>
+          <text class="sv-num" x="60" y="150">墙点（z 低）</text>
+        </g>
+        <!-- z histogram + cut -->
+        <g class="sv-fade" data-step="2">
+          <rect class="sv-box ghost" x="600" y="70" width="340" height="180" rx="2"/>
+          <text class="sv-s" x="612" y="88">按 z 排序，取 90% 分位作基准</text>
+          <line class="sv-line" x1="640" y1="118" x2="920" y2="118"/>
+          <text class="sv-num" x="836" y="112">z_ref（屋顶平面）</text>
+          <line class="sv-line dash" x1="640" y1="152" x2="920" y2="152"/>
+          <text class="sv-num" x="836" y="146">z_cut = z_ref − band</text>
+          <text class="sv-s" x="612" y="180">band = max(0.25 m, 0.15 × 楼高)</text>
+          <text class="sv-s" x="612" y="202">绝对下限托住矮障碍，比例项自适应高楼</text>
+          <text class="sv-s" x="612" y="232">实测：sx 跨度 2.90 m → 1.20 m（抑制 59%）</text>
+        </g>
+        <!-- kept result -->
+        <g class="sv-fade" data-step="3">
+          <rect x="326" y="84" width="200" height="13" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
+          <text class="sv-t" x="540" y="86" style="font-size:11.5px">只保留屋顶带内的点 → 真实足迹</text>
+          <text class="sv-s" x="540" y="104">墙点被剔除，XY 不再向外糊</text>
+        </g>
+        <g class="sv-fade" data-step="4">
+          <rect class="sv-box fill" x="180" y="282" width="760" height="38" rx="2"/>
+          <text class="sv-t inv" x="192" y="306" style="font-size:11.5px">诚实边界：墙与屋顶在交界处 z 相同，任何纯 z 判据都分不开 —— 只能剔除墙体主体。</text>
+        </g>
+      </svg>
+    </div>
+    <div class="stage-desc" data-desc></div>
+    <div class="fig-foot">图 5 · 曾试把门限收紧到 0.15/0.08，结果覆盖率与误覆盖<b>都变差</b>（把真实屋顶点也砍掉了），已恢复原值。</div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>一次连通域，两次扫描</h4>
+      <p>把掩码里所有障碍像素用一次 <code>connectedComponentsWithStats</code> 归段，
+      再按段把 3D 点存进扁平数组。旧实现对每个连通域各扫全图两遍（O(C·N²)），
+      1152² 下 C≈30 就是 10 Hz 的临界点；改成单趟后 <b>71 ms → 15 ms</b>，实测整链 9.65 Hz。
+      这里的 15 ms 是<b>聚合本身</b>（扫描 + 连通域 + 点池 + OBB）；此后 ADR-0042 给每个点加了协方差，
+      同口径复测 <b>≈ 13 ms</b>（含全图扫描，见第 03 节那张表）；单帧全链 ≈ 30 ms，10 Hz 预算用掉约三成。</p>
+    </div>
+    <div class="card">
+      <h4>碎片要并回母体</h4>
+      <p>大建筑被深度噪声切成几块时，单块可能低于面积门限。
+      代码把"空间邻近（≤1.5 m）+ 高度一致（≤1.0 m）"的碎片并回达标母体，
+      <b>只改归属、不搬点</b>，保证点数组与屋顶带掩码的下标始终一一对应。孤立噪声仍丢弃。</p>
+    </div>
+  </div>
+  <div class="note"><b>输出换了形态：</b>早期版本把连通域包成旋转外接框再栅格化，实测框面积是真实足迹的 <b>1.65 倍</b>，
+  且框边界随"画幅恰好切在哪"逐帧跳变。现在直接发布<b>逐点</b>的 <code>ObstacleFootprintArray</code> ——
+  车看到的就是栅格本身，不再有第二份表示。</div>
+</section>
+
+<!-- S6 -->
+<section id="s6">
+  <div class="eyebrow">06 / Evidence accumulates</div>
+  <h2><span class="num">06</span>证据是"攒"出来的，不是"画"出来的</h2>
+  <p class="lead">单帧只看到建筑的一个角。若每帧重画一次地图，形状就会一直跳。
+  所以代码不假设"能看清一个物体"，只累积"这一格被反复观测为占据"的证据。</p>
+
+  <div class="fig" data-fig="logodds">
+    <div class="fig-head">
+      <div class="fig-title">图 6 · log-odds 增量累积（同一格，连续几帧）</div>
+      <div class="ctrl">
+        <button class="ac-play primary">▶ 播放</button>
+        <button class="ac-reset">↺ 重置</button>
+        <span class="step-label">—</span>
+        <span class="dots"></span>
+        <span class="speed">速度 <input class="ac-speed" type="range" min="0.5" max="3" step="0.5" value="1"></span>
+      </div>
+    </div>
+    <div class="fig-stage">
+      <svg viewBox="0 0 1000 320" role="img" aria-label="log-odds 累积动画">
+        <!-- grid 8x4 of cells -->
+        <g id="lo-grid"></g>
+        <!-- probability meter -->
+        <g class="sv-fade" data-step="5">
+          <rect class="sv-box" x="620" y="40" width="360" height="250" rx="2"/>
+          <text class="sv-s" x="634" y="62">这一格的置信度</text>
+          <rect class="sv-box ghost" x="634" y="78" width="332" height="26" rx="0"/>
+          <rect id="lo-bar" x="634" y="78" width="100" height="26" fill="var(--ink)"/>
+          <text id="lo-val" class="sv-t" x="634" y="130" style="font-size:14px">p = 0.30</text>
+          <line class="sv-line dash" x1="800" y1="78" x2="800" y2="104"/>
+          <text class="sv-num" x="806" y="98">0.60 门限</text>
+          <text class="sv-s" x="634" y="160">p_init = 0.30 → 1 次 hit 0.50 → 2 次 0.70</text>
+          <text class="sv-s" x="634" y="182">达到 0.60 且累计 ≥2 个地图帧才写 100</text>
+          <text class="sv-s" x="634" y="206">单帧毛刺画不出来 · 迟滞带 [0.45, 0.60)</text>
+          <text class="sv-s" x="634" y="232">每格每帧最多一次 hit、一次 miss</text>
+          <text class="sv-s" x="634" y="256">hit 与 miss 同帧互斥，不互相抵消</text>
+        </g>
+      </svg>
+    </div>
+    <div class="stage-desc" data-desc></div>
+    <div class="fig-foot">图 6 · 这就是"形状随证据慢慢长出来，而不是逐帧跳"的实现。改造前逐点计 hit 会让边缘格在 100 与中间值之间反复翻转。</div>
+  </div>
+
+  <div class="eq">
+    logit(p) = ln( p /(1−p) )　·　<b>hit</b>: +logit(0.70)　<b>miss</b>: +logit(0.25)　<b>时间衰减</b>: +logit(0.48)<br>
+    <span class="cm">p_hit=0.70 / p_miss=0.25 / p_init=0.30 / occupied_threshold=0.60 / free_threshold=0.20 / p_decay=0.48</span>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>三道门，缺一不可</h4>
+      <ol class="steps">
+        <li><b>空间支持</b>：一格本帧至少 3 个独立点，且 z 极差 ≤ 1.5 m（"混了屋顶和侧墙"就整格不给证据）。</li>
+        <li><b>深度一致性</b>：IQR 主判 + 多数点落在 0.30 m 内兜底，排除"整片偏移但局部连续"。</li>
+        <li><b>跨帧确认</b>：概率过门限之外，还要累计 ≥2 个<b>地图帧</b>的命中（防止有人调参数就静默变成"单帧即画"）。</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h4>occupied 也会"过期"</h4>
+      <p>一格进入 occupied 后，若超过 3 秒没有新的正向命中，就按弱证据逐步削弱，
+      退出到 <b>unknown</b>（不是 free）。我们只是"很久没再看到它"，并没有"看到它是空的" ——
+      降 free 是对规划器的过度承诺。<b>只有射线明确穿过，才允许降到 free。</b></p>
+      <p style="font-size:12.5px;color:var(--gray)">另：纯时间衰减一律停在 0.22 的 unknown 地板；
+      视野之外的格不参与衰减（"没盯着看就消失"是错的）。</p>
+    </div>
+  </div>
+</section>
+
+<!-- S7 -->
+<section id="s7">
+  <div class="eyebrow">07 / Free space</div>
+  <h2><span class="num">07</span>把"看得见是空的"也记下来</h2>
+  <p class="lead">只有障碍点时，地图只能单调生长：旧形状永不擦除，视角变化留下的残影永久驻留。
+  有了相机位置，就能沿视线一路打<b>负证据</b>。</p>
+
+  <div class="fig" data-fig="carve">
+    <div class="fig-head">
+      <div class="fig-title">图 7 · 角度分箱与射线穿透（俯视）</div>
+      <div class="ctrl">
+        <button class="ac-play primary">▶ 播放</button>
+        <button class="ac-reset">↺ 重置</button>
+        <span class="step-label">—</span>
+        <span class="dots"></span>
+        <span class="speed">速度 <input class="ac-speed" type="range" min="0.5" max="3" step="0.5" value="1"></span>
+      </div>
+    </div>
+    <div class="fig-stage">
+      <svg viewBox="0 0 1000 420" role="img" aria-label="free-space carving 俯视">
+        <defs>
+          <pattern id="hatchcv" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="0" x2="0" y2="6" stroke="#c9c9c6" stroke-width="1.6"/></pattern>
+          <marker id="cv-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="#b45309"/></marker>
+        </defs>
+        <g id="cv-grid"></g>
+
+        <!-- step0: 相机位置 -->
+        <g data-step="0">
+          <circle class="acc-f" cx="130" cy="210" r="8" class="acc-glow"/>
+          <text class="acc-t" x="60" y="196" style="font-size:11px;font-family:var(--mono)">光轴落点</text>
+          <text class="sv-s" x="60" y="238">射线从这里出发</text>
+        </g>
+
+        <!-- step1: 扇形射线（角度分箱） -->
+        <g data-step="1">
+          <g id="cv-fan"></g>
+          <text class="acc-t" x="300" y="40" style="font-size:11px">按角度分成约 512 个箱，每箱射一条</text>
+        </g>
+
+        <!-- step2: 遇到障碍 -->
+        <g data-step="2">
+          <g id="cv-obs"></g>
+          <text class="acc-t" x="560" y="150" style="font-size:11px">这一箱打到了障碍</text>
+          <text class="sv-s" x="560" y="168">射线停在这里，终点格不擦</text>
+        </g>
+
+        <!-- step3: 无障碍方向射到边界 -->
+        <g data-step="3">
+          <g id="cv-miss"></g>
+          <text class="acc-t" x="300" y="392" style="font-size:11px">没有障碍的方向一路射到画幅边界，沿途全部标"空"</text>
+          <text class="sv-s" x="300" y="410">yard 的障碍只占作业区 11.5% —— 绝大多数方向需要这样标</text>
+        </g>
+
+        <!-- step4: 阴影 -->
+        <g data-step="4">
+          <g id="cv-shadow"></g>
+          <text class="acc-t" x="600" y="80" style="font-size:11px">障碍背后的阴影区：不标 free，保持 unknown</text>
+        </g>
+
+        <!-- step5: 结果 -->
+        <g data-step="5">
+          <rect class="acc-box" x="600" y="360" width="380" height="52" rx="2"/>
+          <text class="sv-t" x="614" y="382" style="font-size:11.5px">一次遍历同时处理两种情况</text>
+          <text class="sv-s" x="614" y="400">有障碍 → 射到它；无障碍 → 射到边界；阴影区间跳过</text>
+        </g>
+      </svg>
+    </div>
+    <div class="stage-desc" data-desc></div>
+    <div class="fig-foot">图 7 · 深色 = 已确认占据；浅灰 = 沿射线被打成 free；斜线 = 阴影区（保持 unknown）。射线撞到已确认障碍即停，不穿墙去擦它后面。</div>
+  </div>
+
+  <div class="note"><b>一个观众容易忽略但很关键的设计：</b>
+  若只在"射到障碍"时才打负证据，整张图基本是灰的、规划被大幅限制 ——
+  所以<b>无障碍方向必须一路射到边界</b>，把"看到是空的"明确写下来。</div>
+</section>
+
+<section id="s8">
+  <div class="eyebrow">08 / Shadow</div>
+  <h2><span class="num">08</span>被楼挡住的地方，不能假装看过</h2>
+  <p class="lead">一条射线后面并不是"全看不见"。相机高 H、障碍高 h、障碍距 d₀ 时，遮挡恰好分成三段。</p>
+
+  <div class="fig" data-fig="shadow">
+    <div class="fig-head">
+      <div class="fig-title">图 8 · 遮挡阴影的三段式（侧视）</div>
+      <div class="ctrl">
+        <button class="ac-play primary">▶ 播放</button>
+        <button class="ac-reset">↺ 重置</button>
+        <span class="step-label">—</span>
+        <span class="dots"></span>
+        <span class="speed">速度 <input class="ac-speed" type="range" min="0.5" max="3" step="0.5" value="1"></span>
+      </div>
+    </div>
+    <div class="fig-stage">
+      <svg viewBox="0 0 1000 300" role="img" aria-label="遮挡阴影三段">
+        <defs><pattern id="hatch2" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+          <line x1="0" y1="0" x2="0" y2="7" stroke="#b0b0ac" stroke-width="2"/></pattern></defs>
+        <g class="sv-fade" data-step="0">
+          <circle class="sv-dot" cx="90" cy="50" r="7"/>
+          <text class="sv-num" x="52" y="40">相机 H</text>
+          <line class="sv-line thin" x1="20" y1="215" x2="980" y2="215"/>
+          <rect class="sv-box" x="300" y="125" width="44" height="90" rx="0"/>
+          <text class="sv-num" x="296" y="115">障碍 h</text>
+          <text class="sv-num" x="296" y="232">d₀</text>
+        </g>
+        <g class="sv-fade" data-step="1">
+          <line class="sv-line" x1="90" y1="50" x2="300" y2="125"/>
+          <text class="sv-t" x="140" y="102" style="font-size:11.5px">① 相机 → d₀：看得见 → 可标 free</text>
+        </g>
+        <g class="sv-fade" data-step="2">
+          <rect x="344" y="125" width="430" height="90" fill="url(#hatch2)"/>
+          <line class="sv-line dash" x1="90" y1="50" x2="774" y2="215"/>
+          <text class="sv-t" x="420" y="180" style="font-size:11.5px">② d₀ → 阴影远边：真看不见 → 保持 unknown</text>
+          <text class="sv-num" x="756" y="232">d₀·H/(H−h)</text>
+        </g>
+        <g class="sv-fade" data-step="3">
+          <line class="sv-line" x1="90" y1="50" x2="980" y2="215" stroke-dasharray="4 4"/>
+          <text class="sv-t" x="790" y="196" style="font-size:11.5px">③ 视线从楼顶掠过 → 又可见 → 继续标 free</text>
+        </g>
+        <g class="sv-fade" data-step="4">
+          <rect class="sv-box fill" x="20" y="252" width="960" height="40" rx="2"/>
+          <text class="sv-t inv" x="32" y="277" style="font-size:11.5px">矮台（0.5 m）阴影只有 0.2–0.5 m，后面应该标安全；高楼（10.55 m）在 15 m 处阴影到 57.9 m，已超出 30.5 m 边界。</text>
+        </g>
+      </svg>
+    </div>
+    <div class="stage-desc" data-desc></div>
+    <div class="fig-foot">图 8 · 一刀切"射线被障碍截断"会把"能确定安全的"也留成未知，大幅限制规划；精确算阴影远边才是正解。</div>
+  </div>
+
+  <div class="eq">
+    <b>shadowFarEdge</b> = d₀ · H / (H − h)　<span class="cm">贴地 h≤0 无阴影；h→H 时阴影发散到无穷（"飞得刚好比楼高"最坏）</span>
+  </div>
+  <p><b>阴影区标 unknown，不标 free 也不标障碍。</b>在规划口径里 unknown 不是障碍（车可以走），
+  只是不享受"已确认安全"的待遇。把它标成 free，等于对规划器承诺"这条路我确认过"。</p>
+</section>
+
+<!-- S9 -->
+<section id="s9">
+  <div class="eyebrow">09 / Two layers</div>
+  <h2><span class="num">09</span>两层地图：看到的，和能走的</h2>
+  <p class="lead">0.5 m 的格子只能回答"占 / 不占"，回答不了"这一格只有 31% 被占"。
+  所以代码把感知和规划拆成两层：<b>细的攒证据，粗的保安全</b>。</p>
+
+  <div class="fig" data-fig="layers">
+    <div class="fig-head">
+      <div class="fig-title">图 9 · 0.25 m 证据层 → 0.5 m 规划层</div>
+      <div class="ctrl">
+        <button class="ac-play primary">▶ 播放</button>
+        <button class="ac-reset">↺ 重置</button>
+        <span class="step-label">—</span>
+        <span class="dots"></span>
+        <span class="speed">速度 <input class="ac-speed" type="range" min="0.5" max="3" step="0.5" value="1"></span>
+      </div>
+    </div>
+    <div class="fig-stage">
+      <svg viewBox="0 0 1000 330" role="img" aria-label="两层栅格派生">
+        <g id="mr-fine"></g>
+        <g id="mr-coarse" class="sv-fade" data-step="2"></g>
+        <g class="sv-fade" data-step="0">
+          <text class="sv-s" x="20" y="20">证据层 0.25 m · 累积 / carving / 生命周期都在这层</text>
+        </g>
+        <g class="sv-fade" data-step="2">
+          <text class="sv-s" x="560" y="20">规划层 0.5 m · /agc/map</text>
+        </g>
+        <g class="sv-fade" data-step="1">
+          <path class="sv-line" d="M370 170 L500 170" marker-end="url(#ov-a)"/>
+          <text class="sv-num" x="382" y="160">2×2 子格 → 1 格</text>
+          <text class="sv-num" x="382" y="192">max-pool 保守合并</text>
+        </g>
+        <g class="sv-fade" data-step="3">
+          <rect class="sv-box fill" x="560" y="252" width="420" height="62" rx="2"/>
+          <text class="sv-t inv" x="574" y="274" style="font-size:11.5px">合并优先级：占据 &gt; 有证据未跨门限 &gt; 未知 &gt; 自由</text>
+          <text class="sv-s inv" x="574" y="296">任一子格占据 ⇒ 整格占据；只要还有子格没看过 ⇒ 未知</text>
+          <text class="sv-s inv" x="574" y="310">只有全部子格自由，才报 0</text>
+        </g>
+      </svg>
+    </div>
+    <div class="stage-desc" data-desc></div>
+    <div class="fig-foot">图 9 · 小障碍被放大到整格是<b>为规划安全有意做的保守化</b>，不是画错。因此几何精度只能在证据层评价。</div>
+  </div>
+
+  <div class="big-quote">
+    剩下的误差不是"地图整体膨胀"，而是"一个 0.5 m 格只能回答 0 或 100，回答不了这一格只有 31% 被障碍占据"。
+    <span class="who">ADR-0040 · 分层的动因</span>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>为什么必须是整数倍</h4>
+      <p><code>0.5 / 0.25 = 2</code>，2×2 子格与粗格格点严格对齐，聚合无需重采样。
+      若取 0.20（比值 2.5），会重复计入或漏计，且错位随坐标漂移 ——
+      症状只表现为"偶发边界误差"，极难归因。启动期强制校验，非整数倍<b>直接拒绝启动</b>。</p>
+    </div>
+    <div class="card">
+      <h4>两张话题，两种语义</h4>
+      <div class="tw" style="margin:8px 0"><table><thead><tr><th>话题</th><th>回答</th><th>1–99 是什么</th></tr></thead><tbody>
+        <tr><td><code>/agc/map</code></td><td>能不能走</td><td><b>风险代价</b></td></tr>
+        <tr><td><code>/agc/map/evidence</code></td><td>看到多少</td><td><b>量化 log-odds 概率</b></td></tr>
+      </tbody></table></div>
+      <p style="font-size:12.5px;color:var(--gray);margin-bottom:0">拿规划层去和几何真值算 precision / IoU，会把"为安全做的保守化"记成"感知画错了"。</p>
+    </div>
+  </div>
+</section>
+
+<!-- S10 -->
+<section id="s10">
+  <div class="eyebrow">10 / From seen to drivable</div>
+  <h2><span class="num">10</span>从"看到障碍"到"这里能不能走"</h2>
+  <p class="lead">感知层最后一步：按<b>米</b>（不是格数）算离障碍多远，把规划层变成五档风险图。</p>
+
+  <div class="fig" data-fig="risk">
+    <div class="fig-head">
+      <div class="fig-title">图 10 · 米制膨胀 → 五档风险图</div>
+      <div class="ctrl">
+        <button class="ac-play primary">▶ 播放</button>
+        <button class="ac-reset">↺ 重置</button>
+        <span class="step-label">—</span>
+        <span class="dots"></span>
+        <span class="speed">速度 <input class="ac-speed" type="range" min="0.5" max="3" step="0.5" value="1"></span>
+      </div>
+    </div>
+    <div class="fig-stage">
+      <svg viewBox="0 0 1000 320" role="img" aria-label="风险分档">
+        <g id="rk-grid"></g>
+        <g class="sv-fade" data-step="0">
+          <text class="sv-s" x="20" y="20">规划层几何占据（黑 = 格内有障碍）</text>
+        </g>
+        <g class="sv-fade" data-step="1">
+          <text class="sv-s" x="20" y="300">距离场：每格到最近占据格的欧氏距离，用 Felzenszwalb 精确距离变换（两轴各一遍，O(N)）</text>
+        </g>
+        <g class="sv-fade" data-step="2">
+          <rect class="sv-box" x="600" y="30" width="380" height="250" rx="2"/>
+          <text class="sv-s" x="614" y="52">/agc/map 的五个取值</text>
+          <line class="sv-line thin" x1="614" y1="64" x2="966" y2="64"/>
+          <text class="sv-t" x="614" y="88" style="font-size:12px">−1　未知（从未观测）</text>
+          <text class="sv-t" x="614" y="116" style="font-size:12px">0　　可通行 · d &gt; 1.0 m</text>
+          <text class="sv-t" x="614" y="144" style="font-size:12px">1–98　有代价但可通行 · 指数衰减</text>
+          <text class="sv-t" x="614" y="172" style="font-size:12px">99　　车心进入即擦碰 · d ≤ 0.6 m</text>
+          <text class="sv-t" x="614" y="200" style="font-size:12px">100　格内即占据</text>
+          <line class="sv-line thin" x1="614" y1="214" x2="966" y2="214"/>
+          <text class="sv-s" x="614" y="236">车半径 0.6 m · 膨胀外半径 1.0 m</text>
+          <text class="sv-s" x="614" y="258">t = (d − 0.6)/0.4　v = 98·e<sup>−3t</sup></text>
+          <text class="sv-s" x="614" y="276">实跑五档全部出现（8274 / 1577 / 962 / 3857 / 25330）</text>
+        </g>
+      </svg>
+    </div>
+    <div class="stage-desc" data-desc></div>
+    <div class="fig-foot">图 10 · 膨胀按米写，参数才不会随分辨率静默改变物理余量；未知格一律短路成 −1，绝不按距离判成 free。</div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>99 和 100 不一样</h4>
+      <p>两者都"不可通行"，但 <b>100 = 格内有障碍</b>、<b>99 = 车心会擦碰而格内没有障碍</b>。
+      合并处理会丢失"障碍到底在哪"的信息。</p>
+    </div>
+    <div class="card">
+      <h4>消费端的一个强制配套</h4>
+      <p><code>/agc/map</code> 的 <code>1–98</code> 是代价，不是概率。
+      下游 costmap 必须设 <code>trinary_costmap: false</code>，否则会把"有代价"折成"完全可通行"，
+      <b>安全膨胀静默失效且日志看不出异常</b>。</p>
+    </div>
+  </div>
+  <div class="note"><b>还有一条元数据通道：</b><code>/agc/map/cell_meta</code> 用五个并行数组
+  （占据比例 / 置信度 / 最近观测 / 来源实例 / 是否完整可见）回答一个 int8 装不下的问题。
+  它只供离线评价与取证，<b>不进实时判定路径</b> —— 3 MB/帧换不到任何判定精度。</div>
+</section>
+
+<!-- S11 -->
+<section id="s11">
+  <div class="eyebrow">11 / The other chain</div>
+  <h2><span class="num">11</span>另一条链：目标在哪里</h2>
+  <p class="lead">目标位置始终由仿真真值给出，但<b>不是零噪声直通</b> ——
+  否则"能跟踪"只是把答案抄了一遍。</p>
+
+  <div class="fig" data-fig="truth">
+    <div class="fig-head">
+      <div class="fig-title">图 11 · 真值航迹怎样带上"不确定性"</div>
+      <div class="ctrl">
+        <button class="ac-play primary">▶ 播放</button>
+        <button class="ac-reset">↺ 重置</button>
+        <span class="step-label">—</span>
+        <span class="dots"></span>
+        <span class="speed">速度 <input class="ac-speed" type="range" min="0.5" max="3" step="0.5" value="1"></span>
+      </div>
+    </div>
+    <div class="fig-stage">
+      <svg viewBox="0 0 1000 300" role="img" aria-label="真值航迹不确定性模型">
+        <g class="sv-fade" data-step="0">
+          <rect class="sv-box fill" x="20" y="40" width="180" height="50" rx="2"/>
+          <text class="sv-t inv" x="32" y="62" style="font-size:11.5px">世界真值</text>
+          <text class="sv-s inv" x="32" y="80">gt_bypass 30 Hz</text>
+        </g>
+        <g class="sv-fade" data-step="1">
+          <rect class="sv-box" x="250" y="24" width="470" height="212" rx="2"/>
+          <text class="sv-s" x="264" y="44">gt_adapter · 六类不确定性</text>
+          <text class="sv-t" x="264" y="72" style="font-size:12px">① 位置噪声 σ_xy / σ_z　　② 交付延迟 latency_s</text>
+          <text class="sv-t" x="264" y="98" style="font-size:12px">③ 单拍丢包 drop_prob　　④ 成簇丢失（两态马尔可夫）</text>
+          <text class="sv-t" x="264" y="124" style="font-size:12px">⑤ 链路可信度 confidence（配置声明值）</text>
+          <text class="sv-t" x="264" y="150" style="font-size:12px">⑥ 速度：α-β 滤波器（由噪声位置估计）</text>
+          <line class="sv-line thin" x1="264" y1="164" x2="706" y2="164"/>
+          <text class="sv-s" x="264" y="186">位置 = 加噪后的原始观测（噪声可见、可与真值比对）</text>
+          <text class="sv-s" x="264" y="208">速度 = 滤波器输出（不被噪声放大）</text>
+          <text class="sv-s" x="264" y="228">可信度与精度解耦：σ 变大只影响协方差，不会拒收航迹</text>
+        </g>
+        <g class="sv-fade" data-step="2">
+          <path class="sv-line" d="M200 65 L250 65" marker-end="url(#ov-a)"/>
+          <path class="sv-line" d="M720 130 L790 130" marker-end="url(#ov-a)"/>
+          <rect class="sv-box fill" x="790" y="100" width="190" height="60" rx="2"/>
+          <text class="sv-t inv" x="802" y="124" style="font-size:11.5px">/agc/targets</text>
+          <text class="sv-s inv" x="802" y="144">唯一发布者 gt_adapter</text>
+        </g>
+        <g class="sv-fade" data-step="3">
+          <rect class="sv-box ghost" x="790" y="186" width="190" height="70" rx="2"/>
+          <text class="sv-s" x="802" y="208">空数组 = 本拍无新观测</text>
+          <text class="sv-s" x="802" y="228">不是"目标消失"</text>
+          <text class="sv-s" x="802" y="248">下游按年龄判定失效</text>
+        </g>
+        <g class="sv-fade" data-step="4">
+          <rect class="sv-box" x="250" y="256" width="470" height="34" rx="2"/>
+          <text class="sv-s" x="264" y="277">不做几何门控 · 不分远近 · 没有第二条路（视觉定位路径已退役）</text>
+        </g>
+      </svg>
+    </div>
+    <div class="stage-desc" data-desc></div>
+    <div class="fig-foot">图 11 · 速度若直接对带噪位置差分，噪声会被放大约 9.4 倍；α-β 把 σ_v 压到 0.08–0.11 m/s 量级。</div>
+  </div>
+
+  <div class="eq">
+    <b>Λ</b> = σ<sub>w</sub>·Δt²/σ<sub>p</sub>　→　<b>α</b> = 1 − r² ,　<b>β</b> = 2(2−α) − 4√(1−α)　<span class="cm">// Kalata 稳态关系，增益不手调</span><br>
+    predict: p̂ = p + v·Δt　·　update: p ← p̂ + α(z−p̂) ,　v ← v + β(z−p̂)/Δt
+  </div>
+  <div class="note"><b>退化保护：</b>σ 趋近 0 时解析增益会退化成二阶振荡（实测速度在 1.00 / 0.00 间逐拍翻转），
+  所以零噪声时直接旁路滤波器、回落短窗差分。<b>结论只对"下游决策与控制"成立，不构成视觉识别能力。</b></div>
+</section>
+
+<!-- S12 -->
+<section id="s12">
+  <div class="eyebrow">12 / Full chain</div>
+  <h2><span class="num">12</span>把整条链连起来看一遍</h2>
+  <p class="lead">前面每一步都单独看过。最后用一张图把它们串成一次完整的数据旅程。</p>
+
+  <div class="fig" data-fig="full">
+    <div class="fig-head">
+      <div class="fig-title">图 12 · 一帧数据的完整旅程</div>
+      <div class="ctrl">
+        <button class="ac-play primary">▶ 播放</button>
+        <button class="ac-reset">↺ 重置</button>
+        <span class="step-label">—</span>
+        <span class="dots"></span>
+        <span class="speed">速度 <input class="ac-speed" type="range" min="0.5" max="3" step="0.5" value="1"></span>
+      </div>
+    </div>
+    <div class="fig-stage">
+      <svg viewBox="0 0 1000 420" role="img" aria-label="完整数据旅程">
+        <defs><marker id="fl-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#111214"/></marker></defs>
+        <!-- 8 stations -->
+        <g id="fl-stations"></g>
+        <!-- moving packet (位置由脚本按当前步设置) -->
+        <g id="fl-packet" style="opacity:0">
+          <circle class="sv-dot" cx="0" cy="0" r="7"/>
+        </g>
+      </svg>
+    </div>
+    <div class="stage-desc" data-desc></div>
+    <div class="fig-foot">图 12 · 成像 10 Hz，地图发布 2 Hz：证据更新与对外快照刻意解耦，迟滞状态按"地图帧"推进。</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tabbar">
+      <button class="on">节点与频率</button><button>话题速查</button><button>关键参数</button>
+    </div>
+    <div class="panel on">
+      <div class="tw"><table>
+        <thead><tr><th>节点</th><th>频率 / 触发</th><th>一句话职责</th></tr></thead>
+        <tbody>
+          <tr><td><code>gt_bypass</code></td><td>30 Hz</td><td>经 gz-transport 直读世界真值位姿，限频发布</td></tr>
+          <tr><td><code>ground_odom_adapter</code></td><td>30 Hz</td><td>车位姿 → odom + TF + valid + 诊断</td></tr>
+          <tr><td><code>gt_adapter</code></td><td>10 Hz</td><td><code>/agc/targets</code> 唯一发布者</td></tr>
+          <tr><td><code>nadir_projection</code></td><td>随标签帧（10 Hz）</td><td>分割 + 深度 → 世界系足迹点 / OBB</td></tr>
+          <tr><td><code>map_adapter</code></td><td>2 Hz 发布</td><td>log-odds 累积 → 证据层 → 规划层 / 元数据</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="panel">
+      <div class="tw"><table>
+        <thead><tr><th>话题</th><th>回答什么</th><th>谁在用</th></tr></thead>
+        <tbody>
+          <tr><td><code>/agc/obstacle_footprints</code></td><td>这一帧看到了哪些 3D 点</td><td><code>map_adapter</code>（唯一决定地图内容）</td></tr>
+          <tr><td><code>/agc/map</code></td><td><b>能不能走</b>（0.5 m 风险图，2 Hz）</td><td>costmap / 地面安全层</td></tr>
+          <tr><td><code>/agc/map/evidence</code></td><td><b>看到多少</b>（0.25 m 裸证据）</td><td>离线评价</td></tr>
+          <tr><td><code>/agc/map/cell_meta</code></td><td>这一格的五元组状态</td><td>离线标定 / 取证</td></tr>
+          <tr><td><code>/agc/map/valid</code></td><td>地图知识还新鲜吗</td><td>安全层（fail-closed）</td></tr>
+          <tr><td><code>/agc/targets</code></td><td>目标此刻在哪、多可信</td><td>任务状态机 / 空中跟踪</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="panel">
+      <div class="chips">
+        <span class="chip">perception_resolution 0.25</span><span class="chip">resolution 0.5</span>
+        <span class="chip">p_hit 0.70</span><span class="chip">p_miss 0.25</span>
+        <span class="chip">p_init 0.30</span><span class="chip">occupied 0.60</span>
+        <span class="chip">free 0.20</span><span class="chip">p_decay 0.48</span>
+        <span class="chip">min_hit_points 3</span><span class="chip">min_hits_for_occupied 2</span>
+        <span class="chip">sigma_reject_ratio 0.5</span><span class="chip">robot_radius 0.6</span>
+        <span class="chip">inflation_radius 1.0</span><span class="chip">risk_cost_scaling 3.0</span>
+        <span class="chip">min_obstacle_side_m 0.24</span><span class="chip">depth_pair_tolerance 0.15</span>
+      </div>
+      <p style="font-size:13px;color:var(--gray)">全部参数由 <a href="src/agc_perception/config/perception.yaml">config/perception.yaml</a> 经 launch 单一注入，节点不得覆写。</p>
+    </div>
+  </div>
+</section>
+
+<!-- S13 -->
+<section id="s13">
+  <div class="eyebrow">13 / Boundaries</div>
+  <h2><span class="num">13</span>边界与分寸</h2>
+  <p class="lead">观众看系统，也要知道它<b>不承诺什么</b>。这些不是缺陷清单，而是当前版本明确登记的能力范围。</p>
+
+  <div class="tabs">
+    <div class="tabbar">
+      <button class="on">能做什么</button><button>不承诺什么</button><button>还在整改</button>
+    </div>
+    <div class="panel on">
+      <ul class="steps">
+        <li><b>真值派生目标航迹</b>，带噪声 / 延迟 / 丢包 / 可信度与滤波速度，不含任何视觉识别。</li>
+        <li><b>保证覆盖半径约 30.5 m</b>，各向同性；最小可测尺寸 0.24 m（20 px）。</li>
+        <li><b>两层栅格</b>：0.25 m 攒证据、0.5 m 保安全；同一话题语义不变，下游零改动。</li>
+        <li><b>五档风险图</b>实测五档全部出现；证据层单独发布，几何评价在正确尺度上做。</li>
+        <li><b>整链成像 9.65 Hz 均值</b>（8.91–10.14），单帧聚合 71 ms → 15 ms；
+        计入逐点协方差与消息序列化后，单帧全链 ≈ 30 ms，10 Hz 预算用掉约三成。</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <ul class="steps">
+        <li>不做"感知失效回退静态先验"：丢包 / 遮挡时地图开洞是已登记边界，断流时下游 fail-closed。</li>
+        <li>正下视只能拿 XY 足迹，<b>拿不到高度 Z</b>；细杆不进全局地图，由车的激光局部感知。</li>
+        <li>墙与屋顶在交界处 z 相同，<b>没有纯 z 判据能完全分开</b>，只能剔除墙体主体。</li>
+        <li><code>/agc/map</code> 无动态层、是二维 footprint；不得把二维地图外推为三维安全保证。</li>
+        <li>不承诺"满屏障碍也能实时"：障碍占画面到 80% 时单帧 ≈ 116 ms，<b>跌破 10 Hz</b>（第 03 节）。</li>
+        <li>遮挡阴影会让实际可见区小于覆盖圆；按 K5 判据 <code>yard</code> 当前飞高仍有阴影（已登记边界，非缺陷）。</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <div class="tw"><table>
+        <thead><tr><th>预登记判据</th><th>门限</th><th>实测</th><th>结果</th></tr></thead>
+        <tbody>
+          <tr><td>面积覆盖率</td><td>≥ 0.55</td><td>0.937</td><td>通过</td></tr>
+          <tr><td>误覆盖率</td><td>≤ 0.35</td><td>0.696</td><td>未通过</td></tr>
+          <tr><td>IoU</td><td>≥ 0.45</td><td>0.298</td><td>未通过</td></tr>
+          <tr><td>面积比</td><td>≤ 1.60</td><td>1.123</td><td>通过</td></tr>
+          <tr><td>稳定性 p99</td><td>≤ 50</td><td>60</td><td>未通过</td></tr>
+          <tr><td>形状抖动 p95</td><td>≤ 0.25</td><td>0.000</td><td>通过</td></tr>
+        </tbody>
+      </table></div>
+      <p style="font-size:13.5px;color:var(--ink2)"><b>为什么"误覆盖 0.696 但面积比只有 1.123"：</b>
+      60.2% 的误覆盖格在真值 1 格内、仅 1.0% 超过 3 格 —— 那不是地图画错了，
+      是 0.5 m 二值化对 0.6–1.2 m 障碍的<b>边界代价</b>。换成"离真值超过车半径才算误挡"的规划口径，
+      同一份地图的误阻塞率只有 0.278。</p>
+      <p style="font-size:13px;color:var(--gray)">GATES 是预登记的，事后调整等于伪造结论；
+      主判据的每次更换都走"新任务 + 新预登记"。<code>dense_map</code> 上的整链取证仍有缺口，已如实登记。</p>
+    </div>
+  </div>
+</section>
+
+<!-- S14 -->
+<section id="s14">
+  <div class="eyebrow">14 / Who uses it</div>
+  <h2><span class="num">14</span>谁在用它</h2>
+  <p class="lead">讲感知层，最后得落到"车到底怎么用这张图"。答案是一句话：<b>只裁不造</b>。</p>
+
+  <div class="fig" data-fig="safety">
+    <div class="fig-head">
+      <div class="fig-title">图 14 · 地面安全层的可停性判定</div>
+      <div class="ctrl">
+        <button class="ac-play primary">▶ 播放</button>
+        <button class="ac-reset">↺ 重置</button>
+        <span class="step-label">—</span>
+        <span class="dots"></span>
+        <span class="speed">速度 <input class="ac-speed" type="range" min="0.5" max="3" step="0.5" value="1"></span>
+      </div>
+    </div>
+    <div class="fig-stage">
+      <svg viewBox="0 0 1000 290" role="img" aria-label="安全层可停性判定">
+        <defs><pattern id="hatch3" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+          <line x1="0" y1="0" x2="0" y2="7" stroke="#c0c0bc" stroke-width="2"/></pattern></defs>
+        <g id="sf-grid"></g>
+        <g class="sv-fade" data-step="0">
+          <rect class="sv-box fill" x="80" y="120" width="54" height="54" rx="2"/>
+          <text class="sv-s" x="72" y="112">车体</text>
+        </g>
+        <g class="sv-fade" data-step="1">
+          <path class="sv-line" d="M134 147 L360 147" marker-end="url(#ov-a)"/>
+          <text class="sv-num" x="180" y="138">当前速度 v</text>
+          <rect class="sv-box ghost" x="134" y="126" width="226" height="42" rx="2"/>
+          <text class="sv-s" x="146" y="182">制动距离内，车体 footprint 扫过的格集</text>
+        </g>
+        <g class="sv-fade" data-step="2">
+          <text class="sv-t" x="560" y="52" style="font-size:12px">/agc/map 的格值 → 安全语义</text>
+          <text class="sv-s" x="560" y="78">100 / 99　阻挡</text>
+          <text class="sv-s" x="560" y="100">1–98　　可通行 + 限速</text>
+          <text class="sv-s" x="560" y="122">0　　　　已知自由</text>
+          <text class="sv-s" x="560" y="144">−1　　　 不是已知自由</text>
+        </g>
+        <g class="sv-fade" data-step="3">
+          <rect class="sv-box fill" x="560" y="170" width="420" height="94" rx="2"/>
+          <text class="sv-t inv" x="574" y="194" style="font-size:11.5px">s_brake = v·T_react + v²/(2a)</text>
+          <text class="sv-s inv" x="574" y="216">a = 3.2754 m/s² · T_react = 0.1841 s（真实差速车实测重标）</text>
+          <text class="sv-s inv" x="574" y="238">扫掠区内只允许"已知自由" → PASS / SLOW / STOP_COLLISION / STOP_EMERGENCY</text>
+          <text class="sv-s inv" x="574" y="258">输出恒为输入的收缩：不改方向、不绕行、不生成目标</text>
+        </g>
+      </svg>
+    </div>
+    <div class="stage-desc" data-desc></div>
+    <div class="fig-foot">图 14 · 五项必需输入（速度意图 / 车体状态 / 地图 / 地图时效 / 任务许可）缺一即零速；<code>cell_meta</code> 不进实时路径。</div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>输入同源</h4>
+      <p>安全层<b>唯一</b>的障碍真值视图就是 <code>/agc/map</code>。禁止订阅激光、点云、costmap
+      或任何第二份障碍数据 —— 多一个观测源就是第二真源。</p>
+    </div>
+    <div class="card">
+      <h4>能力边界换了，要如实说</h4>
+      <p>可见性边界从"激光单平面"换成"感知地图的边界"：约 0.24 m 最小可测、约 30.5 m 可信半径、
+      有遮挡阴影、无动态层、2 Hz 老化。<b>细杆不再进入安全层视野</b>，这是明确登记的能力退化，
+      不是等价替换。</p>
+    </div>
+  </div>
+</section>
+
+<!-- S15 -->
+<section id="s15">
+  <div class="eyebrow">15 / Closing</div>
+  <h2><span class="num">15</span>一句话与索引</h2>
+
+  <div class="big-quote">
+    Gazebo 的一帧标签像素与轴向深度，经唯一一套几何反投影成世界系 3D 点 →
+    在 0.25 m 证据层用"每格每帧一次"的 log-odds 把证据攒成稳定地图 →
+    max-pool 派生 0.5 m 规划层，再叠米制膨胀成五档风险图。
+    <b>目标识别始终靠真值，地图始终靠相机，两者互不冒充。</b>
+    <span class="who">AGC · 感知层</span>
+  </div>
+
+  <h3>本文引用的主要文件</h3>
+  <div class="grid3">
+    <div class="card flat">
+      <h4>节点源码</h4>
+      <p style="font-size:13px;line-height:2.1">
+      <a href="src/agc_perception/src/gt_bypass.cpp">gt_bypass.cpp</a> ·
+      <a href="src/agc_perception/src/ground_odom_adapter.cpp">ground_odom_adapter.cpp</a> ·
+      <a href="src/agc_perception/src/gt_adapter.cpp">gt_adapter.cpp</a> ·
+      <a href="src/agc_perception/src/nadir_projection.cpp">nadir_projection.cpp</a> ·
+      <a href="src/agc_perception/src/map_adapter.cpp">map_adapter.cpp</a></p>
+    </div>
+    <div class="card flat">
+      <h4>纯逻辑头</h4>
+      <p style="font-size:13px;line-height:2.1">
+      <a href="src/agc_perception/include/agc_perception/camera_geometry.hpp">camera_geometry.hpp</a> ·
+      <a href="src/agc_perception/include/agc_perception/footprint_geometry.hpp">footprint_geometry.hpp</a> ·
+      <a href="src/agc_perception/include/agc_perception/nadir_geometry.hpp">nadir_geometry.hpp</a> ·
+      <a href="src/agc_perception/include/agc_perception/log_odds_grid.hpp">log_odds_grid.hpp</a> ·
+      <a href="src/agc_perception/include/agc_perception/multi_res_grid.hpp">multi_res_grid.hpp</a> ·
+      <a href="src/agc_perception/include/agc_perception/inflation_field.hpp">inflation_field.hpp</a> ·
+      <a href="src/agc_perception/include/agc_perception/obstacle_instances.hpp">obstacle_instances.hpp</a> ·
+      <a href="src/agc_perception/include/agc_perception/point_uncertainty.hpp">point_uncertainty.hpp</a> ·
+      <a href="src/agc_perception/include/agc_perception/alpha_beta.hpp">alpha_beta.hpp</a> ·
+      <a href="src/agc_perception/include/agc_perception/confidence.hpp">confidence.hpp</a></p>
+    </div>
+    <div class="card flat">
+      <h4>配置 / 消息</h4>
+      <p style="font-size:13px;line-height:2.1">
+      <a href="src/agc_perception/config/perception.yaml">config/perception.yaml</a> ·
+      <a href="src/agc_perception/CMakeLists.txt">CMakeLists.txt</a> ·
+      <a href="src/agc_perception/launch/perception_bringup.launch.py">perception_bringup.launch.py</a> ·
+      <a href="src/agc_msgs/msg/ObstacleFootprintArray.msg">ObstacleFootprintArray.msg</a> ·
+      <a href="src/agc_msgs/msg/PerceptionCellMeta.msg">PerceptionCellMeta.msg</a> ·
+      <a href="src/agc_sim/models/agc_x500_nadir/model.sdf">nadir model.sdf</a> ·
+      <a href="src/agc_sim/config/bridge.yaml">bridge.yaml</a> ·
+      <a href="src/agc_ground/config/costmap.yaml">costmap.yaml</a></p>
+    </div>
+    <div class="card flat">
+      <h4>决策记录</h4>
+      <p style="font-size:13px;line-height:2.1">
+      <a href="docs/adr/0020-package-boundaries-and-runtime-topology.md">ADR-0020</a> ·
+      <a href="docs/adr/0009-perception-truth-derived-and-vision-path.md">0009</a> ·
+      <a href="docs/adr/0030-nadir-camera-capability.md">0030</a> ·
+      <a href="docs/adr/0035-perception-map-representation-and-unknown-policy.md">0035</a> ·
+      <a href="docs/adr/0039-occupied-evidence-lifecycle-and-support-gates.md">0039</a> ·
+      <a href="docs/adr/0040-perception-multi-resolution-evidence-and-planning-layers.md">0040</a> ·
+      <a href="docs/adr/0041-geometry-metadata-instances-and-risk-map.md">0041</a> ·
+      <a href="docs/adr/0042-point-uncertainty-arbitrary-resolution-and-reachability.md">0042</a> ·
+      <a href="docs/adr/0043-instance-drift-percentile-and-stability-criteria.md">0043</a> ·
+      <a href="docs/adr/0045-ground-safety-layer-self-owned.md">0045</a> ·
+      <a href="GLOSSARY.md">GLOSSARY.md</a> · <a href="README.md">README.md</a></p>
+    </div>
+  </div>
+
+  <div class="toc">
+    <a href="#s2"><b>02</b>先看一台相机</a>
+    <a href="#s3"><b>03</b>像素落在哪</a>
+    <a href="#s6"><b>06</b>证据是攒出来的</a>
+    <a href="#s7"><b>07</b>把看不见的擦掉</a>
+    <a href="#s8"><b>08</b>谁被挡住了</a>
+    <a href="#s9"><b>09</b>两层地图</a>
+    <a href="#s10"><b>10</b>从"看到"到"能走"</a>
+    <a href="#s13"><b>13</b>边界与分寸</a>
+  </div>
+
+  <div class="note soft" style="font-size:12.5px">
+    本文件是只读讲解产物：由阅读源码、消息定义、SDF、桥配置与 ADR 生成，
+    <b>未修改任何现有文件、未运行任何构建 / 仿真 / 实验 / 测试</b>。
+    文中以代码实际实现为准；约束以 <a href="docs/adr/0020-package-boundaries-and-runtime-topology.md#hard-constraints">ADR-0020 #hard-constraints</a> 为准，
+    决策以 <a href="docs/adr/README.md">ADR 正文</a>为准，运行参数以 <a href="src/agc_perception/config/perception.yaml">perception.yaml</a> 为准。
+  </div>
+</section>
+
+</div>
+</div>
+<button id="top-btn" title="回到顶部">↑</button>
+
+<script>
+(function(){
+  var bar=document.getElementById('progress'),top=document.getElementById('top-btn');
+  function onScroll(){var h=document.documentElement.scrollHeight-window.innerHeight;
+    bar.style.width=(h>0?(window.scrollY/h*100):0)+'%';
+    if(window.scrollY>600){top.classList.add('show')}else{top.classList.remove('show')}}
+  window.addEventListener('scroll',onScroll,{passive:true});onScroll();
+  top.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'})});
+
+  var links=[].slice.call(document.querySelectorAll('#nav a'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'))}).filter(Boolean);
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){
+      if(e.isIntersecting){links.forEach(function(a){a.classList.toggle('active',a.getAttribute('href')==='#'+e.target.id)})}})},
+      {rootMargin:'-10% 0px -75% 0px',threshold:0});
+    secs.forEach(function(s){io.observe(s)});
+  }
+  document.querySelectorAll('.tabs').forEach(function(t){
+    var bs=[].slice.call(t.querySelectorAll('.tabbar button'));
+    var ps=[].slice.call(t.querySelectorAll('.panel'));
+    bs.forEach(function(b,i){b.addEventListener('click',function(){
+      bs.forEach(function(x,j){x.classList.toggle('on',i===j)});
+      ps.forEach(function(x,j){x.classList.toggle('on',i===j)})})});
+  });
+
+  var DRIVERS={};
+  window.AGC_DRIVERS=DRIVERS;
+
+  /* 把 <path>/<line> 变成本步"自绘" */
+  function prepDraw(el){
+    if(el.__prepped)return; el.__prepped=1;
+    var len=0;
+    try{ len = (el.tagName.toLowerCase()==='line')
+      ? Math.hypot(el.x2.baseVal.value-el.x1.baseVal.value, el.y2.baseVal.value-el.y1.baseVal.value)
+      : el.getTotalLength(); }catch(e){ len=600 }
+    el.style.setProperty('--len',Math.ceil(len+2));
+    el.classList.add('draw');
+  }
+
+  function makePlayer(fig){
+    var key=fig.getAttribute('data-fig');
+    var steps=[].slice.call(fig.querySelectorAll('[data-step]'));
+    var groups={};
+    steps.forEach(function(g){var k=parseInt(g.getAttribute('data-step'),10);
+      (groups[k]=groups[k]||[]).push(g)});
+    var keys=Object.keys(groups).map(Number).sort(function(a,b){return a-b});
+    var desc=fig.querySelector('[data-desc]');
+    var label=fig.querySelector('.step-label');
+    var dotsBox=fig.querySelector('.dots');
+    var playBtn=fig.querySelector('.ac-play');
+    var resetBtn=fig.querySelector('.ac-reset');
+    var range=fig.querySelector('.ac-speed');
+    var drv=DRIVERS[key]||{};
+    var n=drv.count||keys.length;
+    var timer=null,cur=0,playing=false;
+
+    if(dotsBox){dotsBox.innerHTML='';for(var i=0;i<n;i++){var d=document.createElement('i');dotsBox.appendChild(d)}}
+
+    function paintDots(k){
+      if(!dotsBox)return;
+      [].slice.call(dotsBox.children).forEach(function(d,i){d.classList.toggle('on',i<k)});
+    }
+
+    function apply(k){
+      fig._agcK=k;
+      keys.forEach(function(s){
+        var on=(s<k);                 // 已播到
+        var active=(s===k-1);         // 正是"这一步"
+        groups[s].forEach(function(g){
+          // 「当前这一步」自动获得强调色：只染描边/文字，不改变几何
+          g.classList.toggle('is-active',active);
+          if(drv.customApply){drv.customApply(g,s,on,active,fig);return}
+          if(g.classList.contains('sv-fade')){
+            g.classList.toggle('on',on);
+          }else{
+            g.style.opacity=on?'1':'0.14';
+            g.style.transition='opacity .45s ease';
+          }
+          // 本步内的线条自绘
+          [].slice.call(g.querySelectorAll('path,line')).forEach(function(ln){
+            prepDraw(ln); ln.classList.toggle('on',on);
+          });
+        });
+      });
+      paintDots(k);
+      if(label) label.textContent=(k===0?'待开始':('第 '+k+' / '+n+' 步'));
+      if(desc&&drv.text){
+        var t=drv.text[Math.max(0,k-1)]||drv.text[0];
+        desc.innerHTML=(k===0?'<span class="step-n">—</span>'+(drv.intro||'点「播放」开始。')
+          :'<span class="step-n">'+(k<10?'0'+k:k)+'</span>'+t);
+      }
+    }
+    function delay(){var v=range?parseFloat(range.value):1;return Math.round(1500/v)}
+    function stop(){playing=false;if(timer){clearTimeout(timer);timer=null}
+      if(playBtn){playBtn.classList.add('primary');playBtn.textContent='▶ 播放'}}
+    function tick(){
+      if(!playing)return;
+      if(cur>=n){stop();return}
+      cur++;apply(cur);
+      timer=setTimeout(tick,delay());
+    }
+    function play(){
+      if(playing){stop();return}
+      if(cur>=n){cur=0;apply(0)}
+      playing=true;
+      if(playBtn){playBtn.classList.remove('primary');playBtn.textContent='❚❚ 暂停'}
+      tick();
+    }
+    function reset(){stop();cur=0;apply(0)}
+    if(playBtn)playBtn.addEventListener('click',play);
+    if(resetBtn)resetBtn.addEventListener('click',reset);
+    if(range)range.addEventListener('input',function(){if(playing){clearTimeout(timer);timer=setTimeout(tick,200)}});
+    apply(0);
+  }
+
+  window.AGC_initPlayers=function(root){
+    (root||document).querySelectorAll('.fig[data-fig]').forEach(function(f){makePlayer(f)});
+  };
+})();
+</script>
+
+<script>
+/* ============ 动画驱动：每段文字 = 观众该看懂的一句话 ============ */
+(function(){
+  var D=window.AGC_DRIVERS;
+
+  D['overview']={count:4,intro:'点「播放」，看一帧数据怎样从世界走进车里。',text:[
+    '<b>输入</b>：正下视相机给出标签与深度；物理引擎给出真值位姿。两种数据从一开始就分开。',
+    '<b>地图链</b>：图像变成 3D 足迹点，在 0.25 m 证据层累积，再派生出 0.5 m 规划层。',
+    '<b>目标链</b>：真值经 gt_adapter 加上不确定性，发布 /agc/targets。它不读任何像素。',
+    '<b>落地</b>：车用 /agc/map 判断能不能走；任务状态机用 /agc/targets 保持跟踪。']};
+
+  D['camera']={count:6,intro:'点「播放」，看这台相机的剖面。',text:[
+    '<b>无人机在 14.24 m 高处</b>，相机装在机体下方 0.242 m，光轴垂直朝下。',
+    '<b>视场 130°</b>：地面覆盖半径 H·tan(65°) ≈ 30.5 m，各向同性。',
+    '<b>地面上有高楼也有矮台</b>：高楼既露出屋顶（真实足迹），也露出侧墙（会被投影拉长）。',
+    '<b>每条射线带回一个深度</b>：射线打在哪儿，就说明那儿有多远。',
+    '<b>两路输出</b>：分割图说"哪些像素是障碍"，深度图说"每个像素多远"。缺一不可。',
+    '<b>合起来</b>才知道"哪个像素 + 多远"，才能算出 3D 坐标。']};
+
+  D['projection']={count:6,intro:'点「播放」，跟一个像素走完反投影。',text:[
+    '<b>① 找到像素</b>：标签图上被标为障碍的那一个点 (u, v)。',
+    '<b>② 内参给方向</b>：用 fx/fy/cx/cy 把像素变成一条射线方向。',
+    '<b>③ 深度决定走多远</b>：沿这条射线走到深度 d 处，就是该像素的 3D 位置。',
+    '<b>④ 转到世界</b>：机体在倾斜、在移动，用那一刻的位姿把它放进 world 系。',
+    '<b>⑤ 得到 3D 点</b>：z 是高度，xy 才是障碍落在地上的足迹。',
+    '<b>⑥ 一帧十万个点</b>：每个都这样算，所以整套几何只能有一个实现，不能各写一套。']};
+
+  D['timeline']={count:5,intro:'点「播放」，看三个独立流怎么对齐。',text:[
+    '<b>问题</b>：标签帧与深度帧并不严格同戳（实测偏差中位数 32 ms、最大 364 ms）。',
+    '<b>odom 更密</b>：30 Hz 的位姿样本散落在标签时刻两侧。',
+    '<b>插值</b>：按标签时间戳在两侧样本间插值（位置线性、姿态球面），超出 0.15 s 就丢帧。',
+    '<b>选深度</b>：从环形缓冲里挑时间上最近的一帧，不是"最新一张"。',
+    '<b>再补偿</b>：两帧之间机体移动 v·Δt（最坏 0.30 m），把点平移回标签时刻的位置。']};
+
+  D['roof']={count:5,intro:'点「播放」，看侧墙点怎样被剔掉。',text:[
+    '<b>一栋楼</b>：正下视同时看到屋顶（稳定）和侧墙（可见性随深度噪声变化）。',
+    '<b>点云</b>：每个像素反投影成一个 3D 点。屋顶的 z 高，墙的 z 低。',
+    '<b>门限</b>：以 z 的 90% 分位为基准，向下留 band = max(0.25 m, 0.15×楼高)。',
+    '<b>只留屋顶</b>：墙点被剔除，XY 包络不再向外糊。实测 sx 跨度 2.90 → 1.20 m。',
+    '<b>诚实边界</b>：墙与屋顶交界处 z 相同，纯 z 判据分不开 —— 只能剔除墙体主体。']};
+
+  D['logodds']={count:6,intro:'点「播放」，看同一格连续几帧的证据变化。',text:[
+    '<b>初始</b>：全图从 p=0.30（未知）起步，格子是空的。',
+    '<b>第 1 帧命中</b>：p 升到 0.50 —— 仍未知，单帧毛刺画不出来。',
+    '<b>第 2 帧命中</b>：p 升到 0.70 —— 越过 0.60 门限。',
+    '<b>还要跨帧确认</b>：累计 ≥2 个地图帧的命中，才写成 100。',
+    '<b>擦除</b>：射线明确穿过时按 p_miss 削弱；只有它才能降到 free。',
+    '<b>迟滞</b>：进入 0.60、退出 0.45，中间 0.15 的抖动带保持原状态。'],
+    customApply:function(g,s,on,active,fig){if(g.classList.contains("sv-fade")){g.classList.toggle("on",on)}else{g.style.opacity=on?"1":"0.12";g.style.transition="opacity .45s ease"}var ln=g.querySelectorAll("path,line");for(var i=0;i<ln.length;i++){ln[i].classList.toggle("on",on)}if(s===5){var bar=fig.querySelector("#lo-bar"),val=fig.querySelector("#lo-val");if(bar&&val){bar.setAttribute("width",on?"166":"100");val.textContent=on?"p = 0.70 → 100":"p = 0.30"}}}};
+
+  D['carve']={count:6,intro:'点「播放」，看负证据怎样一层层打出去。',text:[
+    '<b>起点</b>：射线从光轴与地面的交点出发，不是机体位置。',
+    '<b>按角度分箱</b>：约 512 个方向，每箱射一条，覆盖整个画幅。',
+    '<b>有障碍的箱</b>：射线停在这个障碍上，终点格不擦（那是占据证据本身）。',
+    '<b>无障碍的箱</b>：一路射到画幅边界，沿途全部标"空"。',
+    '<b>障碍背后</b>：阴影区不标 free，保持 unknown —— 那是真看不见，不是看到是空的。',
+    '<b>一次遍历</b>：有障碍 / 无障碍两种情况在同一趟里处理完。']};
+
+  D['shadow']={count:5,intro:'点「播放」，看一条射线后面的三段。',text:[
+    '<b>相机 H、障碍 h、距离 d₀</b>：三者一起决定遮挡范围。',
+    '<b>① 相机 → d₀</b>：看得见，可以标 free。',
+    '<b>② d₀ → d₀·H/(H−h)</b>：真看不见，保持 unknown，不标 free 也不标障碍。',
+    '<b>③ 阴影远边之后</b>：视线从楼顶掠过，又可见了，继续标 free。',
+    '<b>不能一刀切</b>：矮台阴影只有 0.2–0.5 m，后面应该标安全；高楼阴影可到 57.9 m，已超出覆盖圆。']};
+
+  D['layers']={count:4,intro:'点「播放」，看细格怎样聚成粗格。',text:[
+    '<b>证据层 0.25 m</b>：每个细格独立累积 log-odds，能表达"这一格只有 31% 被占"。',
+    '<b>2×2 → 1 格</b>：四个子格聚合成一个 0.5 m 规划格。',
+    '<b>max-pool</b>：任一子格确认占据，整格就判占据 —— 宁可放大，保规划安全。',
+    '<b>优先级</b>：占据 > 有证据未跨门限 > 未知 > 自由；全自由才报 0。']};
+
+  D['risk']={count:3,intro:'点「播放」，看距离怎样变成风险分档。',text:[
+    '<b>几何占据</b>：黑格 = 格内有障碍（逐点证据 ∪ 已确认实例）。',
+    '<b>距离场</b>：算出每格到最近障碍的米制距离，按 0.6 / 1.0 m 阈值分档。',
+    '<b>五档</b>：−1 未知 / 0 可通行 / 1–98 有代价 / 99 车心擦碰 / 100 格内占据。']};
+
+  D['truth']={count:5,intro:'点「播放」，看真值怎样带上不确定性。',text:[
+    '<b>源头</b>：世界真值位姿，经 gt_bypass 限频到 30 Hz。',
+    '<b>六类不确定性</b>：噪声、延迟、丢包、成簇丢失、声明可信度、滤波速度。',
+    '<b>发布</b>：/agc/targets 的唯一发布者恒为 gt_adapter，不做几何门控、不分远近。',
+    '<b>空数组</b>：本拍无新观测就显式发空，绝不重发上次位置冒充新观测。',
+    '<b>没有第二条路</b>：视觉定位路径已退役；目标识别始终靠真值。']};
+
+  D['full']={count:8,intro:'点「播放」，跟一帧数据走完全程。',text:[
+    '<b>① 曝光</b>：相机给出标签图与深度图（1152² @ 10 Hz）。',
+    '<b>② 反投影</b>：按标签时刻的位姿，把每个障碍像素变成世界系 3D 点。',
+    '<b>③ 挑屋顶</b>：连通域 + 屋顶带 + 碎片合并，得到带 id 与类别的足迹点。',
+    '<b>④ 攒证据</b>：在 0.25 m 证据层按"每格每帧一次"累积 log-odds。',
+    '<b>⑤ 打负证据</b>：沿射线 carving，把看到是空的地方擦成 free。',
+    '<b>⑥ 派生</b>：max-pool 聚合成 0.5 m 规划层，并并入已确认实例。',
+    '<b>⑦ 风险图</b>：米制膨胀生成 −1/0/1–98/99/100 五档 /agc/map。',
+    '<b>⑧ 发布</b>：2 Hz 快照给车用；证据层与元数据单独发布供评价。'],
+    customApply:function(g,s,on,active,fig){if(g.classList.contains("sv-fade")){g.classList.toggle("on",on)}else{g.style.opacity=on?"1":"0.12";g.style.transition="opacity .45s ease"}var ln=g.querySelectorAll("path,line");for(var i=0;i<ln.length;i++){ln[i].classList.toggle("on",on)}}};
+
+  D['safety']={count:4,intro:'点「播放」，看车怎样用这张图。',text:[
+    '<b>车体</b>：当前有一个速度意图，要往前走。',
+    '<b>制动距离</b>：按 v·T_react + v²/(2a) 算出 footprint 会扫过哪些格。',
+    '<b>映射</b>：把 /agc/map 的格值翻译成"阻挡 / 限速 / 已知自由 / 未知"。',
+    '<b>可停性</b>：扫掠区只允许已知自由 → PASS / SLOW / STOP；输出恒为输入的收缩。']};
+
+  D['safety']={count:4,intro:'点「播放」，看车怎样用这张图。',text:[
+    '<b>车体</b>：当前有一个速度意图，要往前走。',
+    '<b>制动距离</b>：按 v·T_react + v²/(2a) 算出 footprint 会扫过哪些格。',
+    '<b>映射</b>：把 /agc/map 的格值翻译成"阻挡 / 限速 / 已知自由 / 未知"。',
+    '<b>可停性</b>：扫掠区只允许已知自由 → PASS / SLOW / STOP；输出恒为输入的收缩。']};
+})();
+</script>
+
+<script>
+/* ============ 逐帧绘制的网格动画 ============ */
+(function(){
+  var NS='http://www.w3.org/2000/svg';
+  function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e}
+  function txt(x,y,s,cls){var t=el('text',{x:x,y:y,'class':cls||'sv-num'});t.textContent=s;return t}
+  function cell(g,x,y,w,h,fill){g.appendChild(el('rect',{x:x,y:y,width:w,height:h,'class':'sv-cell','fill':fill||'#ffffff'}))}
+
+  // ---- 图 6 log-odds 网格 ----
+  (function(){
+    var g=document.getElementById('lo-grid');if(!g)return;
+    var x0=30,y0=40,cw=58,ch=52,cols=8,rows=4;
+    var cells=[];
+    for(var r=0;r<rows;r++)for(var c=0;c<cols;c++)cells.push({x:x0+c*cw,y:y0+r*ch,c:c,r:r});
+    cells.forEach(function(o){g.appendChild(el('rect',{x:o.x,y:o.y,width:cw-2,height:ch-2,'class':'sv-cell'}))});
+    // target cell = (3,1) & (3,2) & (4,1) & (4,2)
+    var target=[[3,1],[4,1],[3,2],[4,2]];
+    var groups={};
+    [0,1,2,3,4,5].forEach(function(s){var sg=el('g',{'class':'sv-fade','data-step':s});groups[s]=sg;g.appendChild(sg)});
+    // step0: initial (all unknown)
+    groups[0].appendChild(txt(30,290,'初始：全图从 p = 0.30 起步，所有格都是未知','sv-num'));
+    // step1: first hit -> mid
+    groups[1].appendChild((function(){var t=el('g',{});target.forEach(function(p){t.appendChild(el('rect',{x:x0+p[0]*cw,y:y0+p[1]*ch,width:cw-2,height:ch-2,'class':'sv-cell','fill':'#b9b9b6'}))});
+      t.appendChild(txt(30,290,'第 1 帧：命中 → p = 0.50（仍未知，画不出来）','sv-num'));return t})());
+    // step2: second hit -> mid darker
+    groups[2].appendChild((function(){var t=el('g',{});target.forEach(function(p){t.appendChild(el('rect',{x:x0+p[0]*cw,y:y0+p[1]*ch,width:cw-2,height:ch-2,'class':'sv-cell','fill':'#7d7d79'}))});
+      t.appendChild(txt(30,290,'第 2 帧：再命中 → p = 0.70（越过 0.60 门限）','sv-num'));return t})());
+    // step3: confirmed -> black
+    groups[3].appendChild((function(){var t=el('g',{});target.forEach(function(p){t.appendChild(el('rect',{x:x0+p[0]*cw,y:y0+p[1]*ch,width:cw-2,height:ch-2,'class':'sv-cell','fill':'#111214'}))});
+      t.appendChild(txt(30,290,'累计 ≥2 个地图帧 → 写成 100（已确认占据）','sv-num'));return t})());
+    // step4: a ray carves the row below -> free
+    groups[4].appendChild((function(){var t=el('g',{});
+      [0,1,2,3,4,5,6,7].forEach(function(c){if(c>=3&&c<=4)return;t.appendChild(el('rect',{x:x0+c*cw,y:y0+3*ch,width:cw-2,height:ch-2,'class':'sv-cell','fill':'#f7f7f5'}));
+        t.appendChild(el('line',{x1:x0+c*cw+4,y1:y0+3*ch+4,x2:x0+c*cw+cw-8,y2:y0+3*ch+ch-8,'class':'sv-line thin'}))});
+      t.appendChild(txt(30,290,'射线穿过的格 → 明确标 free（只有负证据能做到）','sv-num'));return t})());
+    // step5: hysteresis note
+    groups[5].appendChild((function(){var t=el('g',{});
+      t.appendChild(el('rect',{x:x0+3*cw-3,y:y0+1*ch-3,width:2*cw+2,height:2*ch+2,'class':'sv-hl'}));
+      t.appendChild(txt(30,290,'迟滞：进入 0.60、退出 0.45，抖动带内保持原状态','sv-num'));return t})());
+  })();
+
+  // ---- 图 7 carving 网格 ----
+  (function(){
+    var g=document.getElementById('cv-grid');if(!g)return;
+    var x0=40,y0=60,cw=46,ch=46,cols=12,rows=6;
+    var cells={};
+    for(var r=0;r<rows;r++)for(var c=0;c<cols;c++){
+      var rect=el('rect',{x:x0+c*cw,y:y0+r*ch,width:cw-2,height:ch-2,'class':'sv-cell'});
+      g.appendChild(rect); cells[c+','+r]=rect;
+    }
+    var cx=130,cy=210;
+    // step1: fan of rays (drawn progressively)
+    var fan=document.getElementById('cv-fan');
+    var angles=[-58,-44,-30,-16,-2,12,26,40,54];
+    angles.forEach(function(deg,i){
+      var a=deg*Math.PI/180, ex=cx+Math.cos(a)*500, ey=cy+Math.sin(a)*230;
+      var pth=el('path',{d:'M'+cx+' '+cy+' L'+ex.toFixed(0)+' '+ey.toFixed(0),
+        'class':'sv-ray','stroke':'#b45309','stroke-opacity':'0.55'});
+      pth.style.transitionDelay=(i*55)+'ms';
+      fan.appendChild(pth);
+    });
+    // step2: obstacle block at cols 7-8, rows 2-3
+    var obs=[[7,2],[8,2],[7,3],[8,3]];
+    var og=document.getElementById('cv-obs');
+    obs.forEach(function(p){
+      var rc=cells[p[0]+','+p[1]];
+      if(rc){rc.setAttribute('class','sv-cell');rc.setAttribute('fill','#111214')}
+    });
+    // ray hitting the obstacle
+    og.appendChild(el('path',{d:'M'+cx+' '+cy+' L'+(x0+7*cw)+' '+(y0+2*ch+ch/2),
+      'class':'sv-line','stroke':'#b45309','stroke-width':'2'}));
+    // step3: free cells along rays (excluding obstacle + shadow band)
+    var mg=document.getElementById('cv-miss');
+    for(var c=1;c<=6;c++)for(var r=1;r<=4;r++){
+      if((c+r)%4===0)continue;
+      var rc2=cells[c+','+r];
+      if(rc2&&rc2.getAttribute('fill')!=='#111214'){
+        rc2.setAttribute('fill','#eceae4');
+        rc2.style.transition='fill .5s ease';
+        rc2.style.transitionDelay=((c+r)*40)+'ms';
+      }
+    }
+    mg.appendChild(el('text',{x:x0+1*cw,y:y0+4*ch+40,'class':'sv-s'})).textContent='';
+    // step4: shadow band behind obstacle
+    var sg=document.getElementById('cv-shadow');
+    [[9,2],[9,3],[10,2],[10,3]].forEach(function(p){
+      var rc3=cells[p[0]+','+p[1]];
+      if(rc3){rc3.setAttribute('fill','url(#hatchcv)');rc3.setAttribute('opacity','0.75')}
+    });
+  })();
+
+  // ---- 图 9 two-layer ----
+  (function(){
+    var fg=document.getElementById('mr-fine');if(!fg)return;
+    var x0=20,y0=40,s=44,cols=8,rows=6;
+    // fine grid
+    for(var r=0;r<rows;r++)for(var c=0;c<cols;c++)cell(fg,x0+c*s,y0+r*s,s-2,s-2);
+    // some fine occupied cells (partial coverage in one coarse cell)
+    var occ=[[2,2],[3,2],[2,3],[5,4],[5,5],[6,4]];
+    // 占据的细格属于 step 0（初始画面，不单独占一步）
+    occ.forEach(function(p){fg.appendChild(el('rect',{x:x0+p[0]*s,y:y0+p[1]*s,width:s-2,height:s-2,'class':'sv-cell','fill':'#111214'}))});
+    // 高亮 2×2 子格 → 归入 step 1
+    var g2=el('g',{'class':'sv-fade','data-step':'1'});
+    g2.appendChild(el('rect',{x:x0+2*s-3,y:y0+2*s-3,width:2*s+2,height:2*s+2,'class':'sv-hl'}));
+    fg.appendChild(g2);
+    // coarse grid
+    var cg=document.getElementById('mr-coarse');
+    var cx0=560,cy0=40,cs=88;
+    for(var r3=0;r3<3;r3++)for(var c3=0;c3<4;c3++)cell(cg,cx0+c3*cs,cy0+r3*cs,cs-2,cs-2);
+    // coarse occupied: any fine occupied in that 2x2
+    [[1,1],[2,2]].forEach(function(p){cg.appendChild(el('rect',{x:cx0+p[0]*cs,y:cy0+p[1]*cs,width:cs-2,height:cs-2,'class':'sv-cell','fill':'#111214'}))});
+    // partial -> still occupied (max-pool)
+    cg.appendChild(txt(cx0,cy0+3*cs+26,'一个子格占据 ⇒ 整格占据（放大是保守化）','sv-num'));
+  })();
+
+  // ---- 图 10 risk ----
+  (function(){
+    var g=document.getElementById('rk-grid');if(!g)return;
+    var x0=20,y0=40,s=52,cols=10,rows=5;
+    // distance from a seed block at (4,2)(5,2)
+    var seed=[[4,2],[5,2]];
+    function dist(c,r){var m=1e9;seed.forEach(function(p){m=Math.min(m,Math.abs(c-p[0])+Math.abs(r-p[1]))});return m}
+    var g0=el('g',{'class':'sv-fade','data-step':'0'});
+    for(var r=0;r<rows;r++)for(var c=0;c<cols;c++){
+      var f='#ffffff';
+      if(dist(c,r)===0)f='#111214';
+      g0.appendChild(el('rect',{x:x0+c*s,y:y0+r*s,width:s-2,height:s-2,'class':'sv-cell','fill':f}));
+    }
+    g.appendChild(g0);
+    var g1=el('g',{'class':'sv-fade','data-step':'1'});
+    for(var r1=0;r1<rows;r1++)for(var c1=0;c1<cols;c1++){
+      var d=dist(c1,r1),f1='#ffffff';
+      if(d===0)f1='#111214'; else if(d===1)f1='#8a8a86'; else if(d===2)f1='#c6c6c2'; else if(d===3)f1='#e6e6e3';
+      g1.appendChild(el('rect',{x:x0+c1*s,y:y0+r1*s,width:s-2,height:s-2,'class':'sv-cell','fill':f1,'opacity':'0.92'}));
+    }
+    g1.appendChild(txt(x0,y0+rows*s+24,'d=0 → 100 ; d≤0.6 m → 99 ; 0.6&lt;d≤1.0 m → 1–98 ; d&gt;1.0 m → 0','sv-num'));
+    g.appendChild(g1);
+  })();
+
+  // ---- 图 12 full chain stations ----
+  (function(){
+    var g=document.getElementById('fl-stations');if(!g)return;
+    var st=[
+      {x:60,y:60,t:'① 曝光',s:'labels + depth'},
+      {x:300,y:60,t:'② 反投影',s:'像素 → 3D 点'},
+      {x:540,y:60,t:'③ 挑屋顶',s:'点池 / 屋顶带'},
+      {x:780,y:60,t:'④ 攒证据',s:'log-odds 0.25 m'},
+      {x:780,y:220,t:'⑤ 打负证据',s:'carving'},
+      {x:540,y:220,t:'⑥ 派生',s:'max-pool 0.5 m'},
+      {x:300,y:220,t:'⑦ 风险图',s:'米制膨胀'},
+      {x:60,y:220,t:'⑧ 发布',s:'/agc/map 2 Hz'}
+    ];
+    window.AGC_FL_STATIONS=st;
+    st.forEach(function(o,i){
+      var sg=el('g',{'class':'sv-fade','data-step':i});   // 0..7 = 8 站
+      sg.appendChild(el('rect',{x:o.x-70,y:o.y-30,width:170,height:76,'class':i===7?'sv-box fill':'sv-box'}));
+      var c1=i===7?'sv-t inv':'sv-t',c2=i===7?'sv-s inv':'sv-s';
+      var t1=txt(o.x-58,o.y-4,o.t,c1);sg.appendChild(t1);
+      var t2=txt(o.x-58,o.y+20,o.s,c2);sg.appendChild(t2);
+      g.appendChild(sg);
+      // connector
+      if(i<st.length-1){
+        var a=st[i],b=st[i+1];
+        var ax=a.x+(b.x>a.x?100:-70),ay=a.y+(b.y>a.y?46:b.y<a.y?-16:0);
+        var bx=b.x+(b.x>a.x?-70:100),by=b.y+(b.y>a.y?16:b.y<a.y?46:0);
+        var path=el('path',{d:'M'+ax+' '+ay+' C'+(ax+bx)/2+' '+ay+' '+(ax+bx)/2+' '+by+' '+bx+' '+by,'class':'sv-line thin','marker-end':'url(#fl-a)'});
+        sg.appendChild(path);
+      }
+    });
+    window.AGC_FL_CUR=1;
+  })();
+
+  // ---- 图 14 safety grid ----
+  (function(){
+    var g=document.getElementById('sf-grid');if(!g)return;
+    var x0=30,y0=60,s=46,cols=10,rows=4;
+    for(var r=0;r<rows;r++)for(var c=0;c<cols;c++){
+      var f='#ffffff';
+      if(c>=7&&r>=1&&r<=2)f='#111214';           // obstacle ahead
+      else if(c===3&&r===1)f='#f7f7f5';           // unknown in swept area
+      g.appendChild(el('rect',{x:x0+c*s,y:y0+r*s,width:s-2,height:s-2,'class':'sv-cell','fill':f}));
+      if(c===3&&r===1)g.appendChild(el('rect',{x:x0+c*s,y:y0+r*s,width:s-2,height:s-2,'fill':'url(#hatch3)','opacity':'0.6'}));
+    }
+  })();
+
+  // 让「小包」跟着当前步走到对应站点：挂在 customApply 之后由引擎驱动
+  var flFig=document.querySelector('.fig[data-fig="full"]');
+  if(flFig){
+    var oldApply=window.AGC_FL_APPLY;
+    var drv=window.AGC_DRIVERS['full'];
+    var base=drv.customApply;
+    drv.customApply=function(g,s,on,fig){
+      if(base)base(g,s,on,fig);
+      var k=fig._agcK||0;
+      var st=window.AGC_FL_STATIONS||[];
+      var p=fig.querySelector('#fl-packet');
+      if(p&&st.length){
+        var idx=Math.max(0,Math.min(st.length-1,k-1));
+        var pos=st[idx];
+        p.setAttribute('transform','translate('+(pos.x+15)+','+(pos.y+46)+')');
+        p.style.opacity=(k>0)?'1':'0';
+      }
+    };
+  }
+
+  window.AGC_initPlayers(document);
+})();
+</script>
+</body>
+</html>

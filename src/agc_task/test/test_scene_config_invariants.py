@@ -923,9 +923,13 @@ def test_spawn_layout_rejects_unknown_entity_in_per_map(tmp_path):
 def test_spawn_layout_per_map_applies_for_dense_map():
     """`dense_map` 的出生位必须是"目标居中、车与己方机在西边缘"，且满足设计目标。
 
- 这是用户 2026-11-10 的布局裁定（Q6）：目标 (0,0)、车 (-34,-6)、己方机 (-34,-2)。
+ 这是用户 2026-11-10 的布局裁定（Q6）：目标 (0,0)、车在西边缘、己方机 (-34,-2)。
  判据（与 `scene_assertions.spawn_design_goals_met` 同口径）：
  车↔目标 ≥30 m、己方机↔目标 ≥25 m、车↔己方机 ∈[3,8] m。
+
+ **车的具体坐标不是本测试的判据**（2026-11-13 ADR-0047 把它从 (-34,-6) 移到 (-40,-6)）：
+ 出生位必须满足"出发即不被安全层误停"这一**几何前置闸门**，见
+ `test_dense_map_spawn_is_not_inside_collision_tier`。
     """
     import math
     if 'dense_map' not in _world_maps():
@@ -940,6 +944,81 @@ def test_spawn_layout_per_map_applies_for_dense_map():
     assert d_ct >= 30.0, 'dense_map 车↔目标 %.2f < 30 m（F1 设计目标）' % d_ct
     assert d_ot >= 25.0, 'dense_map 己方机↔目标 %.2f < 25 m（F1 设计目标）' % d_ot
     assert 3.0 <= d_co <= 8.0, 'dense_map 车↔己方机 %.2f 不在 [3,8] m（F1 设计目标）' % d_co
+
+
+def test_dense_map_spawn_is_not_inside_collision_tier():
+    """车出生位到最近障碍的净空必须 **> `d_collision` + 余量**，否则一启动就被判停车。
+
+ ## 为什么需要这条（ADR-0047，2026-11-13）
+
+ 旧出生位 `(-34,-6)` 的车心到最近障碍只有 **1.75 m**，而安全层 `d_collision = 2.0 m`
+ ⇒ 整链 20 次实跑 `TRACKING_SUCCESS` = **0/20**、`ticks_triggered` 5,420–7,176。
+ 这个"车一步都不动"被误读成"地图太密、车过不去"，而实测面积覆盖只有 7.2%、
+ 相邻间隙 p50 = 4.54 m、车宽 0.57 m —— **通道本来就在**，问题在出生位。
+
+ ## 判据口径（与 `safety_policy.hpp` 的 `distanceToFootprint` 同构）
+
+ 净空 = 车体矩形（半长 0.5037 / 半宽 0.28545）外缘到最近障碍**足迹**的距离。
+ 障碍按真实几何（box 用有向矩形、cylinder 用圆），**不**按外接圆膨胀 ——
+ 外接圆会把长条 box 放大 3 倍以上，那会造出"看起来必须移出生位"的假阳性。
+
+ 门槛取 `d_collision` 再加 `margin_m` 余量：只判 `>= d_collision` 会让出生位
+ 贴着门槛，实跑抖动一次就掉进停车档。车体伸出取**半对角**（任意朝向都成立的保守下界），
+ 下界都过门槛 ⇒ 任何朝向都过。
+
+ `margin_m` 是**本判据自己的**余量常量（0.14 m ≈ 0.5 m 规划层半格对角），
+ 不是任何节点的运行参数 —— 它只影响"出生位要离障碍多远才算合格"这一静态检查。
+    """
+    import math
+    if 'dense_map' not in _world_maps():
+        pytest.skip('dense_map 未登记')
+
+    maps_path = os.path.join(
+        _ROOT, 'src', 'agc_sim', 'config', 'maps', 'dense_map.yaml')
+    with open(maps_path) as f:
+        obstacles = yaml.safe_load(f).get('obstacles') or []
+    assert obstacles, 'dense_map 没有障碍，判据失去意义'
+
+    eff = _load_spawn_layout_for('dense_map')
+    car = eff['car']
+    cx, cy = float(car['x']), float(car['y'])
+
+    # 车体半长 / 半宽与安全层参数同源（同一碰撞盒，不是复制约束）。
+    with open(os.path.join(_ROOT, 'src', 'agc_ground', 'config', 'ground.yaml')) as f:
+        ground = yaml.safe_load(f)
+    fp = (ground.get('ground_safety_filter') or {}).get('ros__parameters') or {}
+    half_l = float(fp.get('footprint_half_length', 0.5037))
+    half_w = float(fp.get('footprint_half_width', 0.28545))
+    d_collision = float(fp.get('d_collision', 2.0))
+    # 本判据自己的余量常量（0.5 m 规划层半格对角）；不是节点运行参数。
+    margin = 0.14
+
+    def clearance(x, y):
+        """点到障碍足迹的最小距离（点在内部 → 0）。"""
+        best = float('inf')
+        for ob in obstacles:
+            ox, oy = float(ob['x']), float(ob['y'])
+            size = ob['size']
+            if ob.get('shape') == 'box':
+                hl, hw = float(size[0]) / 2.0, float(size[1]) / 2.0
+                yaw = float(ob.get('yaw', 0.0))
+                c, s = math.cos(yaw), math.sin(yaw)
+                dx, dy = x - ox, y - oy
+                u, v = dx * c + dy * s, -dx * s + dy * c
+                du = max(abs(u) - hl, 0.0)
+                dv = max(abs(v) - hw, 0.0)
+                best = min(best, math.hypot(du, dv))
+            else:
+                r = float(size[0])
+                best = min(best, max(0.0, math.hypot(x - ox, y - oy) - r))
+        return best
+
+    car_clearance = clearance(cx, cy) - math.hypot(half_l, half_w)
+    need = d_collision + margin
+    assert car_clearance > need, (
+        'dense_map 车出生位 (%.1f,%.1f) 的车体外缘净空 %.2f m <= d_collision+margin %.2f m；'
+        '一启动就会进停车档而零速（ADR-0047 的原始缺陷形态）'
+        % (cx, cy, car_clearance, need))
 
 
 def test_dense_map_scene_is_registered_and_points_to_dense_map():

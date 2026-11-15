@@ -85,13 +85,18 @@ def generate_launch_description():
             # ：安全层开关透传（缺省 true；false = 无 shield 对照臂，纯仿真）
         }.items(),
     )
+    # **必须在 `ld` 创建之前收集**：这两个声明原先直接 `ld.add_action(...)`，
+    # 而 `ld = LaunchDescription()` 在下面才执行 —— 属"用了还没赋值的变量"，
+    # 一启动就 `cannot access local variable 'ld'`。改成先收集、后统一 add。
+    early_args = [
+        DeclareLaunchArgument(
+            'startup_reset_max_attempts', default_value='60',
+            description='场景复位就绪门最多尝试次数（与 startup_reset_timeout_s 取先到者）'),
+        DeclareLaunchArgument(
+            'startup_reset_timeout_s', default_value='120.0',
+            description='场景复位就绪门的时间上界（秒）'),
+    ]
 
-    ld.add_action(DeclareLaunchArgument(
-        'startup_reset_max_attempts', default_value='60',
-        description='场景复位就绪门最多尝试次数（与 startup_reset_timeout_s 取先到者）'))
-    ld.add_action(DeclareLaunchArgument(
-        'startup_reset_timeout_s', default_value='120.0',
-        description='场景复位就绪门的时间上界（秒）'))
     common = [params_file, {'use_sim_time': LaunchConfiguration('use_sim_time')}]
     # ground_controller 字段随 command_source 切换（rl → agc_rl；baseline → agc_ground）
     controller_name = PythonExpression([
@@ -129,6 +134,8 @@ def generate_launch_description():
     ]
 
     ld = LaunchDescription()
+    for _a in early_args:
+        ld.add_action(_a)
     ld.add_action(DeclareLaunchArgument('use_sim_time', default_value='true'))
     ld.add_action(DeclareLaunchArgument(
         'params_file', default_value=default_params,

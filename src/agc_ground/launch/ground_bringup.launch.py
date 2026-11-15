@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """ground_bringup —— 地面链路一键启动。
 
-起：静态 TF（`car/base_link → car/lidar_link`）+ Nav2 `collision_monitor` 安全层
+起：静态 TF（`car/base_link → car/lidar_link`）+ **自研安全层** `ground_safety_filter`
 + 地面执行中继（唯一执行口）+ **命令源**（`command_source` 单一选择，二者互斥）。
 
-链路：命令源 → `/agc/ground/cmd_vel_raw` → `collision_monitor` → `/agc/ground/cmd_vel`
+链路：命令源 → `/agc/ground/cmd_vel_raw` → `ground_safety_filter` → `/agc/ground/cmd_vel`
  → `ground_drive_relay` → GZ（`/model/agc_car/cmd_vel`）。
 
 命令源（`command_source`，互斥；同一时刻仅一路下发）：
@@ -21,23 +21,25 @@
  [路线分支治理](../../../docs/conventions/路线分支治理.md#rule) 5.3。
 
 安全层（`shield`）：**2026-11-04 起恒定启用**，launch 开关已删除。
-`collision_monitor` 是唯一安全层（[ADR-0004](../../../docs/adr/0004-ground-control-rl-primary-and-nav2-safety.md#top)）；
-"无 shield 对照臂"属 消融研究，演示与验收**永远不该关安全层**。
+安全层：**自研 `ground_safety_filter`**（[ADR-0045](../../../docs/adr/0045-ground-safety-layer-self-owned.md#top)），
+恒定启用、无 launch 开关，"无 shield 对照臂"属消融研究，演示与验收**永远不该关安全层**；
+它**不引入** Nav2 安全层运行时，唯一障碍输入是 `/agc/map`。
 
 参数配置文件：`config/ground.yaml`（安全层 / 中继）、`config/costmap.yaml`（分层 costmap，基线自持）、
 `config/baseline.yaml`（基线）、`agc_rl/config/rl.yaml`（RL）（../../../docs/adr/0020-package-boundaries-and-runtime-topology.md#params）。
 
 路径输入与命令源的关系（2026-11-01，ADR-0013）：
- * `/agc/ground/path`（`nav_msgs/Path`，`frame_id=world`）是地面侧占位规划器发布的**路径数据**，
+ * `/agc/ground/path`（`nav_msgs/Path`，`frame_id=world`）是地面侧规划器发布的**路径数据**，
  不是命令，因此**不进** `command_source` 的互斥域。
  **参数边界**：路径相关参数全部是**节点本地 config**（`agc_rl/config/rl.yaml` 的 `path.*`、
- `agc_ground/config/ground.yaml` 的 `placeholder_path_planner.*`），由既有 launch 透传；
+ `agc_ground/config/ground.yaml` 的 `hybrid_astar_se2_planner.*`），由既有 launch 透传；
  **未新增契约全局入口**（`#params` 无新条目），也**未新增 launch 级开关**——
  goal-only 对照只用节点本地 `path.enabled`。
  * 路径的消费侧质量门（从未收到 / 空 / 单点 / 帧不一致 / 过期）与"失效即零速、禁止静默退回
     goal-only"由消费方实现（ADR-0013(e)）；G2 负责接线并给出行为证据。
- * **启动边界**：`collision_monitor` 的 `process` 只由 `cmd_vel_in` 回调触发，**命令源完全缺失时
- 它不主动发零速**（ADR-0013）。`command_source=rl` 下由 RL 节点按 20 Hz 定频出命令，天然满足。
+ * **启动边界**（与改造前**相反**）：自研安全层用定时器**每拍无条件发布**，无任何输入时发零速
+ （[ADR-0045](../../../docs/adr/0045-ground-safety-layer-self-owned.md#top)）；旧 Nav2 安全层
+ 「命令源缺失时一个速度都不发」的缺口已被消除 —— `/agc/ground/cmd_vel` 断流自此即为缺陷。
  * 本注释**不改变任何有效逻辑或参数值**：`command_source` 分支、managed 编排均原样。
 """
 
@@ -74,7 +76,7 @@ def _nodes(context, *args, **kwargs):
     common = [params_file, {'use_sim_time': use_sim_time}]
 
     actions = [
-        # R2：传感器系静态 TF（collision_monitor 需将扫描变换到 base_frame）
+        # R2：传感器系静态 TF（costmap / RL 策略需将扫描变换到 base_frame；安全层不用 scan）
         Node(
             package='tf2_ros', executable='static_transform_publisher',
             name='car_lidar_tf',
@@ -95,24 +97,24 @@ def _nodes(context, *args, **kwargs):
             ],
             parameters=[{'use_sim_time': use_sim_time}], output='screen',
         ),
-        # 自体过滤（激光自返回置 inf）——安全层消费 /agc/ground/scan_filtered
+        # 自体过滤（激光自返回置 inf）——消费者是 costmap 与 RL 策略，**不是**安全层
+        # （安全层的唯一障碍输入是 /agc/map，ADR-0045）。
         Node(
             package='agc_ground', executable='scan_self_filter',
             name='scan_self_filter', parameters=common, output='screen',
         ),
     ]
 
-    # 安全层：**恒定启用**（Nav2 collision_monitor，scan 源 = 自滤后扫描；直接复用 Nav2 组件）。
-    # 无 shield 对照臂已随 `shield` 参数一起退役（ADR-0023 研究结档）；
-    # 原 `else` 分支起的 `cmd_vel_passthrough` 自 2026-11-04 起**永久不可达**，
-    # 节点与分支一并删除，防复活闸门见 scripts/tests/test_retirement_ledger.py。
+    # 安全层：**自研** `ground_safety_filter`（ADR-0045）。恒定启用、无 launch 开关。
+    # 它**不**是 Nav2 组件、**不**链接 nav2_*，唯一障碍输入是 `/agc/map`（与规划同源）。
+    # 旧 `nav2_collision_monitor` 已随本改造退役：不保留"两套实现由开关选择"的路线分支
+    # （[路线分支治理](../../../docs/conventions/路线分支治理.md#rule)）；
+    # 防复活闸门见 scripts/tests/test_retirement_ledger.py。
     managed = []
     actions.append(Node(
-        package='nav2_collision_monitor', executable='collision_monitor',
-        name='collision_monitor', parameters=common, output='screen',
+        package='agc_ground', executable='ground_safety_filter',
+        name='ground_safety_filter', parameters=common, output='screen',
     ))
-    managed.append('collision_monitor')
-
     # 唯一执行口中继
     actions.append(Node(
         package='agc_ground', executable='ground_drive_relay',
@@ -133,16 +135,16 @@ def _nodes(context, *args, **kwargs):
         # （ADR-0003）：RL 主控**不消费** costmap → **不**起闲置的独立 `nav2_costmap_2d` 进程；
         # 分层 costmap 仅由离线基线（`command_source=baseline`）自持（见上分支）。
         #
-        # （ADR-0013）：`rl` 拓扑**按既定链路**起几何/直连占位全局规划器。
+        # （ADR-0048）：`rl` 拓扑起地面全局路径规划器 Hybrid A* on SE(2)。
         # * 它**只发路径、不发速度** → 不产生第二 `cmd_vel_raw` 生产者；
         # * 不进 `command_source` 互斥域（路径是数据，不是命令）；
-        # * 不接 Navfn / planner_server、不起 costmap。
+        # * 不接 Navfn / planner_server、不起 costmap；唯一障碍输入是 `/agc/map`。
         # * **不提供 launch 级开关**：是否消费路径只由节点本地 `path.enabled` 决定
         # （显式对照模式）；本文件**不为它新增任何 launch 参数**，也不新增契约全局入口。
         # 顺序上先起规划器（发布方），再 include RL（订阅方），避免启动瞬间无发布者。
         actions.append(Node(
-            package='agc_ground', executable='placeholder_path_planner',
-            name='placeholder_path_planner', parameters=common, output='screen',
+            package='agc_ground', executable='hybrid_astar_se2_planner',
+            name='hybrid_astar_se2_planner', parameters=common, output='screen',
         ))
         actions.append(IncludeLaunchDescription(
             PythonLaunchDescriptionSource(

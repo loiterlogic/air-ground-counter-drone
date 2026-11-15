@@ -60,7 +60,32 @@ DELETED_PATHS = (
     # 5.2.5 批次：无 shield 对照臂的恒等透传节点（可维护性收敛第三轮）
     # `shield_enabled = True` 写死后，`ground_bringup` 的 `else` 分支永久不可达。
     'src/agc_ground/src/cmd_vel_passthrough.cpp',
+    # 5.2.6 批次：几何直连占位全局规划器（ADR-0048 由 Hybrid A* on SE(2) 替换）
+    # 替换而非并存：plan 明令「不得在其旁边再起第二个主规划器」，
+    # 也不得增加 `planner_mode` / `planner_backend` / `path_source` 运行时路线开关。
+    'src/agc_ground/src/placeholder_path_planner.cpp',
 )
+
+# --------------------------------------------------------------------------------------
+# 5.2.6 批次：Nav2 安全层退役（ADR-0045）
+# 判据是**运行期形态**（起哪个可执行文件 / 声明哪些参数 / 订阅什么），不是注释：
+# 退役说明与历史对比必须允许写进注释。
+# --------------------------------------------------------------------------------------
+GROUND_YAML = ROOT / 'src' / 'agc_ground' / 'config' / 'ground.yaml'
+BASE_YAML = ROOT / 'src' / 'agc_task' / 'config' / 'base.yaml'
+
+NO_NAV2_SAFETY_LAYER = {
+    # 不再起 Nav2 安全层可执行文件、不再把它交给 lifecycle 编排。
+    # 注：`nav2_lifecycle_manager` 仍会为**离线基线**（Nav2 planner 插件）启动 ——
+    # 那是 ADR-0003 吸收点的合法用途，不是安全层；因此只查"安全层节点被托管"这一形态。
+    GROUND_LAUNCH: ("executable='collision_monitor'", 'nav2_collision_monitor',
+                    "managed.append('collision_monitor')"),
+    # 不再有 collision_monitor 参数段（含它的私有参数名）
+    GROUND_YAML: ('collision_monitor:', 'stop_pub_timeout', 'slowdown_ratio',
+                  'velocity_polygons', 'source_timeout', 'enable_stamped_cmd_vel'),
+    # run_logger 不再订阅 Nav2 的安全层状态消息；旧键不得复活
+    BASE_YAML: ('collision_monitor_state_topic',),
+}
 
 # 这些文件仍在，但其中不得再出现已退役标识的**代码形态**。
 # 只查代码形态（节点注册 / 参数声明 / 段键 / 解析链），不查注释与文档字符串——
@@ -84,6 +109,71 @@ ALIVE_FILES_NO_RETIRED_SYMBOLS = {
 
 def _text(path: Path) -> str:
     return path.read_text(encoding='utf-8', errors='replace')
+
+
+def _code_only(path: Path) -> str:
+    """去注释后的代码文本（YAML 用 `#`，Python 用 `#`）。
+
+    为什么必须去注释：退役说明**必须**允许写进注释（"为什么删、删了哪些"），
+    否则下一个读代码的人只能看到一片空白。闸门查的是**运行期形态**，不是解释文字。
+    """
+    out = []
+    for line in _text(path).splitlines():
+        # 只去掉行首（含缩进）的整行注释与行内注释；不解析字符串内的 `#`——
+        # 本仓的配置/launch 里 `#` 出现在字符串内的情况只存在于注释掉的代码，可接受。
+        idx = line.find('#')
+        if idx >= 0:
+            line = line[:idx]
+        if line.strip():
+            out.append(line)
+    return '\n'.join(out)
+
+
+def test_nav2_safety_layer_is_retired():
+    """5.2.6：Nav2 安全层退役后不得以任何运行期形态复活（ADR-0045）。
+
+    为什么查"运行期形态"而不是删掉断言：安全层是**主链**上最容易被顺手接回来的位置
+    （"先留着对照一下"）。留着实现的旧路径就等于留着两条安全层实现，
+    而那正是路线分支治理禁止的形态。
+    """
+    offenders = []
+    for path, symbols in NO_NAV2_SAFETY_LAYER.items():
+        text = _code_only(path)
+        for sym in symbols:
+            if sym in text:
+                offenders.append('%s 含 %r' % (path.relative_to(ROOT), sym))
+    assert not offenders, (
+        'Nav2 安全层的运行期形态又出现了（违反防复活闸门，见 5.2.6）：\n  - %s\n'
+        '若确需恢复：须按 2.2 节四项重新立项，并从 5.2 台账移除本条。'
+        % '\n  - '.join(offenders))
+
+
+def test_self_owned_safety_layer_wiring_is_complete():
+    """正例闸门：自研安全层必须**真的接进主链**，而不是只存在于文件里。
+
+    只断言"旧的不在"会让"新的没接"变成静默通过 —— 那正是"看着有保护、实际零覆盖"。
+    """
+    launch = _text(GROUND_LAUNCH)
+    assert "executable='ground_safety_filter'" in launch, '安全层节点未进 launch'
+    assert "name='ground_safety_filter'" in launch, '安全层节点名未进 launch'
+
+    cfg = yaml.safe_load(_text(GROUND_YAML))['ground_safety_filter']['ros__parameters']
+    # 唯一执行口链路的入/出必须与契约一致
+    assert cfg['cmd_in_topic'] == '/agc/ground/cmd_vel_raw'
+    assert cfg['cmd_out_topic'] == '/agc/ground/cmd_vel'
+    # **唯一障碍输入** = 规划层地图；不得把 scan/点云接回来（第二份障碍表示）
+    assert cfg['map_topic'] == '/agc/map'
+    for forbidden in ('scan_topic', 'pointcloud_topic', 'costmap_topic'):
+        assert forbidden not in cfg, '安全层不得订阅 %s（ADR-0045 的 #inputs）' % forbidden
+    # 档位顺序不变量 + 恢复门槛严格更高（ADR-0010 / ADR-0045 的 #invariants）
+    assert cfg['d_emergency'] < cfg['d_collision'] < cfg['d_safety']
+    assert cfg['d_recover_pass'] > cfg['d_safety']
+    assert cfg['d_recover_slow'] >= cfg['d_collision']
+    # 地图是 2 Hz：逾时阈值必须按发布周期推导，不得沿用扫描口径 0.3 s
+    assert cfg['t_map_timeout'] >= 1.5, '地图 2 Hz ⇒ 逾时至少 3 个发布周期'
+    # run_logger 必须订阅自研层的心跳（否则介入会被记成 0）
+    assert 'safety_status_topic' in _text(BASE_YAML)
+    assert '/agc/ground/safety_status' in _text(BASE_YAML)
 
 
 def test_deleted_retired_paths_do_not_exist():

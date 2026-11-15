@@ -3,7 +3,22 @@
 
 ## Status
 
-accepted（2026-11-02 由 0004 / 0018 / 0026 合并；分层口径、`agc_control` 归属与标定值均未变）
+accepted（2026-11-02 由 0004 / 0018 / 0026 合并；分层口径、`agc_control` 归属与标定值均未变）；
+**部分 superseded by [ADR-0045](0045-ground-safety-layer-self-owned.md#top)（2026-11-13）**；
+**部分 superseded by [ADR-0046](0046-lateral-escape-capability-narrowing.md#top)（2026-11-13）**
+
+> **被取代的部分**：(a) 中「经 Nav2 `collision_monitor`（按多边形区域缩放 / 急停）收敛」一句，
+> 以及标题里「Nav2 安全层」的实现归属。安全层改由 AGC 自有实现
+> （[ADR-0045](0045-ground-safety-layer-self-owned.md#top)），
+> **链路顺序不变**：`命令源 → cmd_vel_raw → 安全层 → /agc/ground/cmd_vel → 执行中继`。
+> **仍有效的部分**：RL 主控地位、`agc_control` 唯一公共库、(c)(d)(e) 的动作方向 / 量纲 /
+> 路径输入缝的边界、以及「局部避障 ≠ 安全层」的口径。
+> **被 [ADR-0046](0046-lateral-escape-capability-narrowing.md#top) 取代的部分**：(e) 的
+> **能力主张数值** —— `max_offset` 由 `1.0` 收窄为 **`0.75 m`**（重复实测下沿 `0.769 m`），
+> 且明确"局部横向逃逸属 RL/策略能力，**不是**安全层承诺"。
+> **仍有效**：(e) 的**测量口径**（反应窗口 `T = 2.0 s`）与"不得用理想圆弧推定"的方法论。
+> **实施状态**：ADR-0045 只定方案，运行期代码尚未改动，**当前**安全层仍是
+> `nav2_collision_monitor`（`ground.yaml` 的 `collision_monitor` 段仍生效）。
 
 ## 背景
 
@@ -68,6 +83,10 @@ forward_clearance_m = forward_clearance(sectors, ..., half) * lidar_max_range # 
 
 - **实测（GUI，`agc_world`）**：Husky 级 4 轮滑移差速车（`v_max = 1.5`、`ω_max = 2.0`），车前净空置 0 使 `magnitude = max_offset` 满偏。`max_offset = 1.2` 时 3 轮最大横向可达 `1.065 / 0.997 / 1.293 m`（多数 < 1.2，常速左转稳定 ~0.99 m）→ **不可达**；`max_offset = 1.0` 时 4 轮为 `1.043 / 1.287 / 1.083 / 1.017 m`，**均 ≥ 1.0 m** → **可达**。
 - **决策**：`max_offset: 1.2 → 1.0`（`src/agc_rl/config/rl.yaml` 单一注入）；`min_offset = 0.3 m` 不变；新增 `control.clearance_ref_m: 1.0`（米）。
+  > **⚠ 本节数值已被 [ADR-0046](0046-lateral-escape-capability-narrowing.md#top) 取代（2026-11-13）**：
+  > `max_offset` 现行值为 **`0.75 m`**。原文逐字保留（审计轨迹），但**不得**再作为现行值引用。
+  > 取代理由：本节 4 次采样最小值 `1.017 m`（余量 1.7%），而安全层改造后的重复实测
+  > 下沿为 `0.769 m`；两批数据最小值不一致，按实测可达范围收窄。
 - **物理解释**：实测横向 ≈ 理想圆弧界的 ~0.72×——4 轮滑移底盘（横向 μ2=0.2）转弯时侧滑削刮，实际横向小于理想滚动圆弧，故**不得**用理想弧模型推定。`max_yaw_rate = 1.0` 未构成瓶颈（本测 `w = k_lateral*max_offset = 0.8 < 1.0`，未截）。
 - **方向闭环**：所有采样中 `left` / `left_fast` → 世界 yaw 增且横向 y 为正，`right` / `right_fast` 反向——ROS 约定经安全层 + 唯一执行中继端到端成立、可复现。
 - 证据：`experiments/w5-ground-nav-safety/20261015-w5-r011-0/metrics/r011.json`（最终配置 PASS）；标定前 FAIL 批次 `20261015-w5-r011-precalib-0`；单测 `python3 -m pytest src/agc_rl/test/ -q` → 11 passed。
@@ -93,7 +112,8 @@ forward_clearance_m = forward_clearance(sectors, ..., half) * lidar_max_range # 
 
 - **正面**：地面控制只有一个执行口且安全层位置固定；跟踪能力只实现一次、两域共用；动作左右方向与逃逸量都有实测依据，`max_offset` 有可复现标定值。
 - **代价 / 限制**：需维护 `RL → cmd_vel → collision_monitor → 唯一执行口` 链路与 `agc_control` 包；`max_offset = 1.0` 是**该底盘在该摩擦面**下的标定值，换底盘 / 摩擦须重标；实测横向约为理想圆弧的 0.72×，任何按理想模型的规划都会偏乐观。
-- **表述纪律**：RL 动作左右方向与净空参考一律引用本篇；`max_offset` 一律引用标定值 1.0 m，**不得**再以名称 / 理想横移推定横向逃逸。
+- **表述纪律**：RL 动作左右方向与净空参考一律引用本篇；`max_offset` 一律引用**现行标定值 `0.75 m`**
+  （[ADR-0046](0046-lateral-escape-capability-narrowing.md#top)），**不得**再以名称 / 理想横移推定横向逃逸。
 
 ## 参考
 

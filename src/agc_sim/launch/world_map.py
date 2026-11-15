@@ -35,6 +35,12 @@ MAP_GEOMETRY_FILES = {
     # 小障碍高密度能力图（ADR-0036；用户 2026-11-10 裁定）：目标居中、车与己方机在西边缘、
     # 密集区 60×60 m 六角错排、全部构件 ≤3.0 m、**不留走廊**（跟踪终态不可达是设计意图）。
     'dense_map': os.path.join('maps', 'dense_map.yaml'),
+    # 可通行正例图（ADR-0049）：障碍最小中心距 4.0 m（公式下限 3.765 m），
+    # 保证本车在 0.5 m 规划层上任意航向都有连通通道。与 dense_map 构成正/负对照：
+    #   dense_map  = 高密度感知压力图 + **几何不可行负例**
+    #   sparse_map = **可通行正例**（规划器应能规划出绕障路径）
+    # **不是** `dense_map` 的替代或"修好的版本"——两者的用途不同。
+    'sparse_map': os.path.join('maps', 'sparse_map.yaml'),
 }
 
 DEFAULT_WORLD_MAP = 'minimal'
